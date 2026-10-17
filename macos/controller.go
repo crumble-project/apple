@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-"os"
+	"os"
 	"strings"
 	"time"
 
@@ -118,6 +118,7 @@ func (a *app) selectAgent(id string) {
 	a.selectionVersion++
 	version := a.selectionVersion
 	a.selected = id
+	a.navigation = "agent:" + id
 	a.snapshot = nil
 	a.conversationID = ""
 	a.conversations = nil
@@ -145,6 +146,7 @@ func (a *app) selectConversation(id string) {
 	a.selectionVersion++
 	version := a.selectionVersion
 	a.conversationID = id
+	a.navigation = "chat:" + id
 	a.panel = ""
 	a.settings = false
 	a.editor = false
@@ -334,7 +336,7 @@ func (a *app) createAgent() {
 	a.editModel = "gpt-4.1"
 	a.editProvider = "openai"
 	a.editEnabled = true
-	a.editAvatar = "✦"
+	a.editAvatar = "critters:" + newRequestID()
 	a.editFolder = "Personal"
 	a.toolsMemory = true
 	a.toolsDelegate = false
@@ -706,7 +708,15 @@ func (a *app) saveProviderKey() {
 }
 
 func localTimezone() string {
- if zone:=os.Getenv("TZ");zone!="" {if _,err:=time.LoadLocation(zone);err==nil&&zone!="Local"{return zone}}
- if target,err:=os.Readlink("/etc/localtime");err==nil{if index:=strings.Index(target,"zoneinfo/");index>=0{return target[index+len("zoneinfo/"):]}}
- return "UTC"
+	if zone := os.Getenv("TZ"); zone != "" {
+		if _, err := time.LoadLocation(zone); err == nil && zone != "Local" {
+			return zone
+		}
+	}
+	if target, err := os.Readlink("/etc/localtime"); err == nil {
+		if index := strings.Index(target, "zoneinfo/"); index >= 0 {
+			return target[index+len("zoneinfo/"):]
+		}
+	}
+	return "UTC"
 }

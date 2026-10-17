@@ -62,7 +62,11 @@ func (a *app) view(c *ui.Context) {
 						if !agent.Enabled {
 							label += " · Paused"
 						}
-						ui.SidebarItem(c, "agent:"+agent.ID, nil, label)
+						ui.SidebarItem(c, "agent:"+agent.ID, nil, label).Height(40).Padding(6, 8, 6, 44).Children(func() {
+							if avatar, err := critterSVG(agentAvatarSeed(agent)); err == nil {
+								ui.Image(c, avatar).Absolute().Left(8).Top(4).Size(32, 32).Radius(8).Label("Avatar for " + agent.Name)
+							}
+						})
 					}
 					if len(a.agents) == 0 {
 						ui.Text(c, "No agents yet").TextColor(theme.TextMuted).Padding(8)
@@ -152,6 +156,13 @@ func (a *app) chatView(c *ui.Context) {
 		for _, agent := range a.agents {
 			if agent.ID == a.selected {
 				title = agent.Name
+			}
+		}
+		for _, agent := range a.agents {
+			if agent.ID == a.selected {
+				if avatar, err := critterSVG(agentAvatarSeed(agent)); err == nil {
+					ui.Image(c, avatar).Size(30, 30).Radius(8).Label("Avatar for " + agent.Name)
+				}
 			}
 		}
 		ui.Text(c, title).FontSize(16).Bold().Grow(1)
@@ -298,7 +309,12 @@ func (a *app) agentEditorView(c *ui.Context) {
 			ui.TextInput(c, &a.editName).Label("Name").Width(500).Placeholder("Give your agent a name")
 			ui.TextInput(c, &a.editDescription).Label("Description").Width(600).Placeholder("What does this agent help with?")
 			ui.Row(c).Gap(12).Children(func() {
-				ui.TextInput(c, &a.editAvatar).Label("Avatar symbol").Width(140)
+				if avatar, err := critterSVG(agentAvatarSeed(Agent{ID: a.selected, Avatar: a.editAvatar})); err == nil {
+					ui.Image(c, avatar).Size(72, 72).Radius(18).Label("Agent avatar preview")
+				}
+				if ui.Button(c, "New critter").Clicked() {
+					a.editAvatar = "critters:" + newRequestID()
+				}
 				ui.TextInput(c, &a.editFolder).Label("Folder").Width(250)
 			})
 			ui.Row(c).Gap(12).AlignItems(ui.End).Children(func() {
