@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
+	"github.com/egoist/mygo/ui/markdown"
 	"log"
 	"os"
 	"strings"
@@ -43,6 +44,9 @@ type app struct {
 	loadingOlder     bool
 	replyTo          *Message
 	failedReplyTo    string
+	chatList         ui.ListState
+	markdown         markdown.Options
+	expanded         map[string]bool
 	draft            string
 	loading          bool
 	errorText        string
@@ -87,7 +91,7 @@ type app struct {
 }
 
 func main() {
-	a := &app{serverURL: "http://127.0.0.1:7337", provider: "openai"}
+	a := &app{serverURL: "http://127.0.0.1:7337", provider: "melious"}
 	mygo.App.WhenReady(func() {
 		if raw, err := mygo.Secrets.Service("dev.crumble.desktop").Get("server-url"); err == nil && len(raw) > 0 {
 			a.serverURL = string(raw)

@@ -12,3 +12,7 @@ Crumble uses the Critters avatar style from [DiceBear Styles v10](https://github
 
 The generated SVG uses the style data at build time and is rendered offline. The generator package and style data are separate works with the licenses above. DiceBear trademark and brand rights remain with DiceBear.
 
+
+## SF Symbols
+
+Icons are SF Symbols that macOS draws at runtime through AppKit. The app ships no symbol artwork. Apple's SF Symbols license permits their use in software for Apple platforms.

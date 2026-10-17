@@ -3,9 +3,18 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/egoist/mygo/ui"
 	"strings"
+	"time"
+
+	"github.com/egoist/mygo/plugins/glass"
+	"github.com/egoist/mygo/ui"
+	"github.com/egoist/mygo/ui/markdown"
+)
+
+const (
+	titleBarHeight = 52
+	sidebarWidth   = 240
+	composerSpace  = 72
 )
 
 func contentText(value any) string {
@@ -36,83 +45,50 @@ func contentText(value any) string {
 	return string(encoded)
 }
 
+// iconButton is a borderless toolbar button that shows a face only while hovered, as AppKit's.
+func iconButton(c *ui.Context, key string, name string, label string) ui.Element {
+	t := c.Theme()
+	button := ui.ButtonBase(c.Key(key)).Size(30, 28).Radius(7).Center().TextColor(t.TextMuted).Label(label).Tooltip(label)
+	if button.Hovered() {
+		button.Background(t.SurfaceHover)
+	}
+	button.Children(func() { symbol(c, name, 14, t.TextMuted) })
+	return button
+}
+
+func (a *app) selectedAgent() (Agent, bool) {
+	for _, agent := range a.agents {
+		if agent.ID == a.selected {
+			return agent, true
+		}
+	}
+	return Agent{}, false
+}
+
+func avatar(c *ui.Context, agent Agent, size float32) {
+	if svg, err := critterSVG(agentAvatarSeed(agent)); err == nil {
+		ui.Image(c, svg).Size(size, size).Radius(size * 0.28).Label("Avatar for " + agent.Name)
+	}
+}
+
 func (a *app) view(c *ui.Context) {
 	theme := c.Theme()
-	bar := c.TitleBar()
-	if c.Vibrancy() {
+	vibrant := c.Vibrancy()
+	if vibrant {
 		c.Root().Background(ui.Transparent)
 	}
+	if a.notice != "" {
+		c.Toast(a.notice)
+		a.notice = ""
+	}
 	ui.Row(c).Fill().AlignItems(ui.Stretch).Children(func() {
-		side := ui.Column(c).Width(240).Shrink(0)
-		if !c.Vibrancy() {
+		side := ui.Column(c).Width(sidebarWidth).Shrink(0)
+		if !vibrant {
 			side.Background(theme.Surface)
 		}
-		side.Children(func() {
-			ui.Box(c).Height(max(bar.Height, 52)).Shrink(0).DragWindow()
-			ui.Row(c).Padding(8, 18, 12, 18).Gap(8).AlignItems(ui.Center).Children(func() {
-				ui.Text(c, "Crumble").FontSize(20).Bold().Grow(1)
-				if ui.Button(c, "+").Tooltip("New agent").Label("New agent").Clicked() {
-					a.createAgent()
-				}
-			})
-			sidebar := ui.Sidebar(c, &a.navigation, func() {
-				ui.SidebarSection(c, "Agents", nil, func() {
-					for _, agent := range a.agents {
-						label := agent.Name
-						if !agent.Enabled {
-							label += " · Paused"
-						}
-						ui.SidebarItem(c, "agent:"+agent.ID, nil, label).Height(40).Padding(6, 8, 6, 44).Children(func() {
-							if avatar, err := critterSVG(agentAvatarSeed(agent)); err == nil {
-								ui.Image(c, avatar).Absolute().Left(8).Top(4).Size(32, 32).Radius(8).Label("Avatar for " + agent.Name)
-							}
-						})
-					}
-					if len(a.agents) == 0 {
-						ui.Text(c, "No agents yet").TextColor(theme.TextMuted).Padding(8)
-					}
-				})
-				ui.SidebarSection(c, "Workspace", nil, func() {
-					ui.SidebarItem(c, "memory", nil, "Memory")
-					ui.SidebarItem(c, "tasks", nil, "Tasks")
-					ui.SidebarItem(c, "activity", nil, "Activity")
-					ui.SidebarItem(c, "approvals", nil, "Approvals")
-					ui.SidebarItem(c, "mcp", nil, "Integrations")
-					ui.SidebarItem(c, "settings", nil, "Settings")
-				})
-			}).Grow(1).Label("Workspace navigation")
-			if c.Vibrancy() {
-				sidebar.Background(ui.Transparent)
-			}
-			if sidebar.Changed() {
-				switch {
-				case strings.HasPrefix(a.navigation, "agent:"):
-					a.selectAgent(strings.TrimPrefix(a.navigation, "agent:"))
-				case a.navigation == "settings":
-					a.settings = true
-					a.editor = false
-					a.panel = ""
-				default:
-					a.openPanel(a.navigation)
-				}
-			}
-			status := "Connected"
-			if a.loading {
-				status = "Syncing…"
-			}
-			if a.streamStatus != "" {
-				status = a.streamStatus
-			}
-			ui.Text(c, status).FontSize(11).TextColor(theme.TextMuted).Padding(12, 18)
-		})
+		side.Children(func() { a.sidebar(c, vibrant) })
 		ui.Box(c).Width(1).Background(theme.Border)
 		ui.Column(c).Grow(1).MinWidth(0).Background(theme.Background).Children(func() {
-			if a.errorText != "" {
-				ui.Text(c, a.errorText).TextColor(theme.Danger).Padding(12, 24).Margin(max(bar.Height, 40), 0, 0, 0)
-			}
-			if a.notice != "" && a.settings {
-				ui.Text(c, a.notice).TextColor(theme.TextMuted).Padding(8, 24)
-			}
 			switch {
 			case a.settings:
 				a.settingsView(c)
@@ -129,106 +105,403 @@ func (a *app) view(c *ui.Context) {
 		a.createAgent()
 	}
 	if c.Shortcut(ui.Cmd, ui.KeyComma) {
-		a.settings = true
-		a.editor = false
-		a.panel = ""
-		a.navigation = "settings"
+		a.openSettings()
 	}
+}
+
+var workspaceItems = []struct{ id, label, symbol string }{
+	{"memory", "Memory", symbolMemory},
+	{"tasks", "Tasks", symbolTasks},
+	{"activity", "Activity", symbolActivity},
+	{"approvals", "Approvals", symbolApproval},
+	{"mcp", "Integrations", symbolPlug},
+	{"settings", "Settings", symbolSettings},
+}
+
+func (a *app) sidebar(c *ui.Context, vibrant bool) {
+	theme := c.Theme()
+	ui.Row(c).Height(titleBarHeight).Shrink(0).Padding(0, 10).AlignItems(ui.Center).DragWindow().Children(func() {
+		ui.Spacer(c)
+		if iconButton(c, "new-agent", symbolCompose, "New agent").Clicked() {
+			a.createAgent()
+		}
+	})
+	sidebar := ui.Sidebar(c, &a.navigation, func() {
+		ui.SidebarSection(c, "Agents", nil, func() {
+			for _, agent := range a.agents {
+				item := ui.SidebarItem(c.Key(agent.ID), "agent:"+agent.ID, nil, agent.Name).Height(38).Padding(6, 8, 6, 40)
+				item.Children(func() {
+					if svg, err := critterSVG(agentAvatarSeed(agent)); err == nil {
+						ui.Image(c, svg).Absolute().Left(8).Top(6).Size(26, 26).Radius(7).Label("Avatar for " + agent.Name)
+					}
+					if !agent.Enabled {
+						ui.Badge(c, "Paused")
+					}
+				})
+			}
+			if len(a.agents) == 0 {
+				ui.Text(c, "No agents yet").FontSize(12).TextColor(theme.TextMuted).Padding(6, 10)
+			}
+		})
+		ui.SidebarSection(c, "Workspace", nil, func() {
+			for _, item := range workspaceItems {
+				tint := theme.Accent
+				if a.navigation == item.id {
+					tint = theme.TextMuted
+				}
+				ui.SidebarItem(c.Key(item.id), item.id, nil, item.label).Height(30).Padding(5, 8, 5, 34).Children(func() {
+					ui.Row(c).Absolute().Left(8).Top(0).Bottom(0).Width(20).Center().Children(func() {
+						symbol(c, item.symbol, 13, tint)
+					})
+				})
+			}
+		})
+	}).Grow(1).Label("Workspace navigation")
+	if vibrant {
+		sidebar.Background(ui.Transparent)
+	}
+	if sidebar.Changed() {
+		switch {
+		case strings.HasPrefix(a.navigation, "agent:"):
+			a.selectAgent(strings.TrimPrefix(a.navigation, "agent:"))
+		case a.navigation == "settings":
+			a.openSettings()
+		default:
+			a.openPanel(a.navigation)
+		}
+	}
+	status, color := "Connected", ui.RGB(52, 199, 89)
+	switch {
+	case a.streamStatus != "":
+		status, color = a.streamStatus, theme.Danger
+	case a.loading:
+		status, color = "Syncing…", theme.TextMuted
+	}
+	ui.Row(c).Padding(10, 18, 14, 18).Gap(6).AlignItems(ui.Center).Children(func() {
+		ui.Box(c).Size(7, 7).Radius(4).Background(color)
+		ui.Text(c, status).FontSize(11).TextColor(theme.TextMuted)
+	})
+}
+
+// chatRow is one row of the chat list: a transcript message or a transient row around it.
+type chatRow struct {
+	key     string
+	kind    string
+	message Message
+	divider string
+}
+
+func (a *app) chatRows() []chatRow {
+	var rows []chatRow
+	if a.hasMore {
+		rows = append(rows, chatRow{key: "older", kind: "older"})
+	}
+	var last int64
+	for _, message := range a.messages {
+		if contentText(message.Content) == "" || message.Role == "system" {
+			continue
+		}
+		if message.Timestamp > 0 && message.Timestamp-last > int64(30*time.Minute/time.Millisecond) {
+			rows = append(rows, chatRow{key: "time:" + message.ID, kind: "time", divider: timeLabel(time.UnixMilli(message.Timestamp))})
+		}
+		if message.Timestamp > 0 {
+			last = message.Timestamp
+		}
+		rows = append(rows, chatRow{key: message.ID, kind: "message", message: message})
+	}
+	if a.snapshot != nil {
+		switch {
+		case a.snapshot.Partial != "":
+			rows = append(rows, chatRow{key: "partial", kind: "partial"})
+		case a.snapshot.Status == "running":
+			rows = append(rows, chatRow{key: "thinking", kind: "thinking"})
+		}
+		if a.snapshot.Error != "" {
+			rows = append(rows, chatRow{key: "error", kind: "error"})
+		}
+	}
+	return rows
+}
+
+func timeLabel(at time.Time) string {
+	now := time.Now()
+	switch {
+	case at.YearDay() == now.YearDay() && at.Year() == now.Year():
+		return "Today " + at.Format("15:04")
+	case at.Year() == now.Year():
+		return at.Format("Mon, 2 Jan 15:04")
+	}
+	return at.Format("2 Jan 2006 15:04")
 }
 
 func (a *app) chatView(c *ui.Context) {
 	theme := c.Theme()
-	ui.Row(c).Height(56).Shrink(0).Padding(0, 24).AlignItems(ui.Center).Gap(8).DragWindow().Children(func() {
-		title := "Your agents"
-		for _, agent := range a.agents {
-			if agent.ID == a.selected {
-				title = agent.Name
-			}
+	agent, ok := a.selectedAgent()
+	if !ok {
+		a.welcomeView(c)
+		return
+	}
+	rows := a.chatRows()
+	a.chatList.Key = func(i int) any { return rows[i].key }
+	a.chatList.FollowEnd = true
+	a.chatList.FollowAnimation = &ui.Smooth
+	bottom := float32(composerSpace)
+	if a.replyTo != nil {
+		bottom += 54
+	}
+	ui.Box(c).Fill().Children(func() {
+		ui.List(c, &a.chatList, len(rows), func(i int) {
+			a.chatRowView(c, agent, rows[i])
+		}).Fill().Padding(titleBarHeight+12, 28, bottom, 28).Gap(10).Justify(ui.End).
+			ScrollbarInsets(titleBarHeight, 0, bottom-20, 0)
+		if len(rows) == 0 {
+			a.emptyChat(c, agent)
 		}
-		for _, agent := range a.agents {
-			if agent.ID == a.selected {
-				if avatar, err := critterSVG(agentAvatarSeed(agent)); err == nil {
-					ui.Image(c, avatar).Size(30, 30).Radius(8).Label("Avatar for " + agent.Name)
-				}
-			}
-		}
-		ui.Text(c, title).FontSize(16).Bold().Grow(1)
-		if a.selected != "" {
-			if a.snapshot != nil && len(a.messages) > 0 {
-				if ui.Button(c, "Compact").Tooltip("Summarize older context. The full chat stays visible.").Disabled(a.loading).Clicked() {
-					a.compactChat()
-				}
-			}
-			if ui.Button(c, "Profile").Clicked() {
-				a.openEditor()
-			}
-		}
-	})
-	ui.Divider(c)
-	if a.snapshot == nil || len(a.messages) == 0 {
-		ui.Column(c).Grow(1).Center().Padding(32).Gap(12).Children(func() {
-			heading, detail := "A little help, always here.", "Create an agent with a purpose, then give it something to do."
-			if a.selected != "" {
-				heading = "What shall we work on?"
-				detail = "Send a message to start. Your agent keeps its work and memory between visits."
-			}
-			if a.loading && a.snapshot == nil {
-				heading = "Opening your workspace…"
-				detail = ""
-			}
-			ui.Text(c, heading).FontSize(25).Bold()
-			ui.Text(c, detail).MaxWidth(420).TextColor(theme.TextMuted)
-			if a.selected == "" {
-				if ui.PrimaryButton(c, "Create an agent").Clicked() {
-					a.createAgent()
-				}
-			}
-		})
-	} else {
-		ui.Scroll(c).Grow(1).Padding(22, 28).Children(func() {
-			ui.Column(c).Gap(18).Children(func() {
-				if a.hasMore {
-					label := "Load earlier messages"
-					if a.loadingOlder {
-						label = "Loading…"
-					}
-					if ui.Button(c, label).AlignSelf(ui.Center).Disabled(a.loadingOlder).Clicked() {
-						a.loadOlder()
-					}
-				}
-				for _, message := range a.messages {
-					a.messageView(c, message)
-				}
-				if a.snapshot.Partial != "" {
-					ui.Column(c).Gap(6).Children(func() {
-						ui.Text(c, "Responding").FontSize(11).TextColor(theme.TextMuted)
-						ui.Text(c, a.snapshot.Partial).Selectable().FontSize(14)
-					})
-				}
-				if a.snapshot.Error != "" {
-					ui.Column(c).Gap(6).Padding(14).Radius(10).Background(theme.Surface).Children(func() {
-						ui.Text(c, "The agent couldn’t finish").Bold()
-						ui.Text(c, a.snapshot.Error).TextColor(theme.Danger).Selectable()
-						if ui.Button(c, "Provider settings").Clicked() {
-							a.settings = true
-							a.navigation = "settings"
-						}
-					})
+		ui.Box(c).Absolute().Top(0).Left(0).Right(0).Height(titleBarHeight + 10).PassThrough().Material(glass.ScrollEdge{})
+		ui.Box(c).Absolute().Bottom(0).Left(0).Right(0).Height(bottom).PassThrough().Material(glass.ScrollEdge{Bottom: true})
+		a.chatHeader(c, agent)
+		if a.errorText != "" {
+			ui.Row(c).Absolute().Top(titleBarHeight+6).Left(28).Right(28).Padding(8, 12).Gap(8).Radius(10).
+				Material(glass.Glass{Tint: theme.Danger.Alpha(0.25)}).AlignItems(ui.Center).Children(func() {
+				ui.Text(c, a.errorText).FontSize(12).Grow(1)
+				if iconButton(c, "dismiss-error", symbolClose, "Dismiss").Clicked() {
+					a.errorText = ""
 				}
 			})
+		}
+		a.composer(c, agent)
+	})
+}
+
+func (a *app) chatHeader(c *ui.Context, agent Agent) {
+	theme := c.Theme()
+	ui.Row(c).Absolute().Top(0).Left(0).Right(0).Height(titleBarHeight).Padding(0, 16, 0, 20).Gap(10).AlignItems(ui.Center).DragWindow().Children(func() {
+		avatar(c, agent, 28)
+		ui.Column(c).Grow(1).MinWidth(0).Children(func() {
+			ui.Text(c, agent.Name).FontSize(13).Bold().SingleLine().Ellipsis("…")
+			subtitle := agent.Model
+			switch {
+			case !agent.Enabled:
+				subtitle = "Paused"
+			case a.snapshot != nil && a.snapshot.Status == "running":
+				subtitle = "Working…"
+			case agent.Description != "":
+				subtitle = agent.Description
+			}
+			ui.Text(c, subtitle).FontSize(11).TextColor(theme.TextMuted).SingleLine().Ellipsis("…")
+		})
+		ui.Row(c).Padding(2).Gap(2).Radius(16).Material(glass.Glass{}).Children(func() {
+			if iconButton(c, "compact", symbolCompact, "Summarize older context").Disabled(a.loading || len(a.messages) == 0).Clicked() {
+				a.compactChat()
+			}
+			if iconButton(c, "profile", symbolProfile, "Agent profile").Clicked() {
+				a.openEditor()
+			}
+		})
+	})
+}
+
+func (a *app) emptyChat(c *ui.Context, agent Agent) {
+	theme := c.Theme()
+	ui.Column(c).Absolute().Top(titleBarHeight).Bottom(composerSpace).Left(0).Right(0).Center().Gap(10).PassThrough().Children(func() {
+		if a.snapshot == nil {
+			ui.Spinner(c).Label("Opening chat")
+			return
+		}
+		avatar(c, agent, 72)
+		ui.Text(c, agent.Name).FontSize(22).Bold()
+		detail := agent.Description
+		if detail == "" {
+			detail = "Send a message to start. Your agent keeps its work and memory between visits."
+		}
+		ui.Text(c, detail).MaxWidth(420).TextColor(theme.TextMuted).TextAlign(ui.Center)
+	})
+}
+
+func (a *app) welcomeView(c *ui.Context) {
+	theme := c.Theme()
+	ui.Box(c).Height(titleBarHeight).Shrink(0).DragWindow()
+	ui.Column(c).Grow(1).Center().Padding(32).Gap(12).Children(func() {
+		if a.loading {
+			ui.Spinner(c).Size(28, 28).Label("Opening your workspace")
+			return
+		}
+		symbol(c, symbolSparkles, 36, theme.Accent)
+		ui.Text(c, "A little help, always here.").FontSize(22).Bold()
+		ui.Text(c, "Create an agent with a purpose, then give it something to do.").MaxWidth(420).TextColor(theme.TextMuted).TextAlign(ui.Center)
+		if ui.PrimaryButton(c, "Create an agent").Clicked() {
+			a.createAgent()
+		}
+		if a.errorText != "" {
+			ui.Text(c, a.errorText).FontSize(12).TextColor(theme.Danger).MaxWidth(420).TextAlign(ui.Center)
+		}
+	})
+}
+
+func (a *app) chatRowView(c *ui.Context, agent Agent, row chatRow) {
+	theme := c.Theme()
+	switch row.kind {
+	case "older":
+		ui.Row(c).Justify(ui.Center).Padding(4).Children(func() {
+			if a.loadingOlder {
+				ui.Spinner(c).Label("Loading earlier messages")
+			} else if ui.Button(c, "Load earlier messages").Clicked() {
+				a.loadOlder()
+			}
+		})
+	case "time":
+		ui.Text(c, row.divider).FontSize(11).TextColor(theme.TextMuted).AlignSelf(ui.Center).Padding(6, 0, 2, 0)
+	case "partial":
+		ui.Column(c).MaxWidth(680).Children(func() {
+			markdown.Stream(c, a.snapshot.Partial, &a.markdown)
+		})
+	case "thinking":
+		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
+			ui.Spinner(c).Label("Working")
+			ui.Text(c, agent.Name+" is working…").FontSize(12).TextColor(theme.TextMuted)
+		})
+	case "error":
+		ui.Column(c).MaxWidth(560).Gap(8).Padding(12, 14).Radius(12).Background(theme.Danger.Alpha(0.1)).Children(func() {
+			ui.Text(c, "The agent couldn’t finish").FontSize(13).Bold()
+			ui.Text(c, a.snapshot.Error).FontSize(12).TextColor(theme.Danger).Selectable()
+			if ui.Button(c, "Provider settings").AlignSelf(ui.Start).Clicked() {
+				a.openSettings()
+			}
+		})
+	default:
+		a.messageView(c, row.message)
+	}
+}
+
+func (a *app) messageView(c *ui.Context, message Message) {
+	theme := c.Theme()
+	text := contentText(message.Content)
+	replyable := message.EntryID != "" && (message.Role == "user" || message.Role == "assistant")
+	menu := func(m *ui.Menu) {
+		if replyable && m.Item("Reply").Chosen() {
+			a.startReply(message)
+		}
+		if m.Item("Copy").Chosen() {
+			c.Services().WriteClipboard(text)
+		}
+	}
+	switch {
+	case message.Role == "event":
+		label := "Earlier messages summarized"
+		if message.Kind == "reset" {
+			label = "Context reset"
+		}
+		open := a.expanded[message.ID]
+		ui.Column(c).AlignSelf(ui.Center).MaxWidth(560).Gap(4).Children(func() {
+			if ui.Collapsible(c, label, &open, func() {
+				ui.Text(c, text).FontSize(12).TextColor(theme.TextMuted).Selectable()
+			}).Changed() {
+				a.setExpanded(message.ID, open)
+			}
+		})
+	case message.Role == "user":
+		row := ui.Row(c).Gap(6).AlignItems(ui.Center)
+		hovered := row.Hovered()
+		row.Children(func() {
+			ui.Spacer(c)
+			if hovered && replyable {
+				if iconButton(c, "reply", symbolReply, "Reply").Clicked() {
+					a.startReply(message)
+				}
+			}
+			ui.Column(c).MaxWidth(520).Gap(4).AlignItems(ui.End).Children(func() {
+				owner := message.Origin == nil || message.Origin.Kind == "owner"
+				if !owner {
+					ui.Text(c, messageLabel(message)).FontSize(11).TextColor(theme.TextMuted).Padding(0, 6)
+				}
+				a.replyQuote(c, message)
+				bubble := ui.Text(c, text).Selectable().FontSize(13).Padding(7, 12).Radius(16)
+				if owner {
+					bubble.Background(theme.Accent).TextColor(theme.AccentText)
+				} else {
+					bubble.Background(theme.Surface)
+				}
+				bubble.ContextMenu(menu)
+			})
+		})
+	case message.Role == "assistant":
+		row := ui.Row(c).Gap(6)
+		hovered := row.Hovered()
+		row.Children(func() {
+			ui.Column(c).MaxWidth(680).MinWidth(0).Shrink(1).Selectable().ContextMenu(menu).Children(func() {
+				markdown.View(c, text, &a.markdown)
+			})
+			if hovered && replyable {
+				if iconButton(c, "reply", symbolReply, "Reply").Clicked() {
+					a.startReply(message)
+				}
+			}
+		})
+	default:
+		open := a.expanded[message.ID]
+		ui.Column(c).MaxWidth(680).Children(func() {
+			if ui.Collapsible(c, "Tool result", &open, func() {
+				ui.Text(c, text).FontSize(12).Font("Menlo").TextColor(theme.TextMuted).Selectable()
+			}).Changed() {
+				a.setExpanded(message.ID, open)
+			}
 		})
 	}
-	if a.snapshot != nil {
+}
+
+func (a *app) setExpanded(id string, open bool) {
+	if a.expanded == nil {
+		a.expanded = map[string]bool{}
+	}
+	a.expanded[id] = open
+}
+
+func (a *app) replyQuote(c *ui.Context, message Message) {
+	if message.ReplyTo == "" {
+		return
+	}
+	quoted := message.ReplyPreview
+	for _, original := range a.messages {
+		if quoted == "" && original.EntryID == message.ReplyTo {
+			quoted = contentText(original.Content)
+		}
+	}
+	if quoted == "" {
+		return
+	}
+	theme := c.Theme()
+	ui.Row(c).Gap(8).Padding(5, 10).Radius(10).Background(theme.Surface).Children(func() {
+		ui.Box(c).Width(2).AlignSelf(ui.Stretch).Radius(1).Background(theme.Accent)
+		ui.Text(c, preview(quoted)).FontSize(12).TextColor(theme.TextMuted).MaxLines(2)
+	})
+}
+
+func (a *app) composer(c *ui.Context, agent Agent) {
+	theme := c.Theme()
+	if a.snapshot == nil {
+		return
+	}
+	ui.Column(c).Absolute().Left(20).Right(20).Bottom(14).Gap(6).Children(func() {
 		if a.replyTo != nil {
-			ui.Row(c).Padding(10, 24, 0, 24).Gap(8).AlignItems(ui.Center).Children(func() {
-				ui.Text(c, "Replying to: "+preview(contentText(a.replyTo.Content))).FontSize(12).TextColor(theme.TextMuted).Grow(1)
-				if ui.Button(c, "Cancel reply").Clicked() {
+			ui.Row(c).Gap(8).AlignItems(ui.Center).Padding(6, 6, 6, 12).Radius(12).Material(glass.Glass{}).Children(func() {
+				ui.Box(c).Width(2).Height(28).Radius(1).Background(theme.Accent)
+				ui.Column(c).Grow(1).MinWidth(0).Children(func() {
+					ui.Text(c, "Replying to "+messageLabel(*a.replyTo)).FontSize(11).Bold().TextColor(theme.Accent)
+					ui.Text(c, preview(contentText(a.replyTo.Content))).FontSize(12).TextColor(theme.TextMuted).SingleLine().Ellipsis("…")
+				})
+				if iconButton(c, "cancel-reply", symbolClose, "Cancel reply").Clicked() {
 					a.cancelReply()
 				}
 			})
 		}
-		ui.Row(c).Padding(16, 24).Gap(10).AlignItems(ui.Center).Children(func() {
-			input := ui.TextArea(c, &a.draft).Label("Message your agent").Placeholder("Message your agent…").Height(66).Grow(1).Disabled(a.sending)
+		// A pill-shaped field with a hairline border, as Messages draws its composer.
+		ui.Row(c).Padding(4, 4, 4, 14).Gap(6).AlignItems(ui.End).Radius(18).MinHeight(36).
+			Material(glass.Glass{}).BorderWidth(1).BorderColor(theme.Border).Children(func() {
+			input := ui.TextAreaBase(c, &a.draft).Lines(1, 8).Grow(1).Padding(5, 0).FontSize(13).
+				Label("Message your agent").Placeholder("Message " + agent.Name).Disabled(a.sending || !agent.Enabled)
+			if !agent.Enabled {
+				input.Placeholder(agent.Name + " is paused. Enable it in its profile.")
+			}
 			input.OnTextKey(func(k ui.TextKey) bool {
 				if k.Key != ui.KeyEnter || k.Mods != 0 {
 					return false
@@ -238,58 +511,30 @@ func (a *app) chatView(c *ui.Context) {
 				k.SetText(a.draft)
 				return true
 			})
-			if a.snapshot.Status == "running" {
-				if ui.Button(c, "Stop").Clicked() {
+			running := a.snapshot.Status == "running"
+			if !running && (strings.TrimSpace(a.draft) == "" || a.sending) {
+				return
+			}
+			label := "Send"
+			if running {
+				label = "Stop"
+			}
+			button := ui.ButtonBase(c.Key("send")).Size(26, 26).Radius(13).Center().Label(label).Tooltip(label).Background(theme.Accent)
+			button.Children(func() {
+				if running {
+					symbol(c, symbolStop, 10, theme.AccentText)
+				} else {
+					symbol(c, symbolSend, 12, theme.AccentText)
+				}
+			})
+			if button.Clicked() {
+				if running {
 					a.abortChat()
-				}
-			} else if ui.PrimaryButton(c, "Send").Disabled(a.sending || strings.TrimSpace(a.draft) == "").Clicked() {
-				a.sendMessage()
-			}
-		})
-	}
-}
-
-func (a *app) messageView(c *ui.Context, message Message) {
-	theme := c.Theme()
-	text := contentText(message.Content)
-	if text == "" || message.Role == "system" {
-		return
-	}
-	if message.Role == "event" {
-		label := "Older context summarized"
-		if message.Kind == "reset" {
-			label = "Context reset"
-		}
-		ui.Column(c).Key(message.ID).MaxWidth(700).Gap(4).Padding(10, 14).Radius(10).Background(theme.Surface).Children(func() {
-			ui.Text(c, label).FontSize(11).Bold().TextColor(theme.TextMuted)
-			ui.Text(c, text).Selectable().FontSize(12).TextColor(theme.TextMuted)
-		})
-		return
-	}
-	ui.Column(c).Key(message.ID).MaxWidth(700).Gap(6).Children(func() {
-		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-			ui.Text(c, messageLabel(message)).FontSize(11).Bold().TextColor(theme.TextMuted)
-			if message.EntryID != "" && (message.Role == "user" || message.Role == "assistant") {
-				reply := ui.ButtonBase(c).Label("Reply to this message").Padding(2, 6).Radius(6).Children(func() {
-					ui.Text(c, "Reply").FontSize(11).TextColor(theme.Accent)
-				})
-				if reply.Clicked() {
-					a.startReply(message)
+				} else {
+					a.sendMessage()
 				}
 			}
 		})
-		if message.ReplyTo != "" {
-			quoted := message.ReplyPreview
-			for _, original := range a.messages {
-				if original.EntryID == message.ReplyTo && quoted == "" {
-					quoted = contentText(original.Content)
-				}
-			}
-			if quoted != "" {
-				ui.Text(c, "↪ "+preview(quoted)).FontSize(12).TextColor(theme.TextMuted).Padding(4, 10).Radius(6).Background(theme.Surface)
-			}
-		}
-		ui.Text(c, text).Selectable().FontSize(14)
 	})
 }
 
@@ -307,239 +552,377 @@ func messageLabel(message Message) string {
 	return "You"
 }
 
+var markdownMarks = strings.NewReplacer("**", "", "__", "", "`", "", "# ", "", "> ", "")
+
 func preview(text string) string {
-	text = strings.Join(strings.Fields(text), " ")
+	text = strings.Join(strings.Fields(markdownMarks.Replace(text)), " ")
 	if runes := []rune(text); len(runes) > 120 {
 		return string(runes[:119]) + "…"
 	}
 	return text
 }
 
+// page lays out a settings-style page: a title row in the title bar and centered content.
+func (a *app) page(c *ui.Context, title string, actions func(), content func()) {
+	ui.Row(c).Height(titleBarHeight).Shrink(0).Padding(0, 20, 0, 32).Gap(8).AlignItems(ui.Center).DragWindow().Children(func() {
+		ui.Text(c, title).FontSize(15).Bold().Grow(1)
+		if actions != nil {
+			actions()
+		}
+	})
+	ui.Divider(c)
+	ui.Scroll(c).Grow(1).Children(func() {
+		ui.Row(c).Justify(ui.Center).Padding(24, 32, 40, 32).Children(func() {
+			ui.Column(c).Grow(1).MaxWidth(680).Gap(16).Children(func() {
+				if a.errorText != "" {
+					ui.Text(c, a.errorText).FontSize(12).TextColor(c.Theme().Danger).Selectable()
+				}
+				content()
+			})
+		})
+	})
+}
+
+// group is an inset list of rows on the surface color, as System Settings draws them.
+func group(c *ui.Context, rows int, row func(i int)) {
+	theme := c.Theme()
+	ui.Column(c).Radius(10).Background(theme.Surface).Clip().Children(func() {
+		for i := 0; i < rows; i++ {
+			if i > 0 {
+				ui.Box(c).Height(1).Margin(0, 0, 0, 14).Background(theme.Border)
+			}
+			row(i)
+		}
+	})
+}
+
+func emptyText(c *ui.Context, text string) {
+	ui.Text(c, text).TextColor(c.Theme().TextMuted).Padding(24, 0).AlignSelf(ui.Center)
+}
+
 func (a *app) settingsView(c *ui.Context) {
-	t := c.Theme()
-	ui.Scroll(c).Fill().Padding(28, 36).Children(func() {
-		ui.Text(c, "Connection & providers").FontSize(22).Bold()
-		ui.Text(c, "The token stays in the macOS Keychain; it is never written to the project.").TextColor(t.TextMuted).Margin(0, 0, 20, 0)
-		ui.TextInput(c, &a.serverURL).Label("Server URL").Width(520).Placeholder("http://127.0.0.1:7337")
-		ui.TextInput(c, &a.token).Label("Server token").Width(520).Password()
-		ui.Row(c).Gap(8).Margin(0, 16).Children(func() {
-			if ui.PrimaryButton(c, "Save connection").Clicked() {
-				a.saveSettings()
-			}
-			if ui.Button(c, "Back").Clicked() {
-
-				a.settings = false
-
-			}
+	theme := c.Theme()
+	a.page(c, "Settings", nil, func() {
+		ui.Text(c, "Server").FontSize(13).Bold()
+		ui.Form(c, func() {
+			ui.Field(c, "Server URL", func() { ui.TextInput(c, &a.serverURL).Width(380).Placeholder("http://127.0.0.1:7337") })
+			ui.Field(c, "Server token", func() { ui.TextInput(c, &a.token).Width(380).Password() }).
+				Description("Stored in the macOS Keychain; never written to the project.")
+			ui.Field(c, "", func() {
+				ui.Row(c).Children(func() {
+					if ui.PrimaryButton(c, "Save connection").Clicked() {
+						a.saveSettings()
+					}
+				})
+			})
 		})
 		ui.Divider(c)
-		ui.Text(c, "Provider API key").FontSize(16).Bold().Margin(0, 20, 8, 0)
-		ui.TextInput(c, &a.provider).Label("Provider").Width(240).Placeholder("openai")
-		ui.TextInput(c, &a.providerKey).Label("API key").Width(520).Password()
-		if ui.Button(c, "Save provider key").Clicked() {
-			a.saveProviderKey()
+		ui.Text(c, "Provider API keys").FontSize(13).Bold()
+		ui.Form(c, func() {
+			ui.Field(c, "Provider", func() {
+				if len(a.providers) > 0 {
+					names := make([]string, 0, len(a.providers))
+					for _, provider := range a.providers {
+						names = append(names, provider.Provider)
+					}
+					ui.Select(c, &a.provider, names).Width(240)
+				} else {
+					ui.TextInput(c, &a.provider).Width(240).Placeholder("openai")
+				}
+			})
+			ui.Field(c, "API key", func() { ui.TextInput(c, &a.providerKey).Width(380).Password() })
+			ui.Field(c, "", func() {
+				ui.Row(c).Gap(8).Children(func() {
+					if ui.PrimaryButton(c, "Save provider key").Clicked() {
+						a.saveProviderKey()
+					}
+					if ui.Button(c, "Remove key").Clicked() {
+						a.removeProviderKey()
+					}
+				})
+			})
+		})
+		var configured []string
+		for _, provider := range a.providers {
+			if provider.Configured {
+				configured = append(configured, provider.Provider)
+			}
+		}
+		if len(configured) > 0 {
+			ui.Text(c, "Configured: "+strings.Join(configured, ", ")).FontSize(12).TextColor(theme.TextMuted)
 		}
 	})
 }
 
 func (a *app) agentEditorView(c *ui.Context) {
-	ui.Scroll(c).Fill().Padding(28, 32).Children(func() {
-		ui.Column(c).Gap(14).Children(func() {
-			title := "Agent profile"
-			if a.newAgent {
-				title = "Create an agent"
+	theme := c.Theme()
+	title := "Agent profile"
+	if a.newAgent {
+		title = "Create an agent"
+	}
+	a.page(c, title, func() {
+		if ui.Button(c, "Cancel").Clicked() {
+			a.editor = false
+		}
+		label := "Save changes"
+		if a.newAgent {
+			label = "Create agent"
+		}
+		if ui.PrimaryButton(c, label).Disabled(a.loading).Clicked() {
+			a.saveAgentEditor()
+		}
+	}, func() {
+		ui.Row(c).Gap(16).AlignItems(ui.Center).Children(func() {
+			if svg, err := critterSVG(agentAvatarSeed(Agent{ID: a.selected, Avatar: a.editAvatar})); err == nil {
+				ui.Image(c, svg).Size(72, 72).Radius(20).Label("Agent avatar preview")
 			}
-			ui.Text(c, title).FontSize(23).Bold()
-			ui.TextInput(c, &a.editName).Label("Name").Width(500).Placeholder("Give your agent a name")
-			ui.TextInput(c, &a.editDescription).Label("Description").Width(600).Placeholder("What does this agent help with?")
-			ui.Row(c).Gap(12).Children(func() {
-				if avatar, err := critterSVG(agentAvatarSeed(Agent{ID: a.selected, Avatar: a.editAvatar})); err == nil {
-					ui.Image(c, avatar).Size(72, 72).Radius(18).Label("Agent avatar preview")
-				}
+			ui.Column(c).Gap(6).Children(func() {
+				ui.Text(c, "Avatar").FontSize(13).Bold()
 				if ui.Button(c, "New critter").Clicked() {
 					a.editAvatar = "critters:" + newRequestID()
 				}
-				ui.TextInput(c, &a.editFolder).Label("Folder").Width(250)
 			})
-			ui.Row(c).Gap(12).AlignItems(ui.End).Children(func() {
-				ui.Select(c, &a.editProvider, []string{"openai", "anthropic", "google"}).Label("Provider").Width(180)
-				ui.TextInput(c, &a.editModel).Label("Model").Width(300)
+		})
+		ui.Form(c, func() {
+			ui.Field(c, "Name", func() { ui.TextInput(c, &a.editName).Width(360).Placeholder("Give your agent a name") })
+			ui.Field(c, "Description", func() {
+				ui.TextInput(c, &a.editDescription).Width(420).Placeholder("What does this agent help with?")
 			})
-			ui.TextArea(c, &a.editInstructions).Label("Instructions").Width(620).Height(140)
-			ui.Checkbox(c, &a.editEnabled, "Agent enabled")
-			ui.Divider(c)
-			ui.Text(c, "Capabilities").FontSize(16).Bold()
-			ui.Checkbox(c, &a.toolsMemory, "Read and manage its own memory")
-			ui.Checkbox(c, &a.toolsDelegate, "Delegate bounded tasks to selected agents")
-			if a.toolsDelegate {
-				for _, agent := range a.agents {
-					if agent.ID == a.selected {
-						continue
-					}
-					enabled := a.editDelegates[agent.ID]
-					if ui.Checkbox(c, &enabled, agent.Name).Changed() {
-						a.editDelegates[agent.ID] = enabled
-					}
+			ui.Field(c, "Folder", func() { ui.TextInput(c, &a.editFolder).Width(240) })
+			ui.Field(c, "Provider", func() {
+				if ui.Select(c, &a.editProvider, a.providerChoices()).Width(220).Changed() {
+					a.models = nil
+					a.loadModels(a.editProvider)
 				}
-			}
-			ui.Text(c, "Integrations").FontSize(16).Bold()
-			if len(a.mcpServers) == 0 {
-				ui.Text(c, "Add an MCP server in Integrations to make its tools available here.").TextColor(c.Theme().TextMuted)
-			}
-			for _, server := range a.mcpServers {
-				enabled := a.editMCP[server.ID]
-				if ui.Checkbox(c, &enabled, server.Name).Disabled(!server.Enabled).Changed() {
-					a.editMCP[server.ID] = enabled
+			})
+			ui.Field(c, "Model", func() {
+				ids := make([]string, 0, len(a.models))
+				for _, model := range a.models {
+					ids = append(ids, model.ID)
 				}
-			}
-			ui.Text(c, "Skills").FontSize(16).Bold()
-			ui.Text(c, "Reusable instructions your agent follows when working.").TextColor(c.Theme().TextMuted)
-			for i := range a.editSkills {
-				index := i
-				ui.Column(c).Key(fmt.Sprintf("skill-%d", i)).Gap(8).Padding(12).Radius(10).Background(c.Theme().Surface).Children(func() {
-					ui.TextInput(c, &a.editSkills[index].Name).Label("Skill name").Width(500)
-					ui.TextArea(c, &a.editSkills[index].Instructions).Label("Skill instructions").Width(600).Height(100)
-					if ui.Button(c, "Remove skill").Clicked() {
-						a.editSkills = append(a.editSkills[:index], a.editSkills[index+1:]...)
+				ui.Autocomplete(c, &a.editModel, ids).Width(320).Placeholder("Model ID")
+			}).Description(a.modelHint())
+			ui.Field(c, "Instructions", func() { ui.TextArea(c, &a.editInstructions).Width(420).Lines(5, 14) })
+			ui.Field(c, "Enabled", func() { ui.Switch(c, &a.editEnabled).Label("Agent enabled") })
+			ui.Fieldset(c, "Capabilities", func() {
+				ui.Field(c, "Memory", func() { ui.Checkbox(c, &a.toolsMemory, "Read and manage its own memory") })
+				ui.Field(c, "Delegation", func() {
+					ui.Column(c).Gap(6).Children(func() {
+						ui.Checkbox(c, &a.toolsDelegate, "Delegate bounded tasks to selected agents")
+						if a.toolsDelegate {
+							for _, agent := range a.agents {
+								if agent.ID == a.selected {
+									continue
+								}
+								enabled := a.editDelegates[agent.ID]
+								if ui.Checkbox(c.Key(agent.ID), &enabled, agent.Name).Margin(0, 0, 0, 22).Changed() {
+									a.editDelegates[agent.ID] = enabled
+								}
+							}
+						}
+					})
+				})
+			})
+			ui.Field(c, "Integrations", func() {
+				ui.Column(c).Gap(6).Children(func() {
+					if len(a.mcpServers) == 0 {
+						ui.Text(c, "Add an MCP server in Integrations to make its tools available here.").FontSize(12).TextColor(theme.TextMuted)
+					}
+					for _, server := range a.mcpServers {
+						enabled := a.editMCP[server.ID]
+						if ui.Checkbox(c.Key(server.ID), &enabled, server.Name).Disabled(!server.Enabled).Changed() {
+							a.editMCP[server.ID] = enabled
+						}
 					}
 				})
-			}
+			})
+		})
+		ui.Divider(c)
+		ui.Row(c).AlignItems(ui.Center).Children(func() {
+			ui.Column(c).Grow(1).Children(func() {
+				ui.Text(c, "Skills").FontSize(13).Bold()
+				ui.Text(c, "Reusable instructions your agent follows when working.").FontSize(12).TextColor(theme.TextMuted)
+			})
 			if ui.Button(c, "Add skill").Clicked() {
 				a.editSkills = append(a.editSkills, Skill{})
 			}
-			ui.Row(c).Gap(8).Padding(8, 0).Children(func() {
-				label := "Save changes"
-				if a.newAgent {
-					label = "Create agent"
-				}
-				if ui.PrimaryButton(c, label).Disabled(a.loading).Clicked() {
-					a.saveAgentEditor()
-				}
-				if ui.Button(c, "Cancel").Clicked() {
-					a.editor = false
-				}
-				if !a.newAgent {
-					if ui.Button(c, "Duplicate").Clicked() {
-						a.duplicateSelected()
+		})
+		for i := range a.editSkills {
+			index := i
+			ui.Column(c).Key(fmt.Sprintf("skill-%d", i)).Gap(8).Padding(14).Radius(10).Background(theme.Surface).Children(func() {
+				ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
+					ui.TextInput(c, &a.editSkills[index].Name).Label("Skill name").Placeholder("Skill name").Grow(1)
+					if iconButton(c, "remove", symbolClose, "Remove skill").Clicked() {
+						a.editSkills = append(a.editSkills[:index], a.editSkills[index+1:]...)
 					}
-					if ui.Button(c, "Delete agent").Clicked() {
-						a.deleteSelected()
-					}
+				})
+				if index < len(a.editSkills) {
+					ui.TextArea(c, &a.editSkills[index].Instructions).Label("Skill instructions").Placeholder("Instructions").Lines(3, 10)
 				}
 			})
+		}
+		if !a.newAgent {
+			ui.Divider(c)
+			ui.Row(c).Gap(8).Children(func() {
+				if ui.Button(c, "Duplicate").Clicked() {
+					a.duplicateSelected()
+				}
+				ui.Spacer(c)
+				if ui.Button(c, "Delete agent").TextColor(theme.Danger).Clicked() {
+					a.deleteSelected()
+				}
+			})
+		}
+	})
+}
+
+// providerChoices lists the server's providers, configured ones first, keeping the current choice.
+func (a *app) providerChoices() []string {
+	var configured, others []string
+	for _, provider := range a.providers {
+		if provider.Configured {
+			configured = append(configured, provider.Provider)
+		} else {
+			others = append(others, provider.Provider)
+		}
+	}
+	choices := append(configured, others...)
+	for _, choice := range choices {
+		if choice == a.editProvider {
+			return choices
+		}
+	}
+	return append([]string{a.editProvider}, choices...)
+}
+
+func (a *app) modelHint() string {
+	for _, provider := range a.providers {
+		if provider.Provider == a.editProvider && !provider.Configured {
+			return "Add an API key for this provider in Settings to load its models."
+		}
+	}
+	if len(a.models) == 0 {
+		return "Type a model ID."
+	}
+	return fmt.Sprintf("%d models available.", len(a.models))
+}
+
+func formActions(c *ui.Context, save string, onSave, onCancel func()) {
+	ui.Field(c, "", func() {
+		ui.Row(c).Gap(8).Children(func() {
+			if ui.PrimaryButton(c, save).Clicked() {
+				onSave()
+			}
+			if ui.Button(c, "Cancel").Clicked() {
+				onCancel()
+			}
 		})
 	})
 }
 
 func (a *app) memoryFormView(c *ui.Context) {
-	ui.Text(c, "Memory entry").FontSize(18).Bold()
-	ui.TextArea(c, &a.memoryContent).Label("Content").Width(620).Height(150)
-	ui.Row(c).Gap(8).Children(func() {
-		if ui.PrimaryButton(c, "Save memory").Clicked() {
-			a.saveMemory()
-		}
-		if ui.Button(c, "Cancel").Clicked() {
-
-			a.memoryForm = false
-
-		}
+	ui.Text(c, "Memory entry").FontSize(13).Bold()
+	ui.Form(c, func() {
+		ui.Field(c, "Content", func() { ui.TextArea(c, &a.memoryContent).Width(460).Lines(5, 14) })
+		formActions(c, "Save memory", a.saveMemory, func() { a.memoryForm = false })
 	})
 }
 
 func (a *app) taskFormView(c *ui.Context) {
-	ui.Text(c, "Task").FontSize(18).Bold()
-	ui.TextInput(c, &a.taskName).Label("Name").Width(560)
-	ui.TextArea(c, &a.taskPrompt).Label("Prompt").Width(620).Height(140)
-	ui.TextInput(c, &a.taskCron).Label("Recurring cron (optional)").Width(420).Placeholder("0 9 * * 1-5")
-	ui.TextInput(c, &a.taskRunAt).Label("One-time run at (optional ISO-8601)").Width(560).Placeholder("2026-10-18T09:00:00Z")
-	ui.TextInput(c, &a.taskTimezone).Label("Timezone").Width(240)
-	ui.Checkbox(c, &a.taskEnabled, "Enabled")
-	ui.Row(c).Gap(8).Children(func() {
-		if ui.PrimaryButton(c, "Save task").Clicked() {
-			a.saveTask()
-		}
-		if ui.Button(c, "Cancel").Clicked() {
-
-			a.taskForm = false
-
-		}
+	ui.Text(c, "Task").FontSize(13).Bold()
+	ui.Form(c, func() {
+		ui.Field(c, "Name", func() { ui.TextInput(c, &a.taskName).Width(380) })
+		ui.Field(c, "Prompt", func() { ui.TextArea(c, &a.taskPrompt).Width(460).Lines(4, 12) })
+		ui.Field(c, "Repeat", func() { ui.TextInput(c, &a.taskCron).Width(240).Placeholder("0 9 * * 1-5") }).
+			Description("A cron expression. Leave empty for a one-time task.")
+		ui.Field(c, "Run once at", func() { ui.TextInput(c, &a.taskRunAt).Width(300).Placeholder("2026-10-18T09:00:00Z") })
+		ui.Field(c, "Time zone", func() { ui.TextInput(c, &a.taskTimezone).Width(240) })
+		ui.Field(c, "Enabled", func() { ui.Switch(c, &a.taskEnabled).Label("Enabled") })
+		formActions(c, "Save task", a.saveTask, func() { a.taskForm = false })
 	})
 }
 
 func (a *app) mcpFormView(c *ui.Context) {
-	ui.Text(c, "MCP server").FontSize(18).Bold()
-	ui.TextInput(c, &a.mcpName).Label("Name").Width(520)
-	ui.TextInput(c, &a.mcpURL).Label("HTTP URL").Width(620)
-	ui.TextInput(c, &a.mcpToken).Label("Token (optional)").Password().Width(520)
-	ui.Checkbox(c, &a.mcpEnabled, "Enabled")
-	ui.Row(c).Gap(8).Children(func() {
-		if ui.PrimaryButton(c, "Save server").Clicked() {
-			a.saveMCP()
-		}
-		if ui.Button(c, "Cancel").Clicked() {
-
-			a.mcpForm = false
-
-		}
+	ui.Text(c, "MCP server").FontSize(13).Bold()
+	ui.Form(c, func() {
+		ui.Field(c, "Name", func() { ui.TextInput(c, &a.mcpName).Width(340) })
+		ui.Field(c, "HTTP URL", func() { ui.TextInput(c, &a.mcpURL).Width(420) })
+		ui.Field(c, "Token", func() { ui.TextInput(c, &a.mcpToken).Password().Width(340).Placeholder("Optional") })
+		ui.Field(c, "Enabled", func() { ui.Switch(c, &a.mcpEnabled).Label("Enabled") })
+		formActions(c, "Save server", a.saveMCP, func() { a.mcpForm = false })
 	})
 }
 
+var panelTitles = map[string]string{"memory": "Memory", "tasks": "Tasks", "activity": "Activity", "approvals": "Approvals", "mcp": "Integrations"}
+
 func (a *app) panelView(c *ui.Context, panel string) {
-	ui.Scroll(c).Fill().Padding(28, 32).Children(func() {
-		ui.Column(c).Gap(14).Children(func() {
-			ui.Row(c).Gap(8).Children(func() {
-				if ui.Button(c, "Back to chat").Clicked() {
-					a.panel = ""
-					a.navigation = "agent:" + a.selected
-				}
-				if ui.Button(c, "Refresh").Clicked() {
-					a.openPanel(panel)
-				}
-			})
-			switch panel {
-			case "memory":
-				ui.Text(c, "Memory").FontSize(23).Bold()
-				if a.selected == "" {
-					ui.Text(c, "Select an agent to see its memory.")
-					return
-				}
-				if a.memoryForm {
-					a.memoryFormView(c)
-					return
-				}
-				if ui.PrimaryButton(c, "New memory").Clicked() {
-					a.openMemoryForm("")
-				}
-				if len(a.memories) == 0 {
-					ui.Text(c, "No memories saved yet.").TextColor(c.Theme().TextMuted)
-				}
-				for _, memory := range a.memories {
-					ui.Row(c).Key(memory.ID).Gap(8).Padding(10, 0).Children(func() {
-						ui.Text(c, memory.Content).Selectable().Grow(1)
+	theme := c.Theme()
+	actions := func() {
+		switch {
+		case panel == "memory" && a.selected != "" && !a.memoryForm:
+			if iconButton(c, "new-memory", symbolPlus, "New memory").Clicked() {
+				a.openMemoryForm("")
+			}
+		case panel == "tasks" && !a.taskForm:
+			if iconButton(c, "new-task", symbolPlus, "New task").Disabled(a.selected == "").Clicked() {
+				a.openTaskForm("")
+			}
+		case panel == "mcp" && !a.mcpForm:
+			if iconButton(c, "new-mcp", symbolPlus, "Add MCP server").Clicked() {
+				a.openMCPForm("")
+			}
+		}
+		if ui.Button(c, "Refresh").Clicked() {
+			a.openPanel(panel)
+		}
+	}
+	a.page(c, panelTitles[panel], actions, func() {
+		switch panel {
+		case "memory":
+			if a.selected == "" {
+				emptyText(c, "Select an agent to see its memory.")
+				return
+			}
+			if a.memoryForm {
+				a.memoryFormView(c)
+				return
+			}
+			if agent, ok := a.selectedAgent(); ok {
+				ui.Text(c, "What "+agent.Name+" remembers between chats.").FontSize(12).TextColor(theme.TextMuted)
+			}
+			if len(a.memories) == 0 {
+				emptyText(c, "No memories saved yet.")
+				return
+			}
+			group(c, len(a.memories), func(i int) {
+				memory := a.memories[i]
+				ui.Row(c).Key(memory.ID).Gap(8).Padding(10, 10, 10, 14).AlignItems(ui.Center).Children(func() {
+					ui.Text(c, memory.Content).Selectable().Grow(1).FontSize(13)
+					ui.Toolbar(c, func() {
 						if ui.Button(c, "Edit").Clicked() {
 							a.openMemoryForm(memory.ID)
 						}
 						if ui.Button(c, "Delete").Clicked() {
 							a.deleteMemory(memory.ID)
 						}
-					})
-				}
-			case "tasks":
-				ui.Text(c, "Tasks").FontSize(23).Bold()
-				if a.taskForm {
-					a.taskFormView(c)
-					return
-				}
-				if ui.PrimaryButton(c, "New task").Disabled(a.selected == "").Clicked() {
-					a.openTaskForm("")
-				}
-				if len(a.schedules) == 0 {
-					ui.Text(c, "Give an agent a task to run once or on a schedule.").TextColor(c.Theme().TextMuted)
-				}
-				for _, schedule := range a.schedules {
-					ui.Column(c).Key(schedule.ID).Gap(6).Padding(12).Radius(10).Background(c.Theme().Surface).Children(func() {
-						ui.Text(c, schedule.Name).Bold()
-						ui.Text(c, schedule.Prompt).MaxWidth(620)
+					}).Label("Memory actions")
+				})
+			})
+		case "tasks":
+			if a.taskForm {
+				a.taskFormView(c)
+				return
+			}
+			if len(a.schedules) == 0 {
+				emptyText(c, "Give an agent a task to run once or on a schedule.")
+				return
+			}
+			group(c, len(a.schedules), func(i int) {
+				schedule := a.schedules[i]
+				ui.Row(c).Key(schedule.ID).Gap(8).Padding(10, 10, 10, 14).AlignItems(ui.Center).Children(func() {
+					ui.Column(c).Grow(1).MinWidth(0).Gap(2).Children(func() {
+						ui.Text(c, schedule.Name).FontSize(13).Bold()
+						ui.Text(c, schedule.Prompt).FontSize(12).MaxLines(2).Ellipsis("…")
 						timing := schedule.RunAt
 						if schedule.Cron != "" {
 							timing = schedule.Cron + " · " + schedule.Timezone
@@ -547,87 +930,111 @@ func (a *app) panelView(c *ui.Context, panel string) {
 						if !schedule.Enabled {
 							timing = "Paused · " + timing
 						}
-						ui.Text(c, timing).FontSize(12).TextColor(c.Theme().TextMuted)
-						ui.Row(c).Gap(8).Children(func() {
-							if ui.Button(c, "Edit").Clicked() {
-								a.openTaskForm(schedule.ID)
-							}
-							if ui.Button(c, "Run now").Disabled(!schedule.Enabled).Clicked() {
-								a.runSchedule(schedule.ID)
-							}
-							if ui.Button(c, "Delete").Clicked() {
-								a.deleteSchedule(schedule.ID)
-							}
-						})
+						ui.Text(c, timing).FontSize(11).TextColor(theme.TextMuted)
 					})
-				}
-			case "activity":
-				ui.Text(c, "Activity").FontSize(23).Bold()
-				if len(a.executions) == 0 {
-					ui.Text(c, "Work from chats and tasks will appear here.").TextColor(c.Theme().TextMuted)
-				}
-				for _, execution := range a.executions {
-					ui.Column(c).Key(execution.ID).Gap(6).Padding(12).Radius(10).Background(c.Theme().Surface).Children(func() {
-						ui.Text(c, execution.Status+" · "+execution.CreatedAt).FontSize(12).TextColor(c.Theme().TextMuted)
-						ui.Text(c, execution.Prompt).MaxWidth(620)
-						if execution.Error != "" {
-							ui.Text(c, execution.Error).TextColor(c.Theme().Danger).Selectable()
+					ui.Toolbar(c, func() {
+						if ui.Button(c, "Run now").Disabled(!schedule.Enabled).Clicked() {
+							a.runSchedule(schedule.ID)
 						}
+						if ui.Button(c, "Edit").Clicked() {
+							a.openTaskForm(schedule.ID)
+						}
+						if ui.Button(c, "Delete").Clicked() {
+							a.deleteSchedule(schedule.ID)
+						}
+					}).Label("Task actions")
+				})
+			})
+		case "activity":
+			if len(a.executions) == 0 {
+				emptyText(c, "Work from chats and tasks will appear here.")
+				return
+			}
+			group(c, len(a.executions), func(i int) {
+				execution := a.executions[i]
+				ui.Row(c).Key(execution.ID).Gap(8).Padding(10, 10, 10, 14).AlignItems(ui.Center).Children(func() {
+					ui.Column(c).Grow(1).MinWidth(0).Gap(2).Children(func() {
+						ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
+							ui.Badge(c, execution.Status)
+							ui.Text(c, activityTime(execution.CreatedAt)).FontSize(11).TextColor(theme.TextMuted)
+						})
+						ui.Text(c, execution.Prompt).FontSize(13).MaxLines(2).Ellipsis("…")
+						if execution.Error != "" {
+							ui.Text(c, execution.Error).FontSize(12).TextColor(theme.Danger).Selectable()
+						}
+					})
+					ui.Toolbar(c, func() {
 						if ui.Button(c, "Open chat").Clicked() {
 							a.selectAgent(execution.AgentID)
 						}
-					})
-				}
-			case "approvals":
-				ui.Text(c, "Approvals").FontSize(23).Bold()
-				pending := 0
-				for _, approval := range a.approvals {
-					if approval.Status != "pending" {
-						continue
-					}
-					pending++
-					ui.Column(c).Key(approval.ID).Gap(8).Padding(14).Radius(10).Background(c.Theme().Surface).Children(func() {
-						ui.Text(c, approval.ToolName).Bold()
-						encoded, _ := json.MarshalIndent(approval.Arguments, "", "  ")
-						ui.Text(c, string(encoded)).Selectable().MaxWidth(620)
-						ui.Row(c).Gap(8).Children(func() {
-							if ui.PrimaryButton(c, "Approve once").Clicked() {
-								a.decideApproval(approval.ID, "approved")
-							}
-							if ui.Button(c, "Deny").Clicked() {
-								a.decideApproval(approval.ID, "denied")
-							}
-						})
-					})
-				}
-				if pending == 0 {
-					ui.Text(c, "No actions need your approval.").TextColor(c.Theme().TextMuted)
-				}
-			case "mcp":
-				ui.Text(c, "Integrations").FontSize(23).Bold()
-				ui.Text(c, "Connect an MCP server, then enable it for individual agents in their profiles.").TextColor(c.Theme().TextMuted)
-				if a.mcpForm {
-					a.mcpFormView(c)
-					return
-				}
-				if ui.PrimaryButton(c, "Add MCP server").Clicked() {
-					a.openMCPForm("")
-				}
-				for _, server := range a.mcpServers {
-					ui.Column(c).Key(server.ID).Gap(6).Padding(12).Radius(10).Background(c.Theme().Surface).Children(func() {
-						ui.Text(c, server.Name).Bold()
-						ui.Text(c, server.URL).TextColor(c.Theme().TextMuted)
-						ui.Row(c).Gap(8).Children(func() {
-							if ui.Button(c, "Edit").Clicked() {
-								a.openMCPForm(server.ID)
-							}
-							if ui.Button(c, "Delete").Clicked() {
-								a.deleteMCP(server.ID)
-							}
-						})
-					})
+					}).Label("Activity actions")
+				})
+			})
+		case "approvals":
+			var pending []Approval
+			for _, approval := range a.approvals {
+				if approval.Status == "pending" {
+					pending = append(pending, approval)
 				}
 			}
-		})
+			if len(pending) == 0 {
+				emptyText(c, "No actions need your approval.")
+				return
+			}
+			group(c, len(pending), func(i int) {
+				approval := pending[i]
+				ui.Column(c).Key(approval.ID).Gap(8).Padding(12, 14).Children(func() {
+					ui.Text(c, approval.ToolName).FontSize(13).Bold()
+					encoded, _ := json.MarshalIndent(approval.Arguments, "", "  ")
+					ui.Text(c, string(encoded)).FontSize(12).Font("Menlo").TextColor(theme.TextMuted).Selectable()
+					ui.Row(c).Gap(8).Children(func() {
+						if ui.PrimaryButton(c, "Approve once").Clicked() {
+							a.decideApproval(approval.ID, "approved")
+						}
+						if ui.Button(c, "Deny").Clicked() {
+							a.decideApproval(approval.ID, "denied")
+						}
+					})
+				})
+			})
+		case "mcp":
+			if a.mcpForm {
+				a.mcpFormView(c)
+				return
+			}
+			ui.Text(c, "Connect an MCP server, then enable it for individual agents in their profiles.").FontSize(12).TextColor(theme.TextMuted)
+			if len(a.mcpServers) == 0 {
+				emptyText(c, "No MCP servers yet.")
+				return
+			}
+			group(c, len(a.mcpServers), func(i int) {
+				server := a.mcpServers[i]
+				ui.Row(c).Key(server.ID).Gap(8).Padding(10, 10, 10, 14).AlignItems(ui.Center).Children(func() {
+					ui.Column(c).Grow(1).MinWidth(0).Gap(2).Children(func() {
+						ui.Text(c, server.Name).FontSize(13).Bold()
+						ui.Text(c, server.URL).FontSize(12).TextColor(theme.TextMuted).SingleLine().Ellipsis("…")
+					})
+					if !server.Enabled {
+						ui.Badge(c, "Disabled")
+					}
+					ui.Toolbar(c, func() {
+						if ui.Button(c, "Edit").Clicked() {
+							a.openMCPForm(server.ID)
+						}
+						if ui.Button(c, "Delete").Clicked() {
+							a.deleteMCP(server.ID)
+						}
+					}).Label("Server actions")
+				})
+			})
+		}
 	})
+}
+
+func activityTime(value string) string {
+	at, err := time.Parse(time.RFC3339Nano, value)
+	if err != nil {
+		return value
+	}
+	return timeLabel(at.Local())
 }

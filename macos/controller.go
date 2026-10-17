@@ -90,7 +90,6 @@ func (a *app) refresh() {
 		agents, err := client.Agents(ctx)
 		return func() {
 			a.agents = agents
-			a.notice = "Connected"
 			chosen := a.selected
 			exists := false
 			for _, agent := range agents {
@@ -348,8 +347,8 @@ func (a *app) createAgent() {
 	a.editName = ""
 	a.editDescription = ""
 	a.editInstructions = "You are a thoughtful, capable personal assistant."
-	a.editModel = "gpt-4.1"
-	a.editProvider = "openai"
+	a.editModel = ""
+	a.editProvider = "melious"
 	a.editThinking = "off"
 	a.editTemperature = ""
 	a.editMaxOutput = ""
@@ -786,6 +785,9 @@ func (a *app) loadModels(provider string) {
 		return func() {
 			if a.editProvider == provider {
 				a.models = models
+				if a.editModel == "" && len(models) > 0 {
+					a.editModel = models[0].ID
+				}
 			}
 		}, err
 	})

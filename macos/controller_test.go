@@ -58,17 +58,19 @@ func TestControllerChatStreamRendersSnapshotOnUIQueue(t *testing.T) {
 	}))
 	defer srv.Close()
 	q := &dispatchQueue{}
-	a := &app{client: NewAPIClient(srv.URL, ""), dispatch: q.push}
+	a := &app{client: NewAPIClient(srv.URL, ""), dispatch: q.push, agents: []Agent{{ID: "a1", Name: "Atlas", Enabled: true}}}
+	defer a.cancelStream()
 	a.selectAgent("a1")
 	waitDispatch(t, q) // chat response; this starts the SSE worker.
 	waitDispatch(t, q) // SSE snapshot callback.
 	if a.snapshot == nil || a.snapshot.Error != "provider failed" {
 		t.Fatalf("snapshot=%+v", a.snapshot)
 	}
-	if !ui.NewTester(a.view, 1120, 760).HasText("hello from stream") {
-		t.Fatalf("view texts did not contain stream message")
+	tester := ui.NewTester(a.view, 1120, 760)
+	tester.Frame() // the chat list measures its rows before building them
+	if !tester.HasText("hello from stream") {
+		t.Fatalf("view texts did not contain stream message: %v", tester.Texts())
 	}
-	a.cancelStream()
 }
 
 func TestControllerIgnoresStaleChatAfterAgentSwitch(t *testing.T) {
@@ -174,7 +176,10 @@ func TestControllerKeepsLoadedHistoryAcrossSnapshots(t *testing.T) {
 	if strings.Join(got, ",") != "oldest,older,newer,newest" || a.hasMore {
 		t.Fatalf("messages=%v hasMore=%v", got, a.hasMore)
 	}
+	a.agents = []Agent{{ID: "a1", Name: "Atlas", Enabled: true}}
+	a.snapshot = &ChatSnapshot{AgentID: "a1"}
 	tester := ui.NewTester(a.view, 1120, 760)
+	tester.Frame()
 	if !tester.HasText("oldest") || tester.HasText("Load earlier messages") {
 		t.Fatal("history view did not render loaded page")
 	}
