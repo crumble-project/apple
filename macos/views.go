@@ -198,7 +198,7 @@ func (a *app) chatRows() []chatRow {
 	}
 	var last int64
 	for _, message := range a.messages {
-		if contentText(message.Content) == "" || message.Role == "system" {
+		if !shownInChat(message) {
 			continue
 		}
 		if message.Timestamp > 0 && message.Timestamp-last > int64(30*time.Minute/time.Millisecond) {
@@ -221,6 +221,28 @@ func (a *app) chatRows() []chatRow {
 		}
 	}
 	return rows
+}
+
+// shownInChat keeps the conversation itself: owner and agent text and context events,
+// not thinking, tool calls, or tool results.
+func shownInChat(message Message) bool {
+	switch message.Role {
+	case "user", "event":
+		return contentText(message.Content) != ""
+	case "assistant":
+		blocks, ok := message.Blocks.([]any)
+		if !ok {
+			return contentText(message.Blocks) != ""
+		}
+		for _, block := range blocks {
+			if object, ok := block.(map[string]any); ok && object["type"] == "text" {
+				if text, _ := object["text"].(string); strings.TrimSpace(text) != "" {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 func timeLabel(at time.Time) string {
@@ -352,7 +374,7 @@ func (a *app) chatRowView(c *ui.Context, agent Agent, row chatRow) {
 	case "time":
 		ui.Text(c, row.divider).FontSize(11).TextColor(theme.TextMuted).AlignSelf(ui.Center).Padding(6, 0, 2, 0)
 	case "partial":
-		ui.Column(c).MaxWidth(680).Children(func() {
+		agentBubble(c).Children(func() {
 			markdown.Stream(c, a.snapshot.Partial, &a.markdown)
 		})
 	case "thinking":
@@ -428,7 +450,7 @@ func (a *app) messageView(c *ui.Context, message Message) {
 		row := ui.Row(c).Gap(6)
 		hovered := row.Hovered()
 		row.Children(func() {
-			ui.Column(c).MaxWidth(680).MinWidth(0).Shrink(1).Selectable().ContextMenu(menu).Children(func() {
+			agentBubble(c).Selectable().ContextMenu(menu).Children(func() {
 				markdown.View(c, text, &a.markdown)
 			})
 			if hovered && replyable {
@@ -437,16 +459,12 @@ func (a *app) messageView(c *ui.Context, message Message) {
 				}
 			}
 		})
-	default:
-		open := a.expanded[message.ID]
-		ui.Column(c).MaxWidth(680).Children(func() {
-			if ui.Collapsible(c, "Tool result", &open, func() {
-				ui.Text(c, text).FontSize(12).Font("Menlo").TextColor(theme.TextMuted).Selectable()
-			}).Changed() {
-				a.setExpanded(message.ID, open)
-			}
-		})
 	}
+}
+
+// agentBubble is the gray bubble agent replies sit in, opposite the owner's blue ones.
+func agentBubble(c *ui.Context) ui.Element {
+	return ui.Column(c).MaxWidth(560).MinWidth(0).Shrink(1).Padding(7, 12).Radius(16).Background(c.Theme().Surface)
 }
 
 func (a *app) setExpanded(id string, open bool) {
