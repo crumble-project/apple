@@ -1,0 +1,6 @@
+{
+  "name": "Crumble",
+  "identifier": "dev.crumble.desktop",
+  "version": "0.1.0",
+  "out": "build"
+}
