@@ -18,13 +18,17 @@ type app struct {
 	notice           string
 	newAgent         bool
 	editProvider     string
+	editThinking     string
+	editTemperature  string
+	editMaxOutput    string
+	providers        []ProviderStatus
+	models           []ModelSummary
 	editAvatar       string
 	editFolder       string
 	editMCP          map[string]bool
 	editDelegates    map[string]bool
 	editSkills       []Skill
 	toolsDelegate    bool
-	chatTitle        string
 	navigation       string
 	draftRequestID   string
 	failedDraft      string
@@ -32,9 +36,13 @@ type app struct {
 	win              *mygo.Window
 	agents           []Agent
 	selected         string
-	conversations    []Conversation
-	conversationID   string
-	snapshot         *ConversationSnapshot
+	snapshot         *ChatSnapshot
+	messages         []Message
+	hasMore          bool
+	oldestEntryID    string
+	loadingOlder     bool
+	replyTo          *Message
+	failedReplyTo    string
 	draft            string
 	loading          bool
 	errorText        string
@@ -95,6 +103,7 @@ func main() {
 		}
 		a.client = NewAPIClient(a.serverURL, a.token)
 		a.win = mygo.NewWindow(mygo.WindowOptions{Title: "Crumble", Width: 1120, Height: 760, MinWidth: 860, MinHeight: 560, StateKey: "main", TitleBarStyle: mygo.TitleBarHiddenInset, TitleBarHeight: 52, Vibrancy: mygo.VibrancySidebar, Content: ui.View(a.view)})
+		a.win.OnClosed(func() { a.cancelStream() })
 		a.refresh()
 	})
 	if err := mygo.App.Run(); err != nil {

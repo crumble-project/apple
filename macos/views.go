@@ -72,13 +72,6 @@ func (a *app) view(c *ui.Context) {
 						ui.Text(c, "No agents yet").TextColor(theme.TextMuted).Padding(8)
 					}
 				})
-				if a.selected != "" && len(a.conversations) > 0 {
-					ui.SidebarSection(c, "Conversations", nil, func() {
-						for _, conversation := range a.conversations {
-							ui.SidebarItem(c, "chat:"+conversation.ID, nil, conversation.Title)
-						}
-					})
-				}
 				ui.SidebarSection(c, "Workspace", nil, func() {
 					ui.SidebarItem(c, "memory", nil, "Memory")
 					ui.SidebarItem(c, "tasks", nil, "Tasks")
@@ -95,8 +88,6 @@ func (a *app) view(c *ui.Context) {
 				switch {
 				case strings.HasPrefix(a.navigation, "agent:"):
 					a.selectAgent(strings.TrimPrefix(a.navigation, "agent:"))
-				case strings.HasPrefix(a.navigation, "chat:"):
-					a.selectConversation(strings.TrimPrefix(a.navigation, "chat:"))
 				case a.navigation == "settings":
 					a.settings = true
 					a.editor = false
@@ -135,11 +126,7 @@ func (a *app) view(c *ui.Context) {
 		})
 	})
 	if c.Shortcut(ui.Cmd, ui.KeyN) {
-		if a.selected != "" {
-			a.newConversation()
-		} else {
-			a.createAgent()
-		}
+		a.createAgent()
 	}
 	if c.Shortcut(ui.Cmd, ui.KeyComma) {
 		a.settings = true
@@ -167,34 +154,25 @@ func (a *app) chatView(c *ui.Context) {
 		}
 		ui.Text(c, title).FontSize(16).Bold().Grow(1)
 		if a.selected != "" {
+			if a.snapshot != nil && len(a.messages) > 0 {
+				if ui.Button(c, "Compact").Tooltip("Summarize older context. The full chat stays visible.").Disabled(a.loading).Clicked() {
+					a.compactChat()
+				}
+			}
 			if ui.Button(c, "Profile").Clicked() {
 				a.openEditor()
-			}
-			if ui.Button(c, "New chat").Tooltip("New conversation · ⌘N").Clicked() {
-				a.newConversation()
 			}
 		}
 	})
 	ui.Divider(c)
-	if a.snapshot != nil {
-		ui.Row(c).Padding(10, 24).Gap(8).AlignItems(ui.Center).Children(func() {
-			ui.TextInput(c, &a.chatTitle).Label("Conversation title").Grow(1)
-			if ui.Button(c, "Rename").Clicked() {
-				a.renameConversation()
-			}
-			if ui.Button(c, "Delete").Label("Delete conversation").Clicked() {
-				a.deleteConversation()
-			}
-		})
-	}
-	if a.snapshot == nil || len(a.snapshot.Messages) == 0 {
+	if a.snapshot == nil || len(a.messages) == 0 {
 		ui.Column(c).Grow(1).Center().Padding(32).Gap(12).Children(func() {
 			heading, detail := "A little help, always here.", "Create an agent with a purpose, then give it something to do."
 			if a.selected != "" {
 				heading = "What shall we work on?"
-				detail = "Start a conversation. Your agent keeps its work and memory between visits."
+				detail = "Send a message to start. Your agent keeps its work and memory between visits."
 			}
-			if a.loading {
+			if a.loading && a.snapshot == nil {
 				heading = "Opening your workspace…"
 				detail = ""
 			}
@@ -204,30 +182,22 @@ func (a *app) chatView(c *ui.Context) {
 				if ui.PrimaryButton(c, "Create an agent").Clicked() {
 					a.createAgent()
 				}
-			} else if a.snapshot == nil && !a.loading {
-				if ui.PrimaryButton(c, "Start a conversation").Clicked() {
-					a.newConversation()
-				}
 			}
 		})
 	} else {
 		ui.Scroll(c).Grow(1).Padding(22, 28).Children(func() {
 			ui.Column(c).Gap(18).Children(func() {
-				for _, message := range a.snapshot.Messages {
-					text := contentText(message.Content)
-					if text == "" || message.Role == "system" {
-						continue
+				if a.hasMore {
+					label := "Load earlier messages"
+					if a.loadingOlder {
+						label = "Loading…"
 					}
-					ui.Column(c).MaxWidth(700).Gap(6).Children(func() {
-						label := "Agent"
-						if message.Role == "user" {
-							label = "You"
-						} else if message.Role != "assistant" {
-							label = "Tool result"
-						}
-						ui.Text(c, label).FontSize(11).Bold().TextColor(theme.TextMuted)
-						ui.Text(c, text).Selectable().FontSize(14)
-					})
+					if ui.Button(c, label).AlignSelf(ui.Center).Disabled(a.loadingOlder).Clicked() {
+						a.loadOlder()
+					}
+				}
+				for _, message := range a.messages {
+					a.messageView(c, message)
 				}
 				if a.snapshot.Partial != "" {
 					ui.Column(c).Gap(6).Children(func() {
@@ -249,6 +219,14 @@ func (a *app) chatView(c *ui.Context) {
 		})
 	}
 	if a.snapshot != nil {
+		if a.replyTo != nil {
+			ui.Row(c).Padding(10, 24, 0, 24).Gap(8).AlignItems(ui.Center).Children(func() {
+				ui.Text(c, "Replying to: "+preview(contentText(a.replyTo.Content))).FontSize(12).TextColor(theme.TextMuted).Grow(1)
+				if ui.Button(c, "Cancel reply").Clicked() {
+					a.cancelReply()
+				}
+			})
+		}
 		ui.Row(c).Padding(16, 24).Gap(10).AlignItems(ui.Center).Children(func() {
 			input := ui.TextArea(c, &a.draft).Label("Message your agent").Placeholder("Message your agent…").Height(66).Grow(1).Disabled(a.sending)
 			input.OnTextKey(func(k ui.TextKey) bool {
@@ -262,13 +240,79 @@ func (a *app) chatView(c *ui.Context) {
 			})
 			if a.snapshot.Status == "running" {
 				if ui.Button(c, "Stop").Clicked() {
-					a.abortConversation()
+					a.abortChat()
 				}
 			} else if ui.PrimaryButton(c, "Send").Disabled(a.sending || strings.TrimSpace(a.draft) == "").Clicked() {
 				a.sendMessage()
 			}
 		})
 	}
+}
+
+func (a *app) messageView(c *ui.Context, message Message) {
+	theme := c.Theme()
+	text := contentText(message.Content)
+	if text == "" || message.Role == "system" {
+		return
+	}
+	if message.Role == "event" {
+		label := "Older context summarized"
+		if message.Kind == "reset" {
+			label = "Context reset"
+		}
+		ui.Column(c).Key(message.ID).MaxWidth(700).Gap(4).Padding(10, 14).Radius(10).Background(theme.Surface).Children(func() {
+			ui.Text(c, label).FontSize(11).Bold().TextColor(theme.TextMuted)
+			ui.Text(c, text).Selectable().FontSize(12).TextColor(theme.TextMuted)
+		})
+		return
+	}
+	ui.Column(c).Key(message.ID).MaxWidth(700).Gap(6).Children(func() {
+		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
+			ui.Text(c, messageLabel(message)).FontSize(11).Bold().TextColor(theme.TextMuted)
+			if message.EntryID != "" && (message.Role == "user" || message.Role == "assistant") {
+				reply := ui.ButtonBase(c).Label("Reply to this message").Padding(2, 6).Radius(6).Children(func() {
+					ui.Text(c, "Reply").FontSize(11).TextColor(theme.Accent)
+				})
+				if reply.Clicked() {
+					a.startReply(message)
+				}
+			}
+		})
+		if message.ReplyTo != "" {
+			quoted := message.ReplyPreview
+			for _, original := range a.messages {
+				if original.EntryID == message.ReplyTo && quoted == "" {
+					quoted = contentText(original.Content)
+				}
+			}
+			if quoted != "" {
+				ui.Text(c, "↪ "+preview(quoted)).FontSize(12).TextColor(theme.TextMuted).Padding(4, 10).Radius(6).Background(theme.Surface)
+			}
+		}
+		ui.Text(c, text).Selectable().FontSize(14)
+	})
+}
+
+func messageLabel(message Message) string {
+	switch {
+	case message.Role == "assistant":
+		return "Agent"
+	case message.Role != "user":
+		return "Tool result"
+	case message.Origin != nil && message.Origin.Kind == "task":
+		return "Task · " + message.Origin.Name
+	case message.Origin != nil && message.Origin.Kind == "bot":
+		return "From " + message.Origin.Name
+	}
+	return "You"
+}
+
+func preview(text string) string {
+	text = strings.Join(strings.Fields(text), " ")
+	if runes := []rune(text); len(runes) > 120 {
+		return string(runes[:119]) + "…"
+	}
+	return text
 }
 
 func (a *app) settingsView(c *ui.Context) {
@@ -520,7 +564,7 @@ func (a *app) panelView(c *ui.Context, panel string) {
 			case "activity":
 				ui.Text(c, "Activity").FontSize(23).Bold()
 				if len(a.executions) == 0 {
-					ui.Text(c, "Work from conversations and tasks will appear here.").TextColor(c.Theme().TextMuted)
+					ui.Text(c, "Work from chats and tasks will appear here.").TextColor(c.Theme().TextMuted)
 				}
 				for _, execution := range a.executions {
 					ui.Column(c).Key(execution.ID).Gap(6).Padding(12).Radius(10).Background(c.Theme().Surface).Children(func() {
@@ -529,9 +573,8 @@ func (a *app) panelView(c *ui.Context, panel string) {
 						if execution.Error != "" {
 							ui.Text(c, execution.Error).TextColor(c.Theme().Danger).Selectable()
 						}
-						if ui.Button(c, "Open conversation").Clicked() {
-							a.selected = execution.AgentID
-							a.selectConversation(execution.ConversationID)
+						if ui.Button(c, "Open chat").Clicked() {
+							a.selectAgent(execution.AgentID)
 						}
 					})
 				}

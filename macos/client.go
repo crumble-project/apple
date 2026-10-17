@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 )
 
@@ -26,19 +28,33 @@ func (e *APIError) Error() string {
 }
 
 type Agent struct {
-	ID           string   `json:"id"`
-	Name         string   `json:"name"`
-	Description  string   `json:"description,omitempty"`
-	Instructions string   `json:"instructions,omitempty"`
-	Avatar       string   `json:"avatar,omitempty"`
-	Enabled      bool     `json:"enabled"`
-	Provider     string   `json:"provider,omitempty"`
-	Model        string   `json:"model,omitempty"`
-	Folder       string   `json:"folder,omitempty"`
-	Tools        []string `json:"tools,omitempty"`
-	Delegates    []string `json:"delegates,omitempty"`
-	Skills       []Skill  `json:"skills,omitempty"`
-	MCPServers   []string `json:"mcpServers,omitempty"`
+	ID           string     `json:"id"`
+	Name         string     `json:"name"`
+	Description  string     `json:"description,omitempty"`
+	Instructions string     `json:"instructions,omitempty"`
+	Avatar       string     `json:"avatar,omitempty"`
+	Enabled      bool       `json:"enabled"`
+	Provider     string     `json:"provider,omitempty"`
+	Model        string     `json:"model,omitempty"`
+	Folder       string     `json:"folder,omitempty"`
+	Tools        []string   `json:"tools,omitempty"`
+	Delegates    []string   `json:"delegates,omitempty"`
+	Skills       []Skill    `json:"skills,omitempty"`
+	MCPServers   []string   `json:"mcpServers,omitempty"`
+	Inference    *Inference `json:"inference,omitempty"`
+}
+
+type Inference struct {
+	ThinkingLevel   string   `json:"thinkingLevel"`
+	Temperature     *float64 `json:"temperature,omitempty"`
+	MaxOutputTokens *int     `json:"maxOutputTokens,omitempty"`
+}
+type ModelSummary struct {
+	Provider      string `json:"provider"`
+	ID            string `json:"id"`
+	Name          string `json:"name"`
+	ContextWindow int    `json:"contextWindow"`
+	Reasoning     bool   `json:"reasoning"`
 }
 
 type Skill struct {
@@ -46,28 +62,43 @@ type Skill struct {
 	Instructions string `json:"instructions"`
 }
 
-type Conversation struct {
-	ID        string `json:"id"`
-	AgentID   string `json:"agentId"`
-	Title     string `json:"title"`
-	UpdatedAt string `json:"updatedAt"`
-}
-
 type Message struct {
-	ID        string `json:"id"`
-	Role      string `json:"role"`
-	Content   any    `json:"content"`
-	CreatedAt string `json:"createdAt"`
+	ID           string         `json:"id"`
+	EntryID      string         `json:"entryId,omitempty"`
+	Role         string         `json:"role"`
+	Content      any            `json:"content"`
+	Blocks       any            `json:"blocks,omitempty"`
+	Kind         string         `json:"kind,omitempty"`
+	ReplyTo      string         `json:"replyTo,omitempty"`
+	ReplyPreview string         `json:"replyPreview,omitempty"`
+	Origin       *MessageOrigin `json:"origin,omitempty"`
+	Timestamp    int64          `json:"timestamp,omitempty"`
+	CreatedAt    string         `json:"createdAt"`
 }
 
-type ConversationSnapshot struct {
-	Conversation Conversation `json:"conversation"`
-	Messages     []Message    `json:"messages"`
-	Status       string       `json:"status,omitempty"`
-	Live         any          `json:"live,omitempty"`
-	Partial      string       `json:"partial,omitempty"`
-	Error        string       `json:"error,omitempty"`
-	Usage        any          `json:"usage,omitempty"`
+// MessageOrigin names who started a turn: the owner, a scheduled task, or another bot.
+type MessageOrigin struct {
+	Kind    string `json:"kind"`
+	Name    string `json:"name,omitempty"`
+	AgentID string `json:"agentId,omitempty"`
+}
+
+type ChatSnapshot struct {
+	Messages      []Message `json:"messages"`
+	Status        string    `json:"status,omitempty"`
+	Live          any       `json:"live,omitempty"`
+	Partial       string    `json:"partial,omitempty"`
+	Error         string    `json:"error,omitempty"`
+	Usage         any       `json:"usage,omitempty"`
+	AgentID       string    `json:"agentId,omitempty"`
+	HasMore       bool      `json:"hasMore,omitempty"`
+	OldestEntryID string    `json:"oldestEntryId,omitempty"`
+}
+
+type ChatHistoryResponse struct {
+	Messages      []Message `json:"messages"`
+	HasMore       bool      `json:"hasMore"`
+	OldestEntryID string    `json:"oldestEntryId"`
 }
 
 type Memory struct {
@@ -100,6 +131,7 @@ type Execution struct {
 
 type ProviderStatus struct {
 	Provider   string `json:"provider"`
+	Name       string `json:"name,omitempty"`
 	Configured bool   `json:"configured"`
 }
 
@@ -185,36 +217,44 @@ func (c *APIClient) DuplicateAgent(ctx context.Context, id string) (Agent, error
 	var out Agent
 	return out, c.request(ctx, http.MethodPost, "/v1/agents/"+id+"/duplicate", nil, &out)
 }
-func (c *APIClient) Conversations(ctx context.Context, agentID string) ([]Conversation, error) {
-	var out []Conversation
-	return out, c.request(ctx, http.MethodGet, "/v1/agents/"+agentID+"/conversations", nil, &out)
+func (c *APIClient) Chat(ctx context.Context, agentID string) (ChatSnapshot, error) {
+	var out ChatSnapshot
+	return out, c.request(ctx, http.MethodGet, "/v1/agents/"+agentID+"/chat", nil, &out)
 }
-func (c *APIClient) UpdateConversation(ctx context.Context, id, title string) (Conversation, error) {
-	var out Conversation
-	return out, c.request(ctx, http.MethodPatch, "/v1/conversations/"+id, map[string]string{"title": title}, &out)
+func (c *APIClient) ChatHistory(ctx context.Context, agentID, before string, limit int) (ChatHistoryResponse, error) {
+	var out ChatHistoryResponse
+	path := "/v1/agents/" + agentID + "/chat/history"
+	query := url.Values{}
+	if before != "" {
+		query.Set("before", before)
+	}
+	if limit > 0 {
+		query.Set("limit", strconv.Itoa(limit))
+	}
+	if encoded := query.Encode(); encoded != "" {
+		path += "?" + encoded
+	}
+	return out, c.request(ctx, http.MethodGet, path, nil, &out)
 }
-func (c *APIClient) DeleteConversation(ctx context.Context, id string) error {
-	return c.request(ctx, http.MethodDelete, "/v1/conversations/"+id, nil, nil)
+func (c *APIClient) SendChatMessage(ctx context.Context, agentID, content, requestID, replyTo string) error {
+	body := map[string]any{"content": content, "requestId": requestID}
+	if replyTo != "" {
+		body["replyTo"] = replyTo
+	}
+	return c.request(ctx, http.MethodPost, "/v1/agents/"+agentID+"/messages", body, nil)
 }
-func (c *APIClient) CreateConversation(ctx context.Context, agentID string) (Conversation, error) {
-	var out Conversation
-	return out, c.request(ctx, http.MethodPost, "/v1/agents/"+agentID+"/conversations", map[string]string{"title": "New conversation"}, &out)
+func (c *APIClient) AbortChat(ctx context.Context, agentID string) error {
+	return c.request(ctx, http.MethodPost, "/v1/agents/"+agentID+"/abort", nil, nil)
 }
-func (c *APIClient) Snapshot(ctx context.Context, id string) (ConversationSnapshot, error) {
-	var out ConversationSnapshot
-	return out, c.request(ctx, http.MethodGet, "/v1/conversations/"+id, nil, &out)
-}
-func (c *APIClient) SendMessage(ctx context.Context, conversationID, content, requestID string) error {
-	return c.request(ctx, http.MethodPost, "/v1/conversations/"+conversationID+"/messages", map[string]string{"content": content, "requestId": requestID}, nil)
-}
-func (c *APIClient) Abort(ctx context.Context, id string) error {
-	return c.request(ctx, http.MethodPost, "/v1/conversations/"+id+"/abort", nil, nil)
+func (c *APIClient) CompactChat(ctx context.Context, agentID string) error {
+	return c.request(ctx, http.MethodPost, "/v1/agents/"+agentID+"/compact", nil, nil)
 }
 
-// Events consumes the server-sent event stream. It returns after the context is
-// canceled or the stream closes; each event payload is passed to onEvent.
-func (c *APIClient) Events(ctx context.Context, id string, onEvent func(string)) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+"/v1/conversations/"+id+"/events", nil)
+// ChatEvents consumes the bot chat's server-sent event stream. It returns after
+// the context is canceled or the stream closes; each snapshot is passed to onEvent.
+func (c *APIClient) ChatEvents(ctx context.Context, agentID string, onEvent func(string)) error {
+	path := "/v1/agents/" + agentID + "/events"
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+path, nil)
 	if err != nil {
 		return err
 	}
@@ -228,7 +268,7 @@ func (c *APIClient) Events(ctx context.Context, id string, onEvent func(string))
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		data, _ := io.ReadAll(io.LimitReader(resp.Body, 8<<10))
-		return &APIError{Method: http.MethodGet, Path: "/v1/conversations/" + id + "/events", StatusCode: resp.StatusCode, Body: strings.TrimSpace(string(data))}
+		return &APIError{Method: http.MethodGet, Path: path, StatusCode: resp.StatusCode, Body: strings.TrimSpace(string(data))}
 	}
 	scanner := bufio.NewScanner(resp.Body)
 	scanner.Buffer(make([]byte, 64<<10), 8<<20)
@@ -250,13 +290,13 @@ func (c *APIClient) Events(ctx context.Context, id string, onEvent func(string))
 			return nil
 		}
 		var envelope struct {
-			ConversationID string `json:"conversationId"`
+			AgentID string `json:"agentId"`
 		}
 		if err := json.Unmarshal([]byte(payload), &envelope); err != nil {
 			return fmt.Errorf("invalid SSE payload: %w", err)
 		}
-		if envelope.ConversationID == "" {
-			return errors.New("snapshot event missing conversationId")
+		if envelope.AgentID == "" {
+			return errors.New("snapshot event missing agentId")
 		}
 		onEvent(payload)
 		eventType = "message"
@@ -335,6 +375,10 @@ func (c *APIClient) Executions(ctx context.Context) ([]Execution, error) {
 func (c *APIClient) Providers(ctx context.Context) ([]ProviderStatus, error) {
 	var out []ProviderStatus
 	return out, c.request(ctx, http.MethodGet, "/v1/providers", nil, &out)
+}
+func (c *APIClient) Models(ctx context.Context, provider string) ([]ModelSummary, error) {
+	var out []ModelSummary
+	return out, c.request(ctx, http.MethodGet, "/v1/models?provider="+url.QueryEscape(provider), nil, &out)
 }
 func (c *APIClient) SetProviderKey(ctx context.Context, provider, apiKey string) error {
 	return c.request(ctx, http.MethodPut, "/v1/providers/"+provider, map[string]string{"apiKey": apiKey}, nil)

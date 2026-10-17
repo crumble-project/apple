@@ -41,15 +41,15 @@ func waitDispatch(t *testing.T, q *dispatchQueue) {
 	t.Fatal("timed out waiting for UI dispatch")
 }
 
-func TestControllerConversationStreamRendersSnapshotOnUIQueue(t *testing.T) {
+func TestControllerChatStreamRendersSnapshotOnUIQueue(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch r.URL.Path {
-		case "/v1/conversations/c1":
-			_, _ = io.WriteString(w, `{"conversation":{"id":"c1","title":"Chat"},"messages":[],"status":"idle"}`)
-		case "/v1/conversations/c1/events":
+		case "/v1/agents/a1/chat":
+			_, _ = io.WriteString(w, `{"agentId":"a1","messages":[],"status":"idle"}`)
+		case "/v1/agents/a1/events":
 			w.Header().Set("Content-Type", "text/event-stream")
-			_, _ = io.WriteString(w, "event: snapshot\ndata: {\"conversationId\":\"c1\",\"messages\":[{\"role\":\"user\",\"content\":\"hello from stream\"}],\"status\":\"failed\",\"error\":\"provider failed\"}\n\n")
+			_, _ = io.WriteString(w, "event: snapshot\ndata: {\"agentId\":\"a1\",\"messages\":[{\"id\":\"a1:1:0\",\"entryId\":\"a1:1\",\"role\":\"user\",\"content\":\"hello from stream\"}],\"status\":\"failed\",\"error\":\"provider failed\"}\n\n")
 			w.(http.Flusher).Flush()
 			<-r.Context().Done()
 		default:
@@ -58,9 +58,9 @@ func TestControllerConversationStreamRendersSnapshotOnUIQueue(t *testing.T) {
 	}))
 	defer srv.Close()
 	q := &dispatchQueue{}
-	a := &app{client: NewAPIClient(srv.URL, ""), conversationID: "c1", selected: "a1", dispatch: q.push}
-	a.selectConversation("c1")
-	waitDispatch(t, q) // snapshot response; this starts the SSE worker.
+	a := &app{client: NewAPIClient(srv.URL, ""), dispatch: q.push}
+	a.selectAgent("a1")
+	waitDispatch(t, q) // chat response; this starts the SSE worker.
 	waitDispatch(t, q) // SSE snapshot callback.
 	if a.snapshot == nil || a.snapshot.Error != "provider failed" {
 		t.Fatalf("snapshot=%+v", a.snapshot)
@@ -71,16 +71,18 @@ func TestControllerConversationStreamRendersSnapshotOnUIQueue(t *testing.T) {
 	a.cancelStream()
 }
 
-func TestControllerIgnoresStaleStreamAfterConversationSwitch(t *testing.T) {
+func TestControllerIgnoresStaleChatAfterAgentSwitch(t *testing.T) {
 	release := make(chan struct{})
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch r.URL.Path {
-		case "/v1/conversations/c1":
+		case "/v1/agents/a1/chat":
 			<-release
-			_, _ = io.WriteString(w, `{"conversation":{"id":"c1"},"messages":[]}`)
-		case "/v1/conversations/c2":
-			_, _ = io.WriteString(w, `{"conversation":{"id":"c2"},"messages":[]}`)
+			_, _ = io.WriteString(w, `{"agentId":"a1","messages":[{"id":"a1:1:0","role":"user","content":"stale"}]}`)
+		case "/v1/agents/a2/chat":
+			_, _ = io.WriteString(w, `{"agentId":"a2","messages":[]}`)
+		case "/v1/agents/a1/events", "/v1/agents/a2/events":
+			<-r.Context().Done()
 		default:
 			http.NotFound(w, r)
 		}
@@ -88,28 +90,27 @@ func TestControllerIgnoresStaleStreamAfterConversationSwitch(t *testing.T) {
 	defer srv.Close()
 	q := &dispatchQueue{}
 	a := &app{client: NewAPIClient(srv.URL, ""), dispatch: q.push}
-	a.selectConversation("c1")
-	a.selectConversation("c2")
+	a.selectAgent("a1")
+	a.selectAgent("a2")
 	close(release)
 	deadline := time.Now().Add(3 * time.Second)
-	for time.Now().Before(deadline) {
+	for time.Now().Before(deadline) && a.activeRequests > 0 {
 		q.drain()
-		if a.snapshot != nil {
-			break
-		}
 		time.Sleep(time.Millisecond * 10)
 	}
-	if a.conversationID != "c2" || a.snapshot == nil || a.snapshot.Conversation.ID != "c2" {
-		t.Fatalf("selected=%s snapshot=%+v", a.conversationID, a.snapshot)
+	if a.selected != "a2" || a.snapshot == nil || a.snapshot.AgentID != "a2" || len(a.messages) != 0 {
+		t.Fatalf("selected=%s snapshot=%+v messages=%+v", a.selected, a.snapshot, a.messages)
 	}
+	a.cancelStream()
 }
 
 func TestControllerRetriesMessageWithSameRequestIDAndRestoresDraft(t *testing.T) {
 	var mu sync.Mutex
 	var requestIDs []string
+	var replies []string
 	attempts := 0
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/v1/conversations/c1/messages" {
+		if r.URL.Path != "/v1/agents/a1/messages" {
 			http.NotFound(w, r)
 			return
 		}
@@ -117,6 +118,7 @@ func TestControllerRetriesMessageWithSameRequestIDAndRestoresDraft(t *testing.T)
 		_ = json.NewDecoder(r.Body).Decode(&payload)
 		mu.Lock()
 		requestIDs = append(requestIDs, payload["requestId"])
+		replies = append(replies, payload["replyTo"])
 		attempts++
 		n := attempts
 		mu.Unlock()
@@ -128,12 +130,13 @@ func TestControllerRetriesMessageWithSameRequestIDAndRestoresDraft(t *testing.T)
 	}))
 	defer srv.Close()
 	q := &dispatchQueue{}
-	a := &app{client: NewAPIClient(srv.URL, ""), dispatch: q.push, conversationID: "c1", snapshot: &ConversationSnapshot{Conversation: Conversation{ID: "c1"}}}
+	a := &app{client: NewAPIClient(srv.URL, ""), dispatch: q.push, selected: "a1", snapshot: &ChatSnapshot{AgentID: "a1"}}
+	a.startReply(Message{ID: "a1:4:0", EntryID: "a1:4", Role: "assistant", Content: "earlier"})
 	a.draft = "retry me"
 	a.sendMessage()
 	waitDispatch(t, q)
-	if a.draft != "retry me" || a.draftRequestID == "" {
-		t.Fatalf("draft=%q requestID=%q", a.draft, a.draftRequestID)
+	if a.draft != "retry me" || a.draftRequestID == "" || a.replyTo == nil {
+		t.Fatalf("draft=%q requestID=%q reply=%v", a.draft, a.draftRequestID, a.replyTo)
 	}
 	first := a.draftRequestID
 	a.sendMessage()
@@ -142,6 +145,38 @@ func TestControllerRetriesMessageWithSameRequestIDAndRestoresDraft(t *testing.T)
 	defer mu.Unlock()
 	if len(requestIDs) != 2 || requestIDs[0] != first || requestIDs[1] != first {
 		t.Fatalf("request IDs=%v", requestIDs)
+	}
+	if replies[0] != "a1:4" || replies[1] != "a1:4" || a.replyTo != nil {
+		t.Fatalf("replies=%v reply=%v", replies, a.replyTo)
+	}
+}
+
+func TestControllerKeepsLoadedHistoryAcrossSnapshots(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v1/agents/a1/chat/history" || r.URL.Query().Get("before") != "a1:10" {
+			t.Errorf("unexpected %s", r.URL.RequestURI())
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{"messages":[{"id":"a1:2:0","entryId":"a1:2","role":"user","content":"oldest"},{"id":"a1:3:0","entryId":"a1:3","role":"assistant","content":"older"}],"hasMore":false,"oldestEntryId":"a1:2"}`)
+	}))
+	defer srv.Close()
+	q := &dispatchQueue{}
+	a := &app{client: NewAPIClient(srv.URL, ""), dispatch: q.push, selected: "a1", hasMore: true, oldestEntryID: "a1:10"}
+	a.applySnapshot(ChatSnapshot{AgentID: "a1", Messages: []Message{{ID: "a1:10:0", Role: "user", Content: "newer"}}})
+	a.loadOlder()
+	waitDispatch(t, q)
+	// The next snapshot's newest page no longer includes "newer"; loaded rows must survive.
+	a.applySnapshot(ChatSnapshot{AgentID: "a1", Messages: []Message{{ID: "a1:11:0", Role: "assistant", Content: "newest"}}})
+	var got []string
+	for _, message := range a.messages {
+		got = append(got, contentText(message.Content))
+	}
+	if strings.Join(got, ",") != "oldest,older,newer,newest" || a.hasMore {
+		t.Fatalf("messages=%v hasMore=%v", got, a.hasMore)
+	}
+	tester := ui.NewTester(a.view, 1120, 760)
+	if !tester.HasText("oldest") || tester.HasText("Load earlier messages") {
+		t.Fatal("history view did not render loaded page")
 	}
 }
 

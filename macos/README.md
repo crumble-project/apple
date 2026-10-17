@@ -1,6 +1,6 @@
 # Crumble for macOS
 
-Crumble for macOS is a native client built with [MyGo](https://mygo.egoist.dev/). It connects to a running Crumble server and provides agent management, conversations, streaming updates, memory, schedules, tools, approvals, and settings as those server capabilities become available.
+Crumble for macOS is a native client built with [MyGo](https://mygo.egoist.dev/). It connects to a running Crumble server and provides agent management, one continuous chat per agent, streaming updates, memory, schedules, tools, approvals, and settings as those server capabilities become available.
 
 ## Requirements
 
@@ -66,11 +66,11 @@ The current build is an ad hoc macOS application. It is not notarized. Distribut
 4. Enter the server URL and token.
 5. Save the connection.
 
-The app sends the token as an `Authorization: Bearer` header. It does not send provider keys to the server during ordinary conversation requests; provider credentials remain managed by the server.
+The app sends the token as an `Authorization: Bearer` header. It does not send provider keys to the server during ordinary chat requests; provider credentials remain managed by the server.
 
 ## Current scope and limitations
 
-The client contains native MyGo views, server connection setup, agent and conversation flows, streamed conversation updates, memory and schedule panels, MCP configuration, delegation controls, and approval UI paths. The server remains the source of truth for persistent state.
+The client contains native MyGo views, server connection setup, agent management, one continuous chat per agent with older-history loading and replies to earlier messages, streamed chat updates, memory and schedule panels, MCP configuration, delegation controls, and approval UI paths. The server remains the source of truth for persistent state.
 
 The product is still under active development. Hermes Agent and Grok Bot parity is a target for end-to-end acceptance, not a statement that every capability is complete. Review the server's [`docs/product-parity.md`](../bot/docs/product-parity.md) and [`docs/architecture.md`](../bot/docs/architecture.md) before planning a release.
 

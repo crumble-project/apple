@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -108,11 +110,13 @@ func (a *app) refresh() {
 				a.cancelStream()
 				a.selected = ""
 				a.snapshot = nil
-				a.conversations = nil
+				a.messages = nil
 			}
 		}, err
 	})
 }
+
+// selectAgent opens the bot's one continuous chat and follows its event stream.
 func (a *app) selectAgent(id string) {
 	a.cancelStream()
 	a.selectionVersion++
@@ -120,91 +124,128 @@ func (a *app) selectAgent(id string) {
 	a.selected = id
 	a.navigation = "agent:" + id
 	a.snapshot = nil
-	a.conversationID = ""
-	a.conversations = nil
+	a.messages = nil
+	a.hasMore = false
+	a.oldestEntryID = ""
+	a.loadingOlder = false
+	a.replyTo = nil
 	a.panel = ""
 	a.settings = false
 	a.editor = false
 	a.draft = ""
 	a.failedDraft = ""
+	a.failedReplyTo = ""
 	a.draftRequestID = ""
 	a.request(func(ctx context.Context, client *APIClient) (func(), error) {
-		conversations, err := client.Conversations(ctx, id)
+		snapshot, err := client.Chat(ctx, id)
 		return func() {
 			if a.selectionVersion != version || a.selected != id {
 				return
 			}
-			a.conversations = conversations
-			if len(conversations) > 0 {
-				a.selectConversation(conversations[0].ID)
-			}
-		}, err
-	})
-}
-func (a *app) selectConversation(id string) {
-	a.cancelStream()
-	a.selectionVersion++
-	version := a.selectionVersion
-	a.conversationID = id
-	a.navigation = "chat:" + id
-	a.panel = ""
-	a.settings = false
-	a.editor = false
-	a.snapshot = nil
-	a.draft = ""
-	a.failedDraft = ""
-	a.draftRequestID = ""
-	a.request(func(ctx context.Context, client *APIClient) (func(), error) {
-		snapshot, err := client.Snapshot(ctx, id)
-		return func() {
-			if a.selectionVersion != version || a.conversationID != id {
-				return
-			}
-			a.snapshot = &snapshot
-			a.chatTitle = snapshot.Conversation.Title
+			a.applySnapshot(snapshot)
+			a.hasMore = snapshot.HasMore
+			a.oldestEntryID = snapshot.OldestEntryID
 			streamCtx, cancel := context.WithCancel(context.Background())
 			a.streamCancel = cancel
-			go a.streamConversation(streamCtx, client, id)
+			go a.streamChat(streamCtx, client, id)
 		}, err
 	})
 }
-func (a *app) streamConversation(ctx context.Context, client *APIClient, id string) {
+
+// applySnapshot keeps older pages the owner already loaded; snapshots only carry the newest page.
+func (a *app) applySnapshot(snapshot ChatSnapshot) {
+	a.messages = mergeMessages(a.messages, snapshot.Messages)
+	snapshot.Messages = nil
+	a.snapshot = &snapshot
+}
+
+// mergeMessages unions transcript rows by ID in entry order. Entries are immutable,
+// so a row that scrolled out of the newest snapshot page stays valid.
+func mergeMessages(existing, incoming []Message) []Message {
+	byID := make(map[string]Message, len(existing)+len(incoming))
+	for _, message := range existing {
+		byID[message.ID] = message
+	}
+	for _, message := range incoming {
+		byID[message.ID] = message
+	}
+	merged := make([]Message, 0, len(byID))
+	for _, message := range byID {
+		merged = append(merged, message)
+	}
+	sort.SliceStable(merged, func(i, j int) bool {
+		left, right := messageOrder(merged[i].ID), messageOrder(merged[j].ID)
+		if left[0] != right[0] {
+			return left[0] < right[0]
+		}
+		return left[1] < right[1]
+	})
+	return merged
+}
+
+// messageOrder reads the entry and message index from an "agent:entry:index" row ID.
+func messageOrder(id string) [2]int {
+	parts := strings.Split(id, ":")
+	if len(parts) < 2 {
+		return [2]int{}
+	}
+	entry, _ := strconv.Atoi(parts[len(parts)-2])
+	index, _ := strconv.Atoi(parts[len(parts)-1])
+	return [2]int{entry, index}
+}
+
+func (a *app) loadOlder() {
+	if a.loadingOlder || !a.hasMore || a.oldestEntryID == "" {
+		return
+	}
+	id, before, version := a.selected, a.oldestEntryID, a.selectionVersion
+	a.loadingOlder = true
+	a.request(func(ctx context.Context, client *APIClient) (func(), error) {
+		page, err := client.ChatHistory(ctx, id, before, 100)
+		return func() {
+			if a.selectionVersion != version {
+				return
+			}
+			a.loadingOlder = false
+			if err != nil {
+				return
+			}
+			a.messages = mergeMessages(a.messages, page.Messages)
+			a.hasMore = page.HasMore
+			a.oldestEntryID = page.OldestEntryID
+		}, err
+	})
+}
+
+func (a *app) streamChat(ctx context.Context, client *APIClient, id string) {
 	backoff := 500 * time.Millisecond
 	for ctx.Err() == nil {
-		err := client.Events(ctx, id, func(data string) {
-			var snapshot ConversationSnapshot
+		err := client.ChatEvents(ctx, id, func(data string) {
+			var snapshot ChatSnapshot
 			if json.Unmarshal([]byte(data), &snapshot) != nil {
 				return
 			}
 			a.update(func() {
-				if ctx.Err() != nil || a.client != client || a.conversationID != id {
+				if ctx.Err() != nil || a.client != client || a.selected != id {
 					return
 				}
-				if snapshot.Conversation.ID == "" && a.snapshot != nil {
-					snapshot.Conversation = a.snapshot.Conversation
-				}
-				a.snapshot = &snapshot
+				a.applySnapshot(snapshot)
 				a.streamStatus = ""
 				a.errorText = ""
-				for i := range a.conversations {
-					if a.conversations[i].ID == id {
-						a.conversations[i].Title = snapshot.Conversation.Title
-					}
-				}
 			})
 		})
 		if ctx.Err() != nil {
 			return
 		}
 		a.update(func() {
-			if a.conversationID == id && a.client == client {
+			if a.selected == id && a.client == client {
 				a.streamStatus = "Reconnecting…"
 			}
 		})
 		var apiError *APIError
 		if errors.As(err, &apiError) && apiError.StatusCode == 401 {
 			a.update(func() {
-				if a.conversationID == id {
+				if a.selected == id {
 					a.errorText = friendlyError(err)
 					a.streamStatus = "Disconnected"
 				}
@@ -221,22 +262,6 @@ func (a *app) streamConversation(ctx context.Context, client *APIClient, id stri
 		backoff = min(backoff*2, 8*time.Second)
 	}
 }
-func (a *app) newConversation() {
-	id := a.selected
-	if id == "" {
-		return
-	}
-	a.request(func(ctx context.Context, client *APIClient) (func(), error) {
-		conversation, err := client.CreateConversation(ctx, id)
-		return func() {
-			if a.selected != id {
-				return
-			}
-			a.conversations = append([]Conversation{conversation}, a.conversations...)
-			a.selectConversation(conversation.ID)
-		}, err
-	})
-}
 func newRequestID() string {
 	b := make([]byte, 16)
 	if _, err := rand.Read(b); err != nil {
@@ -246,6 +271,12 @@ func newRequestID() string {
 	b[8] = (b[8] & 0x3f) | 0x80
 	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
 }
+func (a *app) startReply(message Message) {
+	a.replyTo = &message
+}
+func (a *app) cancelReply() {
+	a.replyTo = nil
+}
 func (a *app) sendMessage() {
 	if a.sending || a.snapshot == nil {
 		return
@@ -254,22 +285,28 @@ func (a *app) sendMessage() {
 	if content == "" {
 		return
 	}
-	id := a.conversationID
-	if a.draftRequestID == "" || a.failedDraft != content {
+	id := a.selected
+	replyTo := ""
+	if a.replyTo != nil {
+		replyTo = a.replyTo.EntryID
+	}
+	// A retry of the same draft reuses its request ID so the server admits it once.
+	if a.draftRequestID == "" || a.failedDraft != content || a.failedReplyTo != replyTo {
 		a.draftRequestID = newRequestID()
 	}
 	requestID := a.draftRequestID
 	a.failedDraft = content
+	a.failedReplyTo = replyTo
 	a.sending = true
 	a.draft = ""
 	client := a.client
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
-		err := client.SendMessage(ctx, id, content, requestID)
+		err := client.SendChatMessage(ctx, id, content, requestID, replyTo)
 		a.update(func() {
 			a.sending = false
-			if a.client != client || a.conversationID != id {
+			if a.client != client || a.selected != id {
 				return
 			}
 			if err != nil {
@@ -279,42 +316,20 @@ func (a *app) sendMessage() {
 			}
 			a.draftRequestID = ""
 			a.failedDraft = ""
+			a.failedReplyTo = ""
+			a.replyTo = nil
 		})
 	}()
 }
-func (a *app) abortConversation() {
-	id := a.conversationID
-	a.request(func(ctx context.Context, client *APIClient) (func(), error) { return nil, client.Abort(ctx, id) })
+func (a *app) abortChat() {
+	id := a.selected
+	a.request(func(ctx context.Context, client *APIClient) (func(), error) { return nil, client.AbortChat(ctx, id) })
 }
-func (a *app) renameConversation() {
-	id, title := a.conversationID, strings.TrimSpace(a.chatTitle)
-	if title == "" {
-		a.errorText = "A conversation title is required."
-		return
-	}
+func (a *app) compactChat() {
+	id := a.selected
 	a.request(func(ctx context.Context, client *APIClient) (func(), error) {
-		conversation, err := client.UpdateConversation(ctx, id, title)
-		return func() {
-			for i := range a.conversations {
-				if a.conversations[i].ID == id {
-					a.conversations[i] = conversation
-				}
-			}
-			if a.conversationID == id && a.snapshot != nil {
-				copy := *a.snapshot
-				copy.Conversation = conversation
-				a.snapshot = &copy
-			}
-		}, err
-	})
-}
-func (a *app) deleteConversation() {
-	id := a.conversationID
-	a.confirm("Delete conversation?", "The conversation and its execution history will be removed.", func() {
-		a.request(func(ctx context.Context, client *APIClient) (func(), error) {
-			err := client.DeleteConversation(ctx, id)
-			return func() { a.selectAgent(a.selected) }, err
-		})
+		err := client.CompactChat(ctx, id)
+		return func() { a.notice = "Summarizing older context" }, err
 	})
 }
 func (a *app) confirm(title, message string, action func()) {
@@ -335,6 +350,9 @@ func (a *app) createAgent() {
 	a.editInstructions = "You are a thoughtful, capable personal assistant."
 	a.editModel = "gpt-4.1"
 	a.editProvider = "openai"
+	a.editThinking = "off"
+	a.editTemperature = ""
+	a.editMaxOutput = ""
 	a.editEnabled = true
 	a.editAvatar = "critters:" + newRequestID()
 	a.editFolder = "Personal"
@@ -344,6 +362,8 @@ func (a *app) createAgent() {
 	a.editMCP = map[string]bool{}
 	a.editSkills = []Skill{}
 	a.loadMCPServers()
+	a.loadProviders()
+	a.loadModels(a.editProvider)
 }
 func (a *app) openEditor() {
 	for _, agent := range a.agents {
@@ -359,6 +379,18 @@ func (a *app) openEditor() {
 			a.editProvider = agent.Provider
 			a.editEnabled = agent.Enabled
 			a.editAvatar = agent.Avatar
+			a.editThinking = "off"
+			a.editTemperature = ""
+			a.editMaxOutput = ""
+			if agent.Inference != nil {
+				a.editThinking = agent.Inference.ThinkingLevel
+				if agent.Inference.Temperature != nil {
+					a.editTemperature = strconv.FormatFloat(*agent.Inference.Temperature, 'f', -1, 64)
+				}
+				if agent.Inference.MaxOutputTokens != nil {
+					a.editMaxOutput = strconv.Itoa(*agent.Inference.MaxOutputTokens)
+				}
+			}
 			a.editFolder = agent.Folder
 			a.toolsMemory = false
 			a.toolsDelegate = false
@@ -380,6 +412,8 @@ func (a *app) openEditor() {
 				a.editMCP[id] = true
 			}
 			a.loadMCPServers()
+			a.loadProviders()
+			a.loadModels(a.editProvider)
 			return
 		}
 	}
@@ -421,7 +455,27 @@ func (a *app) saveAgentEditor() {
 			return
 		}
 	}
-	input := Agent{Name: strings.TrimSpace(a.editName), Description: a.editDescription, Instructions: a.editInstructions, Provider: a.editProvider, Model: a.editModel, Avatar: a.editAvatar, Folder: a.editFolder, Enabled: a.editEnabled, Tools: tools, Skills: skills, MCPServers: servers, Delegates: delegates}
+	inference := &Inference{ThinkingLevel: a.editThinking}
+	if inference.ThinkingLevel == "" {
+		inference.ThinkingLevel = "off"
+	}
+	if a.editTemperature != "" {
+		value, err := strconv.ParseFloat(a.editTemperature, 64)
+		if err != nil || value < 0 || value > 2 {
+			a.errorText = "Temperature must be between 0 and 2."
+			return
+		}
+		inference.Temperature = &value
+	}
+	if a.editMaxOutput != "" {
+		value, err := strconv.Atoi(a.editMaxOutput)
+		if err != nil || value < 1 || value > 1000000 {
+			a.errorText = "Output limit must be between 1 and 1,000,000 tokens."
+			return
+		}
+		inference.MaxOutputTokens = &value
+	}
+	input := Agent{Inference: inference, Name: strings.TrimSpace(a.editName), Description: a.editDescription, Instructions: a.editInstructions, Provider: a.editProvider, Model: a.editModel, Avatar: a.editAvatar, Folder: a.editFolder, Enabled: a.editEnabled, Tools: tools, Skills: skills, MCPServers: servers, Delegates: delegates}
 	id, isNew := a.selected, a.newAgent
 	a.request(func(ctx context.Context, client *APIClient) (func(), error) {
 		var agent Agent
@@ -429,7 +483,7 @@ func (a *app) saveAgentEditor() {
 		if isNew {
 			agent, err = client.CreateAgent(ctx, input)
 		} else {
-			agent, err = client.UpdateAgent(ctx, id, map[string]any{"name": input.Name, "description": input.Description, "instructions": input.Instructions, "provider": input.Provider, "model": input.Model, "avatar": input.Avatar, "folder": input.Folder, "enabled": input.Enabled, "tools": tools, "skills": skills, "mcpServers": servers, "delegates": delegates})
+			agent, err = client.UpdateAgent(ctx, id, map[string]any{"name": input.Name, "description": input.Description, "instructions": input.Instructions, "provider": input.Provider, "model": input.Model, "avatar": input.Avatar, "folder": input.Folder, "enabled": input.Enabled, "tools": tools, "skills": skills, "mcpServers": servers, "delegates": delegates, "inference": inference})
 		}
 		return func() {
 			if isNew {
@@ -455,7 +509,7 @@ func (a *app) duplicateSelected() {
 }
 func (a *app) deleteSelected() {
 	id := a.selected
-	a.confirm("Delete agent?", "The agent, conversations, memories and tasks will be removed.", func() {
+	a.confirm("Delete agent?", "The agent, its chat, memories and tasks will be removed.", func() {
 		a.request(func(ctx context.Context, client *APIClient) (func(), error) {
 			err := client.DeleteAgent(ctx, id)
 			return func() { a.selected = ""; a.editor = false; a.refresh() }, err
@@ -602,9 +656,8 @@ func (a *app) runSchedule(id string) {
 		execution, err := client.RunSchedule(ctx, id)
 		return func() {
 			a.notice = "Task started"
-			if execution.ConversationID != "" {
-				a.selected = execution.AgentID
-				a.selectConversation(execution.ConversationID)
+			if execution.AgentID != "" {
+				a.selectAgent(execution.AgentID)
 			}
 		}, err
 	})
@@ -719,4 +772,35 @@ func localTimezone() string {
 		}
 	}
 	return "UTC"
+}
+
+func (a *app) loadProviders() {
+	a.request(func(ctx context.Context, client *APIClient) (func(), error) {
+		providers, err := client.Providers(ctx)
+		return func() { a.providers = providers }, err
+	})
+}
+func (a *app) loadModels(provider string) {
+	a.request(func(ctx context.Context, client *APIClient) (func(), error) {
+		models, err := client.Models(ctx, provider)
+		return func() {
+			if a.editProvider == provider {
+				a.models = models
+			}
+		}, err
+	})
+}
+func (a *app) openSettings() {
+	a.settings = true
+	a.editor = false
+	a.panel = ""
+	a.navigation = "settings"
+	a.loadProviders()
+}
+func (a *app) removeProviderKey() {
+	provider := a.provider
+	a.request(func(ctx context.Context, client *APIClient) (func(), error) {
+		err := client.DeleteProviderKey(ctx, provider)
+		return func() { a.notice = "Provider key removed"; a.loadProviders() }, err
+	})
 }
