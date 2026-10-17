@@ -591,7 +591,7 @@ func (a *app) page(c *ui.Context, title string, actions func(), content func()) 
 	ui.Divider(c)
 	ui.Scroll(c).Grow(1).Children(func() {
 		ui.Row(c).Justify(ui.Center).Padding(24, 32, 40, 32).Children(func() {
-			ui.Column(c).Grow(1).MaxWidth(680).Gap(16).Children(func() {
+			ui.Column(c).Grow(1).MaxWidth(620).Gap(20).Children(func() {
 				if a.errorText != "" {
 					ui.Text(c, a.errorText).FontSize(12).TextColor(c.Theme().Danger).Selectable()
 				}
@@ -619,177 +619,200 @@ func emptyText(c *ui.Context, text string) {
 }
 
 func (a *app) settingsView(c *ui.Context) {
-	theme := c.Theme()
+	var configured []string
+	for _, provider := range a.providers {
+		if provider.Configured {
+			configured = append(configured, provider.Provider)
+		}
+	}
+	keysFooter := "Keys are stored encrypted on your server."
+	if len(configured) > 0 {
+		keysFooter = "Configured: " + strings.Join(configured, ", ") + ". " + keysFooter
+	}
+	names := make([]string, 0, len(a.providers))
+	for _, provider := range a.providers {
+		names = append(names, provider.Provider)
+	}
 	a.page(c, "Settings", nil, func() {
-		ui.Text(c, "Server").FontSize(13).Bold()
-		ui.Form(c, func() {
-			ui.Field(c, "Server URL", func() { ui.TextInput(c, &a.serverURL).Width(380).Placeholder("http://127.0.0.1:7337") })
-			ui.Field(c, "Server token", func() { ui.TextInput(c, &a.token).Width(380).Password() }).
-				Description("Stored in the macOS Keychain; never written to the project.")
-			ui.Field(c, "", func() {
-				ui.Row(c).Children(func() {
-					if ui.PrimaryButton(c, "Save connection").Clicked() {
-						a.saveSettings()
-					}
-				})
-			})
-		})
-		ui.Divider(c)
-		ui.Text(c, "Provider API keys").FontSize(13).Bold()
-		ui.Form(c, func() {
-			ui.Field(c, "Provider", func() {
-				if len(a.providers) > 0 {
-					names := make([]string, 0, len(a.providers))
-					for _, provider := range a.providers {
-						names = append(names, provider.Provider)
-					}
-					ui.Select(c, &a.provider, names).Width(240)
-				} else {
-					ui.TextInput(c, &a.provider).Width(240).Placeholder("openai")
+		section(c, "Server", "The token stays in the macOS Keychain; it is never written to the project.",
+			func() {
+				settingsRow(c, "Server URL", func() { textValue(c, &a.serverURL, "Server URL", "http://127.0.0.1:7337") })
+			},
+			func() {
+				settingsRow(c, "Server token", func() { textValue(c, &a.token, "Server token", "Required").Password() })
+			},
+			func() {
+				if rowButton(c, "save-connection", "Save Connection", false) {
+					a.saveSettings()
 				}
-			})
-			ui.Field(c, "API key", func() { ui.TextInput(c, &a.providerKey).Width(380).Password() })
-			ui.Field(c, "", func() {
-				ui.Row(c).Gap(8).Children(func() {
-					if ui.PrimaryButton(c, "Save provider key").Clicked() {
-						a.saveProviderKey()
-					}
-					if ui.Button(c, "Remove key").Clicked() {
-						a.removeProviderKey()
+			},
+		)
+		section(c, "Provider API Keys", keysFooter,
+			func() {
+				settingsRow(c, "Provider", func() {
+					if len(names) > 0 {
+						popupButton(c, "Provider", &a.provider, names)
+					} else {
+						textValue(c, &a.provider, "Provider", "melious")
 					}
 				})
-			})
-		})
-		var configured []string
-		for _, provider := range a.providers {
-			if provider.Configured {
-				configured = append(configured, provider.Provider)
-			}
-		}
-		if len(configured) > 0 {
-			ui.Text(c, "Configured: "+strings.Join(configured, ", ")).FontSize(12).TextColor(theme.TextMuted)
-		}
+			},
+			func() {
+				settingsRow(c, "API key", func() { textValue(c, &a.providerKey, "API key", "Paste a key").Password() })
+			},
+			func() {
+				if rowButton(c, "save-key", "Save Key", false) {
+					a.saveProviderKey()
+				}
+			},
+			func() {
+				if rowButton(c, "remove-key", "Remove Key", true) {
+					a.removeProviderKey()
+				}
+			},
+		)
 	})
 }
 
 func (a *app) agentEditorView(c *ui.Context) {
 	theme := c.Theme()
-	title := "Agent profile"
+	title := "Agent Profile"
 	if a.newAgent {
-		title = "Create an agent"
+		title = "New Agent"
 	}
 	a.page(c, title, func() {
 		if ui.Button(c, "Cancel").Clicked() {
 			a.editor = false
 		}
-		label := "Save changes"
+		label := "Save"
 		if a.newAgent {
-			label = "Create agent"
+			label = "Create"
 		}
 		if ui.PrimaryButton(c, label).Disabled(a.loading).Clicked() {
 			a.saveAgentEditor()
 		}
 	}, func() {
-		ui.Row(c).Gap(16).AlignItems(ui.Center).Children(func() {
+		ui.Column(c).AlignItems(ui.Center).Gap(6).Padding(4, 0, 8, 0).Children(func() {
 			if svg, err := critterSVG(agentAvatarSeed(Agent{ID: a.selected, Avatar: a.editAvatar})); err == nil {
-				ui.Image(c, svg).Size(72, 72).Radius(20).Label("Agent avatar preview")
+				ui.Image(c, svg).Size(76, 76).Radius(22).Label("Agent avatar")
 			}
-			ui.Column(c).Gap(6).Children(func() {
-				ui.Text(c, "Avatar").FontSize(13).Bold()
-				if ui.Button(c, "New critter").Clicked() {
-					a.editAvatar = "critters:" + newRequestID()
-				}
-			})
+			name := strings.TrimSpace(a.editName)
+			if name == "" {
+				name = "New Agent"
+			}
+			ui.Text(c, name).FontSize(20).Bold()
+			critter := ui.ButtonBase(c.Key("new-critter")).Padding(2, 6).Radius(5).Label("New critter")
+			critter.Children(func() { ui.Text(c, "New Critter").FontSize(12).TextColor(theme.Accent) })
+			if critter.Clicked() {
+				a.editAvatar = "critters:" + newRequestID()
+			}
 		})
-		ui.Form(c, func() {
-			ui.Field(c, "Name", func() { ui.TextInput(c, &a.editName).Width(360).Placeholder("Give your agent a name") })
-			ui.Field(c, "Description", func() {
-				ui.TextInput(c, &a.editDescription).Width(420).Placeholder("What does this agent help with?")
-			})
-			ui.Field(c, "Folder", func() { ui.TextInput(c, &a.editFolder).Width(240) })
-			ui.Field(c, "Provider", func() {
-				if ui.Select(c, &a.editProvider, a.providerChoices()).Width(220).Changed() {
-					a.models = nil
-					a.loadModels(a.editProvider)
+		section(c, "", "",
+			func() { settingsRow(c, "Name", func() { textValue(c, &a.editName, "Name", "Required") }) },
+			func() {
+				settingsRow(c, "Description", func() { textValue(c, &a.editDescription, "Description", "What it helps with") })
+			},
+			func() { settingsRow(c, "Folder", func() { textValue(c, &a.editFolder, "Folder", "Personal") }) },
+			func() { settingsRow(c, "Enabled", func() { miniSwitch(c, &a.editEnabled, "Enabled") }) },
+		)
+		ids := make([]string, 0, len(a.models))
+		for _, model := range a.models {
+			ids = append(ids, model.ID)
+		}
+		section(c, "Model", a.modelHint(),
+			func() {
+				settingsRow(c, "Provider", func() {
+					if popupButton(c, "Provider", &a.editProvider, a.providerChoices()) {
+						a.models = nil
+						a.editModel = ""
+						a.loadModels(a.editProvider)
+					}
+				})
+			},
+			func() { settingsRow(c, "Model", func() { modelField(c, &a.editModel, ids) }) },
+		)
+		section(c, "Instructions", "How the agent should behave in every chat.", func() {
+			ui.TextAreaBase(c.Key("instructions"), &a.editInstructions).Lines(4, 14).FontSize(13).Padding(10, 12).Label("Instructions")
+		})
+		capabilities := []func(){
+			func() { settingsRow(c, "Memory", func() { miniSwitch(c, &a.toolsMemory, "Memory") }) },
+			func() {
+				settingsRow(c, "Delegate to other agents", func() { miniSwitch(c, &a.toolsDelegate, "Delegation") })
+			},
+		}
+		if a.toolsDelegate {
+			for _, agent := range a.agents {
+				if agent.ID == a.selected {
+					continue
 				}
-			})
-			ui.Field(c, "Model", func() {
-				ids := make([]string, 0, len(a.models))
-				for _, model := range a.models {
-					ids = append(ids, model.ID)
-				}
-				ui.Autocomplete(c, &a.editModel, ids).Width(320).Placeholder("Model ID")
-			}).Description(a.modelHint())
-			ui.Field(c, "Instructions", func() { ui.TextArea(c, &a.editInstructions).Width(420).Lines(5, 14) })
-			ui.Field(c, "Enabled", func() { ui.Switch(c, &a.editEnabled).Label("Agent enabled") })
-			ui.Fieldset(c, "Capabilities", func() {
-				ui.Field(c, "Memory", func() { ui.Checkbox(c, &a.toolsMemory, "Read and manage its own memory") })
-				ui.Field(c, "Delegation", func() {
-					ui.Column(c).Gap(6).Children(func() {
-						ui.Checkbox(c, &a.toolsDelegate, "Delegate bounded tasks to selected agents")
-						if a.toolsDelegate {
-							for _, agent := range a.agents {
-								if agent.ID == a.selected {
-									continue
-								}
-								enabled := a.editDelegates[agent.ID]
-								if ui.Checkbox(c.Key(agent.ID), &enabled, agent.Name).Margin(0, 0, 0, 22).Changed() {
-									a.editDelegates[agent.ID] = enabled
-								}
-							}
+				agent := agent
+				capabilities = append(capabilities, func() {
+					enabled := a.editDelegates[agent.ID]
+					settingsRow(c, "    "+agent.Name, func() {
+						if miniSwitch(c, &enabled, "Delegate to "+agent.Name).Changed() {
+							a.editDelegates[agent.ID] = enabled
 						}
 					})
 				})
+			}
+		}
+		section(c, "Capabilities", "Memory lets the agent keep notes between chats. Delegation lets it hand bounded tasks to the agents you allow.", capabilities...)
+		if len(a.mcpServers) == 0 {
+			section(c, "Integrations", "", func() {
+				ui.Text(c, "Add an MCP server under Integrations to use its tools here.").FontSize(13).TextColor(theme.TextMuted).Padding(10, 12)
 			})
-			ui.Field(c, "Integrations", func() {
-				ui.Column(c).Gap(6).Children(func() {
-					if len(a.mcpServers) == 0 {
-						ui.Text(c, "Add an MCP server in Integrations to make its tools available here.").FontSize(12).TextColor(theme.TextMuted)
-					}
-					for _, server := range a.mcpServers {
-						enabled := a.editMCP[server.ID]
-						if ui.Checkbox(c.Key(server.ID), &enabled, server.Name).Disabled(!server.Enabled).Changed() {
+		} else {
+			var rows []func()
+			for _, server := range a.mcpServers {
+				server := server
+				rows = append(rows, func() {
+					enabled := a.editMCP[server.ID]
+					settingsRow(c, server.Name, func() {
+						if miniSwitch(c, &enabled, server.Name).Disabled(!server.Enabled).Changed() {
 							a.editMCP[server.ID] = enabled
 						}
+					})
+				})
+			}
+			section(c, "Integrations", "", rows...)
+		}
+		var skills []func()
+		for i := range a.editSkills {
+			index := i
+			skills = append(skills, func() {
+				ui.Column(c).Key(fmt.Sprintf("skill-%d", index)).Padding(8, 12).Gap(4).Children(func() {
+					ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
+						ui.TextInputBase(c.Key("name"), &a.editSkills[index].Name).FontSize(13).Bold().Grow(1).Label("Skill name").Placeholder("Skill name")
+						if iconButton(c, "remove", symbolClose, "Remove skill").Clicked() {
+							a.editSkills = append(a.editSkills[:index], a.editSkills[index+1:]...)
+						}
+					})
+					if index < len(a.editSkills) {
+						ui.TextAreaBase(c.Key("instructions"), &a.editSkills[index].Instructions).Lines(2, 10).FontSize(13).
+							TextColor(theme.TextMuted).Label("Skill instructions").Placeholder("What the agent should do")
 					}
 				})
 			})
-		})
-		ui.Divider(c)
-		ui.Row(c).AlignItems(ui.Center).Children(func() {
-			ui.Column(c).Grow(1).Children(func() {
-				ui.Text(c, "Skills").FontSize(13).Bold()
-				ui.Text(c, "Reusable instructions your agent follows when working.").FontSize(12).TextColor(theme.TextMuted)
-			})
-			if ui.Button(c, "Add skill").Clicked() {
+		}
+		skills = append(skills, func() {
+			if rowButton(c, "add-skill", "Add Skill…", false) {
 				a.editSkills = append(a.editSkills, Skill{})
 			}
 		})
-		for i := range a.editSkills {
-			index := i
-			ui.Column(c).Key(fmt.Sprintf("skill-%d", i)).Gap(8).Padding(14).Radius(10).Background(theme.Surface).Children(func() {
-				ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-					ui.TextInput(c, &a.editSkills[index].Name).Label("Skill name").Placeholder("Skill name").Grow(1)
-					if iconButton(c, "remove", symbolClose, "Remove skill").Clicked() {
-						a.editSkills = append(a.editSkills[:index], a.editSkills[index+1:]...)
-					}
-				})
-				if index < len(a.editSkills) {
-					ui.TextArea(c, &a.editSkills[index].Instructions).Label("Skill instructions").Placeholder("Instructions").Lines(3, 10)
-				}
-			})
-		}
+		section(c, "Skills", "Reusable instructions the agent follows when working.", skills...)
 		if !a.newAgent {
-			ui.Divider(c)
-			ui.Row(c).Gap(8).Children(func() {
-				if ui.Button(c, "Duplicate").Clicked() {
-					a.duplicateSelected()
-				}
-				ui.Spacer(c)
-				if ui.Button(c, "Delete agent").TextColor(theme.Danger).Clicked() {
-					a.deleteSelected()
-				}
-			})
+			section(c, "", "",
+				func() {
+					if rowButton(c, "duplicate", "Duplicate Agent", false) {
+						a.duplicateSelected()
+					}
+				},
+				func() {
+					if rowButton(c, "delete", "Delete Agent…", true) {
+						a.deleteSelected()
+					}
+				},
+			)
 		}
 	})
 }
@@ -825,50 +848,51 @@ func (a *app) modelHint() string {
 	return fmt.Sprintf("%d models available.", len(a.models))
 }
 
-func formActions(c *ui.Context, save string, onSave, onCancel func()) {
-	ui.Field(c, "", func() {
-		ui.Row(c).Gap(8).Children(func() {
-			if ui.PrimaryButton(c, save).Clicked() {
-				onSave()
-			}
-			if ui.Button(c, "Cancel").Clicked() {
-				onCancel()
-			}
-		})
+func formButtons(c *ui.Context, save string, onSave, onCancel func()) {
+	ui.Row(c).Gap(8).Children(func() {
+		ui.Spacer(c)
+		if ui.Button(c, "Cancel").Clicked() {
+			onCancel()
+		}
+		if ui.PrimaryButton(c, save).Clicked() {
+			onSave()
+		}
 	})
 }
 
 func (a *app) memoryFormView(c *ui.Context) {
-	ui.Text(c, "Memory entry").FontSize(13).Bold()
-	ui.Form(c, func() {
-		ui.Field(c, "Content", func() { ui.TextArea(c, &a.memoryContent).Width(460).Lines(5, 14) })
-		formActions(c, "Save memory", a.saveMemory, func() { a.memoryForm = false })
+	section(c, "Memory Entry", "", func() {
+		ui.TextAreaBase(c.Key("memory"), &a.memoryContent).Lines(4, 14).FontSize(13).Padding(10, 12).Label("Content").Placeholder("Something to remember")
 	})
+	formButtons(c, "Save", a.saveMemory, func() { a.memoryForm = false })
 }
 
 func (a *app) taskFormView(c *ui.Context) {
-	ui.Text(c, "Task").FontSize(13).Bold()
-	ui.Form(c, func() {
-		ui.Field(c, "Name", func() { ui.TextInput(c, &a.taskName).Width(380) })
-		ui.Field(c, "Prompt", func() { ui.TextArea(c, &a.taskPrompt).Width(460).Lines(4, 12) })
-		ui.Field(c, "Repeat", func() { ui.TextInput(c, &a.taskCron).Width(240).Placeholder("0 9 * * 1-5") }).
-			Description("A cron expression. Leave empty for a one-time task.")
-		ui.Field(c, "Run once at", func() { ui.TextInput(c, &a.taskRunAt).Width(300).Placeholder("2026-10-18T09:00:00Z") })
-		ui.Field(c, "Time zone", func() { ui.TextInput(c, &a.taskTimezone).Width(240) })
-		ui.Field(c, "Enabled", func() { ui.Switch(c, &a.taskEnabled).Label("Enabled") })
-		formActions(c, "Save task", a.saveTask, func() { a.taskForm = false })
+	section(c, "Task", "",
+		func() { settingsRow(c, "Name", func() { textValue(c, &a.taskName, "Name", "Required") }) },
+		func() { settingsRow(c, "Enabled", func() { miniSwitch(c, &a.taskEnabled, "Enabled") }) },
+	)
+	section(c, "Prompt", "", func() {
+		ui.TextAreaBase(c.Key("prompt"), &a.taskPrompt).Lines(3, 12).FontSize(13).Padding(10, 12).Label("Prompt").Placeholder("What the agent should do")
 	})
+	section(c, "Schedule", "Use a cron expression to repeat, or a date and time to run once.",
+		func() { settingsRow(c, "Repeat", func() { textValue(c, &a.taskCron, "Repeat", "0 9 * * 1-5") }) },
+		func() {
+			settingsRow(c, "Run once at", func() { textValue(c, &a.taskRunAt, "Run once at", "2026-10-18T09:00:00Z") })
+		},
+		func() { settingsRow(c, "Time zone", func() { textValue(c, &a.taskTimezone, "Time zone", "UTC") }) },
+	)
+	formButtons(c, "Save", a.saveTask, func() { a.taskForm = false })
 }
 
 func (a *app) mcpFormView(c *ui.Context) {
-	ui.Text(c, "MCP server").FontSize(13).Bold()
-	ui.Form(c, func() {
-		ui.Field(c, "Name", func() { ui.TextInput(c, &a.mcpName).Width(340) })
-		ui.Field(c, "HTTP URL", func() { ui.TextInput(c, &a.mcpURL).Width(420) })
-		ui.Field(c, "Token", func() { ui.TextInput(c, &a.mcpToken).Password().Width(340).Placeholder("Optional") })
-		ui.Field(c, "Enabled", func() { ui.Switch(c, &a.mcpEnabled).Label("Enabled") })
-		formActions(c, "Save server", a.saveMCP, func() { a.mcpForm = false })
-	})
+	section(c, "MCP Server", "",
+		func() { settingsRow(c, "Name", func() { textValue(c, &a.mcpName, "Name", "Required") }) },
+		func() { settingsRow(c, "HTTP URL", func() { textValue(c, &a.mcpURL, "HTTP URL", "https://") }) },
+		func() { settingsRow(c, "Token", func() { textValue(c, &a.mcpToken, "Token", "Optional").Password() }) },
+		func() { settingsRow(c, "Enabled", func() { miniSwitch(c, &a.mcpEnabled, "Enabled") }) },
+	)
+	formButtons(c, "Save", a.saveMCP, func() { a.mcpForm = false })
 }
 
 var panelTitles = map[string]string{"memory": "Memory", "tasks": "Tasks", "activity": "Activity", "approvals": "Approvals", "mcp": "Integrations"}

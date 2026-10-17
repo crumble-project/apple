@@ -209,7 +209,7 @@ func TestMemoryPanelRendersEntriesAndEditor(t *testing.T) {
 		t.Fatal("memory entry missing from view")
 	}
 	a.memoryForm = true
-	if !ui.NewTester(a.view, 1120, 760).HasText("Memory entry") {
+	if !ui.NewTester(a.view, 1120, 760).HasText("Memory Entry") {
 		t.Fatal("memory editor missing from view")
 	}
 }
