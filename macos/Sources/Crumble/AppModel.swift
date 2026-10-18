@@ -38,6 +38,7 @@ struct AgentDraft: Identifiable, Sendable {
     var maxOutput = ""
     var toolsMemory = true
     var toolsDelegate = false
+    var toolsCodemode = false
     var delegates: Set<String> = []
     var mcpServers: Set<String> = []
     var skills: [Skill] = []
@@ -467,6 +468,7 @@ final class AppModel {
         let tools = agent.tools ?? []
         draft.toolsMemory = tools.contains("memory")
         draft.toolsDelegate = tools.contains("delegate")
+        draft.toolsCodemode = tools.contains("codemode")
         draft.skills = agent.skills ?? []
         draft.delegates = Set(agent.delegates ?? [])
         draft.mcpServers = Set(agent.mcpServers ?? [])
@@ -534,6 +536,7 @@ final class AppModel {
         var tools: [String] = []
         if draft.toolsMemory { tools.append("memory") }
         if draft.toolsDelegate { tools.append("delegate") }
+        if draft.toolsCodemode { tools.append("codemode") }
         if draft.skills.contains(where: {
             $0.name.trimmingCharacters(in: .whitespaces).isEmpty || $0.instructions.trimmingCharacters(in: .whitespaces).isEmpty
         }) {

@@ -78,10 +78,11 @@ struct AgentEditorView: View {
                         Toggle(agent.name, isOn: membership(\.delegates, agent.id)).padding(.leading, 16)
                     }
                 }
+                Toggle("Code mode", isOn: $draft.toolsCodemode)
             } header: {
                 Text("Capabilities")
             } footer: {
-                Text("Memory lets the agent keep notes between chats. Delegation lets it hand bounded tasks to the agents you allow.")
+                Text("Memory lets the agent keep notes between chats. Delegation lets it hand bounded tasks to the agents you allow. Code mode has the agent write a short script that calls its tools, so many tool calls take one step; approvals still apply to each call.")
                     .foregroundStyle(.secondary)
             }
             Section("Integrations") {
