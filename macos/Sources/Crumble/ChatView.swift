@@ -274,32 +274,28 @@ struct BotMessageView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 7) {
-                Label("Bot communication", systemImage: "person.2.fill")
-                    .font(.callout.weight(.semibold))
-                Spacer()
+        DisclosureGroup(isExpanded: $expanded) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text(status)
                     .font(.caption.weight(.medium))
                     .foregroundStyle(statusColor)
-            }
-            Text("\(sender) → \(recipient)")
-                .font(.subheadline.weight(.medium))
-                .textSelection(.enabled)
-            DisclosureGroup(isExpanded: $expanded) {
                 MarkdownText(text: message.text)
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
-            } label: {
-                Text(preview(message.text))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-                    .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .padding(.top, 6)
+        } label: {
+            Text("Bot communication: \(sender) → \(recipient)")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .help("Bot communication: \(sender) → \(recipient)")
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(12)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
         .frame(maxWidth: 560, alignment: .leading)
-        .background(Color.primary.opacity(0.07), in: .rect(cornerRadius: 14))
+        .background(Color.primary.opacity(0.07), in: .rect(cornerRadius: 10))
     }
 }
 

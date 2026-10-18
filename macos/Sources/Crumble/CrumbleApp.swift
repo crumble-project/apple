@@ -92,14 +92,26 @@ struct SidebarView: View {
         List(selection: Binding(get: { model.route }, set: { model.navigate(to: $0) })) {
             Section("Agents") {
                 ForEach(model.agents) { agent in
-                    HStack(spacing: 8) {
-                        BotAvatarView(agent: agent, size: 26, state: model.botState(agent))
-                        Text(agent.name).lineLimit(1)
-                        Spacer()
-                        if !agent.enabled {
-                            Text("Paused").font(.caption).foregroundStyle(.secondary)
+                    HStack(spacing: 12) {
+                        BotAvatarView(agent: agent, size: 44, state: model.botState(agent))
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack(spacing: 6) {
+                                Text(agent.name)
+                                    .font(.body.weight(.semibold))
+                                    .lineLimit(1)
+                                if !agent.enabled {
+                                    Text("Paused").font(.caption).foregroundStyle(.secondary)
+                                }
+                            }
+                            Text(preview(agent.lastMessage ?? "").nilIfEmpty ?? "No messages yet")
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(2)
                         }
+                        Spacer(minLength: 0)
                     }
+                    .padding(.vertical, 10)
+                    .contentShape(Rectangle())
                     .tag(Route.agent(agent.id))
                 }
                 if model.agents.isEmpty {

@@ -76,11 +76,12 @@ struct Agent: Codable, Identifiable, Hashable, Sendable {
     var sharedMemory: Bool?
     var mcpServers: [String]?
     var inference: Inference?
+    var lastMessage: String?
 
     init(id: String = "", name: String = "", description: String? = nil, instructions: String? = nil, avatar: String? = nil,
          enabled: Bool = true, provider: String? = nil, model: String? = nil, folder: String? = nil, tools: [String]? = nil,
          delegates: [String]? = nil, skills: [Skill]? = nil, sharedSkills: [String]? = nil, sharedMemory: Bool? = nil,
-         mcpServers: [String]? = nil, inference: Inference? = nil) {
+         mcpServers: [String]? = nil, inference: Inference? = nil, lastMessage: String? = nil) {
         self.id = id
         self.name = name
         self.description = description
@@ -97,6 +98,7 @@ struct Agent: Codable, Identifiable, Hashable, Sendable {
         self.sharedMemory = sharedMemory
         self.mcpServers = mcpServers
         self.inference = inference
+        self.lastMessage = lastMessage
     }
 
     init(from decoder: Decoder) throws {
@@ -117,6 +119,7 @@ struct Agent: Codable, Identifiable, Hashable, Sendable {
         sharedMemory = try c.decodeIfPresent(Bool.self, forKey: .sharedMemory)
         mcpServers = try c.decodeIfPresent([String].self, forKey: .mcpServers)
         inference = try c.decodeIfPresent(Inference.self, forKey: .inference)
+        lastMessage = try c.decodeIfPresent(String.self, forKey: .lastMessage)
     }
 }
 

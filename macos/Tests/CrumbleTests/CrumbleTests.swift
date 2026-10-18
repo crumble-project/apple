@@ -48,9 +48,10 @@ final class StubProtocol: URLProtocol, @unchecked Sendable {
 @Suite(.serialized)
 struct APIClientTests {
     @Test func agentsSendBearerAndDecode() async throws {
-        let client = StubProtocol.client(token: "test-token") { _ in (200, #"[{"id":"a1","name":"Atlas","enabled":true}]"#) }
+        let client = StubProtocol.client(token: "test-token") { _ in (200, #"[{"id":"a1","name":"Atlas","enabled":true,"lastMessage":"See you tomorrow."}]"#) }
         let agents = try await client.agents()
         #expect(agents.map(\.name) == ["Atlas"])
+        #expect(agents.first?.lastMessage == "See you tomorrow.")
         #expect(StubProtocol.requests.first?.url?.path == "/v1/agents")
         #expect(StubProtocol.requests.first?.value(forHTTPHeaderField: "Authorization") == "Bearer test-token")
     }
@@ -264,6 +265,22 @@ actor Received {
 }
 
 struct LogicTests {
+    @MainActor @Test func sidebarPreviewsUpdateWithoutOpeningTheBotChat() throws {
+        let model = AppModel(client: APIClient(baseURL: "http://127.0.0.1:1", token: ""))
+        model.agents = [Agent(id: "a1", name: "Atlas", lastMessage: "Earlier"), Agent(id: "a2", name: "Beacon")]
+        model.route = .memory
+        let data = Data(#"{"type":"chat-preview","agentId":"a2","agentName":"Beacon","lastMessage":"A new reply from Beacon"}"#.utf8)
+        let event = try JSONDecoder().decode(ActivityEvent.self, from: data)
+        model.handleActivity(event)
+        #expect(model.agents[0].lastMessage == "Earlier")
+        #expect(model.agents[1].lastMessage == "A new reply from Beacon")
+        #expect(model.route == .memory)
+        #expect(model.messages.isEmpty)
+        #expect(notification(for: event, in: NotificationContext(appActive: false, route: nil)) == nil)
+        model.handleActivity(ActivityEvent(type: "chat-preview", agentId: "a2", agentName: "Beacon", lastMessage: ""))
+        #expect(model.agents[1].lastMessage == "")
+    }
+
     @Test func sseRejectsSnapshotsWithoutAgent() throws {
         var parser = SSEParser()
         _ = try parser.feed("event: snapshot")

@@ -347,6 +347,10 @@ final class AppModel {
     }
 
     func handleActivity(_ event: ActivityEvent) {
+        if event.type == "chat-preview", let lastMessage = event.lastMessage,
+           let index = agents.firstIndex(where: { $0.id == event.agentId }) {
+            agents[index].lastMessage = lastMessage
+        }
         if event.type == "approval", route == .approvals { openPanel(.approvals) }
         let context = NotificationContext(appActive: NSApp?.isActive ?? false, route: route)
         guard let note = notification(for: event, in: context) else { return }
@@ -612,7 +616,9 @@ final class AppModel {
                 if isNew {
                     agents.append(agent)
                 } else if let index = agents.firstIndex(where: { $0.id == id }) {
+                    let lastMessage = agents[index].lastMessage
                     agents[index] = agent
+                    agents[index].lastMessage = agent.lastMessage ?? lastMessage
                 }
                 agentDraft = nil
                 if !isNew, let panel = route, [.memory, .skills, .integrations].contains(panel) {

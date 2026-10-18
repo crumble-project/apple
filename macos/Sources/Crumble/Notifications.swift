@@ -12,6 +12,7 @@ struct ActivityEvent: Decodable, Sendable {
     var preview: String?
     var approvalId: String?
     var toolName: String?
+    var lastMessage: String?
 }
 
 /// What the owner is looking at, which decides whether an event is worth a notification.
