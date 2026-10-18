@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// The app's Settings window (⌘,): the server connection and provider API keys.
@@ -9,6 +10,13 @@ struct SettingsView: View {
         let configured = model.providers.filter(\.configured).map(\.provider)
         Form {
             SheetError()
+            Section {
+                Toggle("Notifications", isOn: Binding(get: { PushNotifications.shared.enabled }, set: { PushNotifications.shared.enabled = $0 }))
+                Text(PushNotifications.shared.status).font(.caption).foregroundStyle(.secondary)
+                Button("Open Notification Settings") {
+                    if let url = URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension") { NSWorkspace.shared.open(url) }
+                }
+            } header: { Text("Notifications") }
             Section {
                 TextField("Server URL", text: $model.serverURL, prompt: Text("http://127.0.0.1:7337"))
                 SecureField("Server token", text: $model.token, prompt: Text("Required"))

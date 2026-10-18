@@ -3,11 +3,13 @@ import SwiftUI
 
 @main
 struct CrumbleApp: App {
+    @NSApplicationDelegateAdaptor(CrumbleAppDelegate.self) private var appDelegate
     @State private var model = AppModel()
 
     init() {
         // Started from `swift run` there is no bundle telling AppKit this is a regular app.
         NSApplication.shared.setActivationPolicy(.regular)
+        Notifier.shared.installDelegate()
     }
 
     var body: some Scene {
@@ -36,6 +38,7 @@ struct CrumbleApp: App {
 
 struct ContentView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         @Bindable var model = model
@@ -46,6 +49,9 @@ struct ContentView: View {
             detail
                 .overlay(alignment: .top) { ErrorBanner() }
                 .overlay(alignment: .bottom) { NoticeToast() }
+        }
+        .onAppear {
+            PushNotifications.shared.openMainWindow = { openWindow(id: "main") }
         }
         .sheet(item: $model.agentDraft) { AgentEditorView(draft: sheetBinding($model.agentDraft, for: $0)) }
         .sheet(item: $model.memoryDraft) { MemoryFormView(draft: sheetBinding($model.memoryDraft, for: $0)) }
@@ -221,5 +227,29 @@ struct SheetError: View {
                     .textSelection(.enabled)
             }
         }
+    }
+}
+
+@MainActor
+final class CrumbleAppDelegate: NSObject, NSApplicationDelegate {
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        Notifier.shared.installDelegate()
+    }
+    func application(_ application: NSApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        PushNotifications.shared.receivedToken(deviceToken)
+    }
+    func application(_ application: NSApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        PushNotifications.shared.registrationFailed()
+    }
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        Task {
+            await PushNotifications.shared.prepareForTermination()
+            sender.reply(toApplicationShouldTerminate: true)
+        }
+        return .terminateLater
+    }
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag { sender.windows.first { $0.title == "Crumble" }?.makeKeyAndOrderFront(nil) }
+        return true
     }
 }

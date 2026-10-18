@@ -3,7 +3,10 @@ import Foundation
 import UserNotifications
 
 /// One event from the server's activity stream.
-struct ActivityEvent: Decodable, Sendable {
+struct ActivityEvent: Codable, Sendable {
+    var eventId: String?
+    var serverId: String?
+    var createdAt: String?
     var type: String
     var agentId: String
     var agentName: String
@@ -44,20 +47,23 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
         Bundle.main.bundleIdentifier == nil ? nil : .current()
     }
 
+    func installDelegate() { center?.delegate = self }
+
     func start(model: AppModel) {
         self.model = model
         guard let center else { return }
         center.delegate = self
-        center.requestAuthorization(options: [.alert, .sound]) { _, _ in }
+        PushNotifications.shared.start(model: model)
     }
 
     func post(_ event: ActivityEvent, title: String, body: String) {
-        guard let center else { return }
+        guard let center, PushNotifications.shared.shouldPostLocal(event) else { return }
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body
         content.sound = .default
-        content.userInfo = ["type": event.type, "agentId": event.agentId]
+        content.userInfo = ["type": event.type, "agentId": event.agentId, "local": true,
+                            "serverURL": model?.client?.baseURL ?? ""]
         // Replies from one bot replace each other, so a busy bot leaves one notification.
         let id = "reply-\(event.agentId)"
         center.add(UNNotificationRequest(identifier: id, content: content, trigger: nil))
@@ -65,18 +71,31 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
 
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async
         -> UNNotificationPresentationOptions {
-        [.banner, .sound]
+        let info = notification.request.content.userInfo
+        if info["local"] as? Bool == true {
+            let url = info["serverURL"] as? String
+            let agentId = info["agentId"] as? String
+            return await MainActor.run {
+                guard PushNotifications.shared.enabled, self.model?.client?.baseURL == url else { return [] }
+                if NSApp.isActive, let agentId, self.model?.route == .agent(agentId) { return [] }
+                return [.banner, .sound]
+            }
+        }
+        guard let data = try? JSONSerialization.data(withJSONObject: info),
+              let event = try? JSONDecoder().decode(ActivityEvent.self, from: data) else { return [] }
+        return await PushNotifications.shared.presentation(for: event)
     }
 
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
         let info = response.notification.request.content.userInfo
-        let agentID = info["agentId"] as? String
-        await MainActor.run {
-            NSApp.activate()
-            guard let model else { return }
-            if let agentID {
-                model.selectAgent(agentID)
-            }
+        if info["local"] as? Bool == true {
+            let agentID = info["agentId"] as? String
+            let serverURL = info["serverURL"] as? String
+            guard let agentID, let serverURL else { return }
+            await PushNotifications.shared.openLocal(agentId: agentID, serverURL: serverURL)
+        } else if let data = try? JSONSerialization.data(withJSONObject: info),
+                  let event = try? JSONDecoder().decode(ActivityEvent.self, from: data) {
+            await PushNotifications.shared.open(event)
         }
     }
 }
