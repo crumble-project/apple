@@ -10,7 +10,9 @@ Shared Swift code for the Crumble iOS and macOS clients. Requires Swift 6.2 or l
 - Transcript merging, mention completion, message previews, OAuth callbacks, task validation, and date formatting.
 - Attachment metadata, encoding, and limits, plus avatar seed selection.
 
-The package uses Foundation. It has no third-party dependencies and contains no SwiftUI, UIKit, or AppKit code.
+The `apfelkern` library uses Foundation. It has no third-party dependencies and contains no SwiftUI, UIKit, or AppKit code.
+
+The separate `BotAvatar` library draws the bot avatars with SwiftUI. Live avatars run their motion as looping Core Animation keyframes, hosted in an AppKit or UIKit view, so they cost the app almost no CPU while they animate. Import it with `import BotAvatar`. The avatar drawing is adapted from MIT-licensed work; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## Use the package
 
@@ -33,6 +35,12 @@ swift test
 swiftlint lint
 ```
 
-The package test target currently contains only the scaffold test. Existing client suites exercise the extracted APIs and logic.
+Build `BotAvatar` for iOS as well, because its live view has separate AppKit and UIKit code:
+
+```sh
+xcodebuild -scheme BotAvatar -destination 'generic/platform=iOS Simulator' build
+```
+
+The `apfelkernTests` target currently contains only the scaffold test; `BotAvatarTests` covers avatar motion. Existing client suites exercise the extracted APIs and logic.
 Run `swift test` in `../desktop` and the unit tests in the `../ios` Xcode project after changing shared behavior.
 The iOS test script also runs UI tests; see the [iOS build and test instructions](../ios/README.md#build-and-test).
