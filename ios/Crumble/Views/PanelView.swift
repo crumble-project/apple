@@ -13,7 +13,7 @@ struct PanelView: View {
         ToolbarItemGroup(placement: .primaryAction) {
           switch panel {
           case .memory:
-            Button("New Shared Memory", systemImage: "plus") {
+            Button("New Memory", systemImage: "plus") {
               model.openMemoryForm("", agentID: nil)
             }
           case .skills:
@@ -50,6 +50,7 @@ private struct MemoryPanel: View {
   @State private var query = ""
   @State private var scope: MemoryScope = .all
   @State private var pendingDelete: MemoryDeletion?
+  @State private var collapsedSections: Set<String> = []
 
   private enum MemoryScope: Hashable, Identifiable {
     case all, shared, bot(String)
@@ -82,10 +83,12 @@ private struct MemoryPanel: View {
       }
       if scope == .all || scope == .shared {
         Section {
-          ForEach(visibleShared) { row($0, agentID: nil) }
-          if !visibleShared.isEmpty { Text("\(model.sharedMemories.count) shared entr\(model.sharedMemories.count == 1 ? "y" : "ies")").font(.caption).foregroundStyle(.secondary) }
-          Button("New Shared Memory", systemImage: "plus") { model.openMemoryForm("", agentID: nil) }
-        } header: { Text("Shared") } footer: { Text(sharedFooter).foregroundStyle(.secondary) }
+          DisclosureGroup(isExpanded: sectionBinding("shared")) {
+            ForEach(visibleShared) { row($0, agentID: nil) }
+          } label: {
+            sectionLabel("Shared", count: model.sharedMemories.count)
+          }
+        } footer: { Text(sharedFooter).foregroundStyle(.secondary) }
       }
       if scope != .shared {
         ForEach(model.agents.filter { agent in
@@ -93,11 +96,13 @@ private struct MemoryPanel: View {
         }) { agent in
           let memories = visiblePersonal[agent.id] ?? []
           Section {
-            if memories.isEmpty { Text("No matching memories.").foregroundStyle(.secondary) }
-            ForEach(memories) { row($0, agentID: agent.id) }
-            Text("\(memories.count) entr\(memories.count == 1 ? "y" : "ies")").font(.caption).foregroundStyle(.secondary)
-            Button("New Memory", systemImage: "plus") { model.openMemoryForm("", agentID: agent.id) }
-          } header: { Text(agent.name) } footer: { Text("Memories owned by \(agent.name).").foregroundStyle(.secondary) }
+            DisclosureGroup(isExpanded: sectionBinding(agent.id)) {
+              if memories.isEmpty { Text("No matching memories.").foregroundStyle(.secondary) }
+              ForEach(memories) { row($0, agentID: agent.id) }
+            } label: {
+              sectionLabel(agent.name, count: model.agentMemories[agent.id, default: []].count)
+            }
+          }
         }
       }
     }
@@ -129,6 +134,31 @@ private struct MemoryPanel: View {
     return q.isEmpty || memory.content.localizedCaseInsensitiveContains(q) || owner.localizedCaseInsensitiveContains(q)
   }
 
+  private func sectionBinding(_ id: String) -> Binding<Bool> {
+    Binding(
+      get: { !collapsedSections.contains(id) },
+      set: { isExpanded in
+        if isExpanded {
+          collapsedSections.remove(id)
+        } else {
+          collapsedSections.insert(id)
+        }
+      }
+    )
+  }
+
+  private func sectionLabel(_ title: String, count: Int) -> some View {
+    HStack {
+      Text(title)
+      Spacer()
+      Text("\(count)")
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .monospacedDigit()
+        .accessibilityLabel("\(count) memories")
+    }
+  }
+
   private var sharedFooter: String {
     let enabled = model.agents.filter { $0.sharedMemory == true }.map(\.name)
     return enabled.isEmpty
@@ -137,21 +167,18 @@ private struct MemoryPanel: View {
   }
 
   private func row(_ memory: Memory, agentID: String?) -> some View {
-    DisclosureGroup {
-      Text(memory.content).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
-    } label: {
-      HStack(alignment: .firstTextBaseline) {
-        Text(memory.content).lineLimit(2).multilineTextAlignment(.leading)
-        Spacer()
-        Menu {
-          Button("Edit") { model.openMemoryForm(memory.id, agentID: agentID) }
-          Button("Delete", role: .destructive) {
-            pendingDelete = MemoryDeletion(id: memory.id, agentID: agentID, label: memory.content)
-          }
-        } label: { Image(systemName: "ellipsis.circle") }
-        .accessibilityLabel("Memory actions")
-        .disabled(memory.id.hasPrefix("pending-"))
-      }
+    HStack(alignment: .firstTextBaseline) {
+      Text(memory.content)
+        .textSelection(.enabled)
+        .frame(maxWidth: .infinity, alignment: .leading)
+      Menu {
+        Button("Edit") { model.openMemoryForm(memory.id, agentID: agentID) }
+        Button("Delete", role: .destructive) {
+          pendingDelete = MemoryDeletion(id: memory.id, agentID: agentID, label: memory.content)
+        }
+      } label: { Image(systemName: "ellipsis.circle") }
+      .accessibilityLabel("Memory actions")
+      .disabled(memory.id.hasPrefix("pending-"))
     }
   }
 }
