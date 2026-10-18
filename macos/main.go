@@ -25,6 +25,7 @@ type app struct {
 	providers        []ProviderStatus
 	models           []ModelSummary
 	editAvatar       string
+	avatarChoices    []string
 	editFolder       string
 	editMCP          map[string]bool
 	editDelegates    map[string]bool

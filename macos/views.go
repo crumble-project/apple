@@ -65,10 +65,15 @@ func (a *app) selectedAgent() (Agent, bool) {
 	return Agent{}, false
 }
 
-func avatar(c *ui.Context, agent Agent, size float32) {
-	if svg, err := critterSVG(agentAvatarSeed(agent)); err == nil {
-		ui.Image(c, svg).Size(size, size).Radius(size * 0.28).Label("Avatar for " + agent.Name)
+// botState shows a paused agent asleep and one that is replying at work.
+func (a *app) botState(agent Agent) botState {
+	switch {
+	case !agent.Enabled:
+		return botSleeping
+	case agent.ID == a.selected && a.snapshot != nil && a.snapshot.Status == "running":
+		return botWorking
 	}
+	return botIdle
 }
 
 func (a *app) view(c *ui.Context) {
@@ -131,9 +136,7 @@ func (a *app) sidebar(c *ui.Context, vibrant bool) {
 			for _, agent := range a.agents {
 				item := ui.SidebarItem(c.Key(agent.ID), "agent:"+agent.ID, nil, agent.Name).Height(38).Padding(6, 8, 6, 40)
 				item.Children(func() {
-					if svg, err := critterSVG(agentAvatarSeed(agent)); err == nil {
-						ui.Image(c, svg).Absolute().Left(8).Top(6).Size(26, 26).Radius(7).Label("Avatar for " + agent.Name)
-					}
+					botAvatar(c, agent, 28, a.botState(agent), false).Absolute().Left(6).Top(5)
 					if !agent.Enabled {
 						ui.Badge(c, "Paused")
 					}
@@ -298,7 +301,7 @@ func (a *app) chatView(c *ui.Context) {
 func (a *app) chatHeader(c *ui.Context, agent Agent) {
 	theme := c.Theme()
 	ui.Row(c).Absolute().Top(0).Left(0).Right(0).Height(titleBarHeight).Padding(0, 16, 0, 20).Gap(10).AlignItems(ui.Center).DragWindow().Children(func() {
-		avatar(c, agent, 28)
+		botAvatar(c, agent, 32, a.botState(agent), true)
 		ui.Column(c).Grow(1).MinWidth(0).Children(func() {
 			ui.Text(c, agent.Name).FontSize(13).Bold().SingleLine().Ellipsis("…")
 			subtitle := agent.Model
@@ -330,7 +333,7 @@ func (a *app) emptyChat(c *ui.Context, agent Agent) {
 			ui.Spinner(c).Label("Opening chat")
 			return
 		}
-		avatar(c, agent, 72)
+		botAvatar(c, agent, 96, a.botState(agent), true)
 		ui.Text(c, agent.Name).FontSize(22).Bold()
 		detail := agent.Description
 		if detail == "" {
@@ -693,19 +696,30 @@ func (a *app) agentEditorView(c *ui.Context) {
 		}
 	}, func() {
 		ui.Column(c).AlignItems(ui.Center).Gap(6).Padding(4, 0, 8, 0).Children(func() {
-			if svg, err := critterSVG(agentAvatarSeed(Agent{ID: a.selected, Avatar: a.editAvatar})); err == nil {
-				ui.Image(c, svg).Size(76, 76).Radius(22).Label("Agent avatar")
-			}
+			editing := Agent{ID: a.selected, Name: a.editName, Avatar: a.editAvatar, Enabled: a.editEnabled}
+			botAvatar(c, editing, 96, botIdle, true)
 			name := strings.TrimSpace(a.editName)
 			if name == "" {
 				name = "New Agent"
 			}
 			ui.Text(c, name).FontSize(20).Bold()
-			critter := ui.ButtonBase(c.Key("new-critter")).Padding(2, 6).Radius(5).Label("New critter")
-			critter.Children(func() { ui.Text(c, "New Critter").FontSize(12).TextColor(theme.Accent) })
-			if critter.Clicked() {
-				a.editAvatar = "critters:" + newRequestID()
-			}
+			ui.Row(c).Gap(6).Padding(6, 0, 0, 0).AlignItems(ui.Center).Children(func() {
+				for _, seed := range a.avatarChoices {
+					choice := ui.ButtonBase(c.Key("avatar-" + seed)).Padding(3).Radius(12).Label("Choose this avatar")
+					if a.editAvatar == "bot:"+seed {
+						choice.BorderWidth(2).BorderColor(theme.Accent)
+					} else if choice.Hovered() {
+						choice.Background(theme.SurfaceHover)
+					}
+					choice.Children(func() { botAvatarSeed(c, seed, 40, botIdle, false) })
+					if choice.Clicked() {
+						a.editAvatar = "bot:" + seed
+					}
+				}
+				if iconButton(c, "shuffle-avatars", "shuffle", "More avatars").Clicked() {
+					a.shuffleAvatars()
+				}
+			})
 		})
 		section(c, "", "",
 			func() { settingsRow(c, "Name", func() { textValue(c, &a.editName, "Name", "Required") }) },

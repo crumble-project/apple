@@ -353,7 +353,8 @@ func (a *app) createAgent() {
 	a.editTemperature = ""
 	a.editMaxOutput = ""
 	a.editEnabled = true
-	a.editAvatar = "critters:" + newRequestID()
+	a.editAvatar = "bot:" + newRequestID()
+	a.shuffleAvatars()
 	a.editFolder = "Personal"
 	a.toolsMemory = true
 	a.toolsDelegate = false
@@ -377,7 +378,8 @@ func (a *app) openEditor() {
 			a.editModel = agent.Model
 			a.editProvider = agent.Provider
 			a.editEnabled = agent.Enabled
-			a.editAvatar = agent.Avatar
+			a.editAvatar = "bot:" + agentAvatarSeed(agent)
+			a.shuffleAvatars()
 			a.editThinking = "off"
 			a.editTemperature = ""
 			a.editMaxOutput = ""
@@ -417,6 +419,15 @@ func (a *app) openEditor() {
 		}
 	}
 }
+
+// shuffleAvatars offers new bots to pick from, keeping the current one first.
+func (a *app) shuffleAvatars() {
+	a.avatarChoices = []string{agentAvatarSeed(Agent{ID: a.selected, Avatar: a.editAvatar})}
+	for len(a.avatarChoices) < 7 {
+		a.avatarChoices = append(a.avatarChoices, newRequestID())
+	}
+}
+
 func (a *app) loadMCPServers() {
 	a.request(func(ctx context.Context, client *APIClient) (func(), error) {
 		servers, err := client.MCPServers(ctx)
