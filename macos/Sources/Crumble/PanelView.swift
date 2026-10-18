@@ -13,7 +13,7 @@ struct PanelView: View {
                 ToolbarItemGroup(placement: .primaryAction) {
                     switch panel {
                     case .memory:
-                        Button("New Shared Memory", systemImage: "plus") { model.openMemoryForm("", agentID: nil) }
+                        Button("New Memory", systemImage: "plus") { model.openMemoryForm("", agentID: nil) }
                     case .skills:
                         Button("New Shared Skill", systemImage: "plus") { model.openSkillForm("") }
                     case .tasks:
@@ -44,11 +44,11 @@ private struct MemoryPanel: View {
     @Environment(AppModel.self) private var model
     @State private var query = ""
     @State private var scope = "all"
+    @State private var collapsedSections: Set<String> = []
 
     var body: some View {
         Form {
             Section {
-                TextField("Search memories", text: $query)
                 Picker("Scope", selection: $scope) {
                     Text("All").tag("all")
                     Text("Shared").tag("shared")
@@ -58,43 +58,51 @@ private struct MemoryPanel: View {
             }
             if scope == "all" || scope == "shared" {
                 Section {
-                    let memories = filtered(model.sharedMemories)
-                    if memories.isEmpty {
-                        Text(query.isEmpty ? "No shared memories yet." : "No shared memories match your search.").foregroundStyle(.secondary)
+                    DisclosureGroup(isExpanded: expansion(for: "shared")) {
+                        let memories = filtered(model.sharedMemories)
+                        if memories.isEmpty {
+                            Text(query.isEmpty ? "No shared memories yet." : "No shared memories match your search.").foregroundStyle(.secondary)
+                        }
+                        ForEach(memories) { memory in
+                            row(memory, agentID: nil)
+                        }
+                    } label: {
+                        Text("Shared · \(model.sharedMemories.count)")
                     }
-                    ForEach(memories) { memory in
-                        row(memory, agentID: nil, owner: "Shared")
-                    }
-                    Button("New Shared Memory", systemImage: "plus") { model.openMemoryForm("", agentID: nil) }
-                } header: {
-                    Text("Shared · \(model.sharedMemories.count)")
                 } footer: {
                     Text(sharedFooter).foregroundStyle(.secondary)
                 }
             }
             if scope != "shared" {
                 ForEach(model.agents.filter { scope == "all" || $0.id == scope }) { agent in
-                    let memories = filtered(model.agentMemories[agent.id] ?? [])
-                    let total = model.agentMemories[agent.id, default: []].count
                     Section {
-                        if memories.isEmpty {
-                            Text(query.isEmpty ? "No memories yet." : "No memories match your search.").foregroundStyle(.secondary)
+                        DisclosureGroup(isExpanded: expansion(for: agent.id)) {
+                            let memories = filtered(model.agentMemories[agent.id] ?? [])
+                            if memories.isEmpty {
+                                Text(query.isEmpty ? "No memories yet." : "No memories match your search.").foregroundStyle(.secondary)
+                            }
+                            ForEach(memories) { memory in
+                                row(memory, agentID: agent.id)
+                            }
+                        } label: {
+                            Text("\(agent.name) · \(model.agentMemories[agent.id, default: []].count)")
                         }
-                        ForEach(memories) { memory in
-                            row(memory, agentID: agent.id, owner: agent.name)
-                        }
-                        Text("\(total) personal memor\(total == 1 ? "y" : "ies")")
-                            .font(.caption).foregroundStyle(.secondary)
-                        Button("New Memory", systemImage: "plus") { model.openMemoryForm("", agentID: agent.id) }
-                    } header: {
-                        Text("\(agent.name) · \(total)")
-                    } footer: {
-                        Text("Personal to \(agent.name).").foregroundStyle(.secondary)
                     }
                 }
             }
         }
         .formStyle(.grouped)
+        .searchable(text: $query, placement: .toolbar, prompt: "Search memories")
+    }
+
+    private func expansion(for section: String) -> Binding<Bool> {
+        Binding(
+            get: { !collapsedSections.contains(section) },
+            set: { expanded in
+                if expanded { collapsedSections.remove(section) }
+                else { collapsedSections.insert(section) }
+            }
+        )
     }
 
     private func filtered(_ memories: [Memory]) -> [Memory] {
@@ -107,17 +115,17 @@ private struct MemoryPanel: View {
         return enabled.isEmpty ? "No bots use shared memory. Turn it on in a bot's profile." : "Used by: " + enabled.joined(separator: ", ")
     }
 
-    private func row(_ memory: Memory, agentID: String?, owner: String) -> some View {
-        DisclosureGroup {
-            Text(memory.content).textSelection(.enabled)
-        } label: {
-            HStack {
-                Text(memory.content).lineLimit(2)
-                Spacer()
-                Text(owner).font(.caption).foregroundStyle(.secondary)
-                Button("Edit") { model.openMemoryForm(memory.id, agentID: agentID) }.disabled(memory.id.hasPrefix("pending-"))
-                Button("Delete", role: .destructive) { model.deleteMemory(memory.id, agentID: agentID) }.disabled(memory.id.hasPrefix("pending-"))
-            }
+    private func row(_ memory: Memory, agentID: String?) -> some View {
+        HStack(alignment: .top) {
+            Text(memory.content)
+                .fixedSize(horizontal: false, vertical: true)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Button("Edit") { model.openMemoryForm(memory.id, agentID: agentID) }
+                .disabled(memory.id.hasPrefix("pending-"))
+            Button("Delete", role: .destructive) { model.deleteMemory(memory.id, agentID: agentID) }
+                .tint(.red)
+                .disabled(memory.id.hasPrefix("pending-"))
         }
     }
 }
