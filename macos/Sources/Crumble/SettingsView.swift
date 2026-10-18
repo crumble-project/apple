@@ -12,7 +12,14 @@ struct SettingsView: View {
             Section {
                 TextField("Server URL", text: $model.serverURL, prompt: Text("http://127.0.0.1:7337"))
                 SecureField("Server token", text: $model.token, prompt: Text("Required"))
-                Button("Save Connection") { model.saveSettings() }
+                HStack {
+                    Button("Save Connection") { model.saveSettings() }
+                        .disabled(model.savingConnection)
+                    if model.savingConnection {
+                        ProgressView().controlSize(.small)
+                        Text("Connecting…").foregroundStyle(.secondary)
+                    }
+                }
             } header: {
                 Text("Server")
             } footer: {
@@ -30,7 +37,12 @@ struct SettingsView: View {
                 HStack {
                     Button("Save Key") { model.saveProviderKey() }
                     Button("Remove Key", role: .destructive) { model.removeProviderKey() }
+                    if model.pendingMutations.contains("provider:\(model.provider)") {
+                        ProgressView().controlSize(.small)
+                        Text("Updating key…").foregroundStyle(.secondary)
+                    }
                 }
+                .disabled(model.pendingMutations.contains("provider:\(model.provider)"))
             } header: {
                 Text("Provider API Keys")
             } footer: {

@@ -85,7 +85,7 @@ struct SidebarView: View {
     private static let workspace: [(Route, String, String)] = [
         (.memory, "Memory", "brain"), (.skills, "Skills", "book.closed"), (.tasks, "Tasks", "calendar.badge.clock"),
         (.activity, "Activity", "waveform.path.ecg"),
-        (.approvals, "Approvals", "checkmark.shield"), (.integrations, "Integrations", "powerplug"),
+        (.integrations, "Integrations", "powerplug"),
     ]
 
     var body: some View {
@@ -113,6 +113,7 @@ struct SidebarView: View {
                     .padding(.vertical, 10)
                     .contentShape(Rectangle())
                     .tag(Route.agent(agent.id))
+                    .disabled(model.pendingMutations.contains("agent:\(agent.id)"))
                 }
                 if model.agents.isEmpty {
                     Text("No agents yet").foregroundStyle(.secondary)

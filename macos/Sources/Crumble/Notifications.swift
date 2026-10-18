@@ -10,8 +10,6 @@ struct ActivityEvent: Decodable, Sendable {
     var entryId: String?
     var origin: String?
     var preview: String?
-    var approvalId: String?
-    var toolName: String?
     var lastMessage: String?
 }
 
@@ -22,7 +20,7 @@ struct NotificationContext {
 }
 
 /// A finished reply notifies unless its chat is on screen, and delegated work stays quiet because
-/// the delegating bot reports back itself. An approval notifies unless Approvals is on screen.
+/// the delegating bot reports back itself.
 func notification(for event: ActivityEvent, in context: NotificationContext) -> (title: String, body: String)? {
     switch event.type {
     case "reply":
@@ -30,9 +28,6 @@ func notification(for event: ActivityEvent, in context: NotificationContext) -> 
         if context.appActive, context.route == .agent(event.agentId) { return nil }
         let text = preview(event.preview ?? "")
         return (event.agentName, text.isEmpty ? "Replied" : text)
-    case "approval":
-        if context.appActive, context.route == .approvals { return nil }
-        return ("\(event.agentName) needs your approval", "Allow \(event.toolName ?? "a tool") to run?")
     default:
         return nil
     }
@@ -64,7 +59,7 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
         content.sound = .default
         content.userInfo = ["type": event.type, "agentId": event.agentId]
         // Replies from one bot replace each other, so a busy bot leaves one notification.
-        let id = event.type == "reply" ? "reply-\(event.agentId)" : "approval-\(event.approvalId ?? UUID().uuidString)"
+        let id = "reply-\(event.agentId)"
         center.add(UNNotificationRequest(identifier: id, content: content, trigger: nil))
     }
 
@@ -75,13 +70,11 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
 
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
         let info = response.notification.request.content.userInfo
-        let type = info["type"] as? String, agentID = info["agentId"] as? String
+        let agentID = info["agentId"] as? String
         await MainActor.run {
             NSApp.activate()
             guard let model else { return }
-            if type == "approval" {
-                model.openPanel(.approvals)
-            } else if let agentID {
+            if let agentID {
                 model.selectAgent(agentID)
             }
         }

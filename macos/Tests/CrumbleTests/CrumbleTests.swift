@@ -388,9 +388,6 @@ struct LogicTests {
         var delegated = reply
         delegated.origin = "bot"
         #expect(notification(for: delegated, in: NotificationContext(appActive: false, route: nil)) == nil)
-        let approval = ActivityEvent(type: "approval", agentId: "a1", agentName: "Atlas", approvalId: "x", toolName: "send_email")
-        #expect(notification(for: approval, in: NotificationContext(appActive: true, route: .approvals)) == nil)
-        #expect(notification(for: approval, in: NotificationContext(appActive: true, route: .agent("a1")))?.body == "Allow send_email to run?")
     }
 
     @Test func activityStreamPassesOnlyActivity() throws {

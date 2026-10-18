@@ -1,7 +1,7 @@
 import AuthenticationServices
 import SwiftUI
 
-/// The workspace pages: memory, skills, tasks, activity, approvals, and integrations.
+/// The workspace pages: memory, skills, tasks, activity, and integrations.
 struct PanelView: View {
     @Environment(AppModel.self) private var model
     let panel: Route
@@ -34,7 +34,6 @@ struct PanelView: View {
         case .skills: SkillsPanel()
         case .tasks: TasksPanel()
         case .activity: ActivityPanel()
-        case .approvals: ApprovalsPanel()
         case .integrations: IntegrationsPanel()
         case .agent: EmptyView()
         }
@@ -90,8 +89,8 @@ private struct MemoryPanel: View {
         HStack(alignment: .firstTextBaseline) {
             Text(memory.content).textSelection(.enabled)
             Spacer()
-            Button("Edit") { model.openMemoryForm(memory.id, agentID: agentID) }
-            Button("Delete") { model.deleteMemory(memory.id, agentID: agentID) }
+            Button("Edit") { model.openMemoryForm(memory.id, agentID: agentID) }.disabled(memory.id.hasPrefix("pending-"))
+            Button("Delete") { model.deleteMemory(memory.id, agentID: agentID) }.disabled(memory.id.hasPrefix("pending-"))
         }
     }
 }
@@ -127,8 +126,8 @@ private struct SkillsPanel: View {
                             }
                             Spacer()
                             if !skill.isDefault {
-                                Button("Edit") { model.openSkillForm(skill.id) }
-                                Button("Delete") { model.deleteSharedSkill(skill.id) }
+                                Button("Edit") { model.openSkillForm(skill.id) }.disabled(skill.id.hasPrefix("pending-"))
+                                Button("Delete") { model.deleteSharedSkill(skill.id) }.disabled(skill.id.hasPrefix("pending-"))
                             }
                         }
                     }
@@ -191,9 +190,9 @@ private struct TasksPanel: View {
                                     }
                                 }
                                 Spacer()
-                                Button("Run Now") { model.runSchedule(schedule.id) }.disabled(!schedule.enabled)
-                                Button("Edit") { model.openTaskForm(schedule.id) }
-                                Button("Delete") { model.deleteSchedule(schedule.id) }
+                                Button("Run Now") { model.runSchedule(schedule.id) }.disabled(!schedule.enabled || schedule.id.hasPrefix("pending-"))
+                                Button("Edit") { model.openTaskForm(schedule.id) }.disabled(schedule.id.hasPrefix("pending-"))
+                                Button("Delete") { model.deleteSchedule(schedule.id) }.disabled(schedule.id.hasPrefix("pending-"))
                             }
                         }
                         Button("New Task", systemImage: "plus") { model.openTaskForm("", agentID: agent.id) }
@@ -243,37 +242,6 @@ private struct ActivityPanel: View {
                             Spacer()
                             if let agent = execution.agentId, !agent.isEmpty {
                                 Button("Open Chat") { model.selectAgent(agent) }
-                            }
-                        }
-                    }
-                }
-            }
-            .formStyle(.grouped)
-        }
-    }
-}
-
-private struct ApprovalsPanel: View {
-    @Environment(AppModel.self) private var model
-
-    var body: some View {
-        let pending = model.approvals.filter { $0.status == "pending" }
-        if pending.isEmpty {
-            ContentUnavailableView("No Approvals", systemImage: "checkmark.shield", description: Text("No actions need your approval."))
-        } else {
-            Form {
-                ForEach(pending) { approval in
-                    Section {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(approval.toolName).fontWeight(.semibold)
-                            Text(approval.arguments?.prettyPrinted ?? "")
-                                .font(.system(.callout, design: .monospaced))
-                                .foregroundStyle(.secondary)
-                                .textSelection(.enabled)
-                            HStack {
-                                Button("Approve Once") { model.decideApproval(approval.id, decision: "approved") }
-                                    .buttonStyle(.borderedProminent)
-                                Button("Deny") { model.decideApproval(approval.id, decision: "denied") }
                             }
                         }
                     }
@@ -346,8 +314,8 @@ private struct IntegrationsPanel: View {
                                 .disabled(model.signingIn != nil)
                                 .help("Sign in to a server that uses OAuth")
                             }
-                            Button("Edit") { model.openMCPForm(server.id) }
-                            Button("Delete") { model.deleteMCP(server.id) }
+                            Button("Edit") { model.openMCPForm(server.id) }.disabled(server.id.hasPrefix("pending-"))
+                            Button("Delete") { model.deleteMCP(server.id) }.disabled(server.id.hasPrefix("pending-"))
                         }
     }
 

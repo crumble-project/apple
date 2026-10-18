@@ -210,6 +210,20 @@ struct MessageView: View {
                             .bubble(owner: owner)
                             .contextMenu { menu }
                     }
+                    if message.deliveryState != .confirmed {
+                        HStack(spacing: 5) {
+                            if message.deliveryState == .sending {
+                                ProgressView().controlSize(.mini)
+                                Text("Sending…")
+                            } else {
+                                Text("Not sent")
+                                Button("Retry") { model.retryMessage(message) }
+                                    .buttonStyle(.link)
+                            }
+                        }
+                        .font(.caption)
+                        .foregroundStyle(message.deliveryState == .failed ? .red : .secondary)
+                    }
                 }
                 .frame(maxWidth: 520, alignment: .trailing)
             }
@@ -274,28 +288,42 @@ struct BotMessageView: View {
     }
 
     var body: some View {
-        DisclosureGroup(isExpanded: $expanded) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(status)
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(statusColor)
-                MarkdownText(text: message.text)
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .padding(.top, 6)
-        } label: {
-            Text("Bot communication: \(sender) → \(recipient)")
+        VStack(spacing: 10) {
+            Button {
+                expanded.toggle()
+            } label: {
+                HStack(spacing: 12) {
+                    Rectangle().fill(.quaternary).frame(height: 1)
+                    HStack(spacing: 5) {
+                        Text("Bot communication: \(sender) → \(recipient)")
+                            .lineLimit(1)
+                        Image(systemName: expanded ? "chevron.down" : "chevron.right")
+                            .font(.caption2.weight(.medium))
+                    }
+                    .layoutPriority(1)
+                    Rectangle().fill(.quaternary).frame(height: 1)
+                }
                 .font(.callout)
                 .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .help("Bot communication: \(sender) → \(recipient)")
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 6)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help("Bot communication: \(sender) → \(recipient)")
+            .accessibilityValue(expanded ? "Expanded" : "Collapsed")
+            if expanded {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(status)
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(statusColor)
+                    MarkdownText(text: message.text)
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(maxWidth: 560, alignment: .leading)
+            }
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .frame(maxWidth: 560, alignment: .leading)
-        .background(Color.primary.opacity(0.07), in: .rect(cornerRadius: 10))
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -377,7 +405,7 @@ struct Composer: View {
                 }
                 .buttonStyle(.plain)
                 .glassEffect(.regular.interactive(), in: .circle)
-                .disabled(model.sending || !agent.enabled)
+                .disabled(!agent.enabled)
                 .accessibilityLabel("Attach Files")
                 .help("Attach images or text files")
                 VStack(alignment: .leading, spacing: 6) {
@@ -396,7 +424,7 @@ struct Composer: View {
                         .textFieldStyle(.plain)
                         .lineLimit(1...8)
                         .focused($focused)
-                        .disabled(model.sending || !agent.enabled)
+                        .disabled(!agent.enabled)
                         .padding(.vertical, 7)
                         .onKeyPress(.return, phases: .down) { press in
                             // A multi-line TextField inserts nothing for Shift-Return, so the composer does.
@@ -439,11 +467,12 @@ struct Composer: View {
             if case .success(let urls) = result { model.addAttachments(urls) }
         }
         .dropDestination(for: URL.self) { urls, _ in
-            guard agent.enabled, !model.sending else { return false }
+            guard agent.enabled else { return false }
             model.addAttachments(urls)
             return true
         }
     }
+
 }
 
 /// A file in the composer: a thumbnail for an image, the file name for text, with a remove button.
@@ -482,12 +511,12 @@ struct SentAttachments: View {
 
     var body: some View {
         let files = Array((message.attachments ?? []).enumerated())
-        if !files.isEmpty, let entryID = message.entryId {
+        if !files.isEmpty {
             VStack(alignment: .trailing, spacing: 4) {
                 ForEach(files, id: \.offset) { index, file in
                     if file.isImage {
                         Group {
-                            if let image = model.attachmentImage(entryID: entryID, index: index) {
+                            if let image = model.attachmentImage(message: message, index: index) {
                                 Image(nsImage: image).resizable().scaledToFit()
                             } else {
                                 RoundedRectangle(cornerRadius: 14).fill(Color.primary.opacity(0.06))
@@ -498,7 +527,11 @@ struct SentAttachments: View {
                         .frame(maxWidth: 260, maxHeight: 260)
                         .clipShape(.rect(cornerRadius: 14))
                         .help(file.name)
-                        .task { await model.loadAttachmentImage(entryID: entryID, index: index) }
+                        .task {
+                            if let entryID = message.entryId {
+                                await model.loadAttachmentImage(entryID: entryID, index: index)
+                            }
+                        }
                     } else {
                         FileLabel(name: file.name)
                     }

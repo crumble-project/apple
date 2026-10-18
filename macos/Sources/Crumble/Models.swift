@@ -173,6 +173,13 @@ struct BotCommunication: Codable, Hashable, Sendable {
     var status: String
 }
 
+/// Client-side delivery state for an optimistic owner message.
+enum MessageDeliveryState: String, Codable, Hashable, Sendable {
+    case confirmed
+    case sending
+    case failed
+}
+
 struct Message: Codable, Identifiable, Hashable, Sendable {
     var id: String
     var entryId: String?
@@ -187,10 +194,14 @@ struct Message: Codable, Identifiable, Hashable, Sendable {
     var timestamp: Int64?
     var createdAt: String?
     var attachments: [AttachmentInfo]?
+    /// The idempotency key echoed by the server for owner messages.
+    var requestId: String?
+    var deliveryState: MessageDeliveryState
 
     init(id: String, entryId: String? = nil, role: String, content: JSONValue? = nil, blocks: JSONValue? = nil, kind: String? = nil,
          replyTo: String? = nil, replyPreview: String? = nil, origin: MessageOrigin? = nil, communication: BotCommunication? = nil, timestamp: Int64? = nil,
-         attachments: [AttachmentInfo]? = nil) {
+         attachments: [AttachmentInfo]? = nil, requestId: String? = nil,
+         deliveryState: MessageDeliveryState = .confirmed) {
         self.id = id
         self.entryId = entryId
         self.role = role
@@ -203,6 +214,8 @@ struct Message: Codable, Identifiable, Hashable, Sendable {
         self.communication = communication
         self.timestamp = timestamp
         self.attachments = attachments
+        self.requestId = requestId
+        self.deliveryState = deliveryState
     }
 
     init(from decoder: Decoder) throws {
@@ -220,6 +233,8 @@ struct Message: Codable, Identifiable, Hashable, Sendable {
         timestamp = try c.decodeIfPresent(Int64.self, forKey: .timestamp)
         createdAt = try c.decodeIfPresent(String.self, forKey: .createdAt)
         attachments = try c.decodeIfPresent([AttachmentInfo].self, forKey: .attachments)
+        requestId = try c.decodeIfPresent(String.self, forKey: .requestId)
+        deliveryState = try c.decodeIfPresent(MessageDeliveryState.self, forKey: .deliveryState) ?? .confirmed
     }
 
     var text: String { contentText(content) }
@@ -323,14 +338,6 @@ struct MCPServer: Codable, Identifiable, Hashable, Sendable {
 struct OAuthStart: Decodable, Sendable {
     var authorizationUrl: String?
     var authorized: Bool?
-}
-
-struct Approval: Codable, Identifiable, Hashable, Sendable {
-    var id: String
-    var agentId: String?
-    var toolName: String
-    var arguments: JSONValue?
-    var status: String
 }
 
 /// Reads the visible text of message content: a string, text parts, or a text object.

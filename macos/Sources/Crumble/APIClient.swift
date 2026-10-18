@@ -105,7 +105,7 @@ struct APIClient: Sendable {
         try await events("/v1/agents/\(agentID)/events", parser: SSEParser(), onEvent: onEvent)
     }
 
-    /// Follows server-wide activity: finished replies from every bot and new approvals.
+    /// Follows server-wide activity: finished replies and sidebar previews from every bot.
     func activityEvents(onEvent: @Sendable (String) async -> Void) async throws -> Never {
         try await events("/v1/events", parser: SSEParser(accepting: ["activity"]), onEvent: onEvent)
     }
@@ -186,10 +186,6 @@ struct APIClient: Sendable {
     }
     func deleteProviderKey(_ provider: String) async throws { try await perform("DELETE", "/v1/providers/\(provider)") }
 
-    func approvals() async throws -> [Approval] { try await call("GET", "/v1/approvals") }
-    func decideApproval(_ id: String, decision: String) async throws {
-        try await perform("POST", "/v1/approvals/\(id)", body: ["decision": decision])
-    }
 
     func mcpServers() async throws -> [MCPServer] { try await call("GET", "/v1/mcp-servers") }
     func createMCPServer(_ payload: [String: JSONValue]) async throws -> MCPServer { try await call("POST", "/v1/mcp-servers", body: payload) }

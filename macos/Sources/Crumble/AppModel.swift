@@ -6,7 +6,7 @@ import SwiftUI
 
 enum Route: Hashable {
     case agent(String)
-    case memory, skills, tasks, activity, approvals, integrations
+    case memory, skills, tasks, activity, integrations
 
     var title: String {
         switch self {
@@ -15,7 +15,6 @@ enum Route: Hashable {
         case .skills: "Skills"
         case .tasks: "Tasks"
         case .activity: "Activity"
-        case .approvals: "Approvals"
         case .integrations: "Integrations"
         }
     }
@@ -122,14 +121,26 @@ final class AppModel {
     private var failedDraft = ""
     private var failedReplyTo = ""
     private var failedAttachments: [UUID] = []
+    private struct PendingSend: Sendable {
+        var content: String
+        var replyTo: String
+        var attachments: [PendingAttachment]
+    }
+    /// Optimistic rows and their upload payloads survive changing the selected bot.
+    private var pendingMessages: [String: [Message]] = [:]
+    private var pendingSends: [String: [String: PendingSend]] = [:]
+    private var pendingPreviews: [String: (requestID: String, text: String)] = [:]
     /// Sent images, keyed by entry and attachment index; they never change once sent.
     private(set) var attachmentImages: [String: NSImage] = [:]
 
     private var activeRequests = 0
+    private(set) var pendingMutations: Set<String> = []
+    private(set) var mutationRevision = 0
     var loading = false
     var errorText = ""
     var notice = ""
     var streamStatus = ""
+    private(set) var savingConnection = false
     private var streamTask: Task<Void, Never>?
     private var activityTask: Task<Void, Never>?
 
@@ -139,7 +150,6 @@ final class AppModel {
     var sharedSkills: [SharedSkill] = []
     var schedules: [Schedule] = []
     var executions: [Execution] = []
-    var approvals: [Approval] = []
     var mcpServers: [MCPServer] = []
     var providers: [ProviderStatus] = []
     var models: [ModelSummary] = []
@@ -210,6 +220,43 @@ final class AppModel {
         loading = activeRequests > 0
     }
 
+    /// Applies local intent immediately; failed requests restore only the affected record.
+    func optimisticMutation(
+        key: String,
+        update: () -> Void,
+        rollback: @escaping @MainActor () -> Void,
+        work: @escaping @MainActor (APIClient) async throws -> (@MainActor () -> Void)?
+    ) {
+        guard let client else {
+            errorText = "Connect to your server in Settings."
+            return
+        }
+        guard pendingMutations.insert(key).inserted else { return }
+        let generation = generation
+        mutationRevision += 1
+        update()
+        activeRequests += 1
+        loading = true
+        errorText = ""
+        Task {
+            do {
+                let confirm = try await work(client)
+                guard self.generation == generation else { return }
+                pendingMutations.remove(key)
+                mutationRevision += 1
+                finishRequest()
+                confirm?()
+            } catch {
+                guard self.generation == generation else { return }
+                pendingMutations.remove(key)
+                mutationRevision += 1
+                finishRequest()
+                rollback()
+                errorText = friendlyError(error)
+            }
+        }
+    }
+
     func showNotice(_ text: String) {
         notice = text
         Task {
@@ -221,9 +268,11 @@ final class AppModel {
     // MARK: Agents and chat
 
     func refresh() {
+        let revision = mutationRevision
         request { client in
             let agents = try await client.agents()
             return { [self] in
+                guard mutationRevision == revision, pendingMutations.isEmpty else { return }
                 self.agents = agents
                 var chosen = selectedAgentID
                 if !agents.contains(where: { $0.id == chosen }) { chosen = agents.first?.id ?? "" }
@@ -257,7 +306,7 @@ final class AppModel {
         selectedAgentID = id
         route = .agent(id)
         snapshot = nil
-        messages = []
+        messages = pendingMessages[id] ?? []
         hasMore = false
         oldestEntryID = ""
         loadingOlder = false
@@ -267,6 +316,7 @@ final class AppModel {
         failedDraft = ""
         failedReplyTo = ""
         failedAttachments = []
+        sending = false
         draftRequestID = ""
         request { client in
             let snapshot = try await client.chat(id)
@@ -282,7 +332,20 @@ final class AppModel {
 
     /// Keeps older pages the owner already loaded; snapshots only carry the newest page.
     func applySnapshot(_ incoming: ChatSnapshot) {
-        messages = mergeMessages(messages, incoming.messages ?? [])
+        let incomingMessages = incoming.messages ?? []
+        let acknowledged = Set(incomingMessages.compactMap(\.requestId))
+        if !acknowledged.isEmpty {
+            pendingMessages[selectedAgentID]?.removeAll { acknowledged.contains($0.requestId ?? "") }
+            for requestID in acknowledged {
+                pendingSends[selectedAgentID]?[requestID] = nil
+                if pendingPreviews[selectedAgentID]?.requestID == requestID { pendingPreviews[selectedAgentID] = nil }
+            }
+        }
+        // Rebuild from confirmed transcript rows and append local rows so a delayed snapshot
+        // cannot erase a message the user has already seen.
+        let local = pendingMessages[selectedAgentID] ?? []
+        messages = mergeMessages(messages.filter { $0.deliveryState == .confirmed }, incomingMessages)
+        messages.append(contentsOf: local)
         var snapshot = incoming
         snapshot.messages = nil
         self.snapshot = snapshot
@@ -348,10 +411,10 @@ final class AppModel {
 
     func handleActivity(_ event: ActivityEvent) {
         if event.type == "chat-preview", let lastMessage = event.lastMessage,
+           pendingPreviews[event.agentId] == nil,
            let index = agents.firstIndex(where: { $0.id == event.agentId }) {
             agents[index].lastMessage = lastMessage
         }
-        if event.type == "approval", route == .approvals { openPanel(.approvals) }
         let context = NotificationContext(appActive: NSApp?.isActive ?? false, route: route)
         guard let note = notification(for: event, in: context) else { return }
         Notifier.shared.post(event, title: note.title, body: note.body)
@@ -379,16 +442,15 @@ final class AppModel {
     }
 
     func sendMessage() {
-        guard !sending, snapshot != nil, let client else { return }
+        guard snapshot != nil, let client else { return }
         let content = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         let files = attachments
         guard !content.isEmpty || !files.isEmpty else { return }
         let id = selectedAgentID
         let reply = replyTo?.entryId ?? ""
-        // A retry of the same draft reuses its request ID so the server admits it once.
-        if draftRequestID.isEmpty || failedDraft != content || failedReplyTo != reply || failedAttachments != files.map(\.id) {
-            draftRequestID = newRequestID()
-        }
+        // Every explicit send gets its own idempotency key. Failed rows are retried through
+        // retryMessage, so two identical messages must remain distinct.
+        draftRequestID = newRequestID()
         let requestID = draftRequestID
         failedDraft = content
         failedReplyTo = reply
@@ -396,24 +458,99 @@ final class AppModel {
         sending = true
         draft = ""
         attachments = []
+        let optimistic = Message(
+            id: "local:\(requestID)", role: "user", content: .string(content), replyTo: reply.nilIfEmpty,
+            replyPreview: replyTo?.text.nilIfEmpty, timestamp: Int64(Date().timeIntervalSince1970 * 1000),
+            attachments: files.map { AttachmentInfo(name: $0.name, mimeType: $0.mimeType, size: $0.data.count, kind: $0.isImage ? "image" : "file") },
+            requestId: requestID, deliveryState: .sending
+        )
+        pendingMessages[id, default: []].append(optimistic)
+        pendingSends[id, default: [:]][requestID] = PendingSend(content: content, replyTo: reply, attachments: files)
+        let preview = content.nilIfEmpty ?? files.first.map { "Attachment: \($0.name)" } ?? ""
+        pendingPreviews[id] = (requestID, preview)
+        if let agentIndex = agents.firstIndex(where: { $0.id == id }) {
+            agents[agentIndex].lastMessage = preview
+        }
+        if selectedAgentID == id { messages.append(optimistic) }
+        // Clear the captured reply immediately; a later composer selection must survive this send.
+        replyTo = nil
         let generation = generation
+        let version = selectionVersion
         Task {
             do {
                 try await client.sendChatMessage(id, content: content, requestID: requestID, replyTo: reply,
                                                  attachments: files.map(\.outgoing))
+                guard self.generation == generation else { return }
+                if pendingPreviews[id]?.requestID == requestID { pendingPreviews[id] = nil }
+                guard self.generation == generation, self.selectionVersion == version, selectedAgentID == id else { return }
                 sending = false
-                guard self.generation == generation, selectedAgentID == id else { return }
                 draftRequestID = ""
                 failedDraft = ""
                 failedReplyTo = ""
                 failedAttachments = []
-                replyTo = nil
             } catch {
+                guard self.generation == generation else { return }
+                if self.selectionVersion == version, selectedAgentID == id { sending = false }
+                guard pendingMessages[id]?.contains(where: { $0.requestId == requestID }) == true else { return }
+                if self.selectionVersion == version, selectedAgentID == id {
+                    errorText = "Message was not confirmed: " + friendlyError(error)
+                }
+                if let index = pendingMessages[id]?.firstIndex(where: { $0.requestId == requestID }) {
+                    pendingMessages[id]?[index].deliveryState = .failed
+                    if pendingPreviews[id]?.requestID == requestID { pendingPreviews[id] = nil }
+                    if self.selectionVersion == version, selectedAgentID == id {
+                        if let visible = messages.firstIndex(where: { $0.requestId == requestID }) {
+                            messages[visible].deliveryState = .failed
+                        }
+                    }
+                }
+                if self.selectionVersion == version, selectedAgentID == id {
+                    // Preserve anything the user typed while this request was in flight.
+                    if draft.isEmpty && attachments.isEmpty {
+                        draft = content
+                        attachments = files
+                    }
+                }
+            }
+        }
+    }
+
+    /// Re-sends a failed optimistic row with its original idempotency key and attachments.
+    func retryMessage(_ message: Message) {
+        guard message.deliveryState == .failed, let requestID = message.requestId,
+              let record = pendingSends[selectedAgentID]?[requestID], let client else { return }
+        guard let index = pendingMessages[selectedAgentID]?.firstIndex(where: { $0.requestId == requestID }) else { return }
+        pendingMessages[selectedAgentID]?[index].deliveryState = .sending
+        if let visible = messages.firstIndex(where: { $0.requestId == requestID }) { messages[visible].deliveryState = .sending }
+        if draft == record.content && attachments.map(\.id) == record.attachments.map(\.id) {
+            draft = ""
+            attachments = []
+        }
+        sending = true
+        let id = selectedAgentID
+        let generation = generation
+        let version = selectionVersion
+        Task {
+            do {
+                try await client.sendChatMessage(id, content: record.content, requestID: requestID,
+                                                 replyTo: record.replyTo, attachments: record.attachments.map(\.outgoing))
+                guard self.generation == generation else { return }
+                if pendingPreviews[id]?.requestID == requestID { pendingPreviews[id] = nil }
+                guard self.generation == generation, self.selectionVersion == version, selectedAgentID == id else { return }
                 sending = false
-                guard self.generation == generation, selectedAgentID == id else { return }
-                errorText = "Message was not confirmed: " + friendlyError(error)
-                draft = content
-                attachments = files + attachments
+            } catch {
+                guard self.generation == generation else { return }
+                if self.selectionVersion == version, selectedAgentID == id { sending = false }
+                guard pendingMessages[id]?.contains(where: { $0.requestId == requestID }) == true else { return }
+                if self.selectionVersion == version, selectedAgentID == id {
+                    errorText = "Message was not confirmed: " + friendlyError(error)
+                }
+                if let index = pendingMessages[id]?.firstIndex(where: { $0.requestId == requestID }) {
+                    pendingMessages[id]?[index].deliveryState = .failed
+                    if pendingPreviews[id]?.requestID == requestID { pendingPreviews[id] = nil }
+                    if self.selectionVersion == version, selectedAgentID == id,
+                       let visible = messages.firstIndex(where: { $0.requestId == requestID }) { messages[visible].deliveryState = .failed }
+                }
             }
         }
     }
@@ -432,6 +569,19 @@ final class AppModel {
         }
     }
 
+    /// Drops client-only optimistic rows and payloads when switching server connections.
+    /// The next chat snapshot becomes the sole source of truth.
+    func resetPendingMessages() {
+        pendingMessages.removeAll()
+        pendingSends.removeAll()
+        pendingPreviews.removeAll()
+        messages.removeAll()
+        draftRequestID = ""
+        failedDraft = ""
+        failedReplyTo = ""
+        failedAttachments = []
+    }
+
     func removeAttachment(_ id: UUID) {
         attachments.removeAll { $0.id == id }
     }
@@ -440,9 +590,18 @@ final class AppModel {
         attachmentImages["\(entryID)/\(index)"]
     }
 
+    func attachmentImage(message: Message, index: Int) -> NSImage? {
+        if let entryID = message.entryId { return attachmentImage(entryID: entryID, index: index) }
+        guard let requestID = message.requestId,
+              let files = pendingSends[selectedAgentID]?[requestID]?.attachments,
+              files.indices.contains(index), files[index].isImage else { return nil }
+        return NSImage(data: files[index].data)
+    }
+
     func loadAttachmentImage(entryID: String, index: Int) async {
         let key = "\(entryID)/\(index)"
         guard attachmentImages[key] == nil, let client else { return }
+        guard !entryID.hasPrefix("local:") else { return }
         let agent = selectedAgentID
         guard let data = try? await client.attachment(agent, entryID: entryID, index: index), let image = NSImage(data: data) else { return }
         attachmentImages[key] = image
@@ -450,18 +609,22 @@ final class AppModel {
 
     func abortChat() {
         let id = selectedAgentID
-        request { client in
+        optimisticMutation(key: "abort:\(id)", update: { [self] in
+            showNotice("Stopping…")
+        }, rollback: {}, work: { client in
             try await client.abortChat(id)
             return nil
-        }
+        })
     }
 
     func compactChat() {
         let id = selectedAgentID
-        request { client in
+        optimisticMutation(key: "compact:\(id)", update: { [self] in
+            showNotice("Summarizing older context…")
+        }, rollback: {}, work: { client in
             try await client.compactChat(id)
-            return { [self] in showNotice("Summarizing older context") }
-        }
+            return nil
+        })
     }
 
     // MARK: Agent profile
@@ -506,11 +669,13 @@ final class AppModel {
 
     private func loadEditorData(provider: String) {
         models = []
+        let revision = mutationRevision
         request { client in
             async let servers = client.mcpServers()
             async let skills = client.sharedSkills()
             let (loadedServers, loadedSkills) = try await (servers, skills)
             return { [self] in
+                guard mutationRevision == revision, pendingMutations.isEmpty else { return }
                 mcpServers = loadedServers
                 sharedSkills = loadedSkills
             }
@@ -597,8 +762,28 @@ final class AppModel {
                           avatar: draft.avatar, enabled: draft.enabled, provider: draft.provider.nilIfEmpty, model: draft.model.nilIfEmpty,
                           folder: draft.folder.nilIfEmpty, tools: tools, delegates: delegates, skills: draft.skills,
                           sharedSkills: shared, sharedMemory: draft.sharedMemory, mcpServers: servers, inference: inference)
-        let id = draft.agentID, isNew = draft.isNew
-        request { client in
+        let isNew = draft.isNew
+        let id = isNew ? "pending:" + newRequestID() : draft.agentID
+        let old = agents.first { $0.id == id }
+        var provisional = input
+        provisional.id = id
+        provisional.lastMessage = old?.lastMessage
+        let originalRoute = route
+        optimisticMutation(key: "agent:\(id)", update: { [self] in
+            if let index = agents.firstIndex(where: { $0.id == id }) {
+                agents[index] = provisional
+            } else {
+                agents.append(provisional)
+            }
+            agentDraft = nil
+        }, rollback: { [self] in
+            if let old, let index = agents.firstIndex(where: { $0.id == id }) {
+                agents[index] = old
+            } else {
+                agents.removeAll { $0.id == id }
+            }
+            if agentDraft == nil, route == originalRoute { agentDraft = draft }
+        }, work: { client in
             let agent: Agent
             if isNew {
                 agent = try await client.createAgent(input)
@@ -613,58 +798,73 @@ final class AppModel {
                 ])
             }
             return { [self] in
-                if isNew {
-                    agents.append(agent)
-                } else if let index = agents.firstIndex(where: { $0.id == id }) {
+                if let index = agents.firstIndex(where: { $0.id == id }) {
                     let lastMessage = agents[index].lastMessage
                     agents[index] = agent
                     agents[index].lastMessage = agent.lastMessage ?? lastMessage
                 }
-                agentDraft = nil
-                if !isNew, let panel = route, [.memory, .skills, .integrations].contains(panel) {
-                    openPanel(panel)
-                } else {
+                if isNew, route == originalRoute, agentDraft == nil {
                     selectAgent(agent.id)
                 }
             }
-        }
+        })
     }
 
     func duplicateSelected() {
         let id = agentDraft?.agentID ?? selectedAgentID
-        request { client in
+        guard var copy = agents.first(where: { $0.id == id }), !id.hasPrefix("pending:") else { return }
+        let temporaryID = "pending:" + newRequestID()
+        copy.id = temporaryID
+        copy.name += " copy"
+        copy.lastMessage = nil
+        let originalRoute = route, originalDraft = agentDraft
+        optimisticMutation(key: "agent:\(temporaryID)", update: { [self] in
+            agents.append(copy)
+            agentDraft = nil
+        }, rollback: { [self] in
+            agents.removeAll { $0.id == temporaryID }
+            if agentDraft == nil, route == originalRoute { agentDraft = originalDraft }
+        }, work: { client in
             let agent = try await client.duplicateAgent(id)
             return { [self] in
-                agents.append(agent)
-                agentDraft = nil
-                selectAgent(agent.id)
-                openEditor()
+                if let index = agents.firstIndex(where: { $0.id == temporaryID }) { agents[index] = agent }
+                if route == originalRoute, agentDraft == nil {
+                    selectAgent(agent.id)
+                    openEditor()
+                }
             }
-        }
+        })
     }
 
     func deleteSelected() {
         let id = agentDraft?.agentID ?? selectedAgentID
-        request { client in
-            try await client.deleteAgent(id)
-            return { [self] in
-                agents.removeAll { $0.id == id }
-                agentMemories[id] = nil
-                if selectedAgentID == id {
-                    cancelStream()
-                    selectionVersion += 1
-                    selectedAgentID = ""
-                    snapshot = nil
-                    messages = []
-                }
-                agentDraft = nil
-                if let panel = route, [.memory, .skills, .integrations].contains(panel) {
-                    openPanel(panel)
-                } else {
-                    refresh()
+        guard !id.hasPrefix("pending:"), let index = agents.firstIndex(where: { $0.id == id }) else { return }
+        let removed = agents[index], memories = agentMemories[id]
+        let wasSelected = selectedAgentID == id
+        var routeAfterDeletion = route
+        optimisticMutation(key: "agent:\(id)", update: { [self] in
+            agents.removeAll { $0.id == id }
+            agentMemories[id] = nil
+            agentDraft = nil
+            if wasSelected {
+                cancelStream()
+                selectionVersion += 1
+                selectedAgentID = ""
+                snapshot = nil
+                messages = []
+                if case .agent = route {
+                    if let next = agents.first { selectAgent(next.id) } else { route = nil }
                 }
             }
-        }
+            routeAfterDeletion = route
+        }, rollback: { [self] in
+            agents.insert(removed, at: min(index, agents.count))
+            agentMemories[id] = memories
+            if wasSelected, route == routeAfterDeletion { selectAgent(id) }
+        }, work: { client in
+            try await client.deleteAgent(id)
+            return nil
+        })
     }
 
     // MARK: Workspace panels
@@ -679,6 +879,7 @@ final class AppModel {
         case .memory:
             memoryLoadVersion += 1
             let version = memoryLoadVersion
+            let mutationVersion = mutationRevision
             request { client in
                 let bots = try await client.agents()
                 async let shared = client.memories(nil)
@@ -692,43 +893,46 @@ final class AppModel {
                 }
                 let sharedItems = try await shared
                 return { [self] in
-                    guard memoryLoadVersion == version else { return }
+                    guard memoryLoadVersion == version, mutationRevision == mutationVersion, pendingMutations.isEmpty else { return }
                     agents = bots
                     sharedMemories = sharedItems
                     agentMemories = personal
                 }
             }
         case .skills:
+            let mutationVersion = mutationRevision
             request { client in
                 async let bots = client.agents()
                 async let skills = client.sharedSkills()
                 let (loadedBots, loadedSkills) = try await (bots, skills)
                 return { [self] in
+                    guard mutationRevision == mutationVersion, pendingMutations.isEmpty else { return }
                     agents = loadedBots
                     sharedSkills = loadedSkills
                 }
             }
         case .tasks:
+            let mutationVersion = mutationRevision
             request { client in
                 let items = try await client.schedules()
-                return { [self] in schedules = items }
+                return { [self] in
+                    guard mutationRevision == mutationVersion, pendingMutations.isEmpty else { return }
+                    schedules = items
+                }
             }
         case .activity:
             request { client in
                 let items = try await client.executions()
                 return { [self] in executions = items }
             }
-        case .approvals:
-            request { client in
-                let items = try await client.approvals()
-                return { [self] in approvals = items }
-            }
         case .integrations:
+            let mutationVersion = mutationRevision
             request { client in
                 async let bots = client.agents()
                 async let servers = client.mcpServers()
                 let (loadedBots, loadedServers) = try await (bots, servers)
                 return { [self] in
+                    guard mutationRevision == mutationVersion, pendingMutations.isEmpty else { return }
                     agents = loadedBots
                     mcpServers = loadedServers
                 }
@@ -752,22 +956,62 @@ final class AppModel {
             errorText = "Memory content is required."
             return
         }
-        request { client in
-            if form.memoryID.isEmpty {
-                _ = try await client.addMemory(agent, content: content)
+        let isNew = form.memoryID.isEmpty
+        let provisionalID = isNew ? "pending-memory-" + newRequestID() : form.memoryID
+        let provisional = Memory(id: provisionalID, content: content, createdAt: nil)
+        let old = (agent == nil ? sharedMemories : agentMemories[agent!] ?? []).first { $0.id == form.memoryID }
+        memoryDraft = nil
+        optimisticMutation(key: "memory:\(provisionalID)", update: { [self] in
+            if agent == nil {
+                if let index = sharedMemories.firstIndex(where: { $0.id == provisionalID || $0.id == form.memoryID }) { sharedMemories[index] = provisional }
+                else { sharedMemories.append(provisional) }
             } else {
-                _ = try await client.updateMemory(agent, memoryID: form.memoryID, content: content)
+                var items = agentMemories[agent!] ?? []
+                if let index = items.firstIndex(where: { $0.id == provisionalID || $0.id == form.memoryID }) { items[index] = provisional }
+                else { items.append(provisional) }
+                agentMemories[agent!] = items
             }
-            return { [self] in openPanel(.memory) }
-        }
+        }, rollback: { [self] in
+            if agent == nil {
+                sharedMemories.removeAll { $0.id == provisionalID }
+                if let old { sharedMemories.append(old) }
+            } else {
+                var items = agentMemories[agent!] ?? []
+                items.removeAll { $0.id == provisionalID }
+                if let old { items.append(old) }
+                agentMemories[agent!] = items
+            }
+            if route == .memory, memoryDraft == nil { memoryDraft = form }
+        }, work: { client in
+            let saved = isNew ? try await client.addMemory(agent, content: content) : try await client.updateMemory(agent, memoryID: form.memoryID, content: content)
+            return { [self] in
+                if agent == nil {
+                    if let index = sharedMemories.firstIndex(where: { $0.id == provisionalID }) { sharedMemories[index] = saved }
+                } else if var items = agentMemories[agent!], let index = items.firstIndex(where: { $0.id == provisionalID }) {
+                    items[index] = saved; agentMemories[agent!] = items
+                }
+            }
+        })
     }
 
     func deleteMemory(_ id: String, agentID: String? = nil) {
         let agent = agentID
-        request { client in
+        let old = (agent == nil ? sharedMemories : agentMemories[agent!] ?? []).first { $0.id == id }
+        let oldIndex = (agent == nil ? sharedMemories : agentMemories[agent!] ?? []).firstIndex { $0.id == id }
+        optimisticMutation(key: "memory:\(id)", update: { [self] in
+            if agent == nil { sharedMemories.removeAll { $0.id == id } }
+            else { agentMemories[agent!]?.removeAll { $0.id == id } }
+        }, rollback: { [self] in
+            guard let old else { return }
+            if agent == nil { sharedMemories.insert(old, at: min(oldIndex ?? sharedMemories.count, sharedMemories.count)) }
+            else {
+                var items = agentMemories[agent!] ?? []
+                items.insert(old, at: min(oldIndex ?? items.count, items.count)); agentMemories[agent!] = items
+            }
+        }, work: { client in
             try await client.deleteMemory(agent, memoryID: id)
-            return { [self] in openPanel(.memory) }
-        }
+            return nil
+        })
     }
 
     func openTaskForm(_ id: String, agentID: String? = nil) {
@@ -812,41 +1056,53 @@ final class AppModel {
         }
         var payload: [String: JSONValue] = ["agentId": .string(form.agentID), "name": .string(name), "prompt": .string(prompt),
                                             "timezone": .string(timezone), "enabled": .bool(form.enabled)]
-        request { client in
-            if form.scheduleID.isEmpty {
+        let isNew = form.scheduleID.isEmpty
+        let provisionalID = isNew ? "pending-schedule-" + newRequestID() : form.scheduleID
+        let provisional = Schedule(id: provisionalID, agentId: form.agentID, name: name, cron: form.repeats ? cron : nil,
+                                   prompt: prompt, timezone: timezone, runAt: form.repeats ? nil : runAt, enabled: form.enabled, createdByAgentId: nil)
+        let old = schedules.first { $0.id == form.scheduleID }
+        taskDraft = nil
+        optimisticMutation(key: "schedule:\(provisionalID)", update: { [self] in
+            if let index = schedules.firstIndex(where: { $0.id == provisionalID || $0.id == form.scheduleID }) { schedules[index] = provisional }
+            else { schedules.append(provisional) }
+        }, rollback: { [self] in
+            schedules.removeAll { $0.id == provisionalID }
+            if let old { schedules.append(old) }
+            if route == .tasks, taskDraft == nil { taskDraft = form }
+        }, work: { client in
+            if isNew {
                 if form.repeats { payload["cron"] = .string(cron) } else { payload["runAt"] = .string(runAt) }
-                _ = try await client.createSchedule(payload)
+                let saved = try await client.createSchedule(payload)
+                return { [self] in if let index = schedules.firstIndex(where: { $0.id == provisionalID }) { schedules[index] = saved } }
             } else {
                 payload["cron"] = cron.isEmpty ? .null : .string(cron)
                 payload["runAt"] = form.repeats ? .null : .string(runAt)
-                _ = try await client.updateSchedule(form.scheduleID, patch: payload)
+                let saved = try await client.updateSchedule(form.scheduleID, patch: payload)
+                return { [self] in if let index = schedules.firstIndex(where: { $0.id == provisionalID }) { schedules[index] = saved } }
             }
-            return { [self] in openPanel(.tasks) }
-        }
+        })
     }
 
     func runSchedule(_ id: String) {
-        request { client in
+        let routeAtStart = route
+        showNotice("Starting task…")
+        optimisticMutation(key: "schedule-run:\(id)", update: {}, rollback: { [self] in
+            showNotice("Task could not be started")
+        }, work: { client in
             let execution = try await client.runSchedule(id)
             return { [self] in
                 showNotice("Task started")
-                if let agent = execution.agentId, !agent.isEmpty { selectAgent(agent) }
+                if route == routeAtStart, routeAtStart == .tasks,
+                   let agent = execution.agentId, !agent.isEmpty { selectAgent(agent) }
             }
-        }
+        })
     }
 
     func deleteSchedule(_ id: String) {
-        request { client in
-            try await client.deleteSchedule(id)
-            return { [self] in openPanel(.tasks) }
-        }
-    }
-
-    func decideApproval(_ id: String, decision: String) {
-        request { client in
-            try await client.decideApproval(id, decision: decision)
-            return { [self] in openPanel(.approvals) }
-        }
+        guard let old = schedules.first(where: { $0.id == id }), let index = schedules.firstIndex(where: { $0.id == id }) else { return }
+        optimisticMutation(key: "schedule:\(id)", update: { [self] in schedules.removeAll { $0.id == id } }, rollback: { [self] in schedules.insert(old, at: min(index, schedules.count)) }, work: { client in
+            try await client.deleteSchedule(id); return nil
+        })
     }
 
     /// Opens a server to edit, or a new one owned by `agentID` (nil for shared).
@@ -870,23 +1126,45 @@ final class AppModel {
         }
         var payload: [String: JSONValue] = ["name": .string(name), "url": .string(rawURL), "enabled": .bool(form.enabled)]
         if !form.token.isEmpty { payload["token"] = .string(form.token) }
-        request { client in
-            if form.serverID.isEmpty {
+        let isNew = form.serverID.isEmpty
+        let provisionalID = isNew ? "pending-mcp-" + newRequestID() : form.serverID
+        let old = mcpServers.first { $0.id == form.serverID }
+        var provisional = MCPServer(id: provisionalID, name: name, url: rawURL, enabled: form.enabled, agentId: form.agentID, authenticated: false, auth: form.token.isEmpty ? "none" : "token")
+        if let old, form.token.isEmpty, old.url == rawURL {
+            provisional.authenticated = old.authenticated
+            provisional.auth = old.auth
+        }
+        let owner = form.agentID
+        mcpDraft = nil
+        optimisticMutation(key: "mcp:\(provisionalID)", update: { [self] in
+            if let index = mcpServers.firstIndex(where: { $0.id == provisionalID || $0.id == form.serverID }) { mcpServers[index] = provisional }
+            else { mcpServers.append(provisional) }
+            if isNew, let owner, let index = agents.firstIndex(where: { $0.id == owner }) {
+                var memberships = agents[index].mcpServers ?? []
+                if !memberships.contains(provisionalID) { memberships.append(provisionalID) }
+                agents[index].mcpServers = memberships
+            }
+        }, rollback: { [self] in
+            mcpServers.removeAll { $0.id == provisionalID }
+            if let old { mcpServers.append(old) }
+            if isNew, let owner, let index = agents.firstIndex(where: { $0.id == owner }) {
+                agents[index].mcpServers?.removeAll { $0 == provisionalID }
+            }
+            if route == .integrations, mcpDraft == nil { mcpDraft = form }
+        }, work: { client in
+            if isNew {
                 if let owner = form.agentID { payload["agentId"] = .string(owner) }
-                _ = try await client.createMCPServer(payload)
-                // The owner starts using its new server, so its profile changed.
-                if form.agentID != nil {
-                    let agents = try await client.agents()
-                    return { [self] in
-                        self.agents = agents
-                        openPanel(.integrations)
+                let saved = try await client.createMCPServer(payload)
+                return { [self] in
+                    if let index = mcpServers.firstIndex(where: { $0.id == provisionalID }) { mcpServers[index] = saved }
+                    if let owner, let index = agents.firstIndex(where: { $0.id == owner }) {
+                        agents[index].mcpServers = (agents[index].mcpServers ?? []).map { $0 == provisionalID ? saved.id : $0 }
                     }
                 }
-            } else {
-                _ = try await client.updateMCPServer(form.serverID, patch: payload)
             }
-            return { [self] in openPanel(.integrations) }
-        }
+            let saved = try await client.updateMCPServer(form.serverID, patch: payload)
+            return { [self] in if let index = mcpServers.firstIndex(where: { $0.id == provisionalID }) { mcpServers[index] = saved } }
+        })
     }
 
     /// Where the system sign-in sheet returns; the sheet watches this scheme, so nothing registers it.
@@ -899,35 +1177,62 @@ final class AppModel {
         guard let client else { return }
         errorText = ""
         signingIn = id
-        defer { signingIn = nil }
+        let generationAtStart = generation
+        defer { if generation == generationAtStart, signingIn == id { signingIn = nil } }
         do {
             let start = try await client.startMCPSignIn(id, redirectURI: Self.oauthRedirectURI)
+            guard generation == generationAtStart else { return }
             if let address = start.authorizationUrl, let url = URL(string: address) {
                 let callback = try await session.authenticate(using: url, callbackURLScheme: Self.oauthCallbackScheme)
                 let (code, state, iss) = try oauthResult(from: callback)
-                _ = try await client.finishMCPSignIn(id, code: code, state: state, iss: iss)
+                guard generation == generationAtStart else { return }
+                let saved = try await client.finishMCPSignIn(id, code: code, state: state, iss: iss)
+                guard generation == generationAtStart else { return }
+                if let index = mcpServers.firstIndex(where: { $0.id == id }) { mcpServers[index] = saved }
+            } else if start.authorized == true, let index = mcpServers.firstIndex(where: { $0.id == id }) {
+                mcpServers[index].authenticated = true
             }
             showNotice("Signed in")
-            openPanel(.integrations)
         } catch ASWebAuthenticationSessionError.canceledLogin {
             return
         } catch {
+            guard generation == generationAtStart else { return }
             errorText = friendlyError(error)
         }
     }
 
     func signOutOfMCP(_ id: String) {
-        request { client in
-            _ = try await client.signOutOfMCP(id)
-            return { [self] in openPanel(.integrations) }
-        }
+        guard let old = mcpServers.first(where: { $0.id == id }), let index = mcpServers.firstIndex(where: { $0.id == id }) else { return }
+        var signedOut = old
+        signedOut.authenticated = false
+        signedOut.auth = "none"
+        optimisticMutation(key: "mcp:\(id)", update: { [self] in mcpServers[index] = signedOut }, rollback: { [self] in
+            if let current = mcpServers.firstIndex(where: { $0.id == id }) { mcpServers[current] = old }
+        }, work: { client in
+            let saved = try await client.signOutOfMCP(id)
+            return { [self] in if let current = mcpServers.firstIndex(where: { $0.id == id }) { mcpServers[current] = saved } }
+        })
     }
 
     func deleteMCP(_ id: String) {
-        request { client in
-            try await client.deleteMCPServer(id)
-            return { [self] in openPanel(.integrations) }
+        guard let old = mcpServers.first(where: { $0.id == id }), let index = mcpServers.firstIndex(where: { $0.id == id }) else { return }
+        let affectedAgents = agents.compactMap { agent -> (String, [String])? in
+            guard agent.mcpServers?.contains(id) == true else { return nil }
+            return (agent.id, agent.mcpServers ?? [])
         }
+        optimisticMutation(key: "mcp:\(id)", update: { [self] in
+            mcpServers.removeAll { $0.id == id }
+            for (agentID, _) in affectedAgents {
+                if let index = agents.firstIndex(where: { $0.id == agentID }) { agents[index].mcpServers?.removeAll { $0 == id } }
+            }
+        }, rollback: { [self] in
+            mcpServers.insert(old, at: min(index, mcpServers.count))
+            for (agentID, memberships) in affectedAgents {
+                if let index = agents.firstIndex(where: { $0.id == agentID }) { agents[index].mcpServers = memberships }
+            }
+        }, work: { client in
+            try await client.deleteMCPServer(id); return nil
+        })
     }
 
     /// Servers a bot may use: the shared ones and its own.
@@ -951,31 +1256,52 @@ final class AppModel {
             errorText = "Each skill needs a name and instructions."
             return
         }
-        request { client in
-            if form.skillID.isEmpty {
-                _ = try await client.createSharedSkill(name: name, instructions: instructions)
-            } else {
-                _ = try await client.updateSharedSkill(form.skillID, name: name, instructions: instructions)
+        let isNew = form.skillID.isEmpty
+        let provisionalID = isNew ? "pending-skill-" + newRequestID() : form.skillID
+        let provisional = SharedSkill(id: provisionalID, name: name, instructions: instructions, source: nil, path: nil)
+        let old = sharedSkills.first { $0.id == form.skillID }
+        skillDraft = nil
+        optimisticMutation(key: "skill:\(provisionalID)", update: { [self] in
+            if let index = sharedSkills.firstIndex(where: { $0.id == provisionalID || $0.id == form.skillID }) { sharedSkills[index] = provisional }
+            else { sharedSkills.append(provisional) }
+        }, rollback: { [self] in
+            sharedSkills.removeAll { $0.id == provisionalID }
+            if let old { sharedSkills.append(old) }
+            if route == .skills, skillDraft == nil { skillDraft = form }
+        }, work: { client in
+            if isNew {
+                let saved = try await client.createSharedSkill(name: name, instructions: instructions)
+                return { [self] in if let index = sharedSkills.firstIndex(where: { $0.id == provisionalID }) { sharedSkills[index] = saved } }
             }
-            return { [self] in openPanel(.skills) }
-        }
+            let saved = try await client.updateSharedSkill(form.skillID, name: name, instructions: instructions)
+            return { [self] in if let index = sharedSkills.firstIndex(where: { $0.id == provisionalID }) { sharedSkills[index] = saved } }
+        })
     }
 
     func deleteSharedSkill(_ id: String) {
-        request { client in
-            try await client.deleteSharedSkill(id)
-            // Bots that used the skill dropped it.
-            let agents = try await client.agents()
-            return { [self] in
-                self.agents = agents
-                openPanel(.skills)
-            }
+        guard let old = sharedSkills.first(where: { $0.id == id }), let index = sharedSkills.firstIndex(where: { $0.id == id }) else { return }
+        let affectedAgents = agents.compactMap { agent -> (String, [String])? in
+            guard agent.sharedSkills?.contains(id) == true else { return nil }
+            return (agent.id, agent.sharedSkills ?? [])
         }
+        optimisticMutation(key: "skill:\(id)", update: { [self] in
+            sharedSkills.removeAll { $0.id == id }
+            for index in agents.indices { agents[index].sharedSkills?.removeAll { $0 == id } }
+        }, rollback: { [self] in
+            sharedSkills.insert(old, at: min(index, sharedSkills.count))
+            for (agentID, memberships) in affectedAgents {
+                if let index = agents.firstIndex(where: { $0.id == agentID }) { agents[index].sharedSkills = memberships }
+            }
+        }, work: { client in
+            try await client.deleteSharedSkill(id)
+            return nil
+        })
     }
 
     // MARK: Settings
 
     func saveSettings() {
+        guard !savingConnection else { return }
         let rawURL = serverURL.trimmingCharacters(in: .whitespaces).trimmingTrailingSlashes
         let token = token.trimmingCharacters(in: .whitespaces)
         guard let url = URL(string: rawURL), url.host() != nil, ["http", "https"].contains(url.scheme ?? "") else {
@@ -983,13 +1309,36 @@ final class AppModel {
             return
         }
         let candidate = APIClient(baseURL: rawURL, token: token)
+        savingConnection = true
+        errorText = ""
         Task {
+            defer { savingConnection = false }
             do {
                 _ = try await candidate.agents()
                 try Keychain.write("server-token", value: token)
                 try Keychain.write("server-url", value: rawURL)
                 cancelStream()
                 generation += 1
+                pendingMutations.removeAll()
+                mutationRevision += 1
+                resetPendingMessages()
+                agents = []
+                agentMemories = [:]
+                sharedMemories = []
+                sharedSkills = []
+                schedules = []
+                executions = []
+                mcpServers = []
+                providers = []
+                models = []
+                signingIn = nil
+                agentDraft = nil
+                memoryDraft = nil
+                taskDraft = nil
+                mcpDraft = nil
+                skillDraft = nil
+                snapshot = nil
+                messages = []
                 client = candidate
                 activeRequests = 0
                 loading = false
@@ -1010,25 +1359,28 @@ final class AppModel {
             errorText = "Enter an API key."
             return
         }
-        request { client in
+        optimisticMutation(key: "provider:\(provider)", update: { [self] in
+            providerKey = ""
+        }, rollback: { [self] in
+            if self.provider == provider, providerKey.isEmpty { providerKey = key }
+        }, work: { client in
             try await client.setProviderKey(provider, apiKey: key)
             return { [self] in
-                providerKey = ""
                 showNotice("Provider key saved")
                 loadProviders()
             }
-        }
+        })
     }
 
     func removeProviderKey() {
         let provider = provider
-        request { client in
+        optimisticMutation(key: "provider:\(provider)", update: {}, rollback: {}, work: { client in
             try await client.deleteProviderKey(provider)
             return { [self] in
                 showNotice("Provider key removed")
                 loadProviders()
             }
-        }
+        })
     }
 }
 

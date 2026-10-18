@@ -1,6 +1,6 @@
 # Crumble for macOS
 
-Crumble for macOS is a native SwiftUI client for a running Crumble server. It provides agent management, one continuous chat per agent with streaming replies and file attachments, memory, schedules, integrations, approvals, and settings.
+Crumble for macOS is a native SwiftUI client for a running Crumble server. It provides agent management, one continuous chat per agent with streaming replies and file attachments, memory, schedules, integrations, and settings.
 
 ## Requirements
 
@@ -54,6 +54,7 @@ The app sends the token as an `Authorization: Bearer` header. It does not send p
 
 ## Chat
 
+- Messages appear immediately with a sending indicator. Failed messages stay visible with **Retry**, which resends the original request without creating a duplicate.
 - Return sends a message; Shift-Return or Option-Return starts a new line.
 - The plus button beside the message field attaches files, and you can also drag files onto the field. A message can carry up to eight images (PNG, JPEG, GIF, WebP, up to 5 MB) or UTF-8 text files (up to 512 KB). The app converts other image formats, and larger images, to JPEG first.
 - To ask another bot in a normal chat, write a request such as `Can you ask @Bot2 how he feels?` The responding bot can relay the answer when its profile has **Message other bots** enabled and **Bot2** selected in the permitted-bots list. Mentions are plain text; the client does not promise autocomplete.
@@ -65,7 +66,7 @@ Each task runs once, or on a cron schedule, in one bot's chat. Tasks are listed 
 
 ## Notifications
 
-The app notifies you when a bot finishes a reply you aren't looking at, including replies to scheduled tasks, and when a tool call waits for your approval. Click a notification to open the chat or Approvals. macOS asks for permission on first launch. Notifications need the app bundle from `./scripts/build-app.sh`; `swift run` posts none.
+The app notifies you when a bot finishes a reply you aren't looking at, including replies to scheduled tasks. Click a notification to open the chat. macOS asks for permission on first launch. Notifications need the app bundle from `./scripts/build-app.sh`; `swift run` posts none.
 
 ## Shared and personal items
 
@@ -73,7 +74,7 @@ The app notifies you when a bot finishes a reply you aren't looking at, includin
 
 - Add a memory from a bot’s section to assign it to that bot, or use **New Shared Memory**. A bot recalls shared memories only when **Use shared memory** is on in its profile.
 - **Skills** includes bundled defaults and optional library skills together under **Shared**. Defaults are marked **Default · Every bot** and edited in the server's sibling `skills` directory; restart the server to load changes. Library skills are editable in the app and turned on per bot in its profile. Expand a skill to read its instructions. A bot's own skills are edited in its profile.
-- Add an MCP server from a bot’s section to assign it to that bot, or use **Add Shared MCP Server**. A bot's own server has its own sign-in, so two bots can use the same service with different accounts.
+- Add an MCP server from a bot’s section to assign it to that bot, or use **Add Shared MCP Server**. A bot's own server has its own sign-in, so two bots can use the same service with different accounts. Tools from enabled, permitted integrations run directly without per-action confirmation.
 
 ## Integrations
 
