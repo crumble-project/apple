@@ -51,6 +51,7 @@ struct ContentView: View {
         .sheet(item: $model.memoryDraft) { MemoryFormView(draft: sheetBinding($model.memoryDraft, for: $0)) }
         .sheet(item: $model.taskDraft) { TaskFormView(draft: sheetBinding($model.taskDraft, for: $0)) }
         .sheet(item: $model.mcpDraft) { MCPFormView(draft: sheetBinding($model.mcpDraft, for: $0)) }
+        .sheet(item: $model.skillDraft) { SkillFormView(draft: sheetBinding($model.skillDraft, for: $0)) }
     }
 
     @ViewBuilder private var detail: some View {
@@ -82,7 +83,8 @@ struct SidebarView: View {
     @Environment(AppModel.self) private var model
 
     private static let workspace: [(Route, String, String)] = [
-        (.memory, "Memory", "brain"), (.tasks, "Tasks", "calendar.badge.clock"), (.activity, "Activity", "waveform.path.ecg"),
+        (.memory, "Memory", "brain"), (.skills, "Skills", "book.closed"), (.tasks, "Tasks", "calendar.badge.clock"),
+        (.activity, "Activity", "waveform.path.ecg"),
         (.approvals, "Approvals", "checkmark.shield"), (.integrations, "Integrations", "powerplug"),
     ]
 
@@ -159,7 +161,8 @@ struct ErrorBanner: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        if !model.errorText.isEmpty, model.agentDraft == nil, model.memoryDraft == nil, model.taskDraft == nil, model.mcpDraft == nil {
+        if !model.errorText.isEmpty, model.agentDraft == nil, model.memoryDraft == nil, model.taskDraft == nil, model.mcpDraft == nil,
+           model.skillDraft == nil {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.red)
                 Text(model.errorText).font(.callout).textSelection(.enabled)

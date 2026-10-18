@@ -61,6 +61,14 @@ The app sends the token as an `Authorization: Bearer` header. It does not send p
 
 The app notifies you when a bot finishes a reply you aren't looking at, including replies to scheduled tasks, and when a tool call waits for your approval. Click a notification to open the chat or Approvals. macOS asks for permission on first launch. Notifications need the app bundle from `./scripts/build-app.sh`; `swift run` posts none.
 
+## Shared and personal items
+
+**Memory**, **Skills**, and **Integrations** show **Shared** followed by a named section for every bot. All bots’ personal entries are visible together. Optional shared skills list the bots that use them.
+
+- Add a memory from a bot’s section to assign it to that bot, or use **New Shared Memory**. A bot recalls shared memories only when **Use shared memory** is on in its profile.
+- **Skills** includes bundled defaults and optional library skills together under **Shared**. Defaults are marked **Default · Every bot** and edited in the server's sibling `skills` directory; restart the server to load changes. Library skills are editable in the app and turned on per bot in its profile. Expand a skill to read its instructions. A bot's own skills are edited in its profile.
+- Add an MCP server from a bot’s section to assign it to that bot, or use **Add Shared MCP Server**. A bot's own server has its own sign-in, so two bots can use the same service with different accounts.
+
 ## Integrations
 
 Add MCP servers under **Integrations**. For a server that uses a token, enter it in the server's form. For a server that uses OAuth, leave the token empty, save, and choose **Sign In…** in the list; the app shows the provider's sign-in page, and the Crumble server keeps the tokens.

@@ -6,12 +6,13 @@ import SwiftUI
 
 enum Route: Hashable {
     case agent(String)
-    case memory, tasks, activity, approvals, integrations
+    case memory, skills, tasks, activity, approvals, integrations
 
     var title: String {
         switch self {
         case .agent: "Chat"
         case .memory: "Memory"
+        case .skills: "Skills"
         case .tasks: "Tasks"
         case .activity: "Activity"
         case .approvals: "Approvals"
@@ -39,9 +40,11 @@ struct AgentDraft: Identifiable, Sendable {
     var toolsMemory = true
     var toolsDelegate = false
     var toolsCodemode = false
+    var sharedMemory = false
     var delegates: Set<String> = []
     var mcpServers: Set<String> = []
     var skills: [Skill] = []
+    var sharedSkills: Set<String> = []
 
     /// Offers new bots to pick from, keeping the current one first.
     mutating func shuffleAvatars() {
@@ -54,6 +57,15 @@ struct MemoryDraft: Identifiable, Sendable {
     let id = UUID()
     var memoryID: String
     var content: String
+    /// The owner is fixed when editing; nil means shared.
+    var agentID: String?
+}
+
+struct SkillDraft: Identifiable, Sendable {
+    let id = UUID()
+    var skillID: String
+    var name = ""
+    var instructions = ""
 }
 
 struct TaskDraft: Identifiable, Sendable {
@@ -71,6 +83,8 @@ struct TaskDraft: Identifiable, Sendable {
 struct MCPDraft: Identifiable, Sendable {
     let id = UUID()
     var serverID: String
+    /// The bot a new server belongs to, or nil for a shared one; fixed once the server exists.
+    var agentID: String?
     var name = ""
     var url = ""
     var token = ""
@@ -117,7 +131,10 @@ final class AppModel {
     private var streamTask: Task<Void, Never>?
     private var activityTask: Task<Void, Never>?
 
-    var memories: [Memory] = []
+    var agentMemories: [String: [Memory]] = [:]
+    private var memoryLoadVersion = 0
+    var sharedMemories: [Memory] = []
+    var sharedSkills: [SharedSkill] = []
     var schedules: [Schedule] = []
     var executions: [Execution] = []
     var approvals: [Approval] = []
@@ -129,6 +146,7 @@ final class AppModel {
     var memoryDraft: MemoryDraft?
     var taskDraft: TaskDraft?
     var mcpDraft: MCPDraft?
+    var skillDraft: SkillDraft?
     /// The MCP server whose sign-in sheet is open.
     var signingIn: String?
     var confirmingDelete = false
@@ -449,8 +467,8 @@ final class AppModel {
         loadEditorData(provider: draft.provider)
     }
 
-    func openEditor() {
-        guard let agent = selectedAgent else { return }
+    func openEditor(agentID: String? = nil) {
+        guard let agent = agents.first(where: { $0.id == (agentID ?? selectedAgentID) }) else { return }
         var draft = AgentDraft(isNew: false, agentID: agent.id)
         draft.name = agent.name
         draft.description = agent.description ?? ""
@@ -470,6 +488,8 @@ final class AppModel {
         draft.toolsDelegate = tools.contains("delegate")
         draft.toolsCodemode = tools.contains("codemode")
         draft.skills = agent.skills ?? []
+        draft.sharedSkills = Set(agent.sharedSkills ?? [])
+        draft.sharedMemory = agent.sharedMemory ?? false
         draft.delegates = Set(agent.delegates ?? [])
         draft.mcpServers = Set(agent.mcpServers ?? [])
         draft.shuffleAvatars()
@@ -480,8 +500,13 @@ final class AppModel {
     private func loadEditorData(provider: String) {
         models = []
         request { client in
-            let servers = try await client.mcpServers()
-            return { [self] in mcpServers = servers }
+            async let servers = client.mcpServers()
+            async let skills = client.sharedSkills()
+            let (loadedServers, loadedSkills) = try await (servers, skills)
+            return { [self] in
+                mcpServers = loadedServers
+                sharedSkills = loadedSkills
+            }
         }
         loadProviders()
         loadModels(provider)
@@ -559,10 +584,11 @@ final class AppModel {
             inference.maxOutputTokens = value
         }
         let delegates = draft.delegates.sorted(), servers = draft.mcpServers.sorted()
+        let shared = draft.sharedSkills.filter { id in sharedSkills.contains { $0.id == id && !$0.isDefault } }.sorted()
         let input = Agent(name: name, description: draft.description.nilIfEmpty, instructions: draft.instructions.nilIfEmpty,
                           avatar: draft.avatar, enabled: draft.enabled, provider: draft.provider.nilIfEmpty, model: draft.model.nilIfEmpty,
                           folder: draft.folder.nilIfEmpty, tools: tools, delegates: delegates, skills: draft.skills,
-                          mcpServers: servers, inference: inference)
+                          sharedSkills: shared, sharedMemory: draft.sharedMemory, mcpServers: servers, inference: inference)
         let id = draft.agentID, isNew = draft.isNew
         request { client in
             let agent: Agent
@@ -573,7 +599,8 @@ final class AppModel {
                     "name": .string(name), "description": .string(draft.description), "instructions": .string(draft.instructions),
                     "provider": .string(draft.provider), "model": .string(draft.model), "avatar": .string(draft.avatar),
                     "folder": .string(draft.folder), "enabled": .bool(draft.enabled), "tools": .array(tools.map(JSONValue.string)),
-                    "skills": try JSONValue(encoding: draft.skills), "mcpServers": .array(servers.map(JSONValue.string)),
+                    "skills": try JSONValue(encoding: draft.skills), "sharedSkills": .array(shared.map(JSONValue.string)),
+                    "sharedMemory": .bool(draft.sharedMemory), "mcpServers": .array(servers.map(JSONValue.string)),
                     "delegates": .array(delegates.map(JSONValue.string)), "inference": try JSONValue(encoding: inference),
                 ])
             }
@@ -584,13 +611,17 @@ final class AppModel {
                     agents[index] = agent
                 }
                 agentDraft = nil
-                selectAgent(agent.id)
+                if !isNew, let panel = route, [.memory, .skills, .integrations].contains(panel) {
+                    openPanel(panel)
+                } else {
+                    selectAgent(agent.id)
+                }
             }
         }
     }
 
     func duplicateSelected() {
-        let id = selectedAgentID
+        let id = agentDraft?.agentID ?? selectedAgentID
         request { client in
             let agent = try await client.duplicateAgent(id)
             return { [self] in
@@ -603,13 +634,25 @@ final class AppModel {
     }
 
     func deleteSelected() {
-        let id = selectedAgentID
+        let id = agentDraft?.agentID ?? selectedAgentID
         request { client in
             try await client.deleteAgent(id)
             return { [self] in
-                selectedAgentID = ""
+                agents.removeAll { $0.id == id }
+                agentMemories[id] = nil
+                if selectedAgentID == id {
+                    cancelStream()
+                    selectionVersion += 1
+                    selectedAgentID = ""
+                    snapshot = nil
+                    messages = []
+                }
                 agentDraft = nil
-                refresh()
+                if let panel = route, [.memory, .skills, .integrations].contains(panel) {
+                    openPanel(panel)
+                } else {
+                    refresh()
+                }
             }
         }
     }
@@ -621,13 +664,39 @@ final class AppModel {
         memoryDraft = nil
         taskDraft = nil
         mcpDraft = nil
-        let selected = selectedAgentID
+        skillDraft = nil
         switch panel {
         case .memory:
-            guard !selected.isEmpty else { return }
+            memoryLoadVersion += 1
+            let version = memoryLoadVersion
             request { client in
-                let items = try await client.memories(selected)
-                return { [self] in if selectedAgentID == selected { memories = items } }
+                let bots = try await client.agents()
+                async let shared = client.memories(nil)
+                let personal = try await withThrowingTaskGroup(of: (String, [Memory]).self) { group in
+                    for bot in bots {
+                        group.addTask { (bot.id, try await client.memories(bot.id)) }
+                    }
+                    var result: [String: [Memory]] = [:]
+                    for try await (id, memories) in group { result[id] = memories }
+                    return result
+                }
+                let sharedItems = try await shared
+                return { [self] in
+                    guard memoryLoadVersion == version else { return }
+                    agents = bots
+                    sharedMemories = sharedItems
+                    agentMemories = personal
+                }
+            }
+        case .skills:
+            request { client in
+                async let bots = client.agents()
+                async let skills = client.sharedSkills()
+                let (loadedBots, loadedSkills) = try await (bots, skills)
+                return { [self] in
+                    agents = loadedBots
+                    sharedSkills = loadedSkills
+                }
             }
         case .tasks:
             request { client in
@@ -646,21 +715,29 @@ final class AppModel {
             }
         case .integrations:
             request { client in
-                let items = try await client.mcpServers()
-                return { [self] in mcpServers = items }
+                async let bots = client.agents()
+                async let servers = client.mcpServers()
+                let (loadedBots, loadedServers) = try await (bots, servers)
+                return { [self] in
+                    agents = loadedBots
+                    mcpServers = loadedServers
+                }
             }
         case .agent:
             break
         }
     }
 
-    func openMemoryForm(_ id: String) {
-        memoryDraft = MemoryDraft(memoryID: id, content: memories.first { $0.id == id }?.content ?? "")
+    /// Carries the entry's owner into the form so edits never depend on the active chat.
+    func openMemoryForm(_ id: String, agentID: String? = nil) {
+        let items = agentID.map { agentMemories[$0] ?? [] } ?? sharedMemories
+        let existing = items.first { $0.id == id }
+        memoryDraft = MemoryDraft(memoryID: id, content: existing?.content ?? "", agentID: agentID)
     }
 
     func saveMemory() {
         guard let form = memoryDraft else { return }
-        let agent = selectedAgentID, content = form.content.trimmingCharacters(in: .whitespacesAndNewlines)
+        let agent = form.agentID, content = form.content.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !content.isEmpty else {
             errorText = "Memory content is required."
             return
@@ -675,8 +752,8 @@ final class AppModel {
         }
     }
 
-    func deleteMemory(_ id: String) {
-        let agent = selectedAgentID
+    func deleteMemory(_ id: String, agentID: String? = nil) {
+        let agent = agentID
         request { client in
             try await client.deleteMemory(agent, memoryID: id)
             return { [self] in openPanel(.memory) }
@@ -748,9 +825,11 @@ final class AppModel {
         }
     }
 
-    func openMCPForm(_ id: String) {
-        var form = MCPDraft(serverID: id)
+    /// Opens a server to edit, or a new one owned by `agentID` (nil for shared).
+    func openMCPForm(_ id: String, agentID: String? = nil) {
+        var form = MCPDraft(serverID: id, agentID: agentID)
         if let server = mcpServers.first(where: { $0.id == id }) {
+            form.agentID = server.agentId
             form.name = server.name
             form.url = server.url
             form.enabled = server.enabled
@@ -769,7 +848,16 @@ final class AppModel {
         if !form.token.isEmpty { payload["token"] = .string(form.token) }
         request { client in
             if form.serverID.isEmpty {
+                if let owner = form.agentID { payload["agentId"] = .string(owner) }
                 _ = try await client.createMCPServer(payload)
+                // The owner starts using its new server, so its profile changed.
+                if form.agentID != nil {
+                    let agents = try await client.agents()
+                    return { [self] in
+                        self.agents = agents
+                        openPanel(.integrations)
+                    }
+                }
             } else {
                 _ = try await client.updateMCPServer(form.serverID, patch: payload)
             }
@@ -792,8 +880,8 @@ final class AppModel {
             let start = try await client.startMCPSignIn(id, redirectURI: Self.oauthRedirectURI)
             if let address = start.authorizationUrl, let url = URL(string: address) {
                 let callback = try await session.authenticate(using: url, callbackURLScheme: Self.oauthCallbackScheme)
-                let (code, state) = try oauthResult(from: callback)
-                _ = try await client.finishMCPSignIn(id, code: code, state: state)
+                let (code, state, iss) = try oauthResult(from: callback)
+                _ = try await client.finishMCPSignIn(id, code: code, state: state, iss: iss)
             }
             showNotice("Signed in")
             openPanel(.integrations)
@@ -815,6 +903,49 @@ final class AppModel {
         request { client in
             try await client.deleteMCPServer(id)
             return { [self] in openPanel(.integrations) }
+        }
+    }
+
+    /// Servers a bot may use: the shared ones and its own.
+    func usableServers(for agentID: String) -> [MCPServer] {
+        mcpServers.filter { $0.agentId == nil || $0.agentId == agentID }
+    }
+
+    func openSkillForm(_ id: String) {
+        var form = SkillDraft(skillID: id)
+        if let skill = sharedSkills.first(where: { $0.id == id }) {
+            form.name = skill.name
+            form.instructions = skill.instructions
+        }
+        skillDraft = form
+    }
+
+    func saveSkill() {
+        guard let form = skillDraft else { return }
+        let name = form.name.trimmingCharacters(in: .whitespaces), instructions = form.instructions.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty, !instructions.isEmpty else {
+            errorText = "Each skill needs a name and instructions."
+            return
+        }
+        request { client in
+            if form.skillID.isEmpty {
+                _ = try await client.createSharedSkill(name: name, instructions: instructions)
+            } else {
+                _ = try await client.updateSharedSkill(form.skillID, name: name, instructions: instructions)
+            }
+            return { [self] in openPanel(.skills) }
+        }
+    }
+
+    func deleteSharedSkill(_ id: String) {
+        request { client in
+            try await client.deleteSharedSkill(id)
+            // Bots that used the skill dropped it.
+            let agents = try await client.agents()
+            return { [self] in
+                self.agents = agents
+                openPanel(.skills)
+            }
         }
     }
 
@@ -900,8 +1031,8 @@ struct SignInError: LocalizedError {
     var errorDescription: String?
 }
 
-/// Reads the code and state from a sign-in callback, or the provider's reason for refusing.
-func oauthResult(from callback: URL) throws -> (code: String, state: String) {
+/// Reads the code, state and issuer from a sign-in callback, or the provider's reason for refusing.
+func oauthResult(from callback: URL) throws -> (code: String, state: String, iss: String?) {
     let items = URLComponents(url: callback, resolvingAgainstBaseURL: false)?.queryItems ?? []
     let value = { (name: String) in items.first { $0.name == name }?.value }
     if let error = value("error") {
@@ -910,7 +1041,7 @@ func oauthResult(from callback: URL) throws -> (code: String, state: String) {
     guard let code = value("code"), let state = value("state") else {
         throw SignInError(errorDescription: "Sign-in returned no authorization code.")
     }
-    return (code, state)
+    return (code, state, value("iss"))
 }
 
 func validateTask(name: String, prompt: String, cron: String, runAt: String) -> String? {

@@ -72,6 +72,9 @@ struct AgentEditorView: View {
             }
             Section {
                 Toggle("Memory", isOn: $draft.toolsMemory)
+                if draft.toolsMemory {
+                    Toggle("Use shared memory", isOn: $draft.sharedMemory).padding(.leading, 16)
+                }
                 Toggle("Delegate to other agents", isOn: $draft.toolsDelegate)
                 if draft.toolsDelegate {
                     ForEach(model.agents.filter { $0.id != draft.agentID }) { agent in
@@ -82,15 +85,20 @@ struct AgentEditorView: View {
             } header: {
                 Text("Capabilities")
             } footer: {
-                Text("Memory lets the agent keep notes between chats. Delegation lets it hand bounded tasks to the agents you allow. Code mode has the agent write a short script that calls its tools, so many tool calls take one step; approvals still apply to each call.")
+                Text("Memory lets the agent keep notes between chats; with shared memory it also recalls and keeps notes every bot using shared memory sees. Delegation lets it hand bounded tasks to the agents you allow. Code mode has the agent write a short script that calls its tools, so many tool calls take one step; approvals still apply to each call.")
                     .foregroundStyle(.secondary)
             }
             Section("Integrations") {
-                if model.mcpServers.isEmpty {
+                let servers = model.usableServers(for: draft.agentID)
+                if servers.isEmpty {
                     Text("Add an MCP server under Integrations to use its tools here.").foregroundStyle(.secondary)
                 }
-                ForEach(model.mcpServers) { server in
-                    Toggle(server.name, isOn: membership(\.mcpServers, server.id)).disabled(!server.enabled)
+                ForEach(servers) { server in
+                    Toggle(isOn: membership(\.mcpServers, server.id)) {
+                        Text(server.name)
+                        if server.agentId != nil { Text("Only this agent") }
+                    }
+                    .disabled(!server.enabled)
                 }
             }
             Section {
@@ -111,10 +119,33 @@ struct AgentEditorView: View {
                     }
                 }
                 Button("Add Skill…") { draft.skills.append(Skill()) }
+                ForEach(model.sharedSkills) { skill in
+                    if skill.isDefault {
+                        DisclosureGroup {
+                            Text(skill.instructions)
+                                .textSelection(.enabled)
+                            if let path = skill.path, !path.isEmpty {
+                                Text("Source: \(path)").font(.caption).foregroundStyle(.secondary)
+                            }
+                        } label: {
+                            HStack {
+                                Text(skill.name)
+                                Spacer()
+                                Text("Default · Every bot").font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                    } else {
+                        Toggle(isOn: membership(\.sharedSkills, skill.id)) {
+                            Text(skill.name)
+                            Text("Shared skill")
+                        }
+                    }
+                }
             } header: {
                 Text("Skills")
             } footer: {
-                Text("Reusable instructions the agent follows when working.").foregroundStyle(.secondary)
+                Text("Every bot follows the shared defaults, along with its personal skills and the optional shared skills you turn on. Manage shared skills under Skills.")
+                    .foregroundStyle(.secondary)
             }
             if !draft.isNew {
                 Section {

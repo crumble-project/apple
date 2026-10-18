@@ -24,6 +24,10 @@ _Avoid_: Full history, transcript
 Summarizing older working context while keeping the original transcript available to the owner.
 _Avoid_: Deleting history, starting a new chat
 
+**Shared**:
+Available to every bot that opts in, as opposed to belonging to one bot. Memory, skills, and MCP servers are either shared or a bot's own.
+_Avoid_: Global, public
+
 **Reply**:
 A new message linked to an earlier transcript message, recalling that message and bounded surrounding context for the bot.
 _Avoid_: Fork, branch, session

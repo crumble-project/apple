@@ -72,12 +72,15 @@ struct Agent: Codable, Identifiable, Hashable, Sendable {
     var tools: [String]?
     var delegates: [String]?
     var skills: [Skill]?
+    var sharedSkills: [String]?
+    var sharedMemory: Bool?
     var mcpServers: [String]?
     var inference: Inference?
 
     init(id: String = "", name: String = "", description: String? = nil, instructions: String? = nil, avatar: String? = nil,
          enabled: Bool = true, provider: String? = nil, model: String? = nil, folder: String? = nil, tools: [String]? = nil,
-         delegates: [String]? = nil, skills: [Skill]? = nil, mcpServers: [String]? = nil, inference: Inference? = nil) {
+         delegates: [String]? = nil, skills: [Skill]? = nil, sharedSkills: [String]? = nil, sharedMemory: Bool? = nil,
+         mcpServers: [String]? = nil, inference: Inference? = nil) {
         self.id = id
         self.name = name
         self.description = description
@@ -90,6 +93,8 @@ struct Agent: Codable, Identifiable, Hashable, Sendable {
         self.tools = tools
         self.delegates = delegates
         self.skills = skills
+        self.sharedSkills = sharedSkills
+        self.sharedMemory = sharedMemory
         self.mcpServers = mcpServers
         self.inference = inference
     }
@@ -108,6 +113,8 @@ struct Agent: Codable, Identifiable, Hashable, Sendable {
         tools = try c.decodeIfPresent([String].self, forKey: .tools)
         delegates = try c.decodeIfPresent([String].self, forKey: .delegates)
         skills = try c.decodeIfPresent([Skill].self, forKey: .skills)
+        sharedSkills = try c.decodeIfPresent([String].self, forKey: .sharedSkills)
+        sharedMemory = try c.decodeIfPresent(Bool.self, forKey: .sharedMemory)
         mcpServers = try c.decodeIfPresent([String].self, forKey: .mcpServers)
         inference = try c.decodeIfPresent(Inference.self, forKey: .inference)
     }
@@ -243,6 +250,17 @@ struct Memory: Codable, Identifiable, Hashable, Sendable {
     var createdAt: String?
 }
 
+/// A shared skill: bundled defaults apply to every bot; library entries are opt-in.
+struct SharedSkill: Codable, Identifiable, Hashable, Sendable {
+    var id: String
+    var name: String
+    var instructions: String
+    var source: String?
+    var path: String?
+
+    var isDefault: Bool { source == "bundled" }
+}
+
 struct Schedule: Codable, Identifiable, Hashable, Sendable {
     var id: String
     var agentId: String
@@ -276,6 +294,8 @@ struct MCPServer: Codable, Identifiable, Hashable, Sendable {
     var name: String
     var url: String
     var enabled: Bool
+    /// The bot the server belongs to, or nil when every bot may use it.
+    var agentId: String?
     var authenticated: Bool?
     /// How the server signs in: "oauth", "token", or "none".
     var auth: String?

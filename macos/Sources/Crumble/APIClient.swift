@@ -144,16 +144,27 @@ struct APIClient: Sendable {
         throw SSEClosedError()
     }
 
-    func memories(_ agentID: String) async throws -> [Memory] { try await call("GET", "/v1/agents/\(agentID)/memories") }
-    func addMemory(_ agentID: String, content: String) async throws -> Memory {
-        try await call("POST", "/v1/agents/\(agentID)/memories", body: ["content": content])
+    /// A bot's memories, or the shared ones when `agentID` is nil.
+    private func memoryPath(_ agentID: String?) -> String { agentID.map { "/v1/agents/\($0)/memories" } ?? "/v1/memories" }
+    func memories(_ agentID: String?) async throws -> [Memory] { try await call("GET", memoryPath(agentID)) }
+    func addMemory(_ agentID: String?, content: String) async throws -> Memory {
+        try await call("POST", memoryPath(agentID), body: ["content": content])
     }
-    func updateMemory(_ agentID: String, memoryID: String, content: String) async throws -> Memory {
-        try await call("PATCH", "/v1/agents/\(agentID)/memories/\(memoryID)", body: ["content": content])
+    func updateMemory(_ agentID: String?, memoryID: String, content: String) async throws -> Memory {
+        try await call("PATCH", memoryPath(agentID) + "/\(memoryID)", body: ["content": content])
     }
-    func deleteMemory(_ agentID: String, memoryID: String) async throws {
-        try await perform("DELETE", "/v1/agents/\(agentID)/memories/\(memoryID)")
+    func deleteMemory(_ agentID: String?, memoryID: String) async throws {
+        try await perform("DELETE", memoryPath(agentID) + "/\(memoryID)")
     }
+
+    func sharedSkills() async throws -> [SharedSkill] { try await call("GET", "/v1/skills") }
+    func createSharedSkill(name: String, instructions: String) async throws -> SharedSkill {
+        try await call("POST", "/v1/skills", body: ["name": name, "instructions": instructions])
+    }
+    func updateSharedSkill(_ id: String, name: String, instructions: String) async throws -> SharedSkill {
+        try await call("PATCH", "/v1/skills/\(id)", body: ["name": name, "instructions": instructions])
+    }
+    func deleteSharedSkill(_ id: String) async throws { try await perform("DELETE", "/v1/skills/\(id)") }
 
     func schedules() async throws -> [Schedule] { try await call("GET", "/v1/schedules") }
     func createSchedule(_ payload: [String: JSONValue]) async throws -> Schedule { try await call("POST", "/v1/schedules", body: payload) }
@@ -189,8 +200,10 @@ struct APIClient: Sendable {
     func startMCPSignIn(_ id: String, redirectURI: String) async throws -> OAuthStart {
         try await call("POST", "/v1/mcp-servers/\(id)/oauth", body: ["redirectUri": redirectURI], timeout: 60)
     }
-    func finishMCPSignIn(_ id: String, code: String, state: String) async throws -> MCPServer {
-        try await call("POST", "/v1/mcp-servers/\(id)/oauth/callback", body: ["code": code, "state": state], timeout: 60)
+    func finishMCPSignIn(_ id: String, code: String, state: String, iss: String?) async throws -> MCPServer {
+        var body = ["code": code, "state": state]
+        body["iss"] = iss
+        return try await call("POST", "/v1/mcp-servers/\(id)/oauth/callback", body: body, timeout: 60)
     }
     func signOutOfMCP(_ id: String) async throws -> MCPServer { try await call("DELETE", "/v1/mcp-servers/\(id)/oauth") }
 }

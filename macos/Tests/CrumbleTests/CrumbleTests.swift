@@ -62,6 +62,76 @@ struct APIClientTests {
         #expect(body.contains(#""tools":[]"#) && body.contains(#""skills":[]"#))
     }
 
+    @Test func sharedCatalogIncludesDefaultsAndOptionalSkills() async throws {
+        let client = StubProtocol.client { request in
+            #expect(request.url?.path == "/v1/skills")
+            return (200, #"[{"id":"common:tasks/SKILL.md","name":"tasks","instructions":"Complete tasks","source":"bundled","path":"tasks/SKILL.md"},{"id":"s1","name":"Writing","instructions":"Write plainly","source":"shared"},{"id":"legacy","name":"Legacy","instructions":"Existing skill"}]"#)
+        }
+        let skills = try await client.sharedSkills()
+        #expect(skills.map(\.isDefault) == [true, false, false])
+        #expect(skills.first?.path == "tasks/SKILL.md")
+    }
+
+    @MainActor @Test func memoryOverviewLoadsEveryBotWithoutSelectingOne() async throws {
+        let client = StubProtocol.client { request in
+            switch request.url?.path {
+            case "/v1/agents": (200, #"[{"id":"a1","name":"Atlas"},{"id":"a2","name":"Beacon"}]"#)
+            case "/v1/memories": (200, #"[{"id":"shared","content":"For every bot"}]"#)
+            case "/v1/agents/a1/memories": (200, #"[{"id":"personal-1","content":"Only Atlas"}]"#)
+            case "/v1/agents/a2/memories": (200, #"[{"id":"personal-2","content":"Only Beacon"}]"#)
+            default: (404, "")
+            }
+        }
+        let model = AppModel(client: client)
+        model.openPanel(.memory)
+        for _ in 0..<100 {
+            if !model.loading { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        #expect(!model.loading)
+        #expect(model.route == .memory)
+        #expect(model.selectedAgentID.isEmpty)
+        #expect(model.agents.map(\.id) == ["a1", "a2"])
+        #expect(model.agentMemories["a1"]?.map(\.id) == ["personal-1"])
+        #expect(model.agentMemories["a2"]?.map(\.id) == ["personal-2"])
+        #expect(model.sharedMemories.map(\.id) == ["shared"])
+        #expect(model.errorText.isEmpty)
+        #expect(StubProtocol.requests.allSatisfy { $0.url?.path.contains("/chat") == false })
+    }
+
+    @MainActor @Test func memoryActionsUseTheEntryOwnerWithoutAnActiveBot() async throws {
+        let client = StubProtocol.client { request in
+            switch request.url?.path {
+            case "/v1/agents": (200, #"[{"id":"a2","name":"Beacon"}]"#)
+            case "/v1/memories", "/v1/agents/a2/memories": (200, "[]")
+            case "/v1/agents/a2/memories/m2":
+                request.httpMethod == "DELETE" ? (204, "") : (200, #"{"id":"m2","content":"Updated"}"#)
+            default: (404, "")
+            }
+        }
+        let model = AppModel(client: client)
+        model.agentMemories = ["a2": [Memory(id: "m2", content: "Only Beacon")]]
+        model.openMemoryForm("m2", agentID: "a2")
+        #expect(model.memoryDraft?.content == "Only Beacon")
+        #expect(model.memoryDraft?.agentID == "a2")
+        model.memoryDraft?.content = "Updated"
+        model.saveMemory()
+        for _ in 0..<100 {
+            if !model.loading { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        model.deleteMemory("m2", agentID: "a2")
+        for _ in 0..<100 {
+            if !model.loading { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        #expect(!model.loading)
+        #expect(model.errorText.isEmpty)
+        #expect(model.selectedAgentID.isEmpty)
+        let writes = StubProtocol.requests.filter { ["PATCH", "DELETE"].contains($0.httpMethod ?? "") }
+        #expect(writes.map { $0.url!.path } == ["/v1/agents/a2/memories/m2", "/v1/agents/a2/memories/m2"])
+    }
+
     @Test func chatContracts() async throws {
         let client = StubProtocol.client { request in
             switch request.url?.path {
@@ -115,8 +185,10 @@ struct APIClientTests {
         #expect(start.authorizationUrl?.hasPrefix("https://auth.example.com/") == true)
         let sent = String(decoding: StubProtocol.requests.last?.httpBody ?? Data(), as: UTF8.self)
         #expect(sent.contains("dev.crumble.desktop:\\/oauth\\/callback") || sent.contains("dev.crumble.desktop:/oauth/callback"))
-        let server = try await client.finishMCPSignIn("s1", code: "c", state: "x")
+        let server = try await client.finishMCPSignIn("s1", code: "c", state: "x", iss: "https://auth.example.com")
         #expect(server.auth == "oauth")
+        let finished = String(decoding: StubProtocol.requests.last?.httpBody ?? Data(), as: UTF8.self)
+        #expect(finished.contains(#""iss":"https:\/\/auth.example.com""#) || finished.contains(#""iss":"https://auth.example.com""#))
     }
 
     @Test func errorsCarryStatusAndBody() async throws {
@@ -270,7 +342,9 @@ struct LogicTests {
 
     @Test func signInCallbacksCarryACodeOrAReason() throws {
         let ok = try oauthResult(from: URL(string: "dev.crumble.desktop:/oauth/callback?code=abc&state=xyz")!)
-        #expect(ok.code == "abc" && ok.state == "xyz")
+        #expect(ok.code == "abc" && ok.state == "xyz" && ok.iss == nil)
+        let issued = try oauthResult(from: URL(string: "dev.crumble.desktop:/oauth/callback?code=abc&state=xyz&iss=https%3A%2F%2Fexecutor.sh%2Fapi%2Fauth")!)
+        #expect(issued.iss == "https://executor.sh/api/auth")
         #expect(throws: SignInError.self) {
             try oauthResult(from: URL(string: "dev.crumble.desktop:/oauth/callback?error=access_denied&error_description=User%20declined")!)
         }

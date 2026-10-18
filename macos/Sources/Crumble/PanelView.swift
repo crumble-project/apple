@@ -1,7 +1,7 @@
 import AuthenticationServices
 import SwiftUI
 
-/// The workspace pages: memory, tasks, activity, approvals, and integrations.
+/// The workspace pages: memory, skills, tasks, activity, approvals, and integrations.
 struct PanelView: View {
     @Environment(AppModel.self) private var model
     let panel: Route
@@ -9,16 +9,17 @@ struct PanelView: View {
     var body: some View {
         content
             .navigationTitle(panel.title)
-            .navigationSubtitle(panel == .memory ? model.selectedAgent?.name ?? "" : "")
             .toolbar {
                 ToolbarItemGroup(placement: .primaryAction) {
                     switch panel {
-                    case .memory where model.selectedAgent != nil:
-                        Button("New Memory", systemImage: "plus") { model.openMemoryForm("") }
+                    case .memory:
+                        Button("New Shared Memory", systemImage: "plus") { model.openMemoryForm("", agentID: nil) }
+                    case .skills:
+                        Button("New Shared Skill", systemImage: "plus") { model.openSkillForm("") }
                     case .tasks:
                         Button("New Task", systemImage: "plus") { model.openTaskForm("") }.disabled(model.selectedAgent == nil)
                     case .integrations:
-                        Button("Add MCP Server", systemImage: "plus") { model.openMCPForm("") }
+                        Button("Add Shared MCP Server", systemImage: "plus") { model.openMCPForm("", agentID: nil) }
                     default:
                         EmptyView()
                     }
@@ -30,6 +31,7 @@ struct PanelView: View {
     @ViewBuilder private var content: some View {
         switch panel {
         case .memory: MemoryPanel()
+        case .skills: SkillsPanel()
         case .tasks: TasksPanel()
         case .activity: ActivityPanel()
         case .approvals: ApprovalsPanel()
@@ -43,29 +45,123 @@ private struct MemoryPanel: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        if let agent = model.selectedAgent {
-            if model.memories.isEmpty {
-                ContentUnavailableView("No Memories Yet", systemImage: "brain", description: Text("What \(agent.name) remembers between chats appears here."))
-            } else {
-                Form {
-                    Section {
-                        ForEach(model.memories) { memory in
-                            HStack(alignment: .firstTextBaseline) {
-                                Text(memory.content).textSelection(.enabled)
-                                Spacer()
-                                Button("Edit") { model.openMemoryForm(memory.id) }
-                                Button("Delete") { model.deleteMemory(memory.id) }
+        Form {
+            Section {
+                if model.sharedMemories.isEmpty {
+                    Text("No shared memories yet.").foregroundStyle(.secondary)
+                }
+                ForEach(model.sharedMemories) { memory in
+                    row(memory, agentID: nil)
+                }
+                Button("New Shared Memory", systemImage: "plus") { model.openMemoryForm("", agentID: nil) }
+            } header: {
+                Text("Shared")
+            } footer: {
+                Text(sharedFooter).foregroundStyle(.secondary)
+            }
+            ForEach(model.agents) { agent in
+                let memories = model.agentMemories[agent.id] ?? []
+                Section {
+                    if memories.isEmpty {
+                        Text("No memories yet.").foregroundStyle(.secondary)
+                    }
+                    ForEach(memories) { memory in
+                        row(memory, agentID: agent.id)
+                    }
+                    Text("\(memories.count) personal memor\(memories.count == 1 ? "y" : "ies")")
+                        .font(.caption).foregroundStyle(.secondary)
+                    Button("New Memory", systemImage: "plus") { model.openMemoryForm("", agentID: agent.id) }
+                } header: {
+                    Text(agent.name)
+                } footer: {
+                    Text("What \(agent.name) remembers between chats.").foregroundStyle(.secondary)
+                }
+            }
+        }
+        .formStyle(.grouped)
+    }
+
+    private var sharedFooter: String {
+        let enabled = model.agents.filter { $0.sharedMemory == true }.map(\.name)
+        return enabled.isEmpty ? "No bots use shared memory. Turn it on in a bot's profile." : "Used by: " + enabled.joined(separator: ", ")
+    }
+
+    private func row(_ memory: Memory, agentID: String?) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(memory.content).textSelection(.enabled)
+            Spacer()
+            Button("Edit") { model.openMemoryForm(memory.id, agentID: agentID) }
+            Button("Delete") { model.deleteMemory(memory.id, agentID: agentID) }
+        }
+    }
+}
+
+private struct SkillsPanel: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        Form {
+            Section {
+                if model.sharedSkills.isEmpty {
+                    Text("No shared skills yet.").foregroundStyle(.secondary)
+                }
+                ForEach(model.sharedSkills) { skill in
+                    DisclosureGroup {
+                        Text(skill.instructions)
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        if let path = skill.path, !path.isEmpty {
+                            Text("Source: \(path)").font(.caption).foregroundStyle(.secondary)
+                        }
+                    } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(skill.name).fontWeight(.semibold)
+                                if skill.isDefault {
+                                    Text("Default · Every bot").font(.caption).foregroundStyle(.secondary)
+                                } else {
+                                    let enabled = model.agents.filter { $0.sharedSkills?.contains(skill.id) == true }.map(\.name)
+                                    Text(enabled.isEmpty ? "No bots enabled" : "Enabled for: " + enabled.joined(separator: ", "))
+                                        .font(.caption).foregroundStyle(.secondary)
+                                }
+                            }
+                            Spacer()
+                            if !skill.isDefault {
+                                Button("Edit") { model.openSkillForm(skill.id) }
+                                Button("Delete") { model.deleteSharedSkill(skill.id) }
                             }
                         }
-                    } footer: {
-                        Text("What \(agent.name) remembers between chats.").foregroundStyle(.secondary)
                     }
                 }
-                .formStyle(.grouped)
+            } header: {
+                Text("Shared")
+            } footer: {
+                Text("Defaults apply to every bot. Enable optional shared skills in a bot’s profile. Edit default files on the server and restart it to load changes.").foregroundStyle(.secondary)
             }
-        } else {
-            ContentUnavailableView("No Agent Selected", systemImage: "brain", description: Text("Select an agent to see its memory."))
+            ForEach(model.agents) { agent in
+                Section {
+                    let skills = agent.skills ?? []
+                    if skills.isEmpty {
+                        Text("No skills of its own.").foregroundStyle(.secondary)
+                    }
+                    ForEach(skills) { skill in
+                        DisclosureGroup {
+                            Text(skill.instructions)
+                                .textSelection(.enabled)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        } label: {
+                            Text(skill.name).fontWeight(.semibold)
+                        }
+                    }
+                    Button("Edit in Profile…") { model.openEditor(agentID: agent.id) }
+                } header: {
+                    Text(agent.name)
+                } footer: {
+                    Text("Instructions only \(agent.name) follows.").foregroundStyle(.secondary)
+                }
+            }
         }
+        .formStyle(.grouped)
     }
 }
 
@@ -178,13 +274,42 @@ private struct IntegrationsPanel: View {
     @Environment(\.webAuthenticationSession) private var webAuthenticationSession
 
     var body: some View {
-        if model.mcpServers.isEmpty {
-            ContentUnavailableView("No MCP Servers", systemImage: "powerplug",
-                                   description: Text("Connect an MCP server, then enable it for individual agents in their profiles."))
-        } else {
-            Form {
+        Form {
+            Section {
+                let shared = model.mcpServers.filter { $0.agentId == nil }
+                if shared.isEmpty {
+                    Text("No shared MCP servers yet.").foregroundStyle(.secondary)
+                }
+                ForEach(shared) { server in
+                    row(server)
+                }
+                Button("Add Shared MCP Server", systemImage: "plus") { model.openMCPForm("", agentID: nil) }
+            } header: {
+                Text("Shared")
+            } footer: {
+                Text("Every bot can use these. Turn one on for a bot in its profile.").foregroundStyle(.secondary)
+            }
+            ForEach(model.agents) { agent in
                 Section {
-                    ForEach(model.mcpServers) { server in
+                    let own = model.mcpServers.filter { $0.agentId == agent.id }
+                    if own.isEmpty {
+                        Text("No MCP servers of its own.").foregroundStyle(.secondary)
+                    }
+                    ForEach(own) { server in
+                        row(server)
+                    }
+                    Button("Add MCP Server", systemImage: "plus") { model.openMCPForm("", agentID: agent.id) }
+                } header: {
+                    Text(agent.name)
+                } footer: {
+                    Text("Only \(agent.name) can use these, with their own sign-in.").foregroundStyle(.secondary)
+                }
+            }
+        }
+        .formStyle(.grouped)
+    }
+
+    private func row(_ server: MCPServer) -> some View {
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(server.name).fontWeight(.semibold)
@@ -209,13 +334,6 @@ private struct IntegrationsPanel: View {
                             Button("Edit") { model.openMCPForm(server.id) }
                             Button("Delete") { model.deleteMCP(server.id) }
                         }
-                    }
-                } footer: {
-                    Text("Connect an MCP server, then enable it for individual agents in their profiles.").foregroundStyle(.secondary)
-                }
-            }
-            .formStyle(.grouped)
-        }
     }
 
     private func signInStatus(_ server: MCPServer) -> String {
@@ -246,6 +364,14 @@ struct MemoryFormView: View {
     var body: some View {
         Form {
             SheetError()
+            if draft.memoryID.isEmpty {
+                Picker("Remembered by", selection: $draft.agentID) {
+                    Text("Shared").tag(String?.none)
+                    ForEach(model.agents) { agent in
+                        Text(agent.name).tag(Optional(agent.id))
+                    }
+                }
+            }
             Section("Memory Entry") {
                 TextEditor(text: $draft.content).frame(minHeight: 120)
             }
@@ -298,6 +424,14 @@ struct MCPFormView: View {
         Form {
             SheetError()
             Section {
+                if draft.serverID.isEmpty {
+                    Picker("Available to", selection: $draft.agentID) {
+                        Text("Every bot (shared)").tag(String?.none)
+                        ForEach(model.agents) { agent in
+                            Text(agent.name).tag(Optional(agent.id))
+                        }
+                    }
+                }
                 TextField("Name", text: $draft.name, prompt: Text("Required"))
                 TextField("HTTP URL", text: $draft.url, prompt: Text("https://"))
                 SecureField("Token", text: $draft.token, prompt: Text("Optional"))
@@ -313,6 +447,30 @@ struct MCPFormView: View {
         .frame(width: 460)
         .toolbar {
             SheetActions(onCancel: { model.errorText = ""; model.mcpDraft = nil }, onSave: model.saveMCP, saveDisabled: model.loading)
+        }
+    }
+}
+
+struct SkillFormView: View {
+    @Environment(AppModel.self) private var model
+    @Binding var draft: SkillDraft
+
+    var body: some View {
+        Form {
+            SheetError()
+            Section {
+                TextField("Name", text: $draft.name, prompt: Text("Required"))
+                TextEditor(text: $draft.instructions).frame(minHeight: 120)
+            } header: {
+                Text("Shared Skill")
+            } footer: {
+                Text("Bots that turn this skill on in their profile follow these instructions.").foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+        .frame(width: 460)
+        .toolbar {
+            SheetActions(onCancel: { model.errorText = ""; model.skillDraft = nil }, onSave: model.saveSkill, saveDisabled: model.loading)
         }
     }
 }
