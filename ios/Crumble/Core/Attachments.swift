@@ -1,33 +1,10 @@
+import apfelkern
 import Foundation
 import UIKit
 import UniformTypeIdentifiers
 
-/// A file waiting in the composer, already in a form the server accepts.
-struct PendingAttachment: Identifiable, Hashable, Sendable {
-  let id = UUID()
-  var name: String
-  var mimeType: String
-  var data: Data
-
-  var isImage: Bool { mimeType.hasPrefix("image/") }
-  var outgoing: OutgoingAttachment {
-    OutgoingAttachment(name: name, mimeType: mimeType, data: data.base64EncodedString())
-  }
-}
-
-enum AttachmentLimits {
-  static let count = 8
-  static let imageBytes = 5 * 1024 * 1024
-  static let textBytes = 512 * 1024
-  static let imageTypes: Set<String> = ["image/png", "image/jpeg", "image/gif", "image/webp"]
-  /// The longest side an image is scaled to when it has to be re-encoded.
-  static let imageSide: CGFloat = 2048
-  /// Avoid reading an unbounded local file into memory before validating its type/size.
+extension AttachmentLimits {
   static let maxInputBytes = 32 * 1024 * 1024
-}
-
-struct AttachmentError: LocalizedError {
-  var errorDescription: String?
 }
 
 /// Reads a picked or dropped file into an attachment. Images the server can't take as they are

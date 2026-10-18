@@ -1,18 +1,10 @@
+import apfelkern
 import SwiftUI
 
 // Bot avatars are Hermex's drawn faces (MIT, see THIRD_PARTY_NOTICES.md): a flat shape in one
 // color with two leaning capsule eyes. The seed picks the shape and color.
 
 enum BotState { case idle, working, sleeping }
-
-func agentAvatarSeed(_ agent: Agent) -> String {
-  let avatar = agent.avatar ?? ""
-  for prefix in ["bot:", "critters:"] where avatar.hasPrefix(prefix) {
-    let seed = avatar.dropFirst(prefix.count).trimmingCharacters(in: .whitespaces)
-    if !seed.isEmpty { return seed }
-  }
-  return agent.id.trimmingCharacters(in: .whitespaces).isEmpty ? "crumble" : agent.id
-}
 
 enum BotShape: CaseIterable { case circle, squircle, pill, triangle, hexagon, cloud, drop }
 

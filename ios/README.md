@@ -10,6 +10,12 @@ It uses the same authenticated API as the macOS and Android apps, with no third-
 - A running Crumble server from the sibling `bot` directory.
 - An Apple signing team to install on a physical device.
 
+## Shared Swift package
+
+The app and unit tests fetch `git@github.com:crumble-project/apfelkern.git`, tracking `main`.
+Configure SSH access to GitHub before resolving packages. A sibling checkout is not required.
+The package provides common models, API transport, drafts, and pure helpers. See the [package documentation](https://github.com/crumble-project/apfelkern).
+
 ## Open the project
 
 Open `Crumble.xcodeproj` in Xcode and select the **Crumble** scheme.
@@ -97,6 +103,24 @@ It does not keep streams running through silent pushes. Unsent drafts stay in me
 
 OAuth uses an authentication browser session and the callback `dev.crumble.ios:/oauth/callback`.
 Your MCP provider must accept that redirect URI.
+
+## Lint Swift code
+
+Install [SwiftLint](https://github.com/realm/SwiftLint) with Homebrew:
+
+```sh
+brew install swiftlint
+```
+
+Run lint checks:
+
+```sh
+./scripts/lint.sh
+```
+
+The `.swiftlint.yml` configuration covers the app, unit tests, and UI tests, excluding generated build files.
+It enables the listed opt-in rules alongside SwiftLint's default rules.
+Lint runs separately from builds and tests. Errors fail the command; warnings do not.
 
 ## Build and test
 

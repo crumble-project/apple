@@ -6,6 +6,11 @@
 	objectVersion = 71;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		C00000000000000000000001 /* apfelkern in Frameworks */ = {isa = PBXBuildFile; productRef = C00000000000000000000002 /* apfelkern */; };
+		C00000000000000000000003 /* apfelkern in Frameworks */ = {isa = PBXBuildFile; productRef = C00000000000000000000004 /* apfelkern */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		A00000000000000000000025 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -51,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C00000000000000000000001 /* apfelkern in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -58,6 +64,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C00000000000000000000003 /* apfelkern in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -111,6 +118,7 @@
 			);
 			name = Crumble;
 			packageProductDependencies = (
+				C00000000000000000000002 /* apfelkern */,
 			);
 			productName = Crumble;
 			productReference = A00000000000000000000006 /* Crumble.app */;
@@ -134,6 +142,7 @@
 			);
 			name = CrumbleTests;
 			packageProductDependencies = (
+				C00000000000000000000004 /* apfelkern */,
 			);
 			productName = CrumbleTests;
 			productReference = A00000000000000000000007 /* CrumbleTests.xctest */;
@@ -196,6 +205,9 @@
 			productRefGroup = A00000000000000000000003 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
+			packageReferences = (
+				C00000000000000000000005 /* XCRemoteSwiftPackageReference "apfelkern" */,
+			);
 			targets = (
 				A00000000000000000000010 /* Crumble */,
 				A00000000000000000000020 /* CrumbleTests */,
@@ -265,6 +277,30 @@
 		};
 /* End PBXTargetDependency section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		C00000000000000000000005 /* XCRemoteSwiftPackageReference "apfelkern" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "git@github.com:crumble-project/apfelkern.git";
+			requirement = {
+				kind = branch;
+				branch = main;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		C00000000000000000000002 /* apfelkern */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C00000000000000000000005 /* XCRemoteSwiftPackageReference "apfelkern" */;
+			productName = apfelkern;
+		};
+		C00000000000000000000004 /* apfelkern */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C00000000000000000000005 /* XCRemoteSwiftPackageReference "apfelkern" */;
+			productName = apfelkern;
+		};
+/* End XCSwiftPackageProductDependency section */
+
 /* Begin XCBuildConfiguration section */
 		A00000000000000000000040 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -279,6 +315,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				ONLY_ACTIVE_ARCH = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 6.0;
 			};
