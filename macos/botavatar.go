@@ -1,92 +1,36 @@
 package main
 
 import (
-	"container/list"
 	"hash/fnv"
-	"image"
-	"image/color"
-	"math"
-	"math/rand/v2"
-	"slices"
 	"strings"
-	"sync"
 
 	"github.com/egoist/mygo/ui"
-	"golang.org/x/image/vector"
 )
 
-// Bot avatars are soft, toy-like shapes with live faces. The body is baked once per seed:
-// its outline is rasterized, blurred into a pillow, and shaded per pixel with wrapped
-// light, a broad sheen, and a little grain. The face is drawn live over it (botface.go).
-
-const (
-	botScale     = 0.47 // unit coordinates to the image's size
-	botBakeSize  = 192  // pixels; sharp up to 96 points on a Retina screen
-	botCacheSize = 96
-)
-
-type botPoint struct{ x, y float64 }
+// Bot avatars follow Hermex's drawn faces (MIT, see THIRD_PARTY_NOTICES.md): a flat shape in
+// one color with two leaning capsule eyes. The seed picks the shape and color.
 
 type botSpec struct {
-	shape  string
-	color  [3]float64 // sRGB 0..1
-	matte  bool
-	mouth  bool
-	blush  bool
-	eyeGap float64 // unit offset of each eye from the face center
-	eyeR   float64 // unit eye radius
-	faceY  float64 // unit face center
-	wander float64 // phase that keeps avatars in a row from moving together
+	shape string
+	color ui.Color
+	eyes  ui.Color
+	hash  uint64
 }
 
-var botShapes = []string{"circle", "squircle", "blob", "flower", "clover", "star", "cloud", "pill", "hexagon", "ghost", "drop", "cat", "droid"}
+var botShapes = []string{"circle", "squircle", "pill", "triangle", "hexagon", "cloud", "drop"}
 
-var botPalette = [][3]float64{
-	{1.00, 0.42, 0.34}, // coral
-	{1.00, 0.62, 0.11}, // tangerine
-	{1.00, 0.79, 0.20}, // sunflower
-	{0.55, 0.83, 0.27}, // lime
-	{0.24, 0.84, 0.64}, // mint
-	{0.10, 0.71, 0.77}, // teal
-	{0.23, 0.65, 1.00}, // sky
-	{0.29, 0.42, 0.97}, // cobalt
-	{0.55, 0.36, 0.96}, // violet
-	{0.82, 0.39, 0.91}, // orchid
-	{1.00, 0.37, 0.64}, // pink
-	{0.88, 0.27, 0.48}, // berry
-	{0.42, 0.48, 0.56}, // slate
-	{0.95, 0.89, 0.77}, // cream
-}
+var botPalette = []string{"#8b5cf6", "#38bdf8", "#14b8a6", "#22c55e", "#f59e0b", "#f97316", "#ef4444", "#ec4899"}
 
 func botSpecFor(seed string) botSpec {
 	h := fnv.New64a()
 	_, _ = h.Write([]byte(seed))
 	sum := h.Sum64()
-	rng := rand.New(rand.NewPCG(sum, sum^0x9e3779b97f4a7c15))
-	spec := botSpec{
-		shape:  botShapes[rng.IntN(len(botShapes))],
-		color:  botPalette[rng.IntN(len(botPalette))],
-		matte:  rng.IntN(3) != 0,
-		mouth:  rng.IntN(3) != 0,
-		blush:  rng.IntN(4) != 0,
-		eyeGap: 0.25 + rng.Float64()*0.06,
-		eyeR:   0.13 + rng.Float64()*0.03,
-		faceY:  0.08,
-		wander: rng.Float64() * 100,
+	body := ui.Hex(botPalette[sum%uint64(len(botPalette))])
+	eyes := ui.RGBA(0, 0, 0, 0.85)
+	if 0.2126*float64(body.R)+0.7152*float64(body.G)+0.0722*float64(body.B) < 110 {
+		eyes = ui.RGBA(255, 255, 255, 0.9)
 	}
-	switch spec.shape {
-	case "ghost":
-		spec.faceY = -0.08
-	case "drop":
-		spec.faceY = 0.3
-	case "cat", "droid":
-		spec.faceY = 0.2
-	case "star", "flower", "clover":
-		spec.eyeGap, spec.eyeR = spec.eyeGap*0.85, spec.eyeR*0.85
-	case "pill":
-		spec.eyeGap *= 1.2
-	}
-	return spec
+	return botSpec{shape: botShapes[sum%uint64(len(botShapes))], color: body, eyes: eyes, hash: sum}
 }
 
 func agentAvatarSeed(agent Agent) string {
@@ -101,284 +45,44 @@ func agentAvatarSeed(agent Agent) string {
 	return "crumble"
 }
 
-// botOutline returns the body's polygons in unit coordinates, y down, roughly within [-0.9, 0.9].
-func botOutline(shape string) [][]botPoint {
-	polar := func(r func(theta float64) float64) []botPoint {
-		points := make([]botPoint, 0, 240)
-		for i := 0; i < 240; i++ {
-			theta := 2 * math.Pi * float64(i) / 240
-			radius := r(theta)
-			points = append(points, botPoint{radius * math.Cos(theta), radius * math.Sin(theta)})
-		}
-		return points
-	}
-	circle := func(cx, cy, r float64) []botPoint {
-		points := polar(func(float64) float64 { return r })
-		for i := range points {
-			points[i].x += cx
-			points[i].y += cy
-		}
-		return points
-	}
-	roundRect := func(w, h, r float64) []botPoint {
-		var points []botPoint
-		corners := []botPoint{{w/2 - r, h/2 - r}, {-w/2 + r, h/2 - r}, {-w/2 + r, -h/2 + r}, {w/2 - r, -h/2 + r}}
-		for i, corner := range corners {
-			for j := 0; j <= 12; j++ {
-				a := math.Pi/2*float64(i) + math.Pi/2*float64(j)/12
-				points = append(points, botPoint{corner.x + r*math.Cos(a), corner.y + r*math.Sin(a)})
-			}
-		}
-		return points
-	}
+// botBodyPaths returns the body's outline in r; a cloud is three overlapping ellipses.
+func botBodyPaths(shape string, r ui.Rect) []*ui.Path {
+	x, y, w, h := r.X, r.Y, r.W, r.H
+	in := ui.Rect{X: x + w*0.08, Y: y + h*0.08, W: w * 0.84, H: h * 0.84}
+	midX, midY := x+w/2, y+h/2
 	switch shape {
 	case "squircle":
-		return [][]botPoint{polar(func(t float64) float64 {
-			c, s := math.Abs(math.Cos(t)), math.Abs(math.Sin(t))
-			return 0.82 / math.Pow(math.Pow(c, 4)+math.Pow(s, 4), 0.25)
-		})}
-	case "blob":
-		return [][]botPoint{polar(func(t float64) float64 {
-			return 0.8 + 0.06*math.Sin(3*t+0.7) + 0.05*math.Sin(2*t+2.1)
-		})}
-	case "flower":
-		return [][]botPoint{polar(func(t float64) float64 {
-			return 0.66 + 0.22*math.Pow(0.5+0.5*math.Cos(6*t), 0.7)
-		})}
-	case "clover":
-		return [][]botPoint{polar(func(t float64) float64 {
-			return 0.55 + 0.33*math.Pow(math.Abs(math.Cos(2*t+math.Pi/4)), 0.6)
-		})}
-	case "star":
-		return [][]botPoint{polar(func(t float64) float64 {
-			return 0.6 + 0.3*math.Pow(0.5+0.5*math.Cos(5*(t+math.Pi/2)), 1.4)
-		})}
-	case "cloud":
-		return [][]botPoint{circle(-0.42, 0.18, 0.38), circle(0.42, 0.18, 0.38), circle(-0.16, -0.12, 0.42), circle(0.24, -0.2, 0.36), roundRect(1.2, 0.6, 0.28)}
+		return []*ui.Path{roundedRectPath(in, w*0.28)}
 	case "pill":
-		return [][]botPoint{roundRect(1.7, 1.05, 0.52)}
+		pill := ui.Rect{X: in.X, Y: midY - h*0.27, W: in.W, H: h * 0.54}
+		return []*ui.Path{roundedRectPath(pill, pill.H/2)}
+	case "triangle":
+		return []*ui.Path{(&ui.Path{}).MoveTo(midX, in.Y).LineTo(in.X+in.W, in.Y+in.H).LineTo(in.X, in.Y+in.H).Close()}
 	case "hexagon":
-		var points []botPoint
-		for i := 0; i < 6; i++ {
-			center := math.Pi/3*float64(i) - math.Pi/2
-			cx, cy := 0.66*math.Cos(center), 0.66*math.Sin(center)
-			for j := 0; j <= 10; j++ {
-				a := center - math.Pi/6 + math.Pi/3*float64(j)/10
-				points = append(points, botPoint{cx + 0.22*math.Cos(a), cy + 0.22*math.Sin(a)})
-			}
+		return []*ui.Path{(&ui.Path{}).MoveTo(midX, in.Y).LineTo(in.X+in.W, y+h*0.3).LineTo(in.X+in.W, y+h*0.7).
+			LineTo(midX, in.Y+in.H).LineTo(in.X, y+h*0.7).LineTo(in.X, y+h*0.3).Close()}
+	case "cloud":
+		oval := func(ox, oy, ow, oh float32) *ui.Path {
+			return ellipsePath(float64(x+w*ox+w*ow/2), float64(y+h*oy+h*oh/2), float64(w*ow/2), float64(h*oh/2))
 		}
-		return [][]botPoint{points}
-	case "ghost":
-		var points []botPoint
-		for j := 0; j <= 40; j++ {
-			a := math.Pi + math.Pi*float64(j)/40
-			points = append(points, botPoint{0.72 * math.Cos(a), -0.12 + 0.72*math.Sin(a)})
-		}
-		for j := 0; j <= 60; j++ {
-			x := 0.72 - 1.44*float64(j)/60
-			points = append(points, botPoint{x, 0.72 + 0.07*math.Cos(x/0.72*3*math.Pi)})
-		}
-		return [][]botPoint{points}
+		return []*ui.Path{oval(0.08, 0.38, 0.48, 0.48), oval(0.28, 0.12, 0.5, 0.64), oval(0.55, 0.35, 0.38, 0.45)}
 	case "drop":
-		const r, cy, apex = 0.68, 0.2, -0.92
-		d := cy - apex
-		alpha := math.Acos(r / d)
-		var points []botPoint
-		points = append(points, botPoint{0, apex})
-		for j := 0; j <= 60; j++ {
-			a := -math.Pi/2 + alpha + (2*math.Pi-2*alpha)*float64(j)/60
-			points = append(points, botPoint{r * math.Cos(a), cy + r*math.Sin(a)})
-		}
-		return [][]botPoint{points}
-	case "cat":
-		// Ears sink well into the head so the union has no seam; a circle rounds each tip.
-		ear := func(sign float64) []botPoint {
-			return []botPoint{{sign * 0.78, 0.05}, {sign * 0.58, -0.8}, {sign * 0.06, -0.42}}
-		}
-		return [][]botPoint{circle(0, 0.12, 0.74), ear(-1), ear(1), circle(-0.56, -0.76, 0.1), circle(0.56, -0.76, 0.1)}
-	case "droid":
-		stick := roundRect(0.1, 0.36, 0.05)
-		for i := range stick {
-			stick[i].y -= 0.62
-		}
-		return [][]botPoint{roundRect(1.5, 1.1, 0.3), stick, circle(0, -0.8, 0.13)}
+		right, left, bottom := in.X+in.W, in.X, in.Y+in.H
+		return []*ui.Path{(&ui.Path{}).MoveTo(midX, in.Y).
+			CubeTo(midX+w*0.22, y+h*0.2, right, y+h*0.42, right, y+h*0.62).
+			CubeTo(right, bottom, left, bottom, left, y+h*0.62).
+			CubeTo(left, y+h*0.42, midX-w*0.22, y+h*0.2, midX, in.Y).Close()}
 	}
-	return [][]botPoint{circle(0, 0, 0.82)}
+	return []*ui.Path{ellipsePath(float64(midX), float64(midY), float64(in.W/2), float64(in.H/2))}
 }
 
-func srgbToLinear(v float64) float64 {
-	if v <= 0.04045 {
-		return v / 12.92
-	}
-	return math.Pow((v+0.055)/1.055, 2.4)
-}
-
-func linearToSRGB(v float64) float64 {
-	v = math.Max(0, math.Min(1, v))
-	if v <= 0.0031308 {
-		return v * 12.92
-	}
-	return 1.055*math.Pow(v, 1/2.4) - 0.055
-}
-
-// boxBlur blurs a square field in place with three passes, close to a Gaussian.
-func boxBlur(field []float64, n, radius int) {
-	if radius < 1 {
-		return
-	}
-	tmp := make([]float64, len(field))
-	for pass := 0; pass < 3; pass++ {
-		for y := 0; y < n; y++ {
-			for x := 0; x < n; x++ {
-				sum, count := 0.0, 0
-				for k := max(0, x-radius); k <= min(n-1, x+radius); k++ {
-					sum += field[y*n+k]
-					count++
-				}
-				tmp[y*n+x] = sum / float64(count)
-			}
-		}
-		for y := 0; y < n; y++ {
-			for x := 0; x < n; x++ {
-				sum, count := 0.0, 0
-				for k := max(0, y-radius); k <= min(n-1, y+radius); k++ {
-					sum += tmp[k*n+x]
-					count++
-				}
-				field[y*n+x] = sum / float64(count)
-			}
-		}
-	}
-}
-
-// bakeBotBody renders the lit body, with a soft contact shadow, as an n×n image.
-func bakeBotBody(spec botSpec, n int) *image.NRGBA {
-	scale := float64(n) * botScale
-	center := float64(n) / 2
-	raster := vector.NewRasterizer(n, n)
-	for _, polygon := range botOutline(spec.shape) {
-		// The rasterizer sums signed coverage, so overlapping parts must wind the same way.
-		if signedArea(polygon) < 0 {
-			slices.Reverse(polygon)
-		}
-		for i, point := range polygon {
-			x, y := float32(center+point.x*scale), float32(center+point.y*scale)
-			if i == 0 {
-				raster.MoveTo(x, y)
-			} else {
-				raster.LineTo(x, y)
-			}
-		}
-		raster.ClosePath()
-	}
-	mask := image.NewAlpha(image.Rect(0, 0, n, n))
-	raster.Draw(mask, mask.Bounds(), image.Opaque, image.Point{})
-
-	coverage := make([]float64, n*n)
-	for i := range coverage {
-		coverage[i] = float64(mask.Pix[i]) / 255
-	}
-	// A heavily blurred silhouette is a pillow with no creases, which reads as soft clay or
-	// plush rather than machined plastic.
-	height := append([]float64(nil), coverage...)
-	boxBlur(height, n, n/18+1)
-	amplitude := float64(n) * 0.16
-	for i, h := range height {
-		height[i] = math.Pow(h, 0.6) * amplitude
-	}
-
-	shadow := append([]float64(nil), coverage...)
-	boxBlur(shadow, n, n/36+1)
-	shadowOffset := n / 30
-
-	light := normalize3(-0.45, -0.65, 0.62)
-	half := normalize3(light[0], light[1], light[2]+1)
-	var lit, shade [3]float64
-	for c, v := range spec.color {
-		linear := srgbToLinear(v)
-		lit[c] = linear + (1-linear)*0.16
-		shade[c] = math.Pow(linear, 1.18) * 0.66
-	}
-	grain := rand.New(rand.NewPCG(uint64(n), 7))
-	out := image.NewNRGBA(image.Rect(0, 0, n, n))
-	for y := 0; y < n; y++ {
-		for x := 0; x < n; x++ {
-			i := y*n + x
-			var shadowAlpha float64
-			if sy := y - shadowOffset; sy >= 0 {
-				shadowAlpha = shadow[sy*n+x] * 0.18
-			}
-			noise := 1 + (grain.Float64()-0.5)*0.05
-			alpha := coverage[i]
-			if alpha <= 0 {
-				out.SetNRGBA(x, y, color.NRGBA{0, 0, 0, uint8(shadowAlpha * 255)})
-				continue
-			}
-			hx := height[y*n+min(x+1, n-1)] - height[y*n+max(x-1, 0)]
-			hy := height[min(y+1, n-1)*n+x] - height[max(y-1, 0)*n+x]
-			normal := normalize3(-hx/2, -hy/2, 1)
-			wrap := math.Max(0, math.Min(1, (dot3(normal, light)+0.55)/1.55))
-			wrap = wrap * wrap * (3 - 2*wrap)
-			facing := math.Max(0, dot3(normal, half))
-			sheen := math.Pow(facing, 6) * 0.14
-			if !spec.matte {
-				sheen += math.Pow(facing, 28) * 0.18
-			}
-			var rgb [3]float64
-			for c := range rgb {
-				rgb[c] = linearToSRGB((shade[c]+(lit[c]-shade[c])*wrap)*noise + sheen)
-			}
-			// Edge pixels blend the body over its shadow, so the outline stays antialiased.
-			a := alpha + shadowAlpha*(1-alpha)
-			mix := func(v float64) uint8 { return uint8(math.Round(v * alpha / a * 255)) }
-			out.SetNRGBA(x, y, color.NRGBA{mix(rgb[0]), mix(rgb[1]), mix(rgb[2]), uint8(math.Round(a * 255))})
-		}
-	}
-	return out
-}
-
-func signedArea(polygon []botPoint) float64 {
-	area := 0.0
-	for i, a := range polygon {
-		b := polygon[(i+1)%len(polygon)]
-		area += a.x*b.y - b.x*a.y
-	}
-	return area / 2
-}
-
-func normalize3(x, y, z float64) [3]float64 {
-	l := math.Sqrt(x*x + y*y + z*z)
-	return [3]float64{x / l, y / l, z / l}
-}
-
-func dot3(a, b [3]float64) float64 { return a[0]*b[0] + a[1]*b[1] + a[2]*b[2] }
-
-type botBody struct {
-	seed   string
-	spec   botSpec
-	bitmap *ui.Bitmap
-}
-
-var botBodies = struct {
-	sync.Mutex
-	values map[string]*list.Element
-	order  *list.List
-}{values: map[string]*list.Element{}, order: list.New()}
-
-func botBodyFor(seed string) *botBody {
-	botBodies.Lock()
-	defer botBodies.Unlock()
-	if element := botBodies.values[seed]; element != nil {
-		botBodies.order.MoveToFront(element)
-		return element.Value.(*botBody)
-	}
-	spec := botSpecFor(seed)
-	body := &botBody{seed: seed, spec: spec, bitmap: ui.NewBitmap(bakeBotBody(spec, botBakeSize))}
-	botBodies.values[seed] = botBodies.order.PushFront(body)
-	for botBodies.order.Len() > botCacheSize {
-		oldest := botBodies.order.Back()
-		delete(botBodies.values, oldest.Value.(*botBody).seed)
-		botBodies.order.Remove(oldest)
-	}
-	return body
+func roundedRectPath(r ui.Rect, radius float32) *ui.Path {
+	radius = min(radius, r.W/2, r.H/2)
+	k := radius * 0.4477 // cubic handle that draws a quarter circle
+	right, bottom := r.X+r.W, r.Y+r.H
+	return (&ui.Path{}).MoveTo(r.X+radius, r.Y).LineTo(right-radius, r.Y).
+		CubeTo(right-k, r.Y, right, r.Y+k, right, r.Y+radius).LineTo(right, bottom-radius).
+		CubeTo(right, bottom-k, right-k, bottom, right-radius, bottom).LineTo(r.X+radius, bottom).
+		CubeTo(r.X+k, bottom, r.X, bottom-k, r.X, bottom-radius).LineTo(r.X, r.Y+radius).
+		CubeTo(r.X, r.Y+k, r.X+k, r.Y, r.X+radius, r.Y).Close()
 }

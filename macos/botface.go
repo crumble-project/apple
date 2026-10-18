@@ -1,7 +1,6 @@
 package main
 
 import (
-	"hash/fnv"
 	"math"
 	"time"
 
@@ -16,140 +15,141 @@ const (
 	botSleeping
 )
 
-// botAvatar shows the agent's bot. Live avatars blink, glance around, and hop while
-// working; small ones in lists stay still so they cost nothing to paint.
+// botEye and botEyes are an expression's eyes in Bloub's units: width and height against the
+// body radius, lean in degrees, and the split between the eyes.
+type botEye struct{ width, height, tilt float64 }
+
+type botEyes struct {
+	left, right botEye
+	split       float64
+}
+
+var (
+	botNeutral = botEyes{botEye{0.186, 0.412, 0}, botEye{0.186, 0.412, 0}, 15.46}
+	botSleepy  = botEyes{botEye{0.2, 0.42 * 0.42, 0}, botEye{0.2, 0.42 * 0.42, 0}, 16}
+)
+
+// botPose is one frame of a face: gaze as a fraction of the size, roll in degrees, and the
+// lid factor on eye height (1 open, 0.06 shut).
+type botPose struct{ gazeX, gazeY, roll, lid float64 }
+
+var botRest = botPose{lid: 1}
+
+const botShutLid = 0.06
+
+// botWorkingPose leans the face aside and sways it, as Hermex's working face does.
+func botWorkingPose(t float64) botPose {
+	turn := -11 + math.Sin(t*0.48)*8
+	tilt := math.Sin(t*0.42)*8 + math.Sin(t*1.1)*1.6
+	lid := 1.0
+	if math.Mod(t, 1.45) > 1.26 {
+		lid = botShutLid
+	}
+	return botPose{gazeX: turn * 0.0025, gazeY: -tilt * 0.0025, roll: math.Sin(t*0.75) * 4.2, lid: lid}
+}
+
+// botBlink shuts the eyes for 180 ms every 3 to 5 seconds, seeded so faces in a list never
+// blink together. It returns whether they are shut at t and how long until that changes.
+func botBlink(hash uint64, t float64) (bool, float64) {
+	const shut = 0.18
+	period := 3 + float64(hash%2001)/1000
+	phase := float64((hash>>20)%5000) / 1000
+	position := math.Mod(t-phase, period)
+	if position < 0 {
+		position += period
+	}
+	if position < shut {
+		return true, shut - position
+	}
+	return false, period - position
+}
+
+// botAvatar shows the agent's bot. Live avatars blink and sway while working; small ones in
+// lists stay still so they cost nothing to paint.
 func botAvatar(c *ui.Context, agent Agent, size float32, state botState, live bool) ui.Element {
 	return botAvatarSeed(c, agentAvatarSeed(agent), size, state, live).Label("Avatar for " + agent.Name)
 }
 
 func botAvatarSeed(c *ui.Context, seed string, size float32, state botState, live bool) ui.Element {
-	body := botBodyFor(seed)
-	reduce := c.Preferences().ReduceMotion
+	spec := botSpecFor(seed)
+	moving := live && !c.Preferences().ReduceMotion
 	return ui.Box(c).Size(size, size).Shrink(0).Draw(func(p *ui.Painter, r ui.Rect) {
-		now := p.Now()
-		t := float64(now.UnixMilli())/1000 + body.spec.wander
-		if !live || reduce {
-			t = body.spec.wander
+		pose, eyes := botRest, botNeutral
+		t := float64(p.Now().UnixMilli()) / 1000
+		switch {
+		case state == botSleeping:
+			eyes = botSleepy
+		case moving && state == botWorking:
+			pose = botWorkingPose(t)
+			p.After(time.Second / 15)
+		case moving:
+			shut, next := botBlink(spec.hash, t)
+			if shut {
+				pose.lid = botShutLid
+			}
+			p.After(time.Duration(next * float64(time.Second)))
 		}
-		hop := float32(0)
-		if live && !reduce && state == botWorking {
-			hop = float32(math.Abs(math.Sin(t*math.Pi/0.45))) * size * 0.07
-			p.AnimationFrame()
-		}
-		p.Transform(ui.Translation(0, -hop), r.X+r.W/2, r.Y+r.H, func() {
-			p.Image(body.bitmap, r, ui.FillBox)
-			drawBotFace(p, r, body.spec, state, t, live && !reduce)
-		})
+		drawBot(p, r, spec, eyes, pose)
 	})
 }
 
-func drawBotFace(p *ui.Painter, r ui.Rect, spec botSpec, state botState, t float64, live bool) {
-	scale := float64(r.W) * botScale
-	cx, cy := float64(r.X+r.W/2), float64(r.Y+r.H/2)+spec.faceY*scale
-	ink := ui.RGB(22, 18, 28)
-	eyeR := spec.eyeR * scale
-	gap := spec.eyeGap * scale
-
-	if state == botSleeping {
-		for _, side := range []float64{-1, 1} {
-			var lid ui.Path
-			ex := cx + side*gap
-			for i := 0; i <= 12; i++ {
-				a := math.Pi * float64(i) / 12
-				x, y := float32(ex-eyeR*math.Cos(a)), float32(cy+eyeR*0.35*math.Sin(a))
-				if i == 0 {
-					lid.MoveTo(x, y)
-				} else {
-					lid.LineTo(x, y)
-				}
-			}
-			p.StrokePath(&lid, float32(math.Max(1, eyeR*0.35)), ink)
+func drawBot(p *ui.Painter, r ui.Rect, spec botSpec, eyes botEyes, pose botPose) {
+	draw := func() {
+		for _, path := range botBodyPaths(spec.shape, r) {
+			p.FillPath(path, spec.color)
 		}
+		s := float64(r.W)
+		lw := s * 0.075 * eyes.left.width / 0.186
+		rw := s * 0.075 * eyes.right.width / 0.186
+		total := lw + s*0.1*eyes.split/15.46 + rw
+		cx := float64(r.X) + s/2 + s*(0.12+pose.gazeX)
+		cy := float64(r.Y) + s/2 + s*(-0.08+pose.gazeY)
+		for _, eye := range []struct {
+			x, w float64
+			e    botEye
+		}{{cx - total/2 + lw/2, lw, eyes.left}, {cx + total/2 - rw/2, rw, eyes.right}} {
+			h := s * 0.22 * eye.e.height / 0.412 * pose.lid
+			p.FillPath(capsulePath(eye.x, cy, eye.w, h, -18+eye.e.tilt), spec.eyes)
+		}
+	}
+	if pose.roll == 0 {
+		draw()
 		return
 	}
+	p.Transform(ui.Rotation(float32(pose.roll)), r.X+r.W/2, r.Y+r.H/2, draw)
+}
 
-	// Glances change every couple of seconds and ease over 250 ms; blinks come every few.
-	look := func(slot int64) (float64, float64) {
-		h := fnv.New32a()
-		_, _ = h.Write([]byte{byte(slot), byte(slot >> 8), byte(slot >> 16), byte(spec.wander)})
-		v := h.Sum32()
-		angle := float64(v%360) * math.Pi / 180
-		amount := float64(v>>9%100) / 100
-		if v>>16%3 == 0 {
-			amount = 0
-		}
-		return math.Cos(angle) * amount, math.Sin(angle) * amount * 0.7
+// capsulePath is a w×h stadium centered on (cx, cy), turned clockwise by degrees.
+func capsulePath(cx, cy, w, h, degrees float64) *ui.Path {
+	radius := math.Min(w, h) / 2
+	along := math.Max(w, h)/2 - radius
+	// Each end cap is a half circle around a center on the long axis.
+	type capArc struct{ x, y, from float64 }
+	caps := []capArc{{0, -along, math.Pi}, {0, along, 0}}
+	if w > h {
+		caps = []capArc{{along, 0, -math.Pi / 2}, {-along, 0, math.Pi / 2}}
 	}
-	period := 2.6
-	slot := int64(math.Floor(t / period))
-	since := t - float64(slot)*period
-	lx, ly := look(slot)
-	if since < 0.25 {
-		px, py := look(slot - 1)
-		k := easeInOut(since / 0.25)
-		lx, ly = px+(lx-px)*k, py+(ly-py)*k
-	}
-	if state == botWorking {
-		lx, ly = 0, -0.6
-	}
-	open := 1.0
-	blinkPeriod := 4.1
-	if phase := math.Mod(t, blinkPeriod); live && phase < 0.14 {
-		open = math.Max(0.08, math.Abs(phase-0.07)/0.07)
-	}
-	if live {
-		switch {
-		case since < 0.25 || math.Mod(t, blinkPeriod) < 0.14:
-			p.AnimationFrame()
-		default:
-			next := math.Min(period-since, blinkPeriod-math.Mod(t, blinkPeriod))
-			p.After(time.Duration(next * float64(time.Second)))
-		}
-	}
-
-	if spec.blush {
-		for _, side := range []float64{-1, 1} {
-			bx, by := cx+side*(gap+eyeR*0.55), cy+eyeR*1.25
-			for k := 3; k >= 1; k-- {
-				grow := 1 + 0.18*float64(k)
-				p.FillPath(ellipsePath(bx, by, eyeR*0.62*grow, eyeR*0.36*grow), ui.RGBA(255, 105, 135, 0.13))
-			}
-		}
-	}
-	shift := eyeR * 0.45
-	for _, side := range []float64{-1, 1} {
-		ex, ey := cx+side*gap+lx*shift, cy+ly*shift
-		p.FillPath(ellipsePath(ex, ey, eyeR*0.82, eyeR*open), ink)
-		if open > 0.5 {
-			glint := ui.RGBA(255, 255, 255, 0.95)
-			p.FillPath(ellipsePath(ex-eyeR*0.24, ey-eyeR*0.32, eyeR*0.32, eyeR*0.32), glint)
-			p.FillPath(ellipsePath(ex+eyeR*0.26, ey+eyeR*0.3, eyeR*0.13, eyeR*0.13), ui.RGBA(255, 255, 255, 0.7))
-		}
-	}
-	if spec.mouth {
-		my := cy + eyeR*1.15
-		if state == botWorking {
-			p.FillPath(ellipsePath(cx, my+eyeR*0.25, eyeR*0.26, eyeR*0.32), ink)
-			return
-		}
-		var smile ui.Path
-		for i := 0; i <= 12; i++ {
-			a := math.Pi * float64(i) / 12
-			x, y := float32(cx-eyeR*0.38*math.Cos(a)), float32(my+eyeR*0.3*math.Sin(a))
-			if i == 0 {
-				smile.MoveTo(x, y)
+	sin, cos := math.Sincos(degrees * math.Pi / 180)
+	var path ui.Path
+	for i, arc := range caps {
+		for j := 0; j <= 16; j++ {
+			a := arc.from + math.Pi*float64(j)/16
+			x, y := arc.x+radius*math.Cos(a), arc.y+radius*math.Sin(a)
+			px, py := float32(cx+x*cos-y*sin), float32(cy+x*sin+y*cos)
+			if i == 0 && j == 0 {
+				path.MoveTo(px, py)
 			} else {
-				smile.LineTo(x, y)
+				path.LineTo(px, py)
 			}
 		}
-		p.StrokePath(&smile, float32(math.Max(1, eyeR*0.22)), ink)
 	}
+	return path.Close()
 }
 
 func ellipsePath(cx, cy, rx, ry float64) *ui.Path {
 	var path ui.Path
-	for i := 0; i < 32; i++ {
-		a := 2 * math.Pi * float64(i) / 32
+	for i := 0; i < 64; i++ {
+		a := 2 * math.Pi * float64(i) / 64
 		x, y := float32(cx+rx*math.Cos(a)), float32(cy+ry*math.Sin(a))
 		if i == 0 {
 			path.MoveTo(x, y)
@@ -159,5 +159,3 @@ func ellipsePath(cx, cy, rx, ry float64) *ui.Path {
 	}
 	return path.Close()
 }
-
-func easeInOut(t float64) float64 { return t * t * (3 - 2*t) }
