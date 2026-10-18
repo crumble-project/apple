@@ -96,11 +96,29 @@ extension AppModel {
 
   var modelHint: String {
     if let provider = providers.first(where: { $0.provider == agentDraft?.provider }),
-      !provider.configured
-    {
+      !provider.configured {
       return "Add an API key for this provider in Settings to load its models."
     }
     return models.isEmpty ? "Type a model ID." : "\(models.count) models available."
+  }
+
+  private func editorInference(_ draft: AgentDraft) -> Inference? {
+    var inference = Inference(thinkingLevel: draft.thinking.isEmpty ? "off" : draft.thinking)
+    if !draft.temperature.isEmpty {
+      guard let value = Double(draft.temperature), (0...2).contains(value) else {
+        errorText = "Temperature must be between 0 and 2."
+        return nil
+      }
+      inference.temperature = value
+    }
+    if !draft.maxOutput.isEmpty {
+      guard let value = Int(draft.maxOutput), (1...1_000_000).contains(value) else {
+        errorText = "Output limit must be between 1 and 1,000,000 tokens."
+        return nil
+      }
+      inference.maxOutputTokens = value
+    }
+    return inference
   }
 
   private func agentInput(from draft: AgentDraft) -> Agent? {
@@ -121,21 +139,7 @@ extension AppModel {
       errorText = "Each skill needs a name and instructions."
       return nil
     }
-    var inference = Inference(thinkingLevel: draft.thinking.isEmpty ? "off" : draft.thinking)
-    if !draft.temperature.isEmpty {
-      guard let value = Double(draft.temperature), (0...2).contains(value) else {
-        errorText = "Temperature must be between 0 and 2."
-        return nil
-      }
-      inference.temperature = value
-    }
-    if !draft.maxOutput.isEmpty {
-      guard let value = Int(draft.maxOutput), (1...1_000_000).contains(value) else {
-        errorText = "Output limit must be between 1 and 1,000,000 tokens."
-        return nil
-      }
-      inference.maxOutputTokens = value
-    }
+    guard let inference = editorInference(draft) else { return nil }
     let delegates = draft.delegates.sorted()
     let servers = draft.mcpServers.sorted()
     let shared = draft.sharedSkills.filter { id in
@@ -154,12 +158,6 @@ extension AppModel {
   func saveAgentEditor() {
     guard let draft = agentDraft else { return }
     guard let input = agentInput(from: draft) else { return }
-    let name = input.name
-    let tools = input.tools ?? []
-    let delegates = input.delegates ?? []
-    let servers = input.mcpServers ?? []
-    let shared = input.sharedSkills ?? []
-    let inference = input.inference
     let isNew = draft.isNew
     let id = isNew ? "pending:" + newRequestID() : draft.agentID
     let old = agents.first { $0.id == id }
@@ -186,27 +184,7 @@ extension AppModel {
         if agentDraft == nil, route == originalRoute { agentDraft = draft }
       },
       work: { client in
-        let agent: Agent
-        if isNew {
-          agent = try await client.createAgent(input)
-        } else {
-          agent = try await client.updateAgent(
-            id,
-            patch: [
-              "name": .string(name), "description": .string(draft.description),
-              "instructions": .string(draft.instructions),
-              "provider": .string(draft.provider), "model": .string(draft.model),
-              "avatar": .string(draft.avatar),
-              "folder": .string(draft.folder), "enabled": .bool(draft.enabled),
-              "tools": .array(tools.map(JSONValue.string)),
-              "skills": try JSONValue(encoding: draft.skills),
-              "sharedSkills": .array(shared.map(JSONValue.string)),
-              "sharedMemory": .bool(draft.sharedMemory),
-              "mcpServers": .array(servers.map(JSONValue.string)),
-              "delegates": .array(delegates.map(JSONValue.string)),
-              "inference": try JSONValue(encoding: inference),
-            ])
-        }
+        let agent = try await self.persistAgent(input, draft: draft, client: client)
         return { [self] in
           if let index = agents.firstIndex(where: { $0.id == id }) {
             let lastMessage = agents[index].lastMessage
@@ -218,6 +196,26 @@ extension AppModel {
           }
         }
       })
+  }
+
+  private func persistAgent(_ input: Agent, draft: AgentDraft, client: APIClient) async throws -> Agent {
+    if draft.isNew { return try await client.createAgent(input) }
+    return try await client.updateAgent(
+      draft.agentID,
+      patch: [
+        "name": .string(input.name), "description": .string(draft.description),
+        "instructions": .string(draft.instructions),
+        "provider": .string(draft.provider), "model": .string(draft.model),
+        "avatar": .string(draft.avatar), "folder": .string(draft.folder),
+        "enabled": .bool(draft.enabled),
+        "tools": .array((input.tools ?? []).map(JSONValue.string)),
+        "skills": try JSONValue(encoding: draft.skills),
+        "sharedSkills": .array((input.sharedSkills ?? []).map(JSONValue.string)),
+        "sharedMemory": .bool(draft.sharedMemory),
+        "mcpServers": .array((input.mcpServers ?? []).map(JSONValue.string)),
+        "delegates": .array((input.delegates ?? []).map(JSONValue.string)),
+        "inference": try JSONValue(encoding: input.inference)
+      ])
   }
 
   func duplicateSelected() {

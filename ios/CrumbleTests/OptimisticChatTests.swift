@@ -12,8 +12,7 @@ extension APIClientTests {
   }
 
   @MainActor private func chatModel(handler: @escaping (URLRequest) -> (Int, String)) async
-    -> AppModel
-  {
+    -> AppModel {
     let model = AppModel(client: StubProtocol.client(handler))
     model.selectAgent("a1")
     await waitUntil { model.snapshot != nil }
@@ -46,7 +45,7 @@ extension APIClientTests {
     #expect(model.messages.first?.deliveryState == .confirmed)
   }
 
-  @MainActor @Test func failedSendCanRetryWithTheSameRequestID() async {
+  @MainActor @Test func failedSendCanRetryWithTheSameRequestID() async throws {
     var attempts = 0
     let model = await chatModel { request in
       switch request.url?.path {
@@ -60,7 +59,7 @@ extension APIClientTests {
     model.draft = "retry me"
     model.sendMessage()
     await waitUntil { model.messages.first?.deliveryState == .failed }
-    let failed = model.messages.first!
+    let failed = try #require(model.messages.first)
     model.retryMessage(failed)
     await waitUntil {
       StubProtocol.requests.filter { $0.url?.path == "/v1/agents/a1/messages" }.count == 2

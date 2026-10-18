@@ -1,5 +1,11 @@
 import Foundation
 
+private func decodeUTF8(_ data: Data) -> String {
+  String(bytes: data, encoding: .utf8) ?? String(unsafeUninitializedCapacity: data.count) { buffer in
+    data.copyBytes(to: buffer)
+  }
+}
+
 struct APIError: Error, LocalizedError, Sendable {
   var method: String
   var path: String
@@ -52,7 +58,7 @@ struct APIClient: Sendable {
     let (data, response) = try await session.data(for: request)
     let status = (response as? HTTPURLResponse)?.statusCode ?? 0
     guard (200..<300).contains(status) else {
-      let text = String(decoding: data.prefix(8 << 10), as: UTF8.self).trimmingCharacters(
+      let text = decodeUTF8(data.prefix(8 << 10)).trimmingCharacters(
         in: .whitespacesAndNewlines)
       throw APIError(method: method, path: path, statusCode: status, body: text)
     }
@@ -93,8 +99,7 @@ struct APIClient: Sendable {
     try await call("GET", "/v1/agents/\(agentID)/chat")
   }
   func chatHistory(_ agentID: String, before: String, limit: Int) async throws
-    -> ChatHistoryResponse
-  {
+    -> ChatHistoryResponse {
     var query: [String] = []
     if !before.isEmpty { query.append("before=" + Self.escape(before)) }
     if limit > 0 { query.append("limit=\(limit)") }
@@ -132,8 +137,7 @@ struct APIClient: Sendable {
   /// Follows the bot chat's server-sent events, passing each snapshot payload to onEvent.
   /// It returns only by throwing: SSEClosedError when the server ends the stream.
   func chatEvents(_ agentID: String, onEvent: @Sendable (String) async -> Void) async throws
-    -> Never
-  {
+    -> Never {
     try await events("/v1/agents/\(agentID)/events", parser: SSEParser(), onEvent: onEvent)
   }
 
@@ -143,8 +147,7 @@ struct APIClient: Sendable {
   }
 
   private func events(_ path: String, parser: SSEParser, onEvent: @Sendable (String) async -> Void)
-    async throws -> Never
-  {
+    async throws -> Never {
     var parser = parser
     // Heartbeats keep the stream busy; a long idle timeout only ends a stream that has gone silent.
     let request = try makeRequest("GET", path, timeout: 24 * 60 * 60)
@@ -158,7 +161,7 @@ struct APIClient: Sendable {
       }
       throw APIError(
         method: "GET", path: path, statusCode: status,
-        body: String(decoding: data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines))
+        body: decodeUTF8(data).trimmingCharacters(in: .whitespacesAndNewlines))
     }
     // AsyncLineSequence skips empty lines, so read raw lines to keep the blank line that ends an event.
     var line = Data()
@@ -168,13 +171,13 @@ struct APIClient: Sendable {
         continue
       }
       if line.last == UInt8(ascii: "\r") { line.removeLast() }
-      if let payload = try parser.feed(String(decoding: line, as: UTF8.self)) {
+      if let payload = try parser.feed(decodeUTF8(line)) {
         await onEvent(payload)
       }
       line.removeAll(keepingCapacity: true)
     }
     try Task.checkCancellation()
-    if let payload = try parser.feed(String(decoding: line, as: UTF8.self)) {
+    if let payload = try parser.feed(decodeUTF8(line)) {
       await onEvent(payload)
     }
     if let payload = try parser.feed("") { await onEvent(payload) }
@@ -203,8 +206,7 @@ struct APIClient: Sendable {
     try await call("POST", "/v1/skills", body: ["name": name, "instructions": instructions])
   }
   func updateSharedSkill(_ id: String, name: String, instructions: String) async throws
-    -> SharedSkill
-  {
+    -> SharedSkill {
     try await call("PATCH", "/v1/skills/\(id)", body: ["name": name, "instructions": instructions])
   }
   func deleteSharedSkill(_ id: String) async throws {
@@ -255,8 +257,7 @@ struct APIClient: Sendable {
       "POST", "/v1/mcp-servers/\(id)/oauth", body: ["redirectUri": redirectURI], timeout: 60)
   }
   func finishMCPSignIn(_ id: String, code: String, state: String, iss: String?) async throws
-    -> MCPServer
-  {
+    -> MCPServer {
     var body = ["code": code, "state": state]
     body["iss"] = iss
     return try await call("POST", "/v1/mcp-servers/\(id)/oauth/callback", body: body, timeout: 60)

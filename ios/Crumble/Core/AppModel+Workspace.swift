@@ -11,42 +11,9 @@ extension AppModel {
     skillDraft = nil
     switch panel {
     case .memory:
-      memoryLoadVersion += 1
-      let version = memoryLoadVersion
-      let mutationVersion = mutationRevision
-      request { client in
-        let bots = try await client.agents()
-        async let shared = client.memories(nil)
-        let personal = try await withThrowingTaskGroup(of: (String, [Memory]).self) { group in
-          for bot in bots {
-            group.addTask { (bot.id, try await client.memories(bot.id)) }
-          }
-          var result: [String: [Memory]] = [:]
-          for try await (id, memories) in group { result[id] = memories }
-          return result
-        }
-        let sharedItems = try await shared
-        return { [self] in
-          guard memoryLoadVersion == version, mutationRevision == mutationVersion,
-            pendingMutations.isEmpty
-          else { return }
-          agents = bots
-          sharedMemories = sharedItems
-          agentMemories = personal
-        }
-      }
+      loadMemoryOverview()
     case .skills:
-      let mutationVersion = mutationRevision
-      request { client in
-        async let bots = client.agents()
-        async let skills = client.sharedSkills()
-        let (loadedBots, loadedSkills) = try await (bots, skills)
-        return { [self] in
-          guard mutationRevision == mutationVersion, pendingMutations.isEmpty else { return }
-          agents = loadedBots
-          sharedSkills = loadedSkills
-        }
-      }
+      loadSkillOverview()
     case .tasks:
       let mutationVersion = mutationRevision
       request { client in
@@ -62,19 +29,83 @@ extension AppModel {
         return { [self] in activities = feed.activities }
       }
     case .integrations:
-      let mutationVersion = mutationRevision
-      request { client in
-        async let bots = client.agents()
-        async let servers = client.mcpServers()
-        let (loadedBots, loadedServers) = try await (bots, servers)
-        return { [self] in
-          guard mutationRevision == mutationVersion, pendingMutations.isEmpty else { return }
-          agents = loadedBots
-          mcpServers = loadedServers
-        }
-      }
+      loadIntegrationOverview()
     case .agent:
       break
+    }
+  }
+
+  private func loadSkillOverview() {
+    let mutationVersion = mutationRevision
+    request { client in
+      async let bots = client.agents()
+      async let skills = client.sharedSkills()
+      let (loadedBots, loadedSkills) = try await (bots, skills)
+      return { [self] in
+        guard mutationRevision == mutationVersion, pendingMutations.isEmpty else { return }
+        agents = loadedBots
+        sharedSkills = loadedSkills
+      }
+    }
+  }
+
+  private func loadIntegrationOverview() {
+    let mutationVersion = mutationRevision
+    request { client in
+      async let bots = client.agents()
+      async let servers = client.mcpServers()
+      let (loadedBots, loadedServers) = try await (bots, servers)
+      return { [self] in
+        guard mutationRevision == mutationVersion, pendingMutations.isEmpty else { return }
+        agents = loadedBots
+        mcpServers = loadedServers
+      }
+    }
+  }
+
+  private func persistSchedule(
+    _ form: TaskDraft, payload: [String: JSONValue], client: APIClient
+  ) async throws -> Schedule {
+    var payload = payload
+    let cron = form.repeats ? form.cron.trimmingCharacters(in: .whitespacesAndNewlines) : ""
+    let runAt = form.repeats ? "" : form.runDate.ISO8601Format()
+    if form.scheduleID.isEmpty {
+      if form.repeats {
+        payload["cron"] = .string(cron)
+      } else {
+        payload["runAt"] = .string(runAt)
+      }
+      return try await client.createSchedule(payload)
+    }
+    payload["cron"] = cron.isEmpty ? .null : .string(cron)
+    payload["runAt"] = form.repeats ? .null : .string(runAt)
+    return try await client.updateSchedule(form.scheduleID, patch: payload)
+  }
+
+  private func loadMemoryOverview() {
+    memoryLoadVersion += 1
+    let version = memoryLoadVersion
+    let mutationVersion = mutationRevision
+    request { client in
+      let bots = try await client.agents()
+      async let shared = client.memories(nil)
+      let personal = try await withThrowingTaskGroup(of: (String, [Memory]).self) { group in
+        for bot in bots {
+          group.addTask { (bot.id, try await client.memories(bot.id)) }
+        }
+        var result: [String: [Memory]] = [:]
+        for try await (id, memories) in group { result[id] = memories }
+        return result
+      }
+      let sharedItems = try await shared
+      return { [self] in
+        guard memoryLoadVersion == version, mutationRevision == mutationVersion,
+          pendingMutations.isEmpty
+        else { return }
+        agents = bots
+        sharedMemories = sharedItems
+        agentMemories = personal
+      }
     }
   }
 
@@ -96,43 +127,18 @@ extension AppModel {
     let isNew = form.memoryID.isEmpty
     let provisionalID = isNew ? "pending-memory-" + newRequestID() : form.memoryID
     let provisional = Memory(id: provisionalID, content: content, createdAt: nil)
-    let old = (agent == nil ? sharedMemories : agentMemories[agent!] ?? []).first {
-      $0.id == form.memoryID
-    }
+    let old = memories(for: agent).first { $0.id == form.memoryID }
     memoryDraft = nil
     optimisticMutation(
       key: "memory:\(provisionalID)",
       update: { [self] in
-        if agent == nil {
-          if let index = sharedMemories.firstIndex(where: {
-            $0.id == provisionalID || $0.id == form.memoryID
-          }) {
-            sharedMemories[index] = provisional
-          } else {
-            sharedMemories.append(provisional)
-          }
-        } else {
-          var items = agentMemories[agent!] ?? []
-          if let index = items.firstIndex(where: {
-            $0.id == provisionalID || $0.id == form.memoryID
-          }) {
-            items[index] = provisional
-          } else {
-            items.append(provisional)
-          }
-          agentMemories[agent!] = items
-        }
+        replaceMemory(provisional, replacing: form.memoryID, for: agent)
       },
       rollback: { [self] in
-        if agent == nil {
-          sharedMemories.removeAll { $0.id == provisionalID }
-          if let old { sharedMemories.append(old) }
-        } else {
-          var items = agentMemories[agent!] ?? []
-          items.removeAll { $0.id == provisionalID }
-          if let old { items.append(old) }
-          agentMemories[agent!] = items
-        }
+        var items = memories(for: agent)
+        items.removeAll { $0.id == provisionalID }
+        if let old { items.append(old) }
+        setMemories(items, for: agent)
         if route == .memory, memoryDraft == nil { memoryDraft = form }
       },
       work: { client in
@@ -141,48 +147,61 @@ extension AppModel {
           ? try await client.addMemory(agent, content: content)
           : try await client.updateMemory(agent, memoryID: form.memoryID, content: content)
         return { [self] in
-          if agent == nil {
-            if let index = sharedMemories.firstIndex(where: { $0.id == provisionalID }) {
-              sharedMemories[index] = saved
-            }
-          } else if var items = agentMemories[agent!],
-            let index = items.firstIndex(where: { $0.id == provisionalID })
-          {
-            items[index] = saved
-            agentMemories[agent!] = items
-          }
+          confirmMemory(saved, provisionalID: provisionalID, for: agent)
         }
       })
   }
 
-  func deleteMemory(_ id: String, agentID: String? = nil) {
-    let agent = agentID
-    let old = (agent == nil ? sharedMemories : agentMemories[agent!] ?? []).first { $0.id == id }
-    let oldIndex = (agent == nil ? sharedMemories : agentMemories[agent!] ?? []).firstIndex {
-      $0.id == id
+  private func memories(for agentID: String?) -> [Memory] {
+    if let agentID { return agentMemories[agentID] ?? [] }
+    return sharedMemories
+  }
+
+  private func setMemories(_ items: [Memory], for agentID: String?) {
+    if let agentID {
+      agentMemories[agentID] = items
+    } else {
+      sharedMemories = items
     }
+  }
+
+  private func replaceMemory(_ memory: Memory, replacing id: String, for agentID: String?) {
+    var items = memories(for: agentID)
+    if let index = items.firstIndex(where: { $0.id == memory.id || $0.id == id }) {
+      items[index] = memory
+    } else {
+      items.append(memory)
+    }
+    setMemories(items, for: agentID)
+  }
+
+  private func confirmMemory(_ saved: Memory, provisionalID: String, for agentID: String?) {
+    var items = memories(for: agentID)
+    guard let index = items.firstIndex(where: { $0.id == provisionalID }) else { return }
+    items[index] = saved
+    setMemories(items, for: agentID)
+  }
+
+  func deleteMemory(_ id: String, agentID: String? = nil) {
+    let old = memories(for: agentID).first { $0.id == id }
+    let oldIndex = memories(for: agentID).firstIndex { $0.id == id }
     optimisticMutation(
       key: "memory:\(id)",
       update: { [self] in
-        if agent == nil {
-          sharedMemories.removeAll { $0.id == id }
+        if let agentID {
+          agentMemories[agentID]?.removeAll { $0.id == id }
         } else {
-          agentMemories[agent!]?.removeAll { $0.id == id }
+          sharedMemories.removeAll { $0.id == id }
         }
       },
       rollback: { [self] in
         guard let old else { return }
-        if agent == nil {
-          sharedMemories.insert(
-            old, at: min(oldIndex ?? sharedMemories.count, sharedMemories.count))
-        } else {
-          var items = agentMemories[agent!] ?? []
-          items.insert(old, at: min(oldIndex ?? items.count, items.count))
-          agentMemories[agent!] = items
-        }
+        var items = memories(for: agentID)
+        items.insert(old, at: min(oldIndex ?? items.count, items.count))
+        setMemories(items, for: agentID)
       },
       work: { client in
-        try await client.deleteMemory(agent, memoryID: id)
+        try await client.deleteMemory(agentID, memoryID: id)
         return nil
       })
   }
@@ -213,8 +232,7 @@ extension AppModel {
     taskDraft = form
   }
 
-  func saveTask() {
-    guard let form = taskDraft else { return }
+  private func taskInput(_ form: TaskDraft) -> (payload: [String: JSONValue], schedule: Schedule)? {
     let trim = { (value: String) in value.trimmingCharacters(in: .whitespacesAndNewlines) }
     let name = trim(form.name)
     let prompt = trim(form.prompt)
@@ -223,17 +241,16 @@ extension AppModel {
     let runAt = form.repeats ? "" : form.runDate.ISO8601Format()
     guard !form.agentID.isEmpty else {
       errorText = "Choose which bot runs this task."
-      return
+      return nil
     }
     if let message = validateTask(
-      name: name, prompt: prompt, cron: cron, runAt: runAt, timezone: timezone)
-    {
+      name: name, prompt: prompt, cron: cron, runAt: runAt, timezone: timezone) {
       errorText = message
-      return
+      return nil
     }
-    var payload: [String: JSONValue] = [
+    let payload: [String: JSONValue] = [
       "agentId": .string(form.agentID), "name": .string(name), "prompt": .string(prompt),
-      "timezone": .string(timezone), "enabled": .bool(form.enabled),
+      "timezone": .string(timezone), "enabled": .bool(form.enabled)
     ]
     let isNew = form.scheduleID.isEmpty
     let provisionalID = isNew ? "pending-schedule-" + newRequestID() : form.scheduleID
@@ -241,6 +258,14 @@ extension AppModel {
       id: provisionalID, agentId: form.agentID, name: name, cron: form.repeats ? cron : nil,
       prompt: prompt, timezone: timezone, runAt: form.repeats ? nil : runAt, enabled: form.enabled,
       createdByAgentId: nil)
+    return (payload, provisional)
+  }
+
+  func saveTask() {
+    guard let form = taskDraft else { return }
+    guard let (initialPayload, provisional) = taskInput(form) else { return }
+    let payload = initialPayload
+    let provisionalID = provisional.id
     let old = schedules.first { $0.id == form.scheduleID }
     taskDraft = nil
     optimisticMutation(
@@ -260,26 +285,10 @@ extension AppModel {
         if route == .tasks, taskDraft == nil { taskDraft = form }
       },
       work: { client in
-        if isNew {
-          if form.repeats {
-            payload["cron"] = .string(cron)
-          } else {
-            payload["runAt"] = .string(runAt)
-          }
-          let saved = try await client.createSchedule(payload)
-          return { [self] in
-            if let index = schedules.firstIndex(where: { $0.id == provisionalID }) {
-              schedules[index] = saved
-            }
-          }
-        } else {
-          payload["cron"] = cron.isEmpty ? .null : .string(cron)
-          payload["runAt"] = form.repeats ? .null : .string(runAt)
-          let saved = try await client.updateSchedule(form.scheduleID, patch: payload)
-          return { [self] in
-            if let index = schedules.firstIndex(where: { $0.id == provisionalID }) {
-              schedules[index] = saved
-            }
+        let saved = try await self.persistSchedule(form, payload: payload, client: client)
+        return { [self] in
+          if let index = schedules.firstIndex(where: { $0.id == provisionalID }) {
+            schedules[index] = saved
           }
         }
       })
@@ -298,8 +307,7 @@ extension AppModel {
         return { [self] in
           showNotice("Task started")
           if route == routeAtStart, routeAtStart == .tasks,
-            let agent = execution.agentId, !agent.isEmpty
-          {
+            let agent = execution.agentId, !agent.isEmpty {
             selectAgent(agent)
           }
         }

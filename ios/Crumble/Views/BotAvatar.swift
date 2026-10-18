@@ -18,7 +18,7 @@ enum BotShape: CaseIterable { case circle, squircle, pill, triangle, hexagon, cl
 
 struct BotLook: Equatable {
   static let palette = [
-    "#8b5cf6", "#38bdf8", "#14b8a6", "#22c55e", "#f59e0b", "#f97316", "#ef4444", "#ec4899",
+    "#8b5cf6", "#38bdf8", "#14b8a6", "#22c55e", "#f59e0b", "#f97316", "#ef4444", "#ec4899"
   ]
 
   let shape: BotShape
@@ -33,19 +33,27 @@ struct BotLook: Equatable {
     hex = Self.palette[Int(hash % UInt64(Self.palette.count))]
   }
 
-  var rgb: (Double, Double, Double) {
+  struct RGB {
+    let red: Double
+    let green: Double
+    let blue: Double
+  }
+
+  var rgb: RGB {
     let value = UInt64(hex.dropFirst(), radix: 16) ?? 0
-    return (Double((value >> 16) & 0xff), Double((value >> 8) & 0xff), Double(value & 0xff))
+    return RGB(
+      red: Double((value >> 16) & 0xff), green: Double((value >> 8) & 0xff), blue: Double(value & 0xff))
   }
 
   var color: Color {
-    let (red, green, blue) = rgb
-    return Color(red: red / 255, green: green / 255, blue: blue / 255)
+    let components = rgb
+    return Color(red: components.red / 255, green: components.green / 255, blue: components.blue / 255)
   }
 
   var eyeColor: Color {
-    let (red, green, blue) = rgb
-    return 0.2126 * red + 0.7152 * green + 0.0722 * blue < 110 ? .white.opacity(0.9) : .black.opacity(0.85)
+    let components = rgb
+    let luminance = 0.2126 * components.red + 0.7152 * components.green + 0.0722 * components.blue
+    return luminance < 110 ? .white.opacity(0.9) : .black.opacity(0.85)
   }
 }
 
@@ -249,6 +257,37 @@ private struct SleepZs: View {
 private struct BotBody: Shape {
   let shape: BotShape
 
+  private func cloudPath(in rect: CGRect) -> Path {
+    var path = Path()
+    path.addEllipse(
+      in: CGRect(
+        x: rect.minX + rect.width * 0.08, y: rect.minY + rect.height * 0.38,
+        width: rect.width * 0.48, height: rect.height * 0.48))
+    path.addEllipse(
+      in: CGRect(
+        x: rect.minX + rect.width * 0.28, y: rect.minY + rect.height * 0.12,
+        width: rect.width * 0.5, height: rect.height * 0.64))
+    path.addEllipse(
+      in: CGRect(
+        x: rect.minX + rect.width * 0.55, y: rect.minY + rect.height * 0.35,
+        width: rect.width * 0.38, height: rect.height * 0.45))
+    return path
+  }
+
+  private func hexagonPath(in rect: CGRect, inset: CGRect) -> Path {
+    var path = Path()
+    path.addLines([
+      CGPoint(x: rect.midX, y: inset.minY),
+      CGPoint(x: inset.maxX, y: rect.minY + rect.height * 0.3),
+      CGPoint(x: inset.maxX, y: rect.minY + rect.height * 0.7),
+      CGPoint(x: rect.midX, y: inset.maxY),
+      CGPoint(x: inset.minX, y: rect.minY + rect.height * 0.7),
+      CGPoint(x: inset.minX, y: rect.minY + rect.height * 0.3)
+    ])
+    path.closeSubpath()
+    return path
+  }
+
   func path(in rect: CGRect) -> Path {
     let inset = rect.insetBy(dx: rect.width * 0.08, dy: rect.height * 0.08)
     switch shape {
@@ -269,32 +308,9 @@ private struct BotBody: Shape {
       path.closeSubpath()
       return path
     case .hexagon:
-      var path = Path()
-      path.addLines([
-        CGPoint(x: rect.midX, y: inset.minY),
-        CGPoint(x: inset.maxX, y: rect.minY + rect.height * 0.3),
-        CGPoint(x: inset.maxX, y: rect.minY + rect.height * 0.7),
-        CGPoint(x: rect.midX, y: inset.maxY),
-        CGPoint(x: inset.minX, y: rect.minY + rect.height * 0.7),
-        CGPoint(x: inset.minX, y: rect.minY + rect.height * 0.3),
-      ])
-      path.closeSubpath()
-      return path
+      return hexagonPath(in: rect, inset: inset)
     case .cloud:
-      var path = Path()
-      path.addEllipse(
-        in: CGRect(
-          x: rect.minX + rect.width * 0.08, y: rect.minY + rect.height * 0.38,
-          width: rect.width * 0.48, height: rect.height * 0.48))
-      path.addEllipse(
-        in: CGRect(
-          x: rect.minX + rect.width * 0.28, y: rect.minY + rect.height * 0.12,
-          width: rect.width * 0.5, height: rect.height * 0.64))
-      path.addEllipse(
-        in: CGRect(
-          x: rect.minX + rect.width * 0.55, y: rect.minY + rect.height * 0.35,
-          width: rect.width * 0.38, height: rect.height * 0.45))
-      return path
+      return cloudPath(in: rect)
     case .drop:
       var path = Path()
       path.move(to: CGPoint(x: rect.midX, y: inset.minY))

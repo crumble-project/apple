@@ -11,8 +11,8 @@ struct ActivityEvent: Decodable, Sendable {
   var origin: String?
   var preview: String?
   var lastMessage: String?
-  var eventId: String? = nil
-  var serverId: String? = nil
+  var eventId: String?
+  var serverId: String?
 }
 
 struct NotificationContext {
@@ -71,8 +71,7 @@ struct NotificationPayload: Sendable {
       let data = try? JSONSerialization.data(withJSONObject: userInfo),
       let decoded = try? JSONDecoder().decode(ActivityEvent.self, from: data),
       decoded.type == "reply", !decoded.agentId.isEmpty,
-      local || (decoded.serverId?.isEmpty == false && decoded.eventId?.isEmpty == false)
-    {
+      local || (decoded.serverId?.isEmpty == false && decoded.eventId?.isEmpty == false) {
       event = decoded
     }
   }
@@ -165,8 +164,9 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
     push.setPresence(active: isActive, agentID: agentID)
     if !isActive, backgroundTask == .invalid {
       // A finite grace period lets the presence update finish as iOS suspends the app.
-      backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "Update notification presence") {
-        [weak self] in
+      backgroundTask = UIApplication.shared.beginBackgroundTask(
+        withName: "Update notification presence"
+      ) { [weak self] in
         Task { @MainActor in self?.finishPresenceUpdate() }
       }
       Task {
@@ -185,8 +185,7 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
   func routePendingTap() {
     guard let model else { return }
     switch tapRouter.resolve(
-      serverID: push.serverID, serverURL: model.client?.baseURL, agentIDs: model.agents.map(\.id))
-    {
+      serverID: push.serverID, serverURL: model.client?.baseURL, agentIDs: model.agents.map(\.id)) {
     case .open(let agentID): model.selectAgent(agentID)
     case .differentServer: model.showNotice("This notification belongs to a different server.")
     case nil: break
@@ -208,7 +207,7 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
     content.sound = .default
     var info: [String: Any] = [
       "type": event.type, "agentId": event.agentId, "agentName": event.agentName,
-      "crumbleLocal": true, "localServerURL": model?.client?.baseURL ?? "",
+      "crumbleLocal": true, "localServerURL": model?.client?.baseURL ?? ""
     ]
     info["eventId"] = event.eventId
     info["serverId"] = event.serverId

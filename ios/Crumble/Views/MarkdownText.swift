@@ -65,13 +65,21 @@ enum MarkdownBlock: Equatable {
   case code(String)
 
   static func parse(_ text: String) -> [MarkdownBlock] {
+    var parser = Parser()
+    for line in text.components(separatedBy: "\n") { parser.consume(line) }
+    if let lines = parser.code { parser.blocks.append(.code(lines.joined(separator: "\n"))) }
+    parser.flush()
+    return parser.blocks
+  }
+
+  private struct Parser {
     var blocks: [MarkdownBlock] = []
     var paragraph: [String] = []
     var items: [Item] = []
     var quote: [String] = []
     var code: [String]?
 
-    func flush() {
+    mutating func flush() {
       if !paragraph.isEmpty { blocks.append(.paragraph(paragraph.joined(separator: "\n"))) }
       if !items.isEmpty { blocks.append(.list(items)) }
       if !quote.isEmpty { blocks.append(.quote(quote.joined(separator: "\n"))) }
@@ -80,36 +88,20 @@ enum MarkdownBlock: Equatable {
       quote = []
     }
 
-    for line in text.components(separatedBy: "\n") {
+    mutating func consume(_ line: String) {
       let trimmed = line.trimmingCharacters(in: .whitespaces)
-      if var lines = code {
-        if trimmed.hasPrefix("```") {
-          blocks.append(.code(lines.joined(separator: "\n")))
-          code = nil
-        } else {
-          lines.append(line)
-          code = lines
-        }
-        continue
-      }
+      if consumeCodeLine(line, trimmed: trimmed) { return }
       if trimmed.hasPrefix("```") {
         flush()
         code = []
       } else if trimmed.isEmpty {
         flush()
-      } else if let heading = headingLevel(trimmed) {
+      } else if let heading = MarkdownBlock.headingLevel(trimmed) {
         flush()
         blocks.append(
-          .heading(heading, String(trimmed.drop { $0 == "#" }).trimmingCharacters(in: .whitespaces))
-        )
-      } else if let item = listItem(line) {
-        if !paragraph.isEmpty || !quote.isEmpty {
-          let pending = items
-          items = []
-          flush()
-          items = pending
-        }
-        items.append(item)
+          .heading(heading, String(trimmed.drop { $0 == "#" }).trimmingCharacters(in: .whitespaces)))
+      } else if let item = MarkdownBlock.listItem(line) {
+        appendItem(item)
       } else if trimmed.hasPrefix(">") {
         if !paragraph.isEmpty || !items.isEmpty { flush() }
         quote.append(String(trimmed.dropFirst()).trimmingCharacters(in: .whitespaces))
@@ -120,9 +112,28 @@ enum MarkdownBlock: Equatable {
         paragraph.append(line)
       }
     }
-    if let lines = code { blocks.append(.code(lines.joined(separator: "\n"))) }
-    flush()
-    return blocks
+
+    private mutating func appendItem(_ item: Item) {
+      if !paragraph.isEmpty || !quote.isEmpty {
+        let pending = items
+        items = []
+        flush()
+        items = pending
+      }
+      items.append(item)
+    }
+
+    private mutating func consumeCodeLine(_ line: String, trimmed: String) -> Bool {
+      guard var lines = code else { return false }
+      if trimmed.hasPrefix("```") {
+        blocks.append(.code(lines.joined(separator: "\n")))
+        code = nil
+      } else {
+        lines.append(line)
+        code = lines
+      }
+      return true
+    }
   }
 
   private static func headingLevel(_ line: String) -> Int? {

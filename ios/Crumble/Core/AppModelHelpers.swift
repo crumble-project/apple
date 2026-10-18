@@ -24,7 +24,13 @@ struct SignInError: LocalizedError {
 }
 
 /// Reads the code, state and issuer from a sign-in callback, or the provider's reason for refusing.
-func oauthResult(from callback: URL) throws -> (code: String, state: String, iss: String?) {
+struct OAuthResult {
+  let code: String
+  let state: String
+  let iss: String?
+}
+
+func oauthResult(from callback: URL) throws -> OAuthResult {
   let items = URLComponents(url: callback, resolvingAgainstBaseURL: false)?.queryItems ?? []
   let value = { (name: String) in items.first { $0.name == name }?.value }
   if let error = value("error") {
@@ -34,7 +40,7 @@ func oauthResult(from callback: URL) throws -> (code: String, state: String, iss
   guard let code = value("code"), let state = value("state") else {
     throw SignInError(errorDescription: "Sign-in returned no authorization code.")
   }
-  return (code, state, value("iss"))
+  return OAuthResult(code: code, state: state, iss: value("iss"))
 }
 
 func validateTask(
@@ -42,8 +48,7 @@ func validateTask(
   timezone: String = TimeZone.current.identifier
 ) -> String? {
   if name.trimmingCharacters(in: .whitespaces).isEmpty
-    || prompt.trimmingCharacters(in: .whitespaces).isEmpty
-  {
+    || prompt.trimmingCharacters(in: .whitespaces).isEmpty {
     return "Task name and prompt are required."
   }
   if cron.isEmpty == runAt.isEmpty {
@@ -78,8 +83,7 @@ func friendlyError(_ error: Error) -> String {
       var details: [Detail]?
     }
     if let body = try? JSONDecoder().decode(Body.self, from: Data(apiError.body.utf8)),
-      let message = body.error, !message.isEmpty
-    {
+      let message = body.error, !message.isEmpty {
       if let detail = body.details?.first?.message { return message + ": " + detail }
       return message
     }

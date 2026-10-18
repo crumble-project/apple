@@ -29,8 +29,7 @@ struct PushPresence: Encodable, Sendable {
   func encode(to encoder: Encoder) throws {
     var values = encoder.container(keyedBy: CodingKeys.self)
     try values.encode(active, forKey: .active)
-    if let agentId { try values.encode(agentId, forKey: .agentId) }
-    else { try values.encodeNil(forKey: .agentId) }
+    if let agentId { try values.encode(agentId, forKey: .agentId) } else { try values.encodeNil(forKey: .agentId) }
   }
   private enum CodingKeys: CodingKey { case active, agentId }
 }
@@ -101,7 +100,7 @@ final class PushController {
     var url: String
     var token: String
     var installationID: String
-    var remoteDelivery: Bool? = nil
+    var remoteDelivery: Bool?
   }
   private struct StoredConnections: Codable {
     var registered: Connection?
@@ -123,8 +122,7 @@ final class PushController {
     defaults.set(installationID, forKey: "push.installationID")
     if persistCredentials, let stored = Keychain.read("push-connections"),
       let data = stored.data(using: .utf8),
-      let state = try? JSONDecoder().decode(StoredConnections.self, from: data)
-    {
+      let state = try? JSONDecoder().decode(StoredConnections.self, from: data) {
       registered = state.registered
       cleanup = state.cleanup
     }
@@ -134,8 +132,7 @@ final class PushController {
     let next = candidate.flatMap { $0.token.isEmpty ? nil : $0 }
     if let registered,
       registered.url != next?.baseURL || registered.token != next?.token
-        || registered.installationID != installationID
-    {
+        || registered.installationID != installationID {
       enqueueCleanup(registered)
       self.registered = nil
     }
@@ -220,7 +217,7 @@ final class PushController {
     try? Keychain.write("push-connections", value: value)
   }
 
-  private func synchronize(version: Int) async {
+  private func removePreviousRegistrations(version: Int) async -> Bool {
     for old in cleanup {
       do {
         // Reuse the current session for testability, without changing the old credentials.
@@ -229,8 +226,32 @@ final class PushController {
         cleanup.removeAll { $0 == old }
         persist()
       } catch { /* Keep the old credential in Keychain and retry on the next heartbeat/launch. */ }
-      guard version == revision else { return }
+      guard version == revision else { return false }
     }
+    return true
+  }
+
+  private var readyToRegister: Bool {
+    guard enabled, authorized else {
+      status = !enabled ? "Notifications are off."
+        : authorizationKnown ? "Notifications are off in iOS Settings."
+        : "Waiting for notification permission."
+      if !cleanup.isEmpty { status += " Previous server removal is pending and will retry." }
+      return false
+    }
+    guard cleanup.isEmpty else {
+      status = "Previous server removal is pending. Remote setup will retry while the app is active."
+      return false
+    }
+    guard deviceToken != nil else {
+      status = "Waiting for APNs device registration."
+      return false
+    }
+    return true
+  }
+
+  private func synchronize(version: Int) async {
+    guard await removePreviousRegistrations(version: version) else { return }
     guard let client else { status = "Connect to a server to enable push notifications."; return }
     do {
       // Disabling must still remove a registration if capability discovery is unavailable.
@@ -244,21 +265,7 @@ final class PushController {
       let identity = try await client.pushServer()
       guard version == revision else { return }
       serverID = identity.serverId
-      guard enabled, authorized else {
-        status = !enabled ? "Notifications are off."
-          : authorizationKnown ? "Notifications are off in iOS Settings."
-          : "Waiting for notification permission."
-        if !cleanup.isEmpty { status += " Previous server removal is pending and will retry." }
-        return
-      }
-      guard cleanup.isEmpty else {
-        status = "Previous server removal is pending. Remote setup will retry while the app is active."
-        return
-      }
-      guard let deviceToken else {
-        status = "Waiting for APNs device registration."
-        return
-      }
+      guard readyToRegister, let deviceToken else { return }
       // Persist before sending: a server switch or crash during PUT still leaves cleanup work.
       registered = Connection(url: client.baseURL, token: client.token, installationID: installationID)
       persist()

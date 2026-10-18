@@ -15,18 +15,17 @@ extension AppModel {
     mcpDraft = form
   }
 
-  func saveMCP() {
-    guard let form = mcpDraft else { return }
+  private func mcpInput(_ form: MCPDraft) -> (payload: [String: JSONValue], server: MCPServer)? {
     let name = form.name.trimmingCharacters(in: .whitespaces)
     let rawURL = form.url.trimmingCharacters(in: .whitespaces)
     guard !name.isEmpty, let url = URL(string: rawURL), url.host() != nil,
       ["http", "https"].contains(url.scheme ?? "")
     else {
       errorText = "MCP name and an HTTP(S) URL are required."
-      return
+      return nil
     }
     var payload: [String: JSONValue] = [
-      "name": .string(name), "url": .string(rawURL), "enabled": .bool(form.enabled),
+      "name": .string(name), "url": .string(rawURL), "enabled": .bool(form.enabled)
     ]
     if !form.token.isEmpty { payload["token"] = .string(form.token) }
     let isNew = form.serverID.isEmpty
@@ -39,31 +38,43 @@ extension AppModel {
       provisional.authenticated = old.authenticated
       provisional.auth = old.auth
     }
+    return (payload, provisional)
+  }
+
+  private func applyProvisionalMCP(_ provisional: MCPServer, form: MCPDraft) {
+    let provisionalID = provisional.id
+    let owner = form.agentID
+    let isNew = form.serverID.isEmpty
+    if let index = mcpServers.firstIndex(where: {
+      $0.id == provisionalID || $0.id == form.serverID
+    }) {
+      mcpServers[index] = provisional
+    } else {
+      mcpServers.append(provisional)
+    }
+    if isNew, let owner, let index = agents.firstIndex(where: { $0.id == owner }) {
+      var memberships = agents[index].mcpServers ?? []
+      if !memberships.contains(provisionalID) { memberships.append(provisionalID) }
+      agents[index].mcpServers = memberships
+    }
+  }
+
+  func saveMCP() {
+    guard let form = mcpDraft else { return }
+    guard let (initialPayload, provisional) = mcpInput(form) else { return }
+    var payload = initialPayload
+    let provisionalID = provisional.id
+    let isNew = form.serverID.isEmpty
+    let old = mcpServers.first { $0.id == form.serverID }
     let owner = form.agentID
     mcpDraft = nil
     optimisticMutation(
       key: "mcp:\(provisionalID)",
       update: { [self] in
-        if let index = mcpServers.firstIndex(where: {
-          $0.id == provisionalID || $0.id == form.serverID
-        }) {
-          mcpServers[index] = provisional
-        } else {
-          mcpServers.append(provisional)
-        }
-        if isNew, let owner, let index = agents.firstIndex(where: { $0.id == owner }) {
-          var memberships = agents[index].mcpServers ?? []
-          if !memberships.contains(provisionalID) { memberships.append(provisionalID) }
-          agents[index].mcpServers = memberships
-        }
+        applyProvisionalMCP(provisional, form: form)
       },
       rollback: { [self] in
-        mcpServers.removeAll { $0.id == provisionalID }
-        if let old { mcpServers.append(old) }
-        if isNew, let owner, let index = agents.firstIndex(where: { $0.id == owner }) {
-          agents[index].mcpServers?.removeAll { $0 == provisionalID }
-        }
-        if route == .integrations, mcpDraft == nil { mcpDraft = form }
+        rollbackMCP(provisionalID: provisionalID, form: form, old: old)
       },
       work: { client in
         if isNew {
@@ -89,6 +100,17 @@ extension AppModel {
       })
   }
 
+  private func rollbackMCP(provisionalID: String, form: MCPDraft, old: MCPServer?) {
+    let isNew = form.serverID.isEmpty
+    let owner = form.agentID
+    mcpServers.removeAll { $0.id == provisionalID }
+    if let old { mcpServers.append(old) }
+    if isNew, let owner, let index = agents.firstIndex(where: { $0.id == owner }) {
+      agents[index].mcpServers?.removeAll { $0 == provisionalID }
+    }
+    if route == .integrations, mcpDraft == nil { mcpDraft = form }
+  }
+
   /// Where the system sign-in sheet returns; the sheet watches this scheme, so nothing registers it.
   static let oauthCallbackScheme = "dev.crumble.ios"
   static let oauthRedirectURI = oauthCallbackScheme + ":/oauth/callback"
@@ -100,20 +122,20 @@ extension AppModel {
     errorText = ""
     signingIn = id
     let generationAtStart = generation
-    defer { if generation == generationAtStart, signingIn == id { signingIn = nil } }
+    defer { finishMCPSignIn(id, generation: generationAtStart) }
     do {
       let start = try await client.startMCPSignIn(id, redirectURI: Self.oauthRedirectURI)
       guard generation == generationAtStart else { return }
       if let address = start.authorizationUrl, let url = URL(string: address) {
         let callback = try await session.authenticate(
           using: url, callbackURLScheme: Self.oauthCallbackScheme)
-        let (code, state, iss) = try oauthResult(from: callback)
+        let result = try oauthResult(from: callback)
         guard generation == generationAtStart else { return }
-        let saved = try await client.finishMCPSignIn(id, code: code, state: state, iss: iss)
+        let saved = try await client.finishMCPSignIn(
+          id, code: result.code, state: result.state, iss: result.iss)
         guard generation == generationAtStart else { return }
         if let index = mcpServers.firstIndex(where: { $0.id == id }) { mcpServers[index] = saved }
-      } else if start.authorized == true, let index = mcpServers.firstIndex(where: { $0.id == id })
-      {
+      } else if start.authorized == true, let index = mcpServers.firstIndex(where: { $0.id == id }) {
         mcpServers[index].authenticated = true
       }
       showNotice("Signed in")
@@ -123,6 +145,10 @@ extension AppModel {
       guard generation == generationAtStart else { return }
       errorText = friendlyError(error)
     }
+  }
+
+  private func finishMCPSignIn(_ id: String, generation: Int) {
+    if self.generation == generation, signingIn == id { signingIn = nil }
   }
 
   func signOutOfMCP(_ id: String) {

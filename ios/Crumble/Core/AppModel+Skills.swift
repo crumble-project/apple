@@ -71,6 +71,10 @@ extension AppModel {
       savePersonalSkill(form, agentID: agentID, name: name, instructions: instructions)
       return
     }
+    saveSharedSkill(form, name: name, instructions: instructions)
+  }
+
+  private func saveSharedSkill(_ form: SkillDraft, name: String, instructions: String) {
     let isNew = form.skillID.isEmpty
     let provisionalID = isNew ? "pending-skill-" + newRequestID() : form.skillID
     let provisional = SharedSkill(

@@ -12,8 +12,8 @@ final class StubProtocol: URLProtocol, @unchecked Sendable {
   nonisolated(unsafe) static var requests: [URLRequest] = []
   nonisolated(unsafe) private static var sessionID = ""
 
-  override class func canInit(with request: URLRequest) -> Bool { true }
-  override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+  override static func canInit(with request: URLRequest) -> Bool { true }
+  override static func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 
   override func startLoading() {
     var recorded = request
@@ -34,8 +34,14 @@ final class StubProtocol: URLProtocol, @unchecked Sendable {
     let current = recorded.value(forHTTPHeaderField: "X-Crumble-Test-Session") == Self.sessionID
     if current { Self.requests.append(recorded) }
     let (status, body) = current ? Self.handler?(recorded) ?? (404, "") : (401, "")
-    let response = HTTPURLResponse(
-      url: request.url!, statusCode: status, httpVersion: "HTTP/1.1", headerFields: nil)!
+    guard let url = request.url,
+      let response = HTTPURLResponse(
+        url: url, statusCode: status, httpVersion: "HTTP/1.1", headerFields: nil)
+    else {
+      Issue.record("The stub could not create an HTTP response.")
+      client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
+      return
+    }
     client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
     client?.urlProtocol(self, didLoad: Data(body.utf8))
     client?.urlProtocolDidFinishLoading(self)
@@ -44,8 +50,7 @@ final class StubProtocol: URLProtocol, @unchecked Sendable {
   override func stopLoading() {}
 
   static func client(token: String = "", _ handler: @escaping (URLRequest) -> (Int, String))
-    -> APIClient
-  {
+    -> APIClient {
     self.handler = handler
     requests = []
     let configuration = URLSessionConfiguration.ephemeral
@@ -77,7 +82,7 @@ struct APIClientTests {
     let client = StubProtocol.client { _ in (200, #"{"id":"a1"}"#) }
     _ = try await client.updateAgent(
       "a1", patch: ["tools": .array([]), "skills": try JSONValue(encoding: [Skill]())])
-    let body = String(decoding: StubProtocol.requests.first?.httpBody ?? Data(), as: UTF8.self)
+    let body = try #require(String(data: StubProtocol.requests.first?.httpBody ?? Data(), encoding: .utf8))
     #expect(body.contains(#""tools":[]"#) && body.contains(#""skills":[]"#))
   }
 
@@ -87,7 +92,8 @@ struct APIClientTests {
       return (
         200,
         #"""
-        [{"id":"common:tasks/SKILL.md","name":"tasks","instructions":"Complete tasks","source":"bundled","path":"tasks/SKILL.md"},
+        [{"id":"common:tasks/SKILL.md","name":"tasks","instructions":"Complete tasks",
+        "source":"bundled","path":"tasks/SKILL.md"},
         {"id":"s1","name":"Writing","instructions":"Write plainly","source":"shared"},
         {"id":"legacy","name":"Legacy","instructions":"Existing skill"}]
         """#
@@ -150,14 +156,14 @@ struct APIClientTests {
     }
     let start = try await client.startMCPSignIn("s1", redirectURI: AppModel.oauthRedirectURI)
     #expect(start.authorizationUrl?.hasPrefix("https://auth.example.com/") == true)
-    let sent = String(decoding: StubProtocol.requests.last?.httpBody ?? Data(), as: UTF8.self)
+    let sent = try #require(String(data: StubProtocol.requests.last?.httpBody ?? Data(), encoding: .utf8))
     #expect(
       sent.contains("dev.crumble.ios:\\/oauth\\/callback")
         || sent.contains("dev.crumble.ios:/oauth/callback"))
     let server = try await client.finishMCPSignIn(
       "s1", code: "c", state: "x", iss: "https://auth.example.com")
     #expect(server.auth == "oauth")
-    let finished = String(decoding: StubProtocol.requests.last?.httpBody ?? Data(), as: UTF8.self)
+    let finished = try #require(String(data: StubProtocol.requests.last?.httpBody ?? Data(), encoding: .utf8))
     #expect(
       finished.contains(#""iss":"https:\/\/auth.example.com""#)
         || finished.contains(#""iss":"https://auth.example.com""#))
@@ -179,7 +185,7 @@ struct APIClientTests {
     #expect(history.messages?.first?.entryId == "a1:8")
     #expect(StubProtocol.requests.last?.url?.query == "before=a1%3A42&limit=100")
     try await client.sendChatMessage("a1", content: "hello", requestID: "req", replyTo: "a1:41")
-    let body = String(decoding: StubProtocol.requests.last?.httpBody ?? Data(), as: UTF8.self)
+    let body = try #require(String(data: StubProtocol.requests.last?.httpBody ?? Data(), encoding: .utf8))
     #expect(body.contains(#""replyTo":"a1:41""#))
   }
 
@@ -196,7 +202,10 @@ struct APIClientTests {
     let message = try JSONDecoder().decode(
       Message.self,
       from: Data(
-        #"{"id":"a1:5:0","role":"user","content":"","attachments":[{"name":"dot.png","mimeType":"image/png","size":70,"kind":"image"}]}"#
+        #"""
+        {"id":"a1:5:0","role":"user","content":"",
+        "attachments":[{"name":"dot.png","mimeType":"image/png","size":70,"kind":"image"}]}
+        """#
           .utf8))
     #expect(message.attachments?.first?.isImage == true)
     #expect(ChatRow.shownInChat(message))
@@ -238,226 +247,4 @@ struct APIClientTests {
 actor Received {
   var payloads: [String] = []
   func append(_ payload: String) { payloads.append(payload) }
-}
-
-struct LogicTests {
-  @MainActor @Test func sidebarPreviewsUpdateWithoutOpeningTheBotChat() throws {
-    let model = AppModel(client: APIClient(baseURL: "http://127.0.0.1:1", token: ""))
-    model.agents = [
-      Agent(id: "a1", name: "Atlas", lastMessage: "Earlier"), Agent(id: "a2", name: "Beacon"),
-    ]
-    model.route = .memory
-    let event = try JSONDecoder().decode(
-      ActivityEvent.self,
-      from: Data(
-        #"{"type":"chat-preview","agentId":"a2","agentName":"Beacon","lastMessage":"A new reply from Beacon"}"#
-          .utf8))
-    model.handleActivity(event)
-    #expect(model.agents[0].lastMessage == "Earlier")
-    #expect(model.agents[1].lastMessage == "A new reply from Beacon")
-    #expect(model.route == .memory)
-    #expect(model.messages.isEmpty)
-    #expect(notification(for: event, in: NotificationContext(appActive: false, route: nil)) == nil)
-    model.handleActivity(
-      ActivityEvent(type: "chat-preview", agentId: "a2", agentName: "Beacon", lastMessage: ""))
-    #expect(model.agents[1].lastMessage == "")
-  }
-
-  @Test func sseRejectsSnapshotsWithoutAgent() throws {
-    var parser = SSEParser()
-    _ = try parser.feed("event: snapshot")
-    _ = try parser.feed("data: {\"status\":\"idle\"}")
-    #expect(throws: SSEParser.InvalidPayload.self) { try parser.feed("") }
-  }
-
-  @Test func mergeKeepsLoadedHistoryInEntryOrder() {
-    let older = [Message(id: "a1:2:0", role: "user"), Message(id: "a1:10:0", role: "assistant")]
-    let snapshot = [
-      Message(id: "a1:10:0", role: "assistant", content: .string("updated")),
-      Message(id: "a1:11:1", role: "user"), Message(id: "a1:11:0", role: "user"),
-    ]
-    let merged = mergeMessages(older, snapshot)
-    #expect(merged.map(\.id) == ["a1:2:0", "a1:10:0", "a1:11:0", "a1:11:1"])
-    #expect(merged[1].text == "updated")
-  }
-
-  @Test func tasksNeedExactlyOneScheduleMode() {
-    #expect(validateTask(name: "", prompt: "", cron: "", runAt: "") != nil)
-    #expect(
-      validateTask(
-        name: "Daily", prompt: "Check inbox", cron: "0 9 * * *", runAt: "2026-10-18T09:00:00Z")
-        != nil)
-    #expect(validateTask(name: "Daily", prompt: "Check inbox", cron: "0 9 * * *", runAt: "") == nil)
-    #expect(
-      validateTask(name: "Once", prompt: "Check inbox", cron: "", runAt: "2026-10-18T09:00:00Z")
-        == nil)
-    #expect(validateTask(name: "Once", prompt: "Check inbox", cron: "", runAt: "tomorrow") != nil)
-  }
-
-  @Test func taskRunAtPreservesExplicitOffsetInstant() throws {
-    #expect(taskRunDate("2026-10-18T12:10:00+02:00") == taskRunDate("2026-10-18T10:10:00Z"))
-    let fractional = try #require(taskRunDate("2026-10-18T12:10:00.123Z"))
-    let whole = try #require(taskRunDate("2026-10-18T12:10:00Z"))
-    #expect(abs(fractional.timeIntervalSince(whole) - 0.123) < 0.000001)
-    #expect(
-      validateTask(name: "Task", prompt: "Hi", cron: "0 9 * * *", runAt: "", timezone: "Not/AZone")
-        != nil)
-  }
-
-  @Test func requestIDsAreUUIDs() {
-    let id = newRequestID()
-    #expect(UUID(uuidString: id) != nil)
-    #expect(id.split(separator: "-").count == 5)
-  }
-
-  @Test func avatarSeedsAcceptLegacyValues() {
-    let cases = [
-      "bot:violet": "violet", "critters:violet": "violet", "sparkles": "a1", "😀": "a1", "": "a1",
-    ]
-    for (avatar, seed) in cases {
-      #expect(agentAvatarSeed(Agent(id: "a1", avatar: avatar)) == seed)
-    }
-    #expect(BotLook(seed: "agent-seed") == BotLook(seed: "agent-seed"))
-  }
-
-  @Test func chatHidesToolActivity() {
-    let tool = Message(
-      id: "a1:1:0", role: "assistant", blocks: .array([.object(["type": .string("toolCall")])]))
-    let reply = Message(
-      id: "a1:1:1", role: "assistant", content: .string("Hi"),
-      blocks: .array([.object(["type": .string("text"), "text": .string("Hi")])]))
-    #expect(!ChatRow.shownInChat(tool))
-    #expect(ChatRow.shownInChat(reply))
-  }
-
-  @Test func shiftReturnInsertsANewlineAtTheCaret() {
-    let text = "hello world"
-    let caret = text.index(text.startIndex, offsetBy: 5)
-    let (edited, after) = insertingNewline(into: text, replacing: caret..<caret)
-    #expect(edited == "hello\n world")
-    #expect(edited[after...] == " world")
-    let word = text.range(of: "world")!
-    #expect(insertingNewline(into: text, replacing: word).text == "hello \n")
-    #expect(insertingNewline(into: text, replacing: nil).text == "hello world\n")
-  }
-
-  @Test func filesBecomeAttachmentsTheServerAccepts() throws {
-    let folder = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
-    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-    defer { try? FileManager.default.removeItem(at: folder) }
-    let notes = folder.appending(path: "notes.md")
-    try Data("# Groceries".utf8).write(to: notes)
-    let text = try loadAttachment(from: notes)
-    #expect(text.mimeType.hasPrefix("text/") && text.data == Data("# Groceries".utf8))
-
-    let image = UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).image { context in
-      UIColor.red.setFill()
-      context.fill(CGRect(x: 0, y: 0, width: 4, height: 4))
-    }
-    let tiff = folder.appending(path: "photo.tiff")
-    let destination = CGImageDestinationCreateWithURL(
-      tiff as CFURL, UTType.tiff.identifier as CFString, 1, nil)
-    CGImageDestinationAddImage(destination!, image.cgImage!, nil)
-    #expect(CGImageDestinationFinalize(destination!))
-    let converted = try loadAttachment(from: tiff)
-    #expect(converted.mimeType == "image/jpeg" && converted.name == "photo.jpg")
-
-    // A valid 2×2 24-bit BMP exercises the unsupported-image conversion path.
-    let bmp = folder.appending(path: "photo.bmp")
-    var bytes: [UInt8] = [
-      66, 77, 70, 0, 0, 0, 0, 0, 0, 0, 54, 0, 0, 0, 40, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 1, 0, 24,
-      0, 0, 0, 0, 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    ]
-    bytes += [0, 0, 255, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 0]
-    try Data(bytes).write(to: bmp)
-    let convertedBMP = try loadAttachment(from: bmp)
-    #expect(convertedBMP.mimeType == "image/jpeg" && convertedBMP.name == "photo.jpg")
-    let pdf = folder.appending(path: "doc.pdf")
-    try Data("%PDF-1.4".utf8).write(to: pdf)
-    #expect(throws: AttachmentError.self) { try loadAttachment(from: pdf) }
-  }
-
-  @Test func notificationsSkipWhatIsOnScreen() {
-    let reply = ActivityEvent(
-      type: "reply", agentId: "a1", agentName: "Atlas", origin: "owner",
-      preview: "**Done**, two meetings.")
-    #expect(
-      notification(for: reply, in: NotificationContext(appActive: false, route: .agent("a1")))?.body
-        == "Done, two meetings.")
-    #expect(
-      notification(for: reply, in: NotificationContext(appActive: true, route: .agent("a1"))) == nil
-    )
-    #expect(
-      notification(for: reply, in: NotificationContext(appActive: true, route: .agent("a2")))?.title
-        == "Atlas")
-    var delegated = reply
-    delegated.origin = "bot"
-    #expect(
-      notification(for: delegated, in: NotificationContext(appActive: false, route: nil)) == nil)
-  }
-
-  @Test func activityStreamPassesOnlyActivity() throws {
-    var parser = SSEParser(accepting: ["activity"])
-    _ = try parser.feed("event: heartbeat")
-    _ = try parser.feed("data: {}")
-    #expect(try parser.feed("") == nil)
-    _ = try parser.feed("event: activity")
-    _ = try parser.feed(#"data: {"type":"reply","agentId":"a1","agentName":"Atlas"}"#)
-    #expect(try parser.feed("") != nil)
-  }
-
-  @Test func botCommunicationEventRetainsAttributionAndAppearsInChat() throws {
-    let data = Data(
-      #"""
-      {"id":"exchange-1","role":"event","kind":"bot-message","content":"I asked how Bot2 feels.",
-      "communication":{"executionId":"run-1","fromAgentId":"a1","fromName":"Atlas","toAgentId":"a2","toName":"Beacon","status":"done"}}
-      """#
-        .utf8)
-    let message = try JSONDecoder().decode(Message.self, from: data)
-    let rows = ChatRow.rows(messages: [message], snapshot: nil, hasMore: false)
-    #expect(rows.count == 1)
-    guard case .message(let retained) = rows[0] else {
-      Issue.record("bot communication event was omitted")
-      return
-    }
-    #expect(retained.kind == "bot-message")
-    #expect(retained.communication?.fromName == "Atlas")
-    #expect(retained.communication?.toName == "Beacon")
-    #expect(retained.communication?.status == "done")
-  }
-
-  @Test func signInCallbacksCarryACodeOrAReason() throws {
-    let ok = try oauthResult(
-      from: URL(string: "dev.crumble.ios:/oauth/callback?code=abc&state=xyz")!)
-    #expect(ok.code == "abc" && ok.state == "xyz" && ok.iss == nil)
-    let issued = try oauthResult(
-      from: URL(
-        string:
-          "dev.crumble.ios:/oauth/callback?code=abc&state=xyz&iss=https%3A%2F%2Fexecutor.sh%2Fapi%2Fauth"
-      )!)
-    #expect(issued.iss == "https://executor.sh/api/auth")
-    #expect(throws: SignInError.self) {
-      try oauthResult(
-        from: URL(
-          string:
-            "dev.crumble.ios:/oauth/callback?error=access_denied&error_description=User%20declined")!
-      )
-    }
-    #expect(throws: SignInError.self) {
-      try oauthResult(from: URL(string: "dev.crumble.ios:/oauth/callback")!)
-    }
-  }
-
-  @Test func markdownSplitsBlocks() {
-    let blocks = MarkdownBlock.parse(
-      "Two meetings:\n\n- 09:00 Design\n- 14:30 Call\n\n```\ncode\n```")
-    #expect(
-      blocks == [
-        .paragraph("Two meetings:"),
-        .list([
-          .init(marker: "•", text: "09:00 Design", indent: 0),
-          .init(marker: "•", text: "14:30 Call", indent: 0),
-        ]), .code("code"),
-      ])
-  }
 }

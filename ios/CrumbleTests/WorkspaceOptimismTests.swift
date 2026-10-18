@@ -34,7 +34,9 @@ extension APIClientTests {
         return (404, "")
       })
     model.agents = [Agent(id: "a1", name: "Atlas", description: "Keep me")]
-    model.sharedSkills = [SharedSkill(id: "s1", name: "Writing", instructions: "Write clearly", source: "shared", path: nil)]
+    model.sharedSkills = [
+      SharedSkill(id: "s1", name: "Writing", instructions: "Write clearly", source: "shared", path: nil)
+    ]
     model.setSharedSkill("s1", for: "a1", enabled: true)
     model.agents[0].name = "Atlas renamed while saving"
     while model.loading { try await Task.sleep(for: .milliseconds(5)) }
@@ -71,7 +73,7 @@ extension APIClientTests {
       })
     model.route = .memory
     model.sharedMemories = [
-      Memory(id: "m1", content: "First"), Memory(id: "m2", content: "Second"),
+      Memory(id: "m1", content: "First"), Memory(id: "m2", content: "Second")
     ]
     model.deleteMemory("m1")
     #expect(model.sharedMemories.map(\.id) == ["m2"])

@@ -83,8 +83,7 @@ struct ContentView: View {
 }
 
 func sheetBinding<Draft: Identifiable & Sendable>(_ source: Binding<Draft?>, for item: Draft)
-  -> Binding<Draft>
-{
+  -> Binding<Draft> {
   Binding(
     get: { source.wrappedValue ?? item },
     set: { value in
@@ -93,35 +92,47 @@ func sheetBinding<Draft: Identifiable & Sendable>(_ source: Binding<Draft?>, for
 }
 
 struct SidebarView: View {
+  private func agentRow(_ agent: Agent) -> some View {
+    NavigationLink(value: Route.agent(agent.id)) {
+      HStack(spacing: 12) {
+        BotAvatarView(agent: agent, size: 44, state: model.botState(agent))
+          .accessibilityHidden(true)
+        VStack(alignment: .leading, spacing: 4) {
+          HStack {
+            Text(agent.name).font(.headline).lineLimit(1)
+            if !agent.enabled { Text("Paused").font(.caption).foregroundStyle(.secondary) }
+          }
+          Text(preview(agent.lastMessage ?? "").nilIfEmpty ?? "No messages yet")
+            .font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
+        }
+      }
+      .padding(.vertical, 4)
+    }
+    .disabled(model.pendingMutations.contains("agent:\(agent.id)"))
+  }
+
   @Environment(AppModel.self) private var model
   @Binding var showingSettings: Bool
 
-  private static let workspace: [(Route, String, String)] = [
-    (.memory, "Memory", "brain"), (.skills, "Skills", "book.closed"),
-    (.tasks, "Tasks", "calendar.badge.clock"), (.activity, "Activity", "waveform.path.ecg"),
-    (.integrations, "Integrations", "powerplug"),
+  private struct WorkspaceDestination {
+    let route: Route
+    let title: String
+    let symbol: String
+  }
+
+  private static let workspace: [WorkspaceDestination] = [
+    .init(route: .memory, title: "Memory", symbol: "brain"),
+    .init(route: .skills, title: "Skills", symbol: "book.closed"),
+    .init(route: .tasks, title: "Tasks", symbol: "calendar.badge.clock"),
+    .init(route: .activity, title: "Activity", symbol: "waveform.path.ecg"),
+    .init(route: .integrations, title: "Integrations", symbol: "powerplug")
   ]
 
   var body: some View {
     List(selection: Binding(get: { model.route }, set: { model.navigate(to: $0) })) {
       Section("Agents") {
         ForEach(model.agents) { agent in
-          NavigationLink(value: Route.agent(agent.id)) {
-            HStack(spacing: 12) {
-              BotAvatarView(agent: agent, size: 44, state: model.botState(agent))
-                .accessibilityHidden(true)
-              VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                  Text(agent.name).font(.headline).lineLimit(1)
-                  if !agent.enabled { Text("Paused").font(.caption).foregroundStyle(.secondary) }
-                }
-                Text(preview(agent.lastMessage ?? "").nilIfEmpty ?? "No messages yet")
-                  .font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
-              }
-            }
-            .padding(.vertical, 4)
-          }
-          .disabled(model.pendingMutations.contains("agent:\(agent.id)"))
+          agentRow(agent)
         }
         if model.agents.isEmpty {
           Text(model.loading ? "Opening your workspace…" : "Your agents will appear here.")
@@ -134,8 +145,8 @@ struct SidebarView: View {
         }
       }
       Section("Workspace") {
-        ForEach(Self.workspace, id: \.0) { route, title, symbol in
-          NavigationLink(value: route) { Label(title, systemImage: symbol) }
+        ForEach(Self.workspace, id: \.route) { item in
+          NavigationLink(value: item.route) { Label(item.title, systemImage: item.symbol) }
         }
       }
       Section {
@@ -207,8 +218,7 @@ struct ErrorBanner: View {
   @Environment(AppModel.self) private var model
   var body: some View {
     if !model.errorText.isEmpty, model.agentDraft == nil, model.memoryDraft == nil,
-      model.taskDraft == nil, model.mcpDraft == nil, model.skillDraft == nil
-    {
+      model.taskDraft == nil, model.mcpDraft == nil, model.skillDraft == nil {
       HStack(alignment: .top, spacing: 8) {
         Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.red)
         Text(model.errorText).font(.callout).textSelection(.enabled)

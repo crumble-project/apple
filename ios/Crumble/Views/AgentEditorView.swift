@@ -8,50 +8,7 @@ struct AgentEditorView: View {
   var body: some View {
     @Bindable var model = model
     NavigationStack {
-      Form {
-        avatarSection
-        SheetError()
-        Section {
-          TextField("Agent name", text: $draft.name, prompt: Text("Agent name"))
-            .accessibilityLabel("Agent name")
-          TextField("Description", text: $draft.description, prompt: Text("What it helps with"))
-          TextField("Folder", text: $draft.folder, prompt: Text("Personal"))
-          Toggle("Enabled", isOn: $draft.enabled)
-        }
-        modelSection
-        inferenceSection
-        Section {
-          TextEditor(text: $draft.instructions)
-            .font(.body)
-            .frame(minHeight: 90)
-        } header: {
-          Text("Instructions")
-        } footer: {
-          Text("How the agent should behave in every chat.").foregroundStyle(.secondary)
-        }
-        capabilitiesSection
-        Section("Integrations") {
-          let servers = model.usableServers(for: draft.agentID)
-          if servers.isEmpty {
-            Text("Add an MCP server under Integrations to use its tools here.").foregroundStyle(
-              .secondary)
-          }
-          ForEach(servers) { server in
-            Toggle(isOn: membership(\.mcpServers, server.id)) {
-              Text(server.name)
-              if server.agentId != nil { Text("Only this agent") }
-            }
-            .disabled(!server.enabled)
-          }
-        }
-        skillsSection
-        if !draft.isNew {
-          Section {
-            Button("Duplicate Agent") { model.duplicateSelected() }
-            Button("Delete Agent…", role: .destructive) { model.confirmingDelete = true }
-          }
-        }
-      }
+      editorForm
       .formStyle(.grouped)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
@@ -75,6 +32,87 @@ struct AgentEditorView: View {
       Text("The agent, its chat, memories and tasks will be removed.")
     }
   }
+}
+
+extension AgentEditorView {
+  private var editorForm: some View {
+    Form {
+      avatarSection
+      SheetError()
+      Section {
+        TextField("Agent name", text: $draft.name, prompt: Text("Agent name"))
+          .accessibilityLabel("Agent name")
+        TextField("Description", text: $draft.description, prompt: Text("What it helps with"))
+        TextField("Folder", text: $draft.folder, prompt: Text("Personal"))
+        Toggle("Enabled", isOn: $draft.enabled)
+      }
+      modelSection
+      inferenceSection
+      Section {
+        TextEditor(text: $draft.instructions)
+          .font(.body)
+          .frame(minHeight: 90)
+      } header: {
+        Text("Instructions")
+      } footer: {
+        Text("How the agent should behave in every chat.").foregroundStyle(.secondary)
+      }
+      capabilitiesSection
+      integrationsSection
+      skillsSection
+      if !draft.isNew {
+        Section {
+          Button("Duplicate Agent") { model.duplicateSelected() }
+          Button("Delete Agent…", role: .destructive) { model.confirmingDelete = true }
+        }
+      }
+    }
+  }
+
+  private var avatarChoices: some View {
+    ScrollView(.horizontal, showsIndicators: false) {
+      HStack(spacing: 8) {
+        ForEach(draft.avatarChoices, id: \.self) { seed in
+          Button {
+            draft.avatar = "bot:" + seed
+          } label: {
+            BotAvatarView(seed: seed, size: 36)
+              .frame(width: 44, height: 44)
+              .contentShape(Rectangle())
+              .overlay {
+                if draft.avatar == "bot:" + seed {
+                  RoundedRectangle(cornerRadius: 10).strokeBorder(.tint, lineWidth: 2)
+                }
+              }
+          }
+          .buttonStyle(.plain)
+          .accessibilityLabel("Choose this avatar")
+        }
+        Button("More Avatars", systemImage: "shuffle") { draft.shuffleAvatars() }
+          .labelStyle(.iconOnly)
+          .buttonStyle(.borderless)
+          .frame(width: 44, height: 44)
+      }
+      .padding(.horizontal, 4)
+    }
+  }
+
+  private var integrationsSection: some View {
+    Section("Integrations") {
+      let servers = model.usableServers(for: draft.agentID)
+      if servers.isEmpty {
+        Text("Add an MCP server under Integrations to use its tools here.").foregroundStyle(
+          .secondary)
+      }
+      ForEach(servers) { server in
+        Toggle(isOn: membership(\.mcpServers, server.id)) {
+          Text(server.name)
+          if server.agentId != nil { Text("Only this agent") }
+        }
+        .disabled(!server.enabled)
+      }
+    }
+  }
 
   private var avatarSection: some View {
     Section {
@@ -84,31 +122,7 @@ struct AgentEditorView: View {
           live: true)
         Text(draft.name.trimmingCharacters(in: .whitespaces).nilIfEmpty ?? "New Agent").font(
           .title2.bold())
-        ScrollView(.horizontal, showsIndicators: false) {
-          HStack(spacing: 8) {
-            ForEach(draft.avatarChoices, id: \.self) { seed in
-              Button {
-                draft.avatar = "bot:" + seed
-              } label: {
-                BotAvatarView(seed: seed, size: 36)
-                  .frame(width: 44, height: 44)
-                  .contentShape(Rectangle())
-                  .overlay {
-                    if draft.avatar == "bot:" + seed {
-                      RoundedRectangle(cornerRadius: 10).strokeBorder(.tint, lineWidth: 2)
-                    }
-                  }
-              }
-              .buttonStyle(.plain)
-              .accessibilityLabel("Choose this avatar")
-            }
-            Button("More Avatars", systemImage: "shuffle") { draft.shuffleAvatars() }
-              .labelStyle(.iconOnly)
-              .buttonStyle(.borderless)
-              .frame(width: 44, height: 44)
-          }
-          .padding(.horizontal, 4)
-        }
+        avatarChoices
       }
       .frame(maxWidth: .infinity)
     }
@@ -186,7 +200,10 @@ struct AgentEditorView: View {
       Text("Inference")
     } footer: {
       Text(
-        "Reasoning controls how much deliberation the model uses. Temperature must be between 0 and 2; max output tokens must be a positive integer."
+        """
+        Reasoning controls how much deliberation the model uses. Temperature must be between 0 and 2; \
+        max output tokens must be a positive integer.
+        """
       )
       .foregroundStyle(.secondary)
     }
@@ -211,9 +228,12 @@ struct AgentEditorView: View {
     } footer: {
       Text(
         """
-        Memory lets the agent keep notes between chats; with shared memory it also recalls and keeps notes every bot using \
-        shared memory sees. Schedule tasks lets it save one-time and recurring tasks for itself, or for a bot it is allowed \
-        to message. Each task runs in that bot’s chat. When Message other bots is enabled, it can ask the permitted bots \
+        Memory lets the agent keep notes between chats; with shared memory it also recalls and keeps \
+        notes every bot using \
+        shared memory sees. Schedule tasks lets it save one-time and recurring tasks for itself, or for \
+        a bot it is allowed \
+        to message. Each task runs in that bot’s chat. When Message other bots is enabled, it can ask \
+        the permitted bots \
         you select and relay their answers; bounded task delegation remains supported. Code mode has the agent write a \
         short script that calls its tools, so many tool calls take one step. Enabled tools run directly using the \
         integrations permitted in this profile.
@@ -251,7 +271,10 @@ struct AgentEditorView: View {
       Text("Skills")
     } footer: {
       Text(
-        "Every bot follows the shared defaults, along with its personal skills. Manage shared skills and bot assignments under Skills."
+        """
+        Every bot follows the shared defaults, along with its personal skills. Manage shared skills and \
+        bot assignments under Skills.
+        """
       )
       .foregroundStyle(.secondary)
     }
