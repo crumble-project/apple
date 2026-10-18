@@ -59,6 +59,10 @@ The app sends the token as an `Authorization: Bearer` header. It does not send p
 - To ask another bot in a normal chat, write a request such as `Can you ask @Bot2 how he feels?` The responding bot can relay the answer when its profile has **Message other bots** enabled and **Bot2** selected in the permitted-bots list. Mentions are plain text; the client does not promise autocomplete.
 - Bot-to-bot questions and answers are persisted as exchange cards in the chat. Each card identifies the sender and recipient and shows whether the exchange was sent, completed, failed, or cancelled; expand it to read the full question or answer.
 
+## Tasks
+
+Each task runs once, or on a cron schedule, in one bot's chat. Tasks are listed under the bot that runs them. Choose that bot in the task form; saving again can move the task to another bot. A bot can create and change tasks when **Schedule tasks** is on in its profile. It targets itself, or another bot it is allowed to message.
+
 ## Notifications
 
 The app notifies you when a bot finishes a reply you aren't looking at, including replies to scheduled tasks, and when a tool call waits for your approval. Click a notification to open the chat or Approvals. macOS asks for permission on first launch. Notifications need the app bundle from `./scripts/build-app.sh`; `swift run` posts none.

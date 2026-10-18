@@ -39,6 +39,7 @@ struct AgentDraft: Identifiable, Sendable {
     var maxOutput = ""
     var toolsMemory = true
     var toolsDelegate = false
+    var toolsSchedule = false
     var toolsCodemode = false
     var sharedMemory = false
     var delegates: Set<String> = []
@@ -74,8 +75,9 @@ struct TaskDraft: Identifiable, Sendable {
     var agentID: String
     var name = ""
     var prompt = ""
-    var cron = ""
-    var runAt = ""
+    var repeats = false
+    var cron = "0 9 * * *"
+    var runDate = Calendar.current.date(bySetting: .second, value: 0, of: Date().addingTimeInterval(3600)) ?? .now
     var timezone = TimeZone.current.identifier
     var enabled = true
 }
@@ -486,6 +488,7 @@ final class AppModel {
         let tools = agent.tools ?? []
         draft.toolsMemory = tools.contains("memory")
         draft.toolsDelegate = tools.contains("delegate")
+        draft.toolsSchedule = tools.contains("schedule")
         draft.toolsCodemode = tools.contains("codemode")
         draft.skills = agent.skills ?? []
         draft.sharedSkills = Set(agent.sharedSkills ?? [])
@@ -561,6 +564,7 @@ final class AppModel {
         var tools: [String] = []
         if draft.toolsMemory { tools.append("memory") }
         if draft.toolsDelegate { tools.append("delegate") }
+        if draft.toolsSchedule { tools.append("schedule") }
         if draft.toolsCodemode { tools.append("codemode") }
         if draft.skills.contains(where: {
             $0.name.trimmingCharacters(in: .whitespaces).isEmpty || $0.instructions.trimmingCharacters(in: .whitespaces).isEmpty
@@ -760,19 +764,27 @@ final class AppModel {
         }
     }
 
-    func openTaskForm(_ id: String) {
-        guard !selectedAgentID.isEmpty else {
-            errorText = "Select an agent before creating a task."
+    func openTaskForm(_ id: String, agentID: String? = nil) {
+        guard !agents.isEmpty else {
+            errorText = "Create an agent before adding a task."
             return
         }
-        var form = TaskDraft(scheduleID: id, agentID: selectedAgentID)
+        let fallback = agents.contains { $0.id == selectedAgentID } ? selectedAgentID : agents[0].id
+        var form = TaskDraft(scheduleID: id, agentID: agentID ?? fallback)
         if let schedule = schedules.first(where: { $0.id == id }) {
             form.agentID = schedule.agentId
             form.name = schedule.name
             form.prompt = schedule.prompt
-            form.cron = schedule.cron ?? ""
-            form.runAt = schedule.runAt ?? ""
-            form.timezone = schedule.timezone ?? ""
+            form.repeats = !(schedule.cron ?? "").isEmpty
+            if let cron = schedule.cron, !cron.isEmpty { form.cron = cron }
+            if let runAt = schedule.runAt {
+                guard let date = taskRunDate(runAt) else {
+                    errorText = "This task has an invalid run time."
+                    return
+                }
+                form.runDate = date
+            }
+            form.timezone = schedule.timezone ?? TimeZone.current.identifier
             form.enabled = schedule.enabled
         }
         taskDraft = form
@@ -781,8 +793,14 @@ final class AppModel {
     func saveTask() {
         guard let form = taskDraft else { return }
         let trim = { (value: String) in value.trimmingCharacters(in: .whitespacesAndNewlines) }
-        let name = trim(form.name), prompt = trim(form.prompt), cron = trim(form.cron), runAt = trim(form.runAt), timezone = trim(form.timezone)
-        if let message = validateTask(name: name, prompt: prompt, cron: cron, runAt: runAt) {
+        let name = trim(form.name), prompt = trim(form.prompt), timezone = trim(form.timezone)
+        let cron = form.repeats ? trim(form.cron) : ""
+        let runAt = form.repeats ? "" : form.runDate.ISO8601Format()
+        guard !form.agentID.isEmpty else {
+            errorText = "Choose which bot runs this task."
+            return
+        }
+        if let message = validateTask(name: name, prompt: prompt, cron: cron, runAt: runAt, timezone: timezone) {
             errorText = message
             return
         }
@@ -790,11 +808,11 @@ final class AppModel {
                                             "timezone": .string(timezone), "enabled": .bool(form.enabled)]
         request { client in
             if form.scheduleID.isEmpty {
-                if cron.isEmpty { payload["runAt"] = .string(runAt) } else { payload["cron"] = .string(cron) }
+                if form.repeats { payload["cron"] = .string(cron) } else { payload["runAt"] = .string(runAt) }
                 _ = try await client.createSchedule(payload)
             } else {
                 payload["cron"] = cron.isEmpty ? .null : .string(cron)
-                payload["runAt"] = cron.isEmpty ? .string(runAt) : .null
+                payload["runAt"] = form.repeats ? .null : .string(runAt)
                 _ = try await client.updateSchedule(form.scheduleID, patch: payload)
             }
             return { [self] in openPanel(.tasks) }
@@ -1044,17 +1062,29 @@ func oauthResult(from callback: URL) throws -> (code: String, state: String, iss
     return (code, state, value("iss"))
 }
 
-func validateTask(name: String, prompt: String, cron: String, runAt: String) -> String? {
+func validateTask(name: String, prompt: String, cron: String, runAt: String, timezone: String = TimeZone.current.identifier) -> String? {
     if name.trimmingCharacters(in: .whitespaces).isEmpty || prompt.trimmingCharacters(in: .whitespaces).isEmpty {
         return "Task name and prompt are required."
     }
     if cron.isEmpty == runAt.isEmpty {
         return "Choose either a recurring cron or a one-time run time."
     }
-    if !runAt.isEmpty, (try? Date.ISO8601FormatStyle().parse(runAt)) == nil {
-        return "Use a complete date and time with a time zone, such as 2026-10-18T09:00:00Z."
+    if TimeZone(identifier: timezone) == nil {
+        return "Choose a valid time zone."
+    }
+    if !runAt.isEmpty, taskRunDate(runAt) == nil {
+        return "Choose a valid date and time."
     }
     return nil
+}
+
+/// Server timestamps are absolute instants; the date picker displays them in its time zone.
+func taskRunDate(_ value: String) -> Date? {
+    let parser = ISO8601DateFormatter()
+    parser.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    if let date = parser.date(from: value) { return date }
+    parser.formatOptions = [.withInternetDateTime]
+    return parser.date(from: value)
 }
 
 func friendlyError(_ error: Error) -> String {

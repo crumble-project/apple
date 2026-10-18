@@ -207,6 +207,44 @@ struct APIClientTests {
         #expect(try await client.runSchedule("s1").id == "e1")
     }
 
+    @MainActor @Test func taskPickersPreserveTheInstantAndSubmitOnlyTheSelectedMode() async throws {
+        let response = #"{"id":"s1","agentId":"a1","name":"Greeting","prompt":"Say hi","enabled":true,"timezone":"Europe/Berlin","runAt":"2026-10-18T10:10:00Z"}"#
+        let client = StubProtocol.client { request in
+            (200, request.httpMethod == "PATCH" ? response : "[]")
+        }
+        let model = AppModel(client: client)
+        model.agents = [Agent(id: "a1", name: "Atlas")]
+        let schedule = try JSONDecoder().decode(Schedule.self, from: Data(response.utf8))
+        for repeats in [false, true] {
+            model.schedules = [schedule]
+            model.openTaskForm("s1")
+            let draft = try #require(model.taskDraft)
+            #expect(!draft.repeats)
+            var calendar = Calendar(identifier: .gregorian)
+            calendar.timeZone = try #require(TimeZone(identifier: draft.timezone))
+            #expect(calendar.component(.hour, from: draft.runDate) == 12)
+            #expect(calendar.component(.minute, from: draft.runDate) == 10)
+            model.taskDraft?.repeats = repeats
+            model.saveTask()
+            for _ in 0..<100 {
+                if !model.loading { break }
+                try await Task.sleep(for: .milliseconds(10))
+            }
+            #expect(!model.loading)
+            #expect(model.errorText.isEmpty)
+            let request = try #require(StubProtocol.requests.last { $0.httpMethod == "PATCH" })
+            let data = try #require(request.httpBody)
+            let payload = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+            if repeats {
+                #expect(payload["cron"] as? String == "0 9 * * *")
+                #expect(payload["runAt"] is NSNull)
+            } else {
+                #expect(payload["runAt"] as? String == "2026-10-18T10:10:00Z")
+                #expect(payload["cron"] is NSNull)
+            }
+        }
+    }
+
     @Test func chatEventsDeliverSnapshotsThenReportClosing() async throws {
         let client = StubProtocol.client { request in
             #expect(request.url?.path == "/v1/agents/a7/events")
@@ -247,6 +285,14 @@ struct LogicTests {
         #expect(validateTask(name: "Daily", prompt: "Check inbox", cron: "0 9 * * *", runAt: "") == nil)
         #expect(validateTask(name: "Once", prompt: "Check inbox", cron: "", runAt: "2026-10-18T09:00:00Z") == nil)
         #expect(validateTask(name: "Once", prompt: "Check inbox", cron: "", runAt: "tomorrow") != nil)
+    }
+
+    @Test func taskRunAtPreservesExplicitOffsetInstant() throws {
+        #expect(taskRunDate("2026-10-18T12:10:00+02:00") == taskRunDate("2026-10-18T10:10:00Z"))
+        let fractional = try #require(taskRunDate("2026-10-18T12:10:00.123Z"))
+        let whole = try #require(taskRunDate("2026-10-18T12:10:00Z"))
+        #expect(abs(fractional.timeIntervalSince(whole) - 0.123) < 0.000001)
+        #expect(validateTask(name: "Task", prompt: "Hi", cron: "0 9 * * *", runAt: "", timezone: "Not/AZone") != nil)
     }
 
     @Test func requestIDsAreVersion4UUIDs() {

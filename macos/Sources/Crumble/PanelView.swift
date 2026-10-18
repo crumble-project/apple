@@ -17,7 +17,7 @@ struct PanelView: View {
                     case .skills:
                         Button("New Shared Skill", systemImage: "plus") { model.openSkillForm("") }
                     case .tasks:
-                        Button("New Task", systemImage: "plus") { model.openTaskForm("") }.disabled(model.selectedAgent == nil)
+                        Button("New Task", systemImage: "plus") { model.openTaskForm("") }.disabled(model.agents.isEmpty)
                     case .integrations:
                         Button("Add Shared MCP Server", systemImage: "plus") { model.openMCPForm("", agentID: nil) }
                     default:
@@ -169,23 +169,38 @@ private struct TasksPanel: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        if model.schedules.isEmpty {
-            ContentUnavailableView("No Tasks", systemImage: "calendar.badge.clock", description: Text("Give an agent a task to run once or on a schedule."))
+        if model.agents.isEmpty {
+            ContentUnavailableView("No Tasks", systemImage: "calendar.badge.clock", description: Text("Create an agent, then give it a task to run once or on a schedule."))
         } else {
             Form {
-                Section {
-                    ForEach(model.schedules) { schedule in
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(schedule.name).fontWeight(.semibold)
-                                Text(schedule.prompt).lineLimit(2)
-                                Text(timing(schedule)).font(.caption).foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            Button("Run Now") { model.runSchedule(schedule.id) }.disabled(!schedule.enabled)
-                            Button("Edit") { model.openTaskForm(schedule.id) }
-                            Button("Delete") { model.deleteSchedule(schedule.id) }
+                ForEach(model.agents) { agent in
+                    let tasks = model.schedules.filter { $0.agentId == agent.id }
+                    Section {
+                        if tasks.isEmpty {
+                            Text("No tasks yet.").foregroundStyle(.secondary)
                         }
+                        ForEach(tasks) { schedule in
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(schedule.name).fontWeight(.semibold)
+                                    Text(schedule.prompt).lineLimit(2)
+                                    Text(timing(schedule)).font(.caption).foregroundStyle(.secondary)
+                                    if let creator = schedule.createdByAgentId, creator != agent.id,
+                                       let name = model.agents.first(where: { $0.id == creator })?.name {
+                                        Text("Scheduled by \(name)").font(.caption).foregroundStyle(.secondary)
+                                    }
+                                }
+                                Spacer()
+                                Button("Run Now") { model.runSchedule(schedule.id) }.disabled(!schedule.enabled)
+                                Button("Edit") { model.openTaskForm(schedule.id) }
+                                Button("Delete") { model.deleteSchedule(schedule.id) }
+                            }
+                        }
+                        Button("New Task", systemImage: "plus") { model.openTaskForm("", agentID: agent.id) }
+                    } header: {
+                        Text(agent.name)
+                    } footer: {
+                        Text("Runs in \(agent.name)’s chat, once or on a schedule.").foregroundStyle(.secondary)
                     }
                 }
             }
@@ -392,6 +407,11 @@ struct TaskFormView: View {
         Form {
             SheetError()
             Section("Task") {
+                Picker("Runs on", selection: $draft.agentID) {
+                    ForEach(model.agents) { agent in
+                        Text(agent.name).tag(agent.id)
+                    }
+                }
                 TextField("Name", text: $draft.name, prompt: Text("Required"))
                 Toggle("Enabled", isOn: $draft.enabled)
             }
@@ -399,14 +419,24 @@ struct TaskFormView: View {
                 TextEditor(text: $draft.prompt).frame(minHeight: 80)
             }
             Section {
-                TextField("Repeat", text: $draft.cron, prompt: Text("0 9 * * 1-5"))
-                TextField("Run once at", text: $draft.runAt, prompt: Text("2026-10-18T09:00:00Z"))
+                Picker("Frequency", selection: $draft.repeats) {
+                    Text("Run once").tag(false)
+                    Text("Repeat").tag(true)
+                }
+                if draft.repeats {
+                    TextField("Cron expression", text: $draft.cron, prompt: Text("0 9 * * 1-5"))
+                } else {
+                    DatePicker("Date", selection: $draft.runDate, displayedComponents: .date)
+                    DatePicker("Time", selection: $draft.runDate, displayedComponents: .hourAndMinute)
+                        .datePickerStyle(.stepperField)
+                }
                 TextField("Time zone", text: $draft.timezone, prompt: Text("UTC"))
             } header: {
                 Text("Schedule")
             } footer: {
-                Text("Use a cron expression to repeat, or a date and time to run once.").foregroundStyle(.secondary)
+                Text(draft.repeats ? "The cron expression runs in the selected time zone." : "Date and time are shown in the selected time zone.").foregroundStyle(.secondary)
             }
+            .environment(\.timeZone, TimeZone(identifier: draft.timezone) ?? .current)
         }
         .formStyle(.grouped)
         .frame(width: 480)

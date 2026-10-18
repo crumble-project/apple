@@ -283,6 +283,8 @@ struct Schedule: Codable, Identifiable, Hashable, Sendable {
     var timezone: String?
     var runAt: String?
     var enabled: Bool
+    /// The bot that saved this task. Nil when the owner saved it.
+    var createdByAgentId: String?
 }
 
 struct Execution: Codable, Identifiable, Hashable, Sendable {
