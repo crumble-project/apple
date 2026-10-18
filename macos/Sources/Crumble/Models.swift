@@ -160,6 +160,16 @@ struct MessageOrigin: Codable, Hashable, Sendable {
     var agentId: String?
 }
 
+/// A persisted request or reply exchanged between two bots.
+struct BotCommunication: Codable, Hashable, Sendable {
+    var executionId: String
+    var fromAgentId: String
+    var fromName: String
+    var toAgentId: String
+    var toName: String
+    var status: String
+}
+
 struct Message: Codable, Identifiable, Hashable, Sendable {
     var id: String
     var entryId: String?
@@ -170,12 +180,13 @@ struct Message: Codable, Identifiable, Hashable, Sendable {
     var replyTo: String?
     var replyPreview: String?
     var origin: MessageOrigin?
+    var communication: BotCommunication?
     var timestamp: Int64?
     var createdAt: String?
     var attachments: [AttachmentInfo]?
 
     init(id: String, entryId: String? = nil, role: String, content: JSONValue? = nil, blocks: JSONValue? = nil, kind: String? = nil,
-         replyTo: String? = nil, replyPreview: String? = nil, origin: MessageOrigin? = nil, timestamp: Int64? = nil,
+         replyTo: String? = nil, replyPreview: String? = nil, origin: MessageOrigin? = nil, communication: BotCommunication? = nil, timestamp: Int64? = nil,
          attachments: [AttachmentInfo]? = nil) {
         self.id = id
         self.entryId = entryId
@@ -186,6 +197,7 @@ struct Message: Codable, Identifiable, Hashable, Sendable {
         self.replyTo = replyTo
         self.replyPreview = replyPreview
         self.origin = origin
+        self.communication = communication
         self.timestamp = timestamp
         self.attachments = attachments
     }
@@ -201,6 +213,7 @@ struct Message: Codable, Identifiable, Hashable, Sendable {
         replyTo = try c.decodeIfPresent(String.self, forKey: .replyTo)
         replyPreview = try c.decodeIfPresent(String.self, forKey: .replyPreview)
         origin = try c.decodeIfPresent(MessageOrigin.self, forKey: .origin)
+        communication = try c.decodeIfPresent(BotCommunication.self, forKey: .communication)
         timestamp = try c.decodeIfPresent(Int64.self, forKey: .timestamp)
         createdAt = try c.decodeIfPresent(String.self, forKey: .createdAt)
         attachments = try c.decodeIfPresent([AttachmentInfo].self, forKey: .attachments)

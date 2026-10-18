@@ -340,6 +340,22 @@ struct LogicTests {
         #expect(try parser.feed("") != nil)
     }
 
+    @Test func botCommunicationEventRetainsAttributionAndAppearsInChat() throws {
+        let data = Data(#"{"id":"exchange-1","role":"event","kind":"bot-message","content":"I asked how Bot2 feels.","communication":{"executionId":"run-1","fromAgentId":"a1","fromName":"Atlas","toAgentId":"a2","toName":"Beacon","status":"done"}}"#.utf8)
+        let message = try JSONDecoder().decode(Message.self, from: data)
+        let rows = ChatRow.rows(messages: [message], snapshot: nil, hasMore: false)
+
+        #expect(rows.count == 1)
+        guard case .message(let retained) = rows[0] else {
+            Issue.record("bot communication event was omitted from chat rows")
+            return
+        }
+        #expect(retained.kind == "bot-message")
+        #expect(retained.communication?.fromName == "Atlas")
+        #expect(retained.communication?.toName == "Beacon")
+        #expect(retained.communication?.status == "done")
+    }
+
     @Test func signInCallbacksCarryACodeOrAReason() throws {
         let ok = try oauthResult(from: URL(string: "dev.crumble.desktop:/oauth/callback?code=abc&state=xyz")!)
         #expect(ok.code == "abc" && ok.state == "xyz" && ok.iss == nil)

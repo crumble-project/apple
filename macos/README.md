@@ -56,6 +56,8 @@ The app sends the token as an `Authorization: Bearer` header. It does not send p
 
 - Return sends a message; Shift-Return or Option-Return starts a new line.
 - The plus button beside the message field attaches files, and you can also drag files onto the field. A message can carry up to eight images (PNG, JPEG, GIF, WebP, up to 5 MB) or UTF-8 text files (up to 512 KB). The app converts other image formats, and larger images, to JPEG first.
+- To ask another bot in a normal chat, write a request such as `Can you ask @Bot2 how he feels?` The responding bot can relay the answer when its profile has **Message other bots** enabled and **Bot2** selected in the permitted-bots list. Mentions are plain text; the client does not promise autocomplete.
+- Bot-to-bot questions and answers are persisted as exchange cards in the chat. Each card identifies the sender and recipient and shows whether the exchange was sent, completed, failed, or cancelled; expand it to read the full question or answer.
 
 ## Notifications
 

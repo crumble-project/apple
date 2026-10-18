@@ -182,14 +182,25 @@ struct MessageView: View {
     var body: some View {
         switch message.role {
         case "event":
-            EventView(message: message)
+            if message.kind == "bot-message" {
+                BotMessageView(message: message)
+            } else {
+                EventView(message: message)
+            }
         case "user":
             HStack(spacing: 6) {
                 Spacer(minLength: 60)
                 replyButton
                 VStack(alignment: .trailing, spacing: 4) {
                     if !owner {
-                        Text(messageLabel(message)).font(.caption).foregroundStyle(.secondary).padding(.horizontal, 6)
+                        if message.origin?.kind == "bot" {
+                            Label(messageLabel(message), systemImage: "person.2.fill")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 6)
+                        } else {
+                            Text(messageLabel(message)).font(.caption).foregroundStyle(.secondary).padding(.horizontal, 6)
+                        }
                     }
                     ReplyQuote(message: message)
                     SentAttachments(message: message)
@@ -236,6 +247,59 @@ struct MessageView: View {
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(message.text, forType: .string)
         }
+    }
+}
+
+struct BotMessageView: View {
+    let message: Message
+    @State private var expanded = false
+
+    private var communication: BotCommunication? { message.communication }
+    private var sender: String { communication?.fromName.nilIfEmpty ?? "Unknown bot" }
+    private var recipient: String { communication?.toName.nilIfEmpty ?? "Unknown bot" }
+    private var status: String {
+        switch communication?.status {
+        case "done": "Reply"
+        case "failed": "Failed"
+        case "cancelled": "Cancelled"
+        default: "Sent"
+        }
+    }
+    private var statusColor: Color {
+        switch communication?.status {
+        case "failed", "cancelled": .red
+        case "done": .green
+        default: .secondary
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 7) {
+                Label("Bot communication", systemImage: "person.2.fill")
+                    .font(.callout.weight(.semibold))
+                Spacer()
+                Text(status)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(statusColor)
+            }
+            Text("\(sender) → \(recipient)")
+                .font(.subheadline.weight(.medium))
+                .textSelection(.enabled)
+            DisclosureGroup(isExpanded: $expanded) {
+                MarkdownText(text: message.text)
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } label: {
+                Text(preview(message.text))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: 560, alignment: .leading)
+        .background(Color.primary.opacity(0.07), in: .rect(cornerRadius: 14))
     }
 }
 
