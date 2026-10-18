@@ -14,7 +14,7 @@ import (
 const (
 	titleBarHeight = 52
 	sidebarWidth   = 240
-	composerSpace  = 72
+	composerSpace  = 76
 )
 
 func contentText(value any) string {
@@ -277,7 +277,7 @@ func (a *app) chatView(c *ui.Context) {
 	ui.Box(c).Fill().Children(func() {
 		ui.List(c, &a.chatList, len(rows), func(i int) {
 			a.chatRowView(c, agent, rows[i])
-		}).Fill().Padding(titleBarHeight+12, 28, bottom, 28).Gap(10).Justify(ui.End).
+		}).Fill().Padding(titleBarHeight+12, 24, bottom, 24).Gap(10).Justify(ui.End).
 			ScrollbarInsets(titleBarHeight, 0, bottom-20, 0)
 		if len(rows) == 0 {
 			a.emptyChat(c, agent)
@@ -381,8 +381,8 @@ func (a *app) chatRowView(c *ui.Context, agent Agent, row chatRow) {
 			markdown.Stream(c, a.snapshot.Partial, &a.markdown)
 		})
 	case "thinking":
-		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-			ui.Spinner(c).Label("Working")
+		ui.Row(c).Gap(8).AlignItems(ui.Center).Padding(2, 0).Children(func() {
+			ui.Spinner(c).Size(14, 14).Label("Working")
 			ui.Text(c, agent.Name+" is working…").FontSize(12).TextColor(theme.TextMuted)
 		})
 	case "error":
@@ -440,7 +440,7 @@ func (a *app) messageView(c *ui.Context, message Message) {
 					ui.Text(c, messageLabel(message)).FontSize(11).TextColor(theme.TextMuted).Padding(0, 6)
 				}
 				a.replyQuote(c, message)
-				bubble := ui.Text(c, text).Selectable().FontSize(13).Padding(7, 12).Radius(16)
+				bubble := ui.Text(c, text).Selectable().FontSize(13).Padding(8, 14).Radius(18)
 				if owner {
 					bubble.Background(theme.Accent).TextColor(theme.AccentText)
 				} else {
@@ -450,7 +450,7 @@ func (a *app) messageView(c *ui.Context, message Message) {
 			})
 		})
 	case message.Role == "assistant":
-		row := ui.Row(c).Gap(6)
+		row := ui.Row(c).Gap(6).AlignItems(ui.Center)
 		hovered := row.Hovered()
 		row.Children(func() {
 			agentBubble(c).Selectable().ContextMenu(menu).Children(func() {
@@ -465,9 +465,9 @@ func (a *app) messageView(c *ui.Context, message Message) {
 	}
 }
 
-// agentBubble is the gray bubble agent replies sit in, opposite the owner's blue ones.
+// agentBubble is the gray bubble agent replies sit in, opposite the owner's accent ones.
 func agentBubble(c *ui.Context) ui.Element {
-	return ui.Column(c).MaxWidth(560).MinWidth(0).Shrink(1).Padding(7, 12).Radius(16).Background(c.Theme().Surface)
+	return ui.Column(c).MaxWidth(560).MinWidth(0).Shrink(1).Padding(8, 14).Radius(18).Background(c.Theme().Surface)
 }
 
 func (a *app) setExpanded(id string, open bool) {
@@ -502,59 +502,61 @@ func (a *app) composer(c *ui.Context, agent Agent) {
 	if a.snapshot == nil {
 		return
 	}
-	ui.Column(c).Absolute().Left(20).Right(20).Bottom(14).Gap(6).Children(func() {
-		if a.replyTo != nil {
-			ui.Row(c).Gap(8).AlignItems(ui.Center).Padding(6, 6, 6, 12).Radius(12).Material(glass.Glass{}).Children(func() {
-				ui.Box(c).Width(2).Height(28).Radius(1).Background(theme.Accent)
-				ui.Column(c).Grow(1).MinWidth(0).Children(func() {
-					ui.Text(c, "Replying to "+messageLabel(*a.replyTo)).FontSize(11).Bold().TextColor(theme.Accent)
-					ui.Text(c, preview(contentText(a.replyTo.Content))).FontSize(12).TextColor(theme.TextMuted).SingleLine().Ellipsis("…")
+	ui.Row(c).Absolute().Left(24).Right(24).Bottom(16).Children(func() {
+		ui.Column(c).Grow(1).Gap(6).Children(func() {
+			if a.replyTo != nil {
+				ui.Row(c).Gap(8).AlignItems(ui.Center).Padding(6, 6, 6, 12).Radius(12).Material(glass.Glass{}).Children(func() {
+					ui.Box(c).Width(2).Height(28).Radius(1).Background(theme.Accent)
+					ui.Column(c).Grow(1).MinWidth(0).Children(func() {
+						ui.Text(c, "Replying to "+messageLabel(*a.replyTo)).FontSize(11).Bold().TextColor(theme.Accent)
+						ui.Text(c, preview(contentText(a.replyTo.Content))).FontSize(12).TextColor(theme.TextMuted).SingleLine().Ellipsis("…")
+					})
+					if iconButton(c, "cancel-reply", symbolClose, "Cancel reply").Clicked() {
+						a.cancelReply()
+					}
 				})
-				if iconButton(c, "cancel-reply", symbolClose, "Cancel reply").Clicked() {
-					a.cancelReply()
-				}
-			})
-		}
-		// A pill-shaped field with a hairline border, as Messages draws its composer.
-		ui.Row(c).Padding(4, 4, 4, 14).Gap(6).AlignItems(ui.End).Radius(18).MinHeight(36).
-			Material(glass.Glass{}).BorderWidth(1).BorderColor(theme.Border).Children(func() {
-			input := ui.TextAreaBase(c, &a.draft).Lines(1, 8).Grow(1).Padding(5, 0).FontSize(13).
-				Label("Message your agent").Placeholder("Message " + agent.Name).Disabled(a.sending || !agent.Enabled)
-			if !agent.Enabled {
-				input.Placeholder(agent.Name + " is paused. Enable it in its profile.")
 			}
-			input.OnTextKey(func(k ui.TextKey) bool {
-				if k.Key != ui.KeyEnter || k.Mods != 0 {
-					return false
+			// A pill-shaped field with a hairline border, as Messages draws its composer.
+			ui.Row(c).Padding(6, 6, 6, 16).Gap(8).AlignItems(ui.End).Radius(22).MinHeight(44).
+				Material(glass.Glass{}).BorderWidth(0.5).BorderColor(theme.Border).Shadow(0, 4, 16, 0, ui.RGBA(0, 0, 0, 0.08)).Children(func() {
+				input := ui.TextAreaBase(c, &a.draft).Lines(1, 8).Grow(1).Padding(6, 0).FontSize(13).
+					Label("Message your agent").Placeholder("Message " + agent.Name).Disabled(a.sending || !agent.Enabled)
+				if !agent.Enabled {
+					input.Placeholder(agent.Name + " is paused. Enable it in its profile.")
 				}
-				a.draft = k.Text()
-				a.sendMessage()
-				k.SetText(a.draft)
-				return true
-			})
-			running := a.snapshot.Status == "running"
-			if !running && (strings.TrimSpace(a.draft) == "" || a.sending) {
-				return
-			}
-			label := "Send"
-			if running {
-				label = "Stop"
-			}
-			button := ui.ButtonBase(c.Key("send")).Size(26, 26).Radius(13).Center().Label(label).Tooltip(label).Background(theme.Accent)
-			button.Children(func() {
-				if running {
-					symbol(c, symbolStop, 10, theme.AccentText)
-				} else {
-					symbol(c, symbolSend, 12, theme.AccentText)
-				}
-			})
-			if button.Clicked() {
-				if running {
-					a.abortChat()
-				} else {
+				input.OnTextKey(func(k ui.TextKey) bool {
+					if k.Key != ui.KeyEnter || k.Mods != 0 {
+						return false
+					}
+					a.draft = k.Text()
 					a.sendMessage()
+					k.SetText(a.draft)
+					return true
+				})
+				running := a.snapshot.Status == "running"
+				if !running && (strings.TrimSpace(a.draft) == "" || a.sending) {
+					return
 				}
-			}
+				label := "Send"
+				if running {
+					label = "Stop"
+				}
+				button := ui.ButtonBase(c.Key("send")).Size(32, 32).Radius(16).Center().Label(label).Tooltip(label).Background(theme.Accent)
+				button.Children(func() {
+					if running {
+						symbol(c, symbolStop, 10, theme.AccentText)
+					} else {
+						symbol(c, symbolSend, 12, theme.AccentText)
+					}
+				})
+				if button.Clicked() {
+					if running {
+						a.abortChat()
+					} else {
+						a.sendMessage()
+					}
+				}
+			})
 		})
 	})
 }
