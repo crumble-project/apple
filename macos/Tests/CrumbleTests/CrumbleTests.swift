@@ -133,6 +133,40 @@ struct APIClientTests {
         #expect(writes.map { $0.url!.path } == ["/v1/agents/a2/memories/m2", "/v1/agents/a2/memories/m2"])
     }
 
+    @MainActor @Test func failedPersonalSkillSaveRestoresDraftWithoutReplacingNewerAgentFields() async throws {
+        let client = StubProtocol.client { request in
+            request.httpMethod == "PATCH" ? (500, #"{"error":"busy"}"#) : (200, "[]")
+        }
+        let skill = Skill(name: "Old", instructions: "Old instructions")
+        let model = AppModel(client: client)
+        model.route = .skills
+        model.agents = [Agent(id: "a1", name: "Atlas", skills: [skill])]
+        model.openPersonalSkillForm(agentID: "a1", skillID: skill.id.uuidString)
+        model.skillDraft?.name = "Updated"
+        model.skillDraft?.instructions = "Updated instructions"
+        model.saveSkill()
+        model.agents[0].name = "Atlas renamed while saving"
+        while model.loading { try await Task.sleep(for: .milliseconds(10)) }
+        #expect(model.agents[0].name == "Atlas renamed while saving")
+        #expect(model.agents[0].skills?.first?.name == "Old")
+        #expect(model.skillDraft?.name == "Updated")
+        #expect(model.errorText.contains("busy"))
+    }
+
+    @MainActor @Test func failedSharedSkillAssignmentRestoresMembershipWithoutReplacingNewerAgentFields() async throws {
+        let client = StubProtocol.client { request in
+            request.httpMethod == "PATCH" ? (500, #"{"error":"busy"}"#) : (200, "[]")
+        }
+        let model = AppModel(client: client)
+        model.agents = [Agent(id: "a1", name: "Atlas", sharedSkills: [])]
+        model.setSharedSkill("s1", for: "a1", enabled: true)
+        model.agents[0].name = "Atlas renamed while saving"
+        while model.loading { try await Task.sleep(for: .milliseconds(10)) }
+        #expect(model.agents[0].name == "Atlas renamed while saving")
+        #expect(model.agents[0].sharedSkills == [])
+        #expect(model.errorText.contains("busy"))
+    }
+
     @Test func chatContracts() async throws {
         let client = StubProtocol.client { request in
             switch request.url?.path {
@@ -414,6 +448,16 @@ struct LogicTests {
         #expect(retained.communication?.fromName == "Atlas")
         #expect(retained.communication?.toName == "Beacon")
         #expect(retained.communication?.status == "done")
+    }
+
+    @Test func chatRowsKeepPartialAssistantTextHiddenUntilCompletion() throws {
+        let rows = ChatRow.rows(messages: [], snapshot: ChatSnapshot(status: "running", partial: "draft"), hasMore: false)
+
+        #expect(rows.count == 1)
+        guard case .thinking = rows[0] else {
+            Issue.record("partial assistant text should render as a working indicator")
+            return
+        }
     }
 
     @Test func signInCallbacksCarryACodeOrAReason() throws {
