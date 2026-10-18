@@ -464,70 +464,7 @@ struct Composer: View {
         .disabled(!agent.enabled)
         .accessibilityLabel("Attach Files")
         .help("Attach images or text files")
-        VStack(alignment: .leading, spacing: 6) {
-          if !model.attachments.isEmpty {
-            ScrollView(.horizontal, showsIndicators: false) {
-              HStack(spacing: 6) {
-                ForEach(model.attachments) { file in
-                  PendingAttachmentChip(file: file) { model.removeAttachment(file.id) }
-                }
-              }
-              .padding(.top, 8)
-            }
-          }
-          TextField(
-            agent.enabled
-              ? "Message \(agent.name)" : "\(agent.name) is paused. Enable it in its profile.",
-            text: $model.draft, selection: $selection, axis: .vertical
-          )
-          .textFieldStyle(.plain)
-          .lineLimit(1...8)
-          .focused($focused)
-          .disabled(!agent.enabled)
-          .padding(.vertical, 7)
-          .onChange(of: model.draft) { _, _ in
-            selectedMention = 0
-            dismissedMention = false
-          }
-          .onKeyPress(.tab) { acceptMention() ? .handled : .ignored }
-          .onKeyPress(.escape) {
-            guard completion != nil, !dismissedMention else { return .ignored }
-            dismissedMention = true
-            return .handled
-          }
-          .onKeyPress(.downArrow) { cycleMention(by: 1) }
-          .onKeyPress(.upArrow) { cycleMention(by: -1) }
-          .onKeyPress(.return, phases: .down) { press in
-            if press.modifiers.contains(.shift) || press.modifiers.contains(.option) {
-              var range: Range<String.Index>?
-              if case .selection(let selected)? = selection?.indices { range = selected }
-              let (text, caret) = insertingNewline(into: model.draft, replacing: range)
-              model.draft = text
-              selection = TextSelection(insertionPoint: caret)
-            } else if !acceptMention() {
-              model.sendMessage()
-            }
-            return .handled
-          }
-          if let completion, !dismissedMention {
-            ScrollView(.horizontal, showsIndicators: false) {
-              HStack(spacing: 6) {
-                ForEach(Array(completion.bots.enumerated()), id: \.element.id) { index, bot in
-                  Button("@\(bot.name)") { _ = acceptMention(index: index) }
-                    .font(.caption.weight(.medium))
-                    .buttonStyle(.bordered)
-                    .tint(index == selectedMention ? .accentColor : .secondary)
-                    .controlSize(.small)
-                }
-              }
-            }
-          }
-        }
-        .padding(.leading, 14)
-        .padding(.trailing, 14)
-        .padding(.vertical, 4)
-        .frame(minHeight: Composer.height)
-        .glassEffect(.regular, in: .rect(cornerRadius: Composer.height / 2))
+        messageField
         if running {
           Button {
             model.abortChat()
@@ -610,6 +547,74 @@ struct Composer: View {
       model.addAttachments(urls)
       return true
     }
+  }
+
+  private var messageField: some View {
+    @Bindable var model = model
+    return VStack(alignment: .leading, spacing: 6) {
+      if !model.attachments.isEmpty {
+        ScrollView(.horizontal, showsIndicators: false) {
+          HStack(spacing: 6) {
+            ForEach(model.attachments) { file in
+              PendingAttachmentChip(file: file) { model.removeAttachment(file.id) }
+            }
+          }
+          .padding(.top, 8)
+        }
+      }
+      TextField(
+        agent.enabled
+          ? "Message \(agent.name)" : "\(agent.name) is paused. Enable it in its profile.",
+        text: $model.draft, selection: $selection, axis: .vertical
+      )
+      .textFieldStyle(.plain)
+      .lineLimit(1...8)
+      .focused($focused)
+      .disabled(!agent.enabled)
+      .padding(.vertical, 7)
+      .onChange(of: model.draft) { _, _ in
+        selectedMention = 0
+        dismissedMention = false
+      }
+      .onKeyPress(.tab) { acceptMention() ? .handled : .ignored }
+      .onKeyPress(.escape) {
+        guard completion != nil, !dismissedMention else { return .ignored }
+        dismissedMention = true
+        return .handled
+      }
+      .onKeyPress(.downArrow) { cycleMention(by: 1) }
+      .onKeyPress(.upArrow) { cycleMention(by: -1) }
+      .onKeyPress(.return, phases: .down) { press in
+        if press.modifiers.contains(.shift) || press.modifiers.contains(.option) {
+          var range: Range<String.Index>?
+          if case .selection(let selected)? = selection?.indices { range = selected }
+          let (text, caret) = insertingNewline(into: model.draft, replacing: range)
+          model.draft = text
+          selection = TextSelection(insertionPoint: caret)
+        } else if !acceptMention() {
+          model.sendMessage()
+        }
+        return .handled
+      }
+      if let completion, !dismissedMention {
+        ScrollView(.horizontal, showsIndicators: false) {
+          HStack(spacing: 6) {
+            ForEach(Array(completion.bots.enumerated()), id: \.element.id) { index, bot in
+              Button("@\(bot.name)") { _ = acceptMention(index: index) }
+                .font(.caption.weight(.medium))
+                .buttonStyle(.bordered)
+                .tint(index == selectedMention ? .accentColor : .secondary)
+                .controlSize(.small)
+            }
+          }
+        }
+      }
+    }
+    .padding(.leading, 14)
+    .padding(.trailing, 14)
+    .padding(.vertical, 4)
+    .frame(minHeight: Composer.height)
+    .glassEffect(.regular, in: .rect(cornerRadius: Composer.height / 2))
   }
 
   private var completion: MentionCompletion? {

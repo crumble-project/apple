@@ -130,8 +130,9 @@ private struct MemoryPanel: View {
     })
   }
   private func matches(_ memory: Memory, owner: String) -> Bool {
-    let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
-    return q.isEmpty || memory.content.localizedCaseInsensitiveContains(q) || owner.localizedCaseInsensitiveContains(q)
+    let search = query.trimmingCharacters(in: .whitespacesAndNewlines)
+    return search.isEmpty || memory.content.localizedCaseInsensitiveContains(search)
+      || owner.localizedCaseInsensitiveContains(search)
   }
 
   private func sectionBinding(_ id: String) -> Binding<Bool> {

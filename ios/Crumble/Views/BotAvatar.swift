@@ -39,13 +39,13 @@ struct BotLook: Equatable {
   }
 
   var color: Color {
-    let (r, g, b) = rgb
-    return Color(red: r / 255, green: g / 255, blue: b / 255)
+    let (red, green, blue) = rgb
+    return Color(red: red / 255, green: green / 255, blue: blue / 255)
   }
 
   var eyeColor: Color {
-    let (r, g, b) = rgb
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b < 110 ? .white.opacity(0.9) : .black.opacity(0.85)
+    let (red, green, blue) = rgb
+    return 0.2126 * red + 0.7152 * green + 0.0722 * blue < 110 ? .white.opacity(0.9) : .black.opacity(0.85)
   }
 }
 
@@ -84,25 +84,25 @@ struct BotPose: Equatable {
 
   /// Leans aside and sways as Hermex's working face does, hopping on the spot as it goes:
   /// it squashes before each jump and again as it lands.
-  static func working(at t: Double) -> BotPose {
-    let turn = -11 + sin(t * 0.48) * 8
-    let tilt = sin(t * 0.42) * 8 + sin(t * 1.1) * 1.6
-    let blink = t.truncatingRemainder(dividingBy: 1.45) > 1.26
-    let hop = t.truncatingRemainder(dividingBy: 0.9) / 0.9
+  static func working(at time: Double) -> BotPose {
+    let turn = -11 + sin(time * 0.48) * 8
+    let tilt = sin(time * 0.42) * 8 + sin(time * 1.1) * 1.6
+    let blink = time.truncatingRemainder(dividingBy: 1.45) > 1.26
+    let hop = time.truncatingRemainder(dividingBy: 0.9) / 0.9
     let squash =
       hop < 0.12
       ? 1 - 0.1 * sin(hop / 0.12 * .pi) : hop > 0.88 ? 1 - 0.1 * sin((hop - 0.88) / 0.12 * .pi) : 1
     return BotPose(
-      gazeX: turn * 0.0025, gazeY: -tilt * 0.0025, roll: sin(t * 0.75) * 4.2,
+      gazeX: turn * 0.0025, gazeY: -tilt * 0.0025, roll: sin(time * 0.75) * 4.2,
       lid: blink ? shutLid : 1,
       lift: 0.07 * sin(hop * .pi), scaleX: 2 - squash, scaleY: squash)
   }
 
   /// Breathes slowly with the head dropped a little and the eyes cast down.
-  static func sleeping(at t: Double) -> BotPose {
-    let breath = sin(t * 2 * .pi / 4)
+  static func sleeping(at time: Double) -> BotPose {
+    let breath = sin(time * 2 * .pi / 4)
     return BotPose(
-      gazeY: 0.03, roll: -5 + sin(t * 0.4) * 1.5, scaleX: 1 - 0.02 * breath,
+      gazeY: 0.03, roll: -5 + sin(time * 0.4) * 1.5, scaleX: 1 - 0.02 * breath,
       scaleY: 1 + 0.035 * breath)
   }
 }
@@ -172,9 +172,9 @@ struct BotAvatarView: View {
         BotMark(look: look, eyes: eyes, size: size, pose: .rest)
       } else if state == .sleeping {
         TimelineView(.animation(minimumInterval: 1.0 / 15)) { context in
-          let t = context.date.timeIntervalSinceReferenceDate
-          BotMark(look: look, eyes: eyes, size: size, pose: .sleeping(at: t))
-            .overlay { SleepZs(size: size, time: t) }
+          let time = context.date.timeIntervalSinceReferenceDate
+          BotMark(look: look, eyes: eyes, size: size, pose: .sleeping(at: time))
+            .overlay { SleepZs(size: size, time: time) }
         }
       } else if state == .working {
         TimelineView(.periodic(from: .now, by: 1.0 / 15)) { context in

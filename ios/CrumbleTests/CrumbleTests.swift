@@ -86,7 +86,11 @@ struct APIClientTests {
       #expect(request.url?.path == "/v1/skills")
       return (
         200,
-        #"[{"id":"common:tasks/SKILL.md","name":"tasks","instructions":"Complete tasks","source":"bundled","path":"tasks/SKILL.md"},{"id":"s1","name":"Writing","instructions":"Write plainly","source":"shared"},{"id":"legacy","name":"Legacy","instructions":"Existing skill"}]"#
+        #"""
+        [{"id":"common:tasks/SKILL.md","name":"tasks","instructions":"Complete tasks","source":"bundled","path":"tasks/SKILL.md"},
+        {"id":"s1","name":"Writing","instructions":"Write plainly","source":"shared"},
+        {"id":"legacy","name":"Legacy","instructions":"Existing skill"}]
+        """#
       )
     }
     let skills = try await client.sharedSkills()
@@ -404,7 +408,10 @@ struct LogicTests {
 
   @Test func botCommunicationEventRetainsAttributionAndAppearsInChat() throws {
     let data = Data(
-      #"{"id":"exchange-1","role":"event","kind":"bot-message","content":"I asked how Bot2 feels.","communication":{"executionId":"run-1","fromAgentId":"a1","fromName":"Atlas","toAgentId":"a2","toName":"Beacon","status":"done"}}"#
+      #"""
+      {"id":"exchange-1","role":"event","kind":"bot-message","content":"I asked how Bot2 feels.",
+      "communication":{"executionId":"run-1","fromAgentId":"a1","fromName":"Atlas","toAgentId":"a2","toName":"Beacon","status":"done"}}
+      """#
         .utf8)
     let message = try JSONDecoder().decode(Message.self, from: data)
     let rows = ChatRow.rows(messages: [message], snapshot: nil, hasMore: false)

@@ -107,24 +107,24 @@ struct Agent: Codable, Identifiable, Hashable, Sendable {
   }
 
   init(from decoder: Decoder) throws {
-    let c = try decoder.container(keyedBy: CodingKeys.self)
-    id = try c.decodeIfPresent(String.self, forKey: .id) ?? ""
-    name = try c.decodeIfPresent(String.self, forKey: .name) ?? ""
-    description = try c.decodeIfPresent(String.self, forKey: .description)
-    instructions = try c.decodeIfPresent(String.self, forKey: .instructions)
-    avatar = try c.decodeIfPresent(String.self, forKey: .avatar)
-    enabled = try c.decodeIfPresent(Bool.self, forKey: .enabled) ?? false
-    provider = try c.decodeIfPresent(String.self, forKey: .provider)
-    model = try c.decodeIfPresent(String.self, forKey: .model)
-    folder = try c.decodeIfPresent(String.self, forKey: .folder)
-    tools = try c.decodeIfPresent([String].self, forKey: .tools)
-    delegates = try c.decodeIfPresent([String].self, forKey: .delegates)
-    skills = try c.decodeIfPresent([Skill].self, forKey: .skills)
-    sharedSkills = try c.decodeIfPresent([String].self, forKey: .sharedSkills)
-    sharedMemory = try c.decodeIfPresent(Bool.self, forKey: .sharedMemory)
-    mcpServers = try c.decodeIfPresent([String].self, forKey: .mcpServers)
-    inference = try c.decodeIfPresent(Inference.self, forKey: .inference)
-    lastMessage = try c.decodeIfPresent(String.self, forKey: .lastMessage)
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    id = try container.decodeIfPresent(String.self, forKey: .id) ?? ""
+    name = try container.decodeIfPresent(String.self, forKey: .name) ?? ""
+    description = try container.decodeIfPresent(String.self, forKey: .description)
+    instructions = try container.decodeIfPresent(String.self, forKey: .instructions)
+    avatar = try container.decodeIfPresent(String.self, forKey: .avatar)
+    enabled = try container.decodeIfPresent(Bool.self, forKey: .enabled) ?? false
+    provider = try container.decodeIfPresent(String.self, forKey: .provider)
+    model = try container.decodeIfPresent(String.self, forKey: .model)
+    folder = try container.decodeIfPresent(String.self, forKey: .folder)
+    tools = try container.decodeIfPresent([String].self, forKey: .tools)
+    delegates = try container.decodeIfPresent([String].self, forKey: .delegates)
+    skills = try container.decodeIfPresent([Skill].self, forKey: .skills)
+    sharedSkills = try container.decodeIfPresent([String].self, forKey: .sharedSkills)
+    sharedMemory = try container.decodeIfPresent(Bool.self, forKey: .sharedMemory)
+    mcpServers = try container.decodeIfPresent([String].self, forKey: .mcpServers)
+    inference = try container.decodeIfPresent(Inference.self, forKey: .inference)
+    lastMessage = try container.decodeIfPresent(String.self, forKey: .lastMessage)
   }
 }
 
@@ -155,9 +155,9 @@ struct Skill: Codable, Hashable, Sendable, Identifiable {
   }
 
   init(from decoder: Decoder) throws {
-    let c = try decoder.container(keyedBy: CodingKeys.self)
-    name = try c.decodeIfPresent(String.self, forKey: .name) ?? ""
-    instructions = try c.decodeIfPresent(String.self, forKey: .instructions) ?? ""
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    name = try container.decodeIfPresent(String.self, forKey: .name) ?? ""
+    instructions = try container.decodeIfPresent(String.self, forKey: .instructions) ?? ""
   }
 }
 
@@ -228,23 +228,23 @@ struct Message: Codable, Identifiable, Hashable, Sendable {
   }
 
   init(from decoder: Decoder) throws {
-    let c = try decoder.container(keyedBy: CodingKeys.self)
-    id = try c.decodeIfPresent(String.self, forKey: .id) ?? ""
-    entryId = try c.decodeIfPresent(String.self, forKey: .entryId)
-    role = try c.decodeIfPresent(String.self, forKey: .role) ?? ""
-    content = try c.decodeIfPresent(JSONValue.self, forKey: .content)
-    blocks = try c.decodeIfPresent(JSONValue.self, forKey: .blocks)
-    kind = try c.decodeIfPresent(String.self, forKey: .kind)
-    replyTo = try c.decodeIfPresent(String.self, forKey: .replyTo)
-    replyPreview = try c.decodeIfPresent(String.self, forKey: .replyPreview)
-    origin = try c.decodeIfPresent(MessageOrigin.self, forKey: .origin)
-    communication = try c.decodeIfPresent(BotCommunication.self, forKey: .communication)
-    timestamp = try c.decodeIfPresent(Int64.self, forKey: .timestamp)
-    createdAt = try c.decodeIfPresent(String.self, forKey: .createdAt)
-    attachments = try c.decodeIfPresent([AttachmentInfo].self, forKey: .attachments)
-    requestId = try c.decodeIfPresent(String.self, forKey: .requestId)
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    id = try container.decodeIfPresent(String.self, forKey: .id) ?? ""
+    entryId = try container.decodeIfPresent(String.self, forKey: .entryId)
+    role = try container.decodeIfPresent(String.self, forKey: .role) ?? ""
+    content = try container.decodeIfPresent(JSONValue.self, forKey: .content)
+    blocks = try container.decodeIfPresent(JSONValue.self, forKey: .blocks)
+    kind = try container.decodeIfPresent(String.self, forKey: .kind)
+    replyTo = try container.decodeIfPresent(String.self, forKey: .replyTo)
+    replyPreview = try container.decodeIfPresent(String.self, forKey: .replyPreview)
+    origin = try container.decodeIfPresent(MessageOrigin.self, forKey: .origin)
+    communication = try container.decodeIfPresent(BotCommunication.self, forKey: .communication)
+    timestamp = try container.decodeIfPresent(Int64.self, forKey: .timestamp)
+    createdAt = try container.decodeIfPresent(String.self, forKey: .createdAt)
+    attachments = try container.decodeIfPresent([AttachmentInfo].self, forKey: .attachments)
+    requestId = try container.decodeIfPresent(String.self, forKey: .requestId)
     deliveryState =
-      try c.decodeIfPresent(MessageDeliveryState.self, forKey: .deliveryState) ?? .confirmed
+      try container.decodeIfPresent(MessageDeliveryState.self, forKey: .deliveryState) ?? .confirmed
   }
 
   var text: String { contentText(content) }
