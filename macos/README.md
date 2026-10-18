@@ -68,6 +68,8 @@ Each task runs once, or on a cron schedule, in one bot's chat. Tasks are listed 
 
 The app notifies you when a bot finishes a reply you aren't looking at, including replies to scheduled tasks. Click a notification to open the chat. macOS asks for permission on first launch. Notifications need the app bundle from `./scripts/build-app.sh`; `swift run` posts none.
 
+The default ad hoc build uses local notifications while connected to the server. Remote delivery while Crumble is quit requires an APNs-provisioned build and configured server credentials. Setup is deferred; see [macOS push setup](docs/push-notifications.md). Notifications can be disabled in Settings.
+
 ## Shared and personal items
 
 **Memory**, **Skills**, and **Integrations** show **Shared** followed by a named section for every bot. All bots’ personal entries are visible together. Optional shared skills list the bots that use them.

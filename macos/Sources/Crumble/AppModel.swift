@@ -104,7 +104,9 @@ final class AppModel {
     private var generation = 0
 
     var agents: [Agent] = []
-    var route: Route?
+    var route: Route? { didSet { onNotificationContextChange?() } }
+    @ObservationIgnored var onNotificationContextChange: (() -> Void)?
+    @ObservationIgnored var onNotificationConnectionChange: ((APIClient) -> Void)?
     private(set) var selectedAgentID = ""
     private var selectionVersion = 0
 
@@ -331,6 +333,11 @@ final class AppModel {
                 streamTask = Task { await streamChat(client: client, id: id, version: version) }
             }
         }
+    }
+
+    /// A tapped reply keeps its target while the initial agent-list refresh is in flight.
+    func openNotificationChat(_ id: String) {
+        selectAgent(id)
     }
 
     /// Keeps older pages the owner already loaded; snapshots only carry the newest page.
@@ -1416,6 +1423,7 @@ final class AppModel {
                 snapshot = nil
                 messages = []
                 client = candidate
+                onNotificationConnectionChange?(candidate)
                 activeRequests = 0
                 loading = false
                 errorText = ""
