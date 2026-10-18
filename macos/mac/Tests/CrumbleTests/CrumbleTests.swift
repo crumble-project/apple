@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import SwiftUI
 import Testing
@@ -76,6 +77,30 @@ struct APIClientTests {
         try await client.sendChatMessage("a1", content: "hello", requestID: "req", replyTo: "a1:41")
         let body = String(decoding: StubProtocol.requests.last?.httpBody ?? Data(), as: UTF8.self)
         #expect(body.contains(#""replyTo":"a1:41""#))
+    }
+
+    @Test func messagesCarryAttachments() async throws {
+        let client = StubProtocol.client { _ in (202, "") }
+        try await client.sendChatMessage("a1", content: "", requestID: "req", replyTo: "",
+                                         attachments: [OutgoingAttachment(name: "dot.png", mimeType: "image/png", data: "AAAA")])
+        let body = try JSONSerialization.jsonObject(with: StubProtocol.requests.last?.httpBody ?? Data()) as? [String: Any]
+        #expect(body?["replyTo"] == nil)
+        #expect((body?["attachments"] as? [[String: String]])?.first?["mimeType"] == "image/png")
+        let message = try JSONDecoder().decode(Message.self, from: Data(#"{"id":"a1:5:0","role":"user","content":"","attachments":[{"name":"dot.png","mimeType":"image/png","size":70,"kind":"image"}]}"#.utf8))
+        #expect(message.attachments?.first?.isImage == true)
+        #expect(ChatRow.shownInChat(message))
+    }
+
+    @MainActor @Test func failedSendsKeepTheirAttachments() async throws {
+        let client = StubProtocol.client { _ in (500, #"{"error":"busy"}"#) }
+        let model = AppModel(client: client)
+        model.snapshot = ChatSnapshot(status: "idle", agentId: "a1")
+        model.attachments = [PendingAttachment(name: "notes.txt", mimeType: "text/plain", data: Data("hi".utf8))]
+        model.sendMessage()
+        #expect(model.attachments.isEmpty)
+        while model.sending { try await Task.sleep(for: .milliseconds(10)) }
+        #expect(model.attachments.map(\.name) == ["notes.txt"])
+        #expect(model.errorText.contains("busy"))
     }
 
     @Test func errorsCarryStatusAndBody() async throws {
@@ -167,6 +192,41 @@ struct LogicTests {
         #expect(draft.wrappedValue.id == item.id)
         draft.wrappedValue.name = "Late write"
         #expect(model.mcpDraft == nil)
+    }
+
+    @Test func shiftReturnInsertsANewlineAtTheCaret() {
+        let text = "hello world"
+        let caret = text.index(text.startIndex, offsetBy: 5)
+        let (edited, after) = insertingNewline(into: text, replacing: caret..<caret)
+        #expect(edited == "hello\n world")
+        #expect(edited[after...] == " world")
+        let word = text.range(of: "world")!
+        #expect(insertingNewline(into: text, replacing: word).text == "hello \n")
+        #expect(insertingNewline(into: text, replacing: nil).text == "hello world\n")
+    }
+
+    @Test func filesBecomeAttachmentsTheServerAccepts() throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let notes = folder.appending(path: "notes.md")
+        try Data("# Groceries".utf8).write(to: notes)
+        let text = try loadAttachment(from: notes)
+        #expect(text.mimeType.hasPrefix("text/") && text.data == Data("# Groceries".utf8))
+
+        let image = NSImage(size: NSSize(width: 4, height: 4))
+        image.lockFocus()
+        NSColor.red.setFill()
+        NSRect(x: 0, y: 0, width: 4, height: 4).fill()
+        image.unlockFocus()
+        let tiff = folder.appending(path: "photo.tiff")
+        try image.tiffRepresentation!.write(to: tiff)
+        let converted = try loadAttachment(from: tiff)
+        #expect(converted.mimeType == "image/jpeg" && converted.name == "photo.jpg")
+
+        let pdf = folder.appending(path: "doc.pdf")
+        try Data("%PDF-1.4".utf8).write(to: pdf)
+        #expect(throws: AttachmentError.self) { try loadAttachment(from: pdf) }
     }
 
     @Test func markdownSplitsBlocks() {

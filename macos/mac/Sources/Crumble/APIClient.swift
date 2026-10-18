@@ -27,10 +27,11 @@ struct APIClient: Sendable {
         self.session = session
     }
 
-    private func makeRequest(_ method: String, _ path: String, body: Data? = nil) throws -> URLRequest {
+    private func makeRequest(_ method: String, _ path: String, body: Data? = nil, timeout: TimeInterval = 20) throws -> URLRequest {
         guard let url = URL(string: baseURL + path) else { throw URLError(.badURL) }
         var request = URLRequest(url: url)
         request.httpMethod = method
+        request.timeoutInterval = timeout
         if !token.isEmpty {
             request.setValue("Bearer " + token, forHTTPHeaderField: "Authorization")
         }
@@ -41,9 +42,9 @@ struct APIClient: Sendable {
         return request
     }
 
-    private func send(_ method: String, _ path: String, body: (any Encodable)? = nil) async throws -> Data {
+    private func send(_ method: String, _ path: String, body: (any Encodable)? = nil, timeout: TimeInterval = 20) async throws -> Data {
         let payload = try body.map { try JSONEncoder().encode($0) }
-        let request = try makeRequest(method, path, body: payload)
+        let request = try makeRequest(method, path, body: payload, timeout: timeout)
         let (data, response) = try await session.data(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(status) else {
@@ -57,8 +58,8 @@ struct APIClient: Sendable {
         try JSONDecoder().decode(T.self, from: try await send(method, path, body: body))
     }
 
-    private func perform(_ method: String, _ path: String, body: (any Encodable)? = nil) async throws {
-        _ = try await send(method, path, body: body)
+    private func perform(_ method: String, _ path: String, body: (any Encodable)? = nil, timeout: TimeInterval = 20) async throws {
+        _ = try await send(method, path, body: body, timeout: timeout)
     }
 
     private static func escape(_ value: String) -> String {
@@ -79,10 +80,21 @@ struct APIClient: Sendable {
         let suffix = query.isEmpty ? "" : "?" + query.joined(separator: "&")
         return try await call("GET", "/v1/agents/\(agentID)/chat/history" + suffix)
     }
-    func sendChatMessage(_ agentID: String, content: String, requestID: String, replyTo: String) async throws {
-        var body: [String: String] = ["content": content, "requestId": requestID]
-        if !replyTo.isEmpty { body["replyTo"] = replyTo }
-        try await perform("POST", "/v1/agents/\(agentID)/messages", body: body)
+    func sendChatMessage(_ agentID: String, content: String, requestID: String, replyTo: String,
+                         attachments: [OutgoingAttachment] = []) async throws {
+        struct Body: Encodable {
+            var content: String
+            var requestId: String
+            var replyTo: String?
+            var attachments: [OutgoingAttachment]?
+        }
+        let body = Body(content: content, requestId: requestID, replyTo: replyTo.nilIfEmpty, attachments: attachments.isEmpty ? nil : attachments)
+        // Images take a while to upload; the default timeout is for small requests.
+        try await perform("POST", "/v1/agents/\(agentID)/messages", body: body, timeout: attachments.isEmpty ? 20 : 120)
+    }
+    /// The bytes of an attached image, by its position in the message's attachments.
+    func attachment(_ agentID: String, entryID: String, index: Int) async throws -> Data {
+        try await send("GET", "/v1/agents/\(agentID)/attachments/\(Self.escape(entryID))/\(index)")
     }
     func abortChat(_ agentID: String) async throws { try await perform("POST", "/v1/agents/\(agentID)/abort") }
     func compactChat(_ agentID: String) async throws { try await perform("POST", "/v1/agents/\(agentID)/compact") }
@@ -91,8 +103,8 @@ struct APIClient: Sendable {
     /// It returns only by throwing: SSEClosedError when the server ends the stream.
     func chatEvents(_ agentID: String, onEvent: @Sendable (String) async -> Void) async throws -> Never {
         let path = "/v1/agents/\(agentID)/events"
-        var request = try makeRequest("GET", path)
-        request.timeoutInterval = .infinity
+        // Heartbeats keep the stream busy; a long idle timeout only ends a stream that has gone silent.
+        let request = try makeRequest("GET", path, timeout: 24 * 60 * 60)
         let (bytes, response) = try await session.bytes(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(status) else {

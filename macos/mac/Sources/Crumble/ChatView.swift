@@ -47,7 +47,9 @@ enum ChatRow: Identifiable {
     /// tool calls, or tool results.
     static func shownInChat(_ message: Message) -> Bool {
         switch message.role {
-        case "user", "event":
+        case "user":
+            return !message.text.isEmpty || !(message.attachments ?? []).isEmpty
+        case "event":
             return !message.text.isEmpty
         case "assistant":
             guard case .array(let blocks)? = message.blocks else { return !contentText(message.blocks).isEmpty }
@@ -190,10 +192,13 @@ struct MessageView: View {
                         Text(messageLabel(message)).font(.caption).foregroundStyle(.secondary).padding(.horizontal, 6)
                     }
                     ReplyQuote(message: message)
-                    Text(message.text)
-                        .textSelection(.enabled)
-                        .bubble(owner: owner)
-                        .contextMenu { menu }
+                    SentAttachments(message: message)
+                    if !message.text.isEmpty {
+                        Text(message.text)
+                            .textSelection(.enabled)
+                            .bubble(owner: owner)
+                            .contextMenu { menu }
+                    }
                 }
                 .frame(maxWidth: 520, alignment: .trailing)
             }
@@ -277,6 +282,8 @@ struct Composer: View {
     @Environment(AppModel.self) private var model
     let agent: Agent
     @FocusState private var focused: Bool
+    @State private var selection: TextSelection?
+    @State private var importing = false
 
     var body: some View {
         @Bindable var model = model
@@ -299,39 +306,151 @@ struct Composer: View {
                 .glassEffect(.regular, in: .rect(cornerRadius: 12))
             }
             HStack(alignment: .bottom, spacing: 8) {
-                TextField(agent.enabled ? "Message \(agent.name)" : "\(agent.name) is paused. Enable it in its profile.",
-                          text: $model.draft, axis: .vertical)
-                    .textFieldStyle(.plain)
-                    .lineLimit(1...8)
-                    .focused($focused)
+                Button("Attach Files", systemImage: "plus") { importing = true }
+                    .labelStyle(.iconOnly)
+                    .font(.system(size: 15, weight: .semibold))
+                    .frame(width: 30, height: 30)
+                    .buttonStyle(.glass)
+                    .buttonBorderShape(.circle)
+                    .controlSize(.large)
                     .disabled(model.sending || !agent.enabled)
-                    .padding(.vertical, 7)
-                    .onKeyPress(.return, phases: .down) { press in
-                        if press.modifiers.contains(.shift) || press.modifiers.contains(.option) { return .ignored }
-                        model.sendMessage()
-                        return .handled
+                    .help("Attach images or text files")
+                VStack(alignment: .leading, spacing: 6) {
+                    if !model.attachments.isEmpty {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 6) {
+                                ForEach(model.attachments) { file in
+                                    PendingAttachmentChip(file: file) { model.removeAttachment(file.id) }
+                                }
+                            }
+                            .padding(.top, 8)
+                        }
                     }
-                if running {
-                    Button("Stop", systemImage: "stop.fill") { model.abortChat() }
-                        .labelStyle(.iconOnly)
-                        .buttonStyle(.glassProminent)
-                        .buttonBorderShape(.circle)
-                } else if !model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !model.sending {
-                    Button("Send", systemImage: "arrow.up") { model.sendMessage() }
-                        .labelStyle(.iconOnly)
-                        .buttonStyle(.glassProminent)
-                        .buttonBorderShape(.circle)
+                    HStack(alignment: .bottom, spacing: 8) {
+                        TextField(agent.enabled ? "Message \(agent.name)" : "\(agent.name) is paused. Enable it in its profile.",
+                                  text: $model.draft, selection: $selection, axis: .vertical)
+                            .textFieldStyle(.plain)
+                            .lineLimit(1...8)
+                            .focused($focused)
+                            .disabled(model.sending || !agent.enabled)
+                            .padding(.vertical, 7)
+                            .onKeyPress(.return, phases: .down) { press in
+                                // A multi-line TextField inserts nothing for Shift-Return, so the composer does.
+                                if press.modifiers.contains(.shift) || press.modifiers.contains(.option) {
+                                    var range: Range<String.Index>?
+                                    if case .selection(let selected)? = selection?.indices { range = selected }
+                                    let (text, caret) = insertingNewline(into: model.draft, replacing: range)
+                                    model.draft = text
+                                    selection = TextSelection(insertionPoint: caret)
+                                } else {
+                                    model.sendMessage()
+                                }
+                                return .handled
+                            }
+                        if running {
+                            Button("Stop", systemImage: "stop.fill") { model.abortChat() }
+                                .labelStyle(.iconOnly)
+                                .buttonStyle(.glassProminent)
+                                .buttonBorderShape(.circle)
+                        }
+                    }
                 }
+                .padding(.leading, 14)
+                .padding(.trailing, 6)
+                .padding(.vertical, 4)
+                .frame(minHeight: 40)
+                .glassEffect(.regular, in: .rect(cornerRadius: 20))
             }
-            .padding(.leading, 16)
-            .padding(.trailing, 6)
-            .padding(.vertical, 4)
-            .frame(minHeight: 40)
-            .glassEffect(.regular, in: .rect(cornerRadius: 20))
         }
         .padding(.horizontal, 20)
         .padding(.bottom, 14)
         .onAppear { focused = true }
+        .fileImporter(isPresented: $importing, allowedContentTypes: [.image, .text, .sourceCode, .json, .xml],
+                      allowsMultipleSelection: true) { result in
+            if case .success(let urls) = result { model.addAttachments(urls) }
+        }
+        .dropDestination(for: URL.self) { urls, _ in
+            guard agent.enabled, !model.sending else { return false }
+            model.addAttachments(urls)
+            return true
+        }
+    }
+}
+
+/// A file in the composer: a thumbnail for an image, the file name for text, with a remove button.
+struct PendingAttachmentChip: View {
+    let file: PendingAttachment
+    let onRemove: () -> Void
+
+    var body: some View {
+        Group {
+            if file.isImage, let image = NSImage(data: file.data) {
+                Image(nsImage: image)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 52, height: 52)
+                    .clipShape(.rect(cornerRadius: 10))
+            } else {
+                FileLabel(name: file.name)
+            }
+        }
+        .overlay(alignment: .topTrailing) {
+            Button("Remove \(file.name)", systemImage: "xmark.circle.fill", action: onRemove)
+                .labelStyle(.iconOnly)
+                .buttonStyle(.plain)
+                .symbolRenderingMode(.palette)
+                .foregroundStyle(.white, .black.opacity(0.6))
+                .offset(x: 6, y: -6)
+        }
+        .help(file.name)
+    }
+}
+
+/// The files a sent message carries: image thumbnails loaded from the server, text files by name.
+struct SentAttachments: View {
+    @Environment(AppModel.self) private var model
+    let message: Message
+
+    var body: some View {
+        let files = Array((message.attachments ?? []).enumerated())
+        if !files.isEmpty, let entryID = message.entryId {
+            VStack(alignment: .trailing, spacing: 4) {
+                ForEach(files, id: \.offset) { index, file in
+                    if file.isImage {
+                        Group {
+                            if let image = model.attachmentImage(entryID: entryID, index: index) {
+                                Image(nsImage: image).resizable().scaledToFit()
+                            } else {
+                                RoundedRectangle(cornerRadius: 14).fill(Color.primary.opacity(0.06))
+                                    .frame(width: 160, height: 120)
+                                    .overlay { ProgressView().controlSize(.small) }
+                            }
+                        }
+                        .frame(maxWidth: 260, maxHeight: 260)
+                        .clipShape(.rect(cornerRadius: 14))
+                        .help(file.name)
+                        .task { await model.loadAttachmentImage(entryID: entryID, index: index) }
+                    } else {
+                        FileLabel(name: file.name)
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct FileLabel: View {
+    let name: String
+
+    var body: some View {
+        Label(name, systemImage: "doc.text")
+            .lineLimit(1)
+            .truncationMode(.middle)
+            .font(.callout)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .frame(maxWidth: 220)
+            .background(Color.primary.opacity(0.07), in: .rect(cornerRadius: 10))
     }
 }
 
@@ -343,6 +462,16 @@ extension View {
             .foregroundStyle(owner ? AnyShapeStyle(.white) : AnyShapeStyle(.primary))
             .background(owner ? AnyShapeStyle(.tint) : AnyShapeStyle(Color.primary.opacity(0.07)), in: .rect(cornerRadius: 18))
     }
+}
+
+/// Replaces the selection, or appends when there is none, with a line break; returns the text and the caret after it.
+func insertingNewline(into text: String, replacing range: Range<String.Index>?) -> (text: String, caret: String.Index) {
+    var range = range ?? text.endIndex..<text.endIndex
+    if range.upperBound > text.endIndex { range = text.endIndex..<text.endIndex }
+    let offset = text.distance(from: text.startIndex, to: range.lowerBound)
+    var edited = text
+    edited.replaceSubrange(range, with: "\n")
+    return (edited, edited.index(edited.startIndex, offsetBy: offset + 1))
 }
 
 func messageLabel(_ message: Message) -> String {

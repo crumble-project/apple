@@ -56,22 +56,36 @@ struct BotEyes {
     static let sleepy = BotEyes(left: Eye(width: 0.2, height: 0.42 * 0.42, tilt: 0), right: Eye(width: 0.2, height: 0.42 * 0.42, tilt: 0), split: 16)
 }
 
-/// One frame of a face: gaze as a fraction of the size, roll in degrees, and the lid factor.
+/// One frame of a face: gaze as a fraction of the size, roll in degrees, the lid factor, a lift
+/// as a fraction of the size, and the squash and stretch of the body, anchored at its base.
 struct BotPose: Equatable {
     var gazeX = 0.0
     var gazeY = 0.0
     var roll = 0.0
     var lid = 1.0
+    var lift = 0.0
+    var scaleX = 1.0
+    var scaleY = 1.0
 
     static let rest = BotPose()
     static let shutLid = 0.06
 
-    /// Leans aside and sways, as Hermex's working face does.
+    /// Leans aside and sways as Hermex's working face does, hopping on the spot as it goes:
+    /// it squashes before each jump and again as it lands.
     static func working(at t: Double) -> BotPose {
         let turn = -11 + sin(t * 0.48) * 8
         let tilt = sin(t * 0.42) * 8 + sin(t * 1.1) * 1.6
         let blink = t.truncatingRemainder(dividingBy: 1.45) > 1.26
-        return BotPose(gazeX: turn * 0.0025, gazeY: -tilt * 0.0025, roll: sin(t * 0.75) * 4.2, lid: blink ? shutLid : 1)
+        let hop = t.truncatingRemainder(dividingBy: 0.9) / 0.9
+        let squash = hop < 0.12 ? 1 - 0.1 * sin(hop / 0.12 * .pi) : hop > 0.88 ? 1 - 0.1 * sin((hop - 0.88) / 0.12 * .pi) : 1
+        return BotPose(gazeX: turn * 0.0025, gazeY: -tilt * 0.0025, roll: sin(t * 0.75) * 4.2, lid: blink ? shutLid : 1,
+                       lift: 0.07 * sin(hop * .pi), scaleX: 2 - squash, scaleY: squash)
+    }
+
+    /// Breathes slowly with the head dropped a little and the eyes cast down.
+    static func sleeping(at t: Double) -> BotPose {
+        let breath = sin(t * 2 * .pi / 4)
+        return BotPose(gazeY: 0.03, roll: -5 + sin(t * 0.4) * 1.5, scaleX: 1 - 0.02 * breath, scaleY: 1 + 0.035 * breath)
     }
 }
 
@@ -113,7 +127,7 @@ struct BotAvatarView: View {
     let seed: String
     let size: CGFloat
     var state: BotState = .idle
-    /// Live avatars blink and sway while working; small ones in lists stay still.
+    /// Live avatars blink, hop and sway while working, and breathe while asleep; small ones in lists stay still.
     var live = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -132,8 +146,14 @@ struct BotAvatarView: View {
         let look = BotLook(seed: seed)
         let eyes: BotEyes = state == .sleeping ? .sleepy : .neutral
         Group {
-            if !live || reduceMotion || state == .sleeping {
+            if !live || reduceMotion {
                 BotMark(look: look, eyes: eyes, size: size, pose: .rest)
+            } else if state == .sleeping {
+                TimelineView(.animation(minimumInterval: 1.0 / 15)) { context in
+                    let t = context.date.timeIntervalSinceReferenceDate
+                    BotMark(look: look, eyes: eyes, size: size, pose: .sleeping(at: t))
+                        .overlay { SleepZs(size: size, time: t) }
+                }
             } else if state == .working {
                 TimelineView(.periodic(from: .now, by: 1.0 / 15)) { context in
                     BotMark(look: look, eyes: eyes, size: size, pose: .working(at: context.date.timeIntervalSinceReferenceDate))
@@ -167,6 +187,8 @@ private struct BotMark: View {
             .offset(x: size * (0.12 + pose.gazeX), y: size * (-0.08 + pose.gazeY))
         }
         .rotationEffect(.degrees(pose.roll))
+        .scaleEffect(x: pose.scaleX, y: pose.scaleY, anchor: .bottom)
+        .offset(y: -size * pose.lift)
         .frame(width: size, height: size)
     }
 
@@ -174,6 +196,26 @@ private struct BotMark: View {
         Capsule().fill(look.eyeColor)
             .frame(width: size * 0.075 * eye.width / 0.186, height: size * 0.22 * eye.height / 0.412 * pose.lid)
             .rotationEffect(.degrees(-18 + eye.tilt))
+    }
+}
+
+/// Two Zs that rise from a sleeping bot, grow, and fade, one after the other.
+private struct SleepZs: View {
+    let size: CGFloat
+    let time: Double
+
+    var body: some View {
+        ZStack {
+            ForEach(0..<2, id: \.self) { index in
+                let phase = (time / 3 + Double(index) * 0.5).truncatingRemainder(dividingBy: 1)
+                Text("z")
+                    .font(.system(size: size * (0.16 + 0.1 * phase), weight: .heavy, design: .rounded))
+                    .foregroundStyle(.secondary)
+                    .opacity(sin(phase * .pi))
+                    .offset(x: size * (0.34 + 0.12 * phase), y: -size * (0.22 + 0.32 * phase))
+            }
+        }
+        .allowsHitTesting(false)
     }
 }
 

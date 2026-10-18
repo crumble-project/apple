@@ -165,9 +165,11 @@ struct Message: Codable, Identifiable, Hashable, Sendable {
     var origin: MessageOrigin?
     var timestamp: Int64?
     var createdAt: String?
+    var attachments: [AttachmentInfo]?
 
     init(id: String, entryId: String? = nil, role: String, content: JSONValue? = nil, blocks: JSONValue? = nil, kind: String? = nil,
-         replyTo: String? = nil, replyPreview: String? = nil, origin: MessageOrigin? = nil, timestamp: Int64? = nil) {
+         replyTo: String? = nil, replyPreview: String? = nil, origin: MessageOrigin? = nil, timestamp: Int64? = nil,
+         attachments: [AttachmentInfo]? = nil) {
         self.id = id
         self.entryId = entryId
         self.role = role
@@ -178,6 +180,7 @@ struct Message: Codable, Identifiable, Hashable, Sendable {
         self.replyPreview = replyPreview
         self.origin = origin
         self.timestamp = timestamp
+        self.attachments = attachments
     }
 
     init(from decoder: Decoder) throws {
@@ -193,9 +196,27 @@ struct Message: Codable, Identifiable, Hashable, Sendable {
         origin = try c.decodeIfPresent(MessageOrigin.self, forKey: .origin)
         timestamp = try c.decodeIfPresent(Int64.self, forKey: .timestamp)
         createdAt = try c.decodeIfPresent(String.self, forKey: .createdAt)
+        attachments = try c.decodeIfPresent([AttachmentInfo].self, forKey: .attachments)
     }
 
     var text: String { contentText(content) }
+}
+
+/// A file a sent message carries, as the transcript lists it; image bytes are fetched separately.
+struct AttachmentInfo: Codable, Hashable, Sendable {
+    var name: String
+    var mimeType: String
+    var size: Int
+    var kind: String
+
+    var isImage: Bool { kind == "image" }
+}
+
+/// A file on its way to the server, in the shape the messages endpoint takes.
+struct OutgoingAttachment: Encodable, Hashable, Sendable {
+    var name: String
+    var mimeType: String
+    var data: String
 }
 
 struct ChatSnapshot: Codable, Sendable {

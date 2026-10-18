@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Observation
 
@@ -95,11 +96,15 @@ final class AppModel {
     var expanded: Set<String> = []
 
     var draft = ""
+    var attachments: [PendingAttachment] = []
     var replyTo: Message?
     var sending = false
     private var draftRequestID = ""
     private var failedDraft = ""
     private var failedReplyTo = ""
+    private var failedAttachments: [UUID] = []
+    /// Sent images, keyed by entry and attachment index; they never change once sent.
+    private(set) var attachmentImages: [String: NSImage] = [:]
 
     private var activeRequests = 0
     var loading = false
@@ -232,8 +237,10 @@ final class AppModel {
         loadingOlder = false
         replyTo = nil
         draft = ""
+        attachments = []
         failedDraft = ""
         failedReplyTo = ""
+        failedAttachments = []
         draftRequestID = ""
         request { client in
             let snapshot = try await client.chat(id)
@@ -312,35 +319,71 @@ final class AppModel {
     func sendMessage() {
         guard !sending, snapshot != nil, let client else { return }
         let content = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !content.isEmpty else { return }
+        let files = attachments
+        guard !content.isEmpty || !files.isEmpty else { return }
         let id = selectedAgentID
         let reply = replyTo?.entryId ?? ""
         // A retry of the same draft reuses its request ID so the server admits it once.
-        if draftRequestID.isEmpty || failedDraft != content || failedReplyTo != reply {
+        if draftRequestID.isEmpty || failedDraft != content || failedReplyTo != reply || failedAttachments != files.map(\.id) {
             draftRequestID = newRequestID()
         }
         let requestID = draftRequestID
         failedDraft = content
         failedReplyTo = reply
+        failedAttachments = files.map(\.id)
         sending = true
         draft = ""
+        attachments = []
         let generation = generation
         Task {
             do {
-                try await client.sendChatMessage(id, content: content, requestID: requestID, replyTo: reply)
+                try await client.sendChatMessage(id, content: content, requestID: requestID, replyTo: reply,
+                                                 attachments: files.map(\.outgoing))
                 sending = false
                 guard self.generation == generation, selectedAgentID == id else { return }
                 draftRequestID = ""
                 failedDraft = ""
                 failedReplyTo = ""
+                failedAttachments = []
                 replyTo = nil
             } catch {
                 sending = false
                 guard self.generation == generation, selectedAgentID == id else { return }
                 errorText = "Message was not confirmed: " + friendlyError(error)
                 draft = content
+                attachments = files + attachments
             }
         }
+    }
+
+    func addAttachments(_ urls: [URL]) {
+        for url in urls {
+            guard attachments.count < AttachmentLimits.count else {
+                errorText = "A message can carry up to \(AttachmentLimits.count) files."
+                return
+            }
+            do {
+                attachments.append(try loadAttachment(from: url))
+            } catch {
+                errorText = error.localizedDescription
+            }
+        }
+    }
+
+    func removeAttachment(_ id: UUID) {
+        attachments.removeAll { $0.id == id }
+    }
+
+    func attachmentImage(entryID: String, index: Int) -> NSImage? {
+        attachmentImages["\(entryID)/\(index)"]
+    }
+
+    func loadAttachmentImage(entryID: String, index: Int) async {
+        let key = "\(entryID)/\(index)"
+        guard attachmentImages[key] == nil, let client else { return }
+        let agent = selectedAgentID
+        guard let data = try? await client.attachment(agent, entryID: entryID, index: index), let image = NSImage(data: data) else { return }
+        attachmentImages[key] = image
     }
 
     func abortChat() {
