@@ -191,33 +191,11 @@ struct AgentEditorView: View {
             }
           }
           Button("Add Skill…") { draft.skills.append(Skill()) }
-          ForEach(model.sharedSkills) { skill in
-            if skill.isDefault {
-              DisclosureGroup {
-                Text(skill.instructions)
-                  .textSelection(.enabled)
-                if let path = skill.path, !path.isEmpty {
-                  Text("Source: \(path)").font(.caption).foregroundStyle(.secondary)
-                }
-              } label: {
-                HStack {
-                  Text(skill.name)
-                  Spacer()
-                  Text("Default · Every bot").font(.caption).foregroundStyle(.secondary)
-                }
-              }
-            } else {
-              Toggle(isOn: membership(\.sharedSkills, skill.id)) {
-                Text(skill.name)
-                Text("Shared skill")
-              }
-            }
-          }
         } header: {
           Text("Skills")
         } footer: {
           Text(
-            "Every bot follows the shared defaults, along with its personal skills and the optional shared skills you turn on. Manage shared skills under Skills."
+            "Every bot follows the shared defaults, along with its personal skills. Manage shared skills and bot assignments under Skills."
           )
           .foregroundStyle(.secondary)
         }

@@ -4,6 +4,46 @@ import Testing
 @testable import Crumble
 
 extension APIClientTests {
+  @MainActor @Test func failedPersonalSkillSaveRestoresDraftAndPreservesNewerAgentFields() async throws {
+    let model = AppModel(
+      client: StubProtocol.client { request in
+        if request.httpMethod == "PATCH" { Thread.sleep(forTimeInterval: 0.05); return (500, #"{"error":"busy"}"#) }
+        return (404, "")
+      })
+    let existing = Skill(name: "Old", instructions: "Keep this")
+    model.agents = [Agent(id: "a1", name: "Atlas", description: "Keep me", skills: [existing])]
+    model.route = .skills
+    model.openPersonalSkillForm(agentID: "a1", skillID: existing.id.uuidString)
+    model.skillDraft?.name = "Edited"
+    model.skillDraft?.instructions = "New instructions"
+    model.saveSkill()
+    model.agents[0].name = "Atlas renamed while saving"
+    while model.loading { try await Task.sleep(for: .milliseconds(5)) }
+    #expect(model.agents[0].name == "Atlas renamed while saving")
+    #expect(model.agents[0].description == "Keep me")
+    #expect(model.agents[0].skills?.first?.name == "Old")
+    #expect(model.skillDraft?.name == "Edited")
+    #expect(model.skillDraft?.instructions == "New instructions")
+    #expect(model.errorText.contains("busy"))
+  }
+
+  @MainActor @Test func failedSharedSkillAssignmentPreservesNewerAgentFields() async throws {
+    let model = AppModel(
+      client: StubProtocol.client { request in
+        if request.httpMethod == "PATCH" { Thread.sleep(forTimeInterval: 0.05); return (500, #"{"error":"busy"}"#) }
+        return (404, "")
+      })
+    model.agents = [Agent(id: "a1", name: "Atlas", description: "Keep me")]
+    model.sharedSkills = [SharedSkill(id: "s1", name: "Writing", instructions: "Write clearly", source: "shared", path: nil)]
+    model.setSharedSkill("s1", for: "a1", enabled: true)
+    model.agents[0].name = "Atlas renamed while saving"
+    while model.loading { try await Task.sleep(for: .milliseconds(5)) }
+    #expect(model.agents[0].name == "Atlas renamed while saving")
+    #expect(model.agents[0].description == "Keep me")
+    #expect(model.agents[0].sharedSkills?.isEmpty != false)
+    #expect(model.errorText.contains("busy"))
+  }
+
   @MainActor @Test func memoryCreateAppearsBeforeServerResponseAndReconciles() async throws {
     let model = AppModel(
       client: StubProtocol.client { request in

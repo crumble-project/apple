@@ -36,11 +36,9 @@ enum ChatRow: Identifiable {
       rows.append(.message(message))
     }
     if let snapshot {
-      if let partial = snapshot.partial, !partial.isEmpty {
-        rows.append(.partial(partial))
-      } else if snapshot.isRunning {
-        rows.append(.thinking)
-      }
+      // Live generation text is intentionally withheld until the completed assistant
+      // message arrives in the transcript. Keep the typing indicator while it runs.
+      if snapshot.isRunning { rows.append(.thinking) }
       if let error = snapshot.error, !error.isEmpty { rows.append(.failure(error)) }
     }
     return rows
@@ -99,23 +97,24 @@ struct ChatView: View {
       ToolbarItem(placement: .principal) {
         HStack(spacing: 8) {
           BotAvatarView(agent: agent, size: 28, state: model.botState(agent), live: true)
-          VStack(alignment: .leading, spacing: 2) {
-            Text(agent.name).font(.headline).lineLimit(1)
-            if !subtitle.isEmpty {
-              Text(subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+          Button {
+            model.openEditor()
+          } label: {
+            VStack(alignment: .leading, spacing: 2) {
+              Text(agent.name).font(.headline).lineLimit(1)
+              if !subtitle.isEmpty {
+                Text(subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+              }
             }
+            .frame(minHeight: 44, alignment: .leading)
+            .contentShape(Rectangle())
           }
+          .buttonStyle(.plain)
+          .accessibilityLabel("Open \(agent.name) profile")
+          .accessibilityValue(subtitle)
         }
-        .accessibilityElement(children: .combine)
       }
       .sharedBackgroundVisibility(.hidden)
-      ToolbarItemGroup(placement: .primaryAction) {
-        Button("Summarize Older Context", systemImage: "rectangle.compress.vertical") {
-          model.compactChat()
-        }
-        .disabled(model.loading || model.messages.isEmpty)
-        Button("Agent Profile", systemImage: "person.crop.circle") { model.openEditor() }
-      }
     }
   }
 
@@ -174,7 +173,7 @@ struct ChatRowView: View {
       }
     case .thinking:
       HStack(spacing: 8) {
-        ProgressView().controlSize(.small)
+        BotAvatarView(agent: agent, size: 24, state: .working, live: true)
         Text("\(agent.name) is working…").font(.callout).foregroundStyle(.secondary)
         Spacer()
       }
@@ -214,56 +213,70 @@ struct MessageView: View {
     case "user":
       HStack(spacing: 6) {
         Spacer(minLength: 60)
-        replyButton
-        VStack(alignment: .trailing, spacing: 4) {
-          if !owner {
-            if message.origin?.kind == "bot" {
-              Label(messageLabel(message), systemImage: "person.2.fill")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 6)
-            } else {
-              Text(messageLabel(message)).font(.caption).foregroundStyle(.secondary).padding(
-                .horizontal, 6)
-            }
-          }
-          ReplyQuote(message: message)
-          SentAttachments(message: message)
-          if !message.text.isEmpty {
-            Text(message.text)
-              .textSelection(.enabled)
-              .bubble(owner: owner)
-              .contextMenu { menu }
-          }
-          if message.deliveryState != .confirmed {
-            HStack(spacing: 5) {
-              if message.deliveryState == .sending {
-                ProgressView().controlSize(.mini)
-                Text("Sending…")
-              } else {
-                Text("Not sent")
-                Button("Retry") { model.retryMessage(message) }
-                  .buttonStyle(.borderless)
-                  .foregroundStyle(.tint)
-              }
-            }
-            .font(.caption)
-            .foregroundStyle(message.deliveryState == .failed ? .red : .secondary)
-          }
+        ViewThatFits(in: .horizontal) {
+          sentMessageContent.fixedSize(horizontal: true, vertical: false)
+          sentMessageContent.frame(maxWidth: 520, alignment: .trailing)
         }
-        .frame(maxWidth: 520, alignment: .trailing)
+        replyButton
       }
     default:
       HStack(spacing: 6) {
-        MarkdownText(text: message.text)
-          .textSelection(.enabled)
-          .bubble(owner: false)
-          .frame(maxWidth: 560, alignment: .leading)
-          .contextMenu { menu }
+        ViewThatFits(in: .horizontal) {
+          incomingMessageContent.fixedSize(horizontal: true, vertical: false)
+          incomingMessageContent
+            .frame(maxWidth: 560, alignment: .leading)
+            .fixedSize(horizontal: false, vertical: true)
+            .layoutPriority(1)
+        }
         replyButton
         Spacer(minLength: 60)
       }
     }
+  }
+
+  @ViewBuilder private var sentMessageContent: some View {
+    VStack(alignment: .trailing, spacing: 4) {
+      if !owner {
+        if message.origin?.kind == "bot" {
+          Label(messageLabel(message), systemImage: "person.2.fill")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 6)
+        } else {
+          Text(messageLabel(message)).font(.caption).foregroundStyle(.secondary).padding(.horizontal, 6)
+        }
+      }
+      ReplyQuote(message: message)
+      SentAttachments(message: message)
+      if !message.text.isEmpty {
+        Text(message.text)
+          .textSelection(.enabled)
+          .bubble(owner: owner)
+          .contextMenu { menu }
+      }
+      if message.deliveryState != .confirmed {
+        HStack(spacing: 5) {
+          if message.deliveryState == .sending {
+            ProgressView().controlSize(.mini)
+            Text("Sending…")
+          } else {
+            Text("Not sent")
+            Button("Retry") { model.retryMessage(message) }
+              .buttonStyle(.borderless)
+              .foregroundStyle(.tint)
+          }
+        }
+        .font(.caption)
+        .foregroundStyle(message.deliveryState == .failed ? .red : .secondary)
+      }
+    }
+  }
+
+  @ViewBuilder private var incomingMessageContent: some View {
+    MarkdownText(text: message.text)
+      .textSelection(.enabled)
+      .bubble(owner: false)
+      .contextMenu { menu }
   }
 
   @ViewBuilder private var replyButton: some View {

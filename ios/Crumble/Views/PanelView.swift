@@ -47,42 +47,86 @@ struct PanelView: View {
 
 private struct MemoryPanel: View {
   @Environment(AppModel.self) private var model
+  @State private var query = ""
+  @State private var scope: MemoryScope = .all
+  @State private var pendingDelete: MemoryDeletion?
+
+  private enum MemoryScope: Hashable, Identifiable {
+    case all, shared, bot(String)
+    var id: String {
+      switch self { case .all: "all"; case .shared: "shared"; case .bot(let id): "bot:" + id }
+    }
+  }
+  private struct MemoryDeletion: Identifiable {
+    let id: String
+    let agentID: String?
+    let label: String
+  }
 
   var body: some View {
     Form {
       Section {
-        if model.sharedMemories.isEmpty {
-          Text("No shared memories yet.").foregroundStyle(.secondary)
+        Picker("Scope", selection: $scope) {
+          Text("All").tag(MemoryScope.all)
+          Text("Shared").tag(MemoryScope.shared)
+          ForEach(model.agents) { agent in Text(agent.name).tag(MemoryScope.bot(agent.id)) }
         }
-        ForEach(model.sharedMemories) { memory in
-          row(memory, agentID: nil)
-        }
-        Button("New Shared Memory", systemImage: "plus") { model.openMemoryForm("", agentID: nil) }
-      } header: {
-        Text("Shared")
-      } footer: {
-        Text(sharedFooter).foregroundStyle(.secondary)
+        .pickerStyle(.menu)
+      } footer: { Text("Search by what was remembered or by bot name.").foregroundStyle(.secondary) }
+
+      if !hasVisibleMemories {
+        ContentUnavailableView(
+          query.isEmpty ? "No memories yet" : "No matching memories",
+          systemImage: query.isEmpty ? "brain" : "magnifyingglass",
+          description: Text(query.isEmpty ? "Add a shared memory or one for a specific bot." : "Try a different search or scope."))
       }
-      ForEach(model.agents) { agent in
-        let memories = model.agentMemories[agent.id] ?? []
+      if scope == .all || scope == .shared {
         Section {
-          if memories.isEmpty {
-            Text("No memories yet.").foregroundStyle(.secondary)
-          }
-          ForEach(memories) { memory in
-            row(memory, agentID: agent.id)
-          }
-          Text("\(memories.count) personal memor\(memories.count == 1 ? "y" : "ies")")
-            .font(.caption).foregroundStyle(.secondary)
-          Button("New Memory", systemImage: "plus") { model.openMemoryForm("", agentID: agent.id) }
-        } header: {
-          Text(agent.name)
-        } footer: {
-          Text("What \(agent.name) remembers between chats.").foregroundStyle(.secondary)
+          ForEach(visibleShared) { row($0, agentID: nil) }
+          if !visibleShared.isEmpty { Text("\(model.sharedMemories.count) shared entr\(model.sharedMemories.count == 1 ? "y" : "ies")").font(.caption).foregroundStyle(.secondary) }
+          Button("New Shared Memory", systemImage: "plus") { model.openMemoryForm("", agentID: nil) }
+        } header: { Text("Shared") } footer: { Text(sharedFooter).foregroundStyle(.secondary) }
+      }
+      if scope != .shared {
+        ForEach(model.agents.filter { agent in
+          switch scope { case .all: return !(visiblePersonal[agent.id] ?? []).isEmpty; case .bot(let id): return id == agent.id; case .shared: return false }
+        }) { agent in
+          let memories = visiblePersonal[agent.id] ?? []
+          Section {
+            if memories.isEmpty { Text("No matching memories.").foregroundStyle(.secondary) }
+            ForEach(memories) { row($0, agentID: agent.id) }
+            Text("\(memories.count) entr\(memories.count == 1 ? "y" : "ies")").font(.caption).foregroundStyle(.secondary)
+            Button("New Memory", systemImage: "plus") { model.openMemoryForm("", agentID: agent.id) }
+          } header: { Text(agent.name) } footer: { Text("Memories owned by \(agent.name).").foregroundStyle(.secondary) }
         }
       }
     }
     .formStyle(.grouped)
+    .searchable(text: $query, placement: .automatic, prompt: "Search memories")
+    .confirmationDialog("Delete this memory?", item: $pendingDelete) { item in
+      Button("Delete", role: .destructive) { model.deleteMemory(item.id, agentID: item.agentID) }
+      Button("Cancel", role: .cancel) {}
+    } message: { item in Text(item.label) }
+  }
+
+  private var visibleShared: [Memory] {
+    model.sharedMemories.filter { matches($0, owner: "Shared") }
+  }
+  private var hasVisibleMemories: Bool {
+    switch scope {
+    case .shared: return !visibleShared.isEmpty
+    case .all: return !visibleShared.isEmpty || visiblePersonal.values.contains { !$0.isEmpty }
+    case .bot(let id): return !(visiblePersonal[id] ?? []).isEmpty
+    }
+  }
+  private var visiblePersonal: [String: [Memory]] {
+    Dictionary(uniqueKeysWithValues: model.agents.map { agent in
+      (agent.id, (model.agentMemories[agent.id] ?? []).filter { matches($0, owner: agent.name) })
+    })
+  }
+  private func matches(_ memory: Memory, owner: String) -> Bool {
+    let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
+    return q.isEmpty || memory.content.localizedCaseInsensitiveContains(q) || owner.localizedCaseInsensitiveContains(q)
   }
 
   private var sharedFooter: String {
@@ -93,17 +137,21 @@ private struct MemoryPanel: View {
   }
 
   private func row(_ memory: Memory, agentID: String?) -> some View {
-    HStack(alignment: .firstTextBaseline) {
-      Text(memory.content).textSelection(.enabled)
-      Spacer()
-      Menu {
-        Button("Edit") { model.openMemoryForm(memory.id, agentID: agentID) }
-        Button("Delete", role: .destructive) { model.deleteMemory(memory.id, agentID: agentID) }
-      } label: {
-        Image(systemName: "ellipsis.circle")
+    DisclosureGroup {
+      Text(memory.content).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
+    } label: {
+      HStack(alignment: .firstTextBaseline) {
+        Text(memory.content).lineLimit(2).multilineTextAlignment(.leading)
+        Spacer()
+        Menu {
+          Button("Edit") { model.openMemoryForm(memory.id, agentID: agentID) }
+          Button("Delete", role: .destructive) {
+            pendingDelete = MemoryDeletion(id: memory.id, agentID: agentID, label: memory.content)
+          }
+        } label: { Image(systemName: "ellipsis.circle") }
+        .accessibilityLabel("Memory actions")
+        .disabled(memory.id.hasPrefix("pending-"))
       }
-      .accessibilityLabel("Memory actions")
-      .disabled(memory.id.hasPrefix("pending-"))
     }
   }
 }
@@ -144,13 +192,28 @@ private struct SkillsPanel: View {
               Spacer()
               if !skill.isDefault {
                 Menu {
+                  Section("Enable for bot") {
+                    ForEach(model.agents) { agent in
+                      Button {
+                        model.setSharedSkill(
+                          skill.id, for: agent.id,
+                          enabled: !(agent.sharedSkills?.contains(skill.id) ?? false))
+                      } label: {
+                        Label(
+                          agent.name,
+                          systemImage: agent.sharedSkills?.contains(skill.id) == true
+                            ? "checkmark.circle.fill" : "circle")
+                      }
+                      .disabled(model.pendingMutations.contains("agent-skill:\(agent.id):sharedSkills"))
+                    }
+                  }
                   Button("Edit") { model.openSkillForm(skill.id) }
                   Button("Delete", role: .destructive) { model.deleteSharedSkill(skill.id) }
                 } label: {
                   Image(systemName: "ellipsis.circle")
                 }
                 .accessibilityLabel("Skill actions")
-                .disabled(skill.id.hasPrefix("pending-"))
+                .disabled(skill.id.hasPrefix("pending-") || model.pendingMutations.contains("skill:\(skill.id)"))
               }
             }
           }
@@ -159,7 +222,7 @@ private struct SkillsPanel: View {
         Text("Shared")
       } footer: {
         Text(
-          "Defaults apply to every bot. Enable optional shared skills in a bot’s profile. Edit default files on the server and restart it to load changes."
+          "Defaults apply to every bot. Enable optional shared skills for each bot here. Edit default files on the server and restart it to load changes."
         ).foregroundStyle(.secondary)
       }
       ForEach(model.agents) { agent in
@@ -174,10 +237,23 @@ private struct SkillsPanel: View {
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
             } label: {
-              Text(skill.name).fontWeight(.semibold)
+              HStack {
+                Text(skill.name).fontWeight(.semibold)
+                Spacer()
+                Menu {
+                  Button("Edit") { model.openPersonalSkillForm(agentID: agent.id, skillID: skill.id.uuidString) }
+                  Button("Delete", role: .destructive) { model.deletePersonalSkill(skill.id.uuidString, from: agent.id) }
+                } label: {
+                  Image(systemName: "ellipsis.circle")
+                }
+                .accessibilityLabel("Skill actions")
+                .disabled(model.pendingMutations.contains("agent-skill:\(agent.id):skills"))
+              }
             }
           }
-          Button("Edit in Profile…") { model.openEditor(agentID: agent.id) }
+          Button("New Skill", systemImage: "plus") {
+            model.openPersonalSkillForm(agentID: agent.id)
+          }.disabled(model.pendingMutations.contains("agent-skill:\(agent.id):skills"))
         } header: {
           Text(agent.name)
         } footer: {
@@ -253,39 +329,48 @@ private struct ActivityPanel: View {
   @Environment(AppModel.self) private var model
 
   var body: some View {
-    if model.executions.isEmpty {
+    if model.activities.isEmpty {
       ContentUnavailableView(
         "No Activity", systemImage: "waveform.path.ecg",
-        description: Text("Work from chats and tasks will appear here."))
+        description: Text("Tool calls and bot messages will appear here."))
     } else {
       Form {
         Section {
-          ForEach(model.executions) { execution in
+          ForEach(model.activities) { activity in
             HStack {
               VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
-                  Text(execution.status ?? "")
+                  Text(activity.kind.replacingOccurrences(of: "-", with: " ").capitalized)
                     .font(.caption.weight(.medium))
                     .padding(.horizontal, 6)
                     .padding(.vertical, 1)
                     .background(.quaternary, in: .capsule)
-                  Text(activityTime(execution.createdAt)).font(.caption).foregroundStyle(.secondary)
+                  Text(activityTime(activity.timestamp)).font(.caption).foregroundStyle(.secondary)
                 }
-                Text(execution.prompt ?? "").lineLimit(2)
-                if let error = execution.error, !error.isEmpty {
-                  Text(error).font(.callout).foregroundStyle(.red).textSelection(.enabled)
-                }
+                Text(activity.agentName).font(.headline)
+                Text(activitySummary(activity)).lineLimit(2)
+                DisclosureGroup("Details") { Text(activity.details.prettyPrinted).font(.caption.monospaced()).textSelection(.enabled) }
               }
               Spacer()
-              if let agent = execution.agentId, !agent.isEmpty {
-                Button("Open Chat") { model.selectAgent(agent) }
-              }
+              Button("Open Chat") { model.selectAgent(activity.agentId) }
             }
           }
         }
       }
       .formStyle(.grouped)
     }
+  }
+
+  private func activitySummary(_ activity: ActivityRecord) -> String {
+    let details = activity.details
+    if let tool = details["toolName"]?.stringValue ?? details["name"]?.stringValue {
+      if let status = details["status"]?.stringValue { return "\(tool) · \(status)" }
+      return tool
+    }
+    if let from = details["from"]?.stringValue, let to = details["to"]?.stringValue {
+      return "\(from) → \(to)"
+    }
+    return details["content"]?.stringValue ?? activity.kind.replacingOccurrences(of: "-", with: " ").capitalized
   }
 }
 
@@ -554,9 +639,13 @@ struct SkillFormView: View {
             .accessibilityLabel("Shared skill name")
           TextEditor(text: $draft.instructions).frame(minHeight: 120)
         } header: {
-          Text("Shared Skill")
+          Text(draft.agentID == nil ? "Shared Skill" : "Bot Skill")
         } footer: {
-          Text("Bots that turn this skill on in their profile follow these instructions.")
+          Text(
+            draft.agentID == nil
+              ? "Enable this shared skill for bots from the Skills workspace."
+              : "This skill belongs to the selected bot and runs in its chat."
+          )
             .foregroundStyle(.secondary)
         }
       }

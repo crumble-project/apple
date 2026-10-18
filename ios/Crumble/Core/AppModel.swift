@@ -64,6 +64,7 @@ struct MemoryDraft: Identifiable, Sendable {
 struct SkillDraft: Identifiable, Sendable {
   let id = UUID()
   var skillID: String
+  var agentID: String?
   var name = ""
   var instructions = ""
 }
@@ -157,6 +158,7 @@ final class AppModel {
   var sharedSkills: [SharedSkill] = []
   var schedules: [Schedule] = []
   var executions: [Execution] = []
+  var activities: [ActivityRecord] = []
   var mcpServers: [MCPServer] = []
   var providers: [ProviderStatus] = []
   var models: [ModelSummary] = []
@@ -1064,8 +1066,8 @@ final class AppModel {
       }
     case .activity:
       request { client in
-        let items = try await client.executions()
-        return { [self] in executions = items }
+        let feed = try await client.activityFeed()
+        return { [self] in activities = feed.activities }
       }
     case .integrations:
       let mutationVersion = mutationRevision
@@ -1507,8 +1509,18 @@ final class AppModel {
   }
 
   func openSkillForm(_ id: String) {
-    var form = SkillDraft(skillID: id)
+    var form = SkillDraft(skillID: id, agentID: nil)
     if let skill = sharedSkills.first(where: { $0.id == id }) {
+      form.name = skill.name
+      form.instructions = skill.instructions
+    }
+    skillDraft = form
+  }
+
+  func openPersonalSkillForm(agentID: String, skillID: String = "") {
+    guard let agent = agents.first(where: { $0.id == agentID }) else { return }
+    var form = SkillDraft(skillID: skillID, agentID: agentID)
+    if let skill = agent.skills?.first(where: { $0.id.uuidString == skillID }) {
       form.name = skill.name
       form.instructions = skill.instructions
     }
@@ -1521,6 +1533,43 @@ final class AppModel {
     let instructions = form.instructions.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !name.isEmpty, !instructions.isEmpty else {
       errorText = "Each skill needs a name and instructions."
+      return
+    }
+    if let agentID = form.agentID {
+      guard let index = agents.firstIndex(where: { $0.id == agentID }) else { return }
+      let previous = agents[index].skills ?? []
+      var updated = previous
+      let skill = Skill(name: name, instructions: instructions)
+      if let existing = previous.firstIndex(where: { $0.id.uuidString == form.skillID }) {
+        var replacement = previous[existing]
+        replacement.name = name
+        replacement.instructions = instructions
+        updated[existing] = replacement
+      } else {
+        updated.append(skill)
+      }
+      skillDraft = nil
+      optimisticMutation(
+        key: "agent-skill:\(agentID):skills",
+        update: { [self] in
+          guard let index = agents.firstIndex(where: { $0.id == agentID }) else { return }
+          agents[index].skills = updated
+        },
+        rollback: { [self] in
+          guard let index = agents.firstIndex(where: { $0.id == agentID }) else { return }
+          agents[index].skills = previous
+          if route == .skills, skillDraft == nil { skillDraft = form }
+        },
+        work: { client in
+          _ = try await client.updateAgent(
+            agentID, patch: ["skills": try JSONValue(encoding: updated)])
+          return { [self] in
+            // Keep fields changed by another editor or a newer optimistic mutation intact.
+            if let index = agents.firstIndex(where: { $0.id == agentID }) {
+              agents[index].skills = updated
+            }
+          }
+        })
       return
     }
     let isNew = form.skillID.isEmpty
@@ -1589,6 +1638,64 @@ final class AppModel {
       work: { client in
         try await client.deleteSharedSkill(id)
         return nil
+      })
+  }
+
+  func setSharedSkill(_ skillID: String, for agentID: String, enabled: Bool) {
+    guard !skillID.isEmpty, !agentID.isEmpty,
+      let index = agents.firstIndex(where: { $0.id == agentID }),
+      sharedSkills.contains(where: { $0.id == skillID && !$0.isDefault })
+    else { return }
+    let previous = agents[index].sharedSkills ?? []
+    var memberships = Set(previous)
+    if enabled { memberships.insert(skillID) } else { memberships.remove(skillID) }
+    let updated = memberships.sorted()
+    guard updated != previous.sorted() else { return }
+    optimisticMutation(
+      key: "agent-skill:\(agentID):sharedSkills",
+      update: { [self] in
+        guard let index = agents.firstIndex(where: { $0.id == agentID }) else { return }
+        agents[index].sharedSkills = updated
+      },
+      rollback: { [self] in
+        guard let index = agents.firstIndex(where: { $0.id == agentID }) else { return }
+        agents[index].sharedSkills = previous
+      },
+      work: { client in
+        _ = try await client.updateAgent(
+          agentID, patch: ["sharedSkills": .array(updated.map(JSONValue.string))])
+        return { [self] in
+          guard let index = agents.firstIndex(where: { $0.id == agentID }) else { return }
+          agents[index].sharedSkills = updated
+        }
+      })
+  }
+
+  func deletePersonalSkill(_ skillID: String, from agentID: String) {
+    guard let index = agents.firstIndex(where: { $0.id == agentID }),
+      let skillIndex = agents[index].skills?.firstIndex(where: { $0.id.uuidString == skillID })
+    else { return }
+    let previous = agents[index].skills ?? []
+    var updated = previous
+    updated.remove(at: skillIndex)
+    optimisticMutation(
+      key: "agent-skill-personal:\(agentID):\(skillID)",
+      update: { [self] in
+        guard let index = agents.firstIndex(where: { $0.id == agentID }) else { return }
+        agents[index].skills = updated
+      },
+      rollback: { [self] in
+        guard let index = agents.firstIndex(where: { $0.id == agentID }) else { return }
+        agents[index].skills = previous
+      },
+      work: { client in
+        _ = try await client.updateAgent(
+          agentID, patch: ["skills": try JSONValue(encoding: updated)])
+        return { [self] in
+          if let index = agents.firstIndex(where: { $0.id == agentID }) {
+            agents[index].skills = updated
+          }
+        }
       })
   }
 
@@ -1790,6 +1897,11 @@ func activityTime(_ value: String?) -> String {
   guard let date = (try? fractional.parse(value)) ?? (try? Date.ISO8601FormatStyle().parse(value))
   else { return value }
   return timeLabel(date)
+}
+
+func activityTime(_ value: Int64?) -> String {
+  guard let value else { return "" }
+  return timeLabel(Date(timeIntervalSince1970: Double(value) / 1000))
 }
 
 extension String {

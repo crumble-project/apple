@@ -227,6 +227,7 @@ struct APIClient: Sendable {
     return envelope.result
   }
   func executions() async throws -> [Execution] { try await call("GET", "/v1/executions") }
+  func activityFeed() async throws -> ActivityFeed { try await call("GET", "/v1/activity/feed") }
 
   func providers() async throws -> [ProviderStatus] { try await call("GET", "/v1/providers") }
   func models(provider: String) async throws -> [ModelSummary] {
