@@ -54,8 +54,8 @@ struct APIClient: Sendable {
         return data
     }
 
-    private func call<T: Decodable>(_ method: String, _ path: String, body: (any Encodable)? = nil) async throws -> T {
-        try JSONDecoder().decode(T.self, from: try await send(method, path, body: body))
+    private func call<T: Decodable>(_ method: String, _ path: String, body: (any Encodable)? = nil, timeout: TimeInterval = 20) async throws -> T {
+        try JSONDecoder().decode(T.self, from: try await send(method, path, body: body, timeout: timeout))
     }
 
     private func perform(_ method: String, _ path: String, body: (any Encodable)? = nil, timeout: TimeInterval = 20) async throws {
@@ -102,7 +102,16 @@ struct APIClient: Sendable {
     /// Follows the bot chat's server-sent events, passing each snapshot payload to onEvent.
     /// It returns only by throwing: SSEClosedError when the server ends the stream.
     func chatEvents(_ agentID: String, onEvent: @Sendable (String) async -> Void) async throws -> Never {
-        let path = "/v1/agents/\(agentID)/events"
+        try await events("/v1/agents/\(agentID)/events", parser: SSEParser(), onEvent: onEvent)
+    }
+
+    /// Follows server-wide activity: finished replies from every bot and new approvals.
+    func activityEvents(onEvent: @Sendable (String) async -> Void) async throws -> Never {
+        try await events("/v1/events", parser: SSEParser(accepting: ["activity"]), onEvent: onEvent)
+    }
+
+    private func events(_ path: String, parser: SSEParser, onEvent: @Sendable (String) async -> Void) async throws -> Never {
+        var parser = parser
         // Heartbeats keep the stream busy; a long idle timeout only ends a stream that has gone silent.
         let request = try makeRequest("GET", path, timeout: 24 * 60 * 60)
         let (bytes, response) = try await session.bytes(for: request)
@@ -116,7 +125,6 @@ struct APIClient: Sendable {
             throw APIError(method: "GET", path: path, statusCode: status,
                            body: String(decoding: data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines))
         }
-        var parser = SSEParser()
         // AsyncLineSequence skips empty lines, so read raw lines to keep the blank line that ends an event.
         var line = Data()
         for try await byte in bytes {
@@ -178,6 +186,13 @@ struct APIClient: Sendable {
         try await call("PATCH", "/v1/mcp-servers/\(id)", body: patch)
     }
     func deleteMCPServer(_ id: String) async throws { try await perform("DELETE", "/v1/mcp-servers/\(id)") }
+    func startMCPSignIn(_ id: String, redirectURI: String) async throws -> OAuthStart {
+        try await call("POST", "/v1/mcp-servers/\(id)/oauth", body: ["redirectUri": redirectURI], timeout: 60)
+    }
+    func finishMCPSignIn(_ id: String, code: String, state: String) async throws -> MCPServer {
+        try await call("POST", "/v1/mcp-servers/\(id)/oauth/callback", body: ["code": code, "state": state], timeout: 60)
+    }
+    func signOutOfMCP(_ id: String) async throws -> MCPServer { try await call("DELETE", "/v1/mcp-servers/\(id)/oauth") }
 }
 
 /// Splits a server-sent event stream into snapshot payloads, line by line. Heartbeats and other
@@ -185,6 +200,12 @@ struct APIClient: Sendable {
 struct SSEParser {
     private var data: [String] = []
     private var eventType = "message"
+    private let accepting: Set<String>
+
+    /// The event types whose payloads are passed on; the chat stream's are snapshots.
+    init(accepting: Set<String> = ["snapshot", "message"]) {
+        self.accepting = accepting
+    }
 
     struct InvalidPayload: Error, LocalizedError {
         var reason: String
@@ -207,7 +228,7 @@ struct SSEParser {
         guard !data.isEmpty else { return nil }
         let payload = data.joined(separator: "\n")
         data = []
-        guard eventType == "snapshot" || eventType == "message" else { return nil }
+        guard accepting.contains(eventType) else { return nil }
         struct Envelope: Decodable { var agentId: String? }
         guard let envelope = try? JSONDecoder().decode(Envelope.self, from: Data(payload.utf8)) else {
             throw InvalidPayload(reason: "invalid SSE payload")

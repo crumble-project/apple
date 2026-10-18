@@ -1,3 +1,4 @@
+import AuthenticationServices
 import SwiftUI
 
 /// The workspace pages: memory, tasks, activity, approvals, and integrations.
@@ -174,6 +175,7 @@ private struct ApprovalsPanel: View {
 
 private struct IntegrationsPanel: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.webAuthenticationSession) private var webAuthenticationSession
 
     var body: some View {
         if model.mcpServers.isEmpty {
@@ -187,10 +189,22 @@ private struct IntegrationsPanel: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(server.name).fontWeight(.semibold)
                                 Text(server.url).font(.callout).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+                                Text(signInStatus(server)).font(.caption).foregroundStyle(.secondary)
                             }
                             Spacer()
                             if !server.enabled {
                                 Text("Disabled").font(.caption).foregroundStyle(.secondary)
+                            }
+                            if model.signingIn == server.id {
+                                ProgressView().controlSize(.small)
+                            } else if server.auth == "oauth" {
+                                Button("Sign Out") { model.signOutOfMCP(server.id) }
+                            } else {
+                                Button("Sign In…") {
+                                    Task { await model.signInToMCP(server.id, using: webAuthenticationSession) }
+                                }
+                                .disabled(model.signingIn != nil)
+                                .help("Sign in to a server that uses OAuth")
                             }
                             Button("Edit") { model.openMCPForm(server.id) }
                             Button("Delete") { model.deleteMCP(server.id) }
@@ -201,6 +215,14 @@ private struct IntegrationsPanel: View {
                 }
             }
             .formStyle(.grouped)
+        }
+    }
+
+    private func signInStatus(_ server: MCPServer) -> String {
+        switch server.auth {
+        case "oauth": "Signed in with OAuth"
+        case "token": "Uses a token"
+        default: "No sign-in"
         }
     }
 }
@@ -275,11 +297,16 @@ struct MCPFormView: View {
     var body: some View {
         Form {
             SheetError()
-            Section("MCP Server") {
+            Section {
                 TextField("Name", text: $draft.name, prompt: Text("Required"))
                 TextField("HTTP URL", text: $draft.url, prompt: Text("https://"))
                 SecureField("Token", text: $draft.token, prompt: Text("Optional"))
                 Toggle("Enabled", isOn: $draft.enabled)
+            } header: {
+                Text("MCP Server")
+            } footer: {
+                Text("Leave the token empty for servers that use OAuth, then choose Sign In in the list after saving.")
+                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)

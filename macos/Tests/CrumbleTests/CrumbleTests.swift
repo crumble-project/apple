@@ -103,6 +103,22 @@ struct APIClientTests {
         #expect(model.errorText.contains("busy"))
     }
 
+    @Test func mcpSignInRoundTrip() async throws {
+        let client = StubProtocol.client { request in
+            switch request.url?.path {
+            case "/v1/mcp-servers/s1/oauth": (200, #"{"authorizationUrl":"https://auth.example.com/authorize?state=x"}"#)
+            case "/v1/mcp-servers/s1/oauth/callback": (200, #"{"id":"s1","name":"Linear","url":"https://mcp.linear.app/mcp","enabled":true,"auth":"oauth"}"#)
+            default: (404, "")
+            }
+        }
+        let start = try await client.startMCPSignIn("s1", redirectURI: AppModel.oauthRedirectURI)
+        #expect(start.authorizationUrl?.hasPrefix("https://auth.example.com/") == true)
+        let sent = String(decoding: StubProtocol.requests.last?.httpBody ?? Data(), as: UTF8.self)
+        #expect(sent.contains("dev.crumble.desktop:\\/oauth\\/callback") || sent.contains("dev.crumble.desktop:/oauth/callback"))
+        let server = try await client.finishMCPSignIn("s1", code: "c", state: "x")
+        #expect(server.auth == "oauth")
+    }
+
     @Test func errorsCarryStatusAndBody() async throws {
         let client = StubProtocol.client { _ in (401, "bad token") }
         do {
@@ -227,6 +243,38 @@ struct LogicTests {
         let pdf = folder.appending(path: "doc.pdf")
         try Data("%PDF-1.4".utf8).write(to: pdf)
         #expect(throws: AttachmentError.self) { try loadAttachment(from: pdf) }
+    }
+
+    @Test func notificationsSkipWhatIsOnScreen() {
+        let reply = ActivityEvent(type: "reply", agentId: "a1", agentName: "Atlas", origin: "owner", preview: "**Done**, two meetings.")
+        #expect(notification(for: reply, in: NotificationContext(appActive: false, route: .agent("a1")))?.body == "Done, two meetings.")
+        #expect(notification(for: reply, in: NotificationContext(appActive: true, route: .agent("a1"))) == nil)
+        #expect(notification(for: reply, in: NotificationContext(appActive: true, route: .agent("a2")))?.title == "Atlas")
+        var delegated = reply
+        delegated.origin = "bot"
+        #expect(notification(for: delegated, in: NotificationContext(appActive: false, route: nil)) == nil)
+        let approval = ActivityEvent(type: "approval", agentId: "a1", agentName: "Atlas", approvalId: "x", toolName: "send_email")
+        #expect(notification(for: approval, in: NotificationContext(appActive: true, route: .approvals)) == nil)
+        #expect(notification(for: approval, in: NotificationContext(appActive: true, route: .agent("a1")))?.body == "Allow send_email to run?")
+    }
+
+    @Test func activityStreamPassesOnlyActivity() throws {
+        var parser = SSEParser(accepting: ["activity"])
+        _ = try parser.feed("event: heartbeat")
+        _ = try parser.feed("data: {}")
+        #expect(try parser.feed("") == nil)
+        _ = try parser.feed("event: activity")
+        _ = try parser.feed(#"data: {"type":"reply","agentId":"a1","agentName":"Atlas"}"#)
+        #expect(try parser.feed("") != nil)
+    }
+
+    @Test func signInCallbacksCarryACodeOrAReason() throws {
+        let ok = try oauthResult(from: URL(string: "dev.crumble.desktop:/oauth/callback?code=abc&state=xyz")!)
+        #expect(ok.code == "abc" && ok.state == "xyz")
+        #expect(throws: SignInError.self) {
+            try oauthResult(from: URL(string: "dev.crumble.desktop:/oauth/callback?error=access_denied&error_description=User%20declined")!)
+        }
+        #expect(throws: SignInError.self) { try oauthResult(from: URL(string: "dev.crumble.desktop:/oauth/callback")!) }
     }
 
     @Test func markdownSplitsBlocks() {

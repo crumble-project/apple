@@ -1,6 +1,8 @@
 import AppKit
+import AuthenticationServices
 import Foundation
 import Observation
+import SwiftUI
 
 enum Route: Hashable {
     case agent(String)
@@ -112,6 +114,7 @@ final class AppModel {
     var notice = ""
     var streamStatus = ""
     private var streamTask: Task<Void, Never>?
+    private var activityTask: Task<Void, Never>?
 
     var memories: [Memory] = []
     var schedules: [Schedule] = []
@@ -125,6 +128,8 @@ final class AppModel {
     var memoryDraft: MemoryDraft?
     var taskDraft: TaskDraft?
     var mcpDraft: MCPDraft?
+    /// The MCP server whose sign-in sheet is open.
+    var signingIn: String?
     var confirmingDelete = false
 
     var provider = "melious"
@@ -293,6 +298,38 @@ final class AppModel {
             try? await Task.sleep(for: backoff)
             backoff = min(backoff * 2, .seconds(8))
         }
+    }
+
+    /// Follows server-wide activity for notifications, reconnecting as the chat stream does.
+    func followActivity() {
+        activityTask?.cancel()
+        guard let client else { return }
+        let generation = generation
+        activityTask = Task {
+            var backoff = Duration.milliseconds(500)
+            while !Task.isCancelled, self.generation == generation {
+                do {
+                    try await client.activityEvents { payload in
+                        guard let event = try? JSONDecoder().decode(ActivityEvent.self, from: Data(payload.utf8)) else { return }
+                        await MainActor.run {
+                            guard self.generation == generation else { return }
+                            self.handleActivity(event)
+                        }
+                    }
+                } catch {
+                    if let apiError = error as? APIError, apiError.statusCode == 401 { return }
+                }
+                try? await Task.sleep(for: backoff)
+                backoff = min(backoff * 2, .seconds(8))
+            }
+        }
+    }
+
+    func handleActivity(_ event: ActivityEvent) {
+        if event.type == "approval", route == .approvals { openPanel(.approvals) }
+        let context = NotificationContext(appActive: NSApp?.isActive ?? false, route: route)
+        guard let note = notification(for: event, in: context) else { return }
+        Notifier.shared.post(event, title: note.title, body: note.body)
     }
 
     func loadOlder() {
@@ -737,6 +774,40 @@ final class AppModel {
         }
     }
 
+    /// Where the system sign-in sheet returns; the sheet watches this scheme, so nothing registers it.
+    static let oauthCallbackScheme = "dev.crumble.desktop"
+    static let oauthRedirectURI = oauthCallbackScheme + ":/oauth/callback"
+
+    /// Signs in to an OAuth MCP server: the server prepares the request, the system sheet shows the
+    /// provider's sign-in, and the server exchanges the returned code for tokens it keeps.
+    func signInToMCP(_ id: String, using session: WebAuthenticationSession) async {
+        guard let client else { return }
+        errorText = ""
+        signingIn = id
+        defer { signingIn = nil }
+        do {
+            let start = try await client.startMCPSignIn(id, redirectURI: Self.oauthRedirectURI)
+            if let address = start.authorizationUrl, let url = URL(string: address) {
+                let callback = try await session.authenticate(using: url, callbackURLScheme: Self.oauthCallbackScheme)
+                let (code, state) = try oauthResult(from: callback)
+                _ = try await client.finishMCPSignIn(id, code: code, state: state)
+            }
+            showNotice("Signed in")
+            openPanel(.integrations)
+        } catch ASWebAuthenticationSessionError.canceledLogin {
+            return
+        } catch {
+            errorText = friendlyError(error)
+        }
+    }
+
+    func signOutOfMCP(_ id: String) {
+        request { client in
+            _ = try await client.signOutOfMCP(id)
+            return { [self] in openPanel(.integrations) }
+        }
+    }
+
     func deleteMCP(_ id: String) {
         request { client in
             try await client.deleteMCPServer(id)
@@ -768,6 +839,7 @@ final class AppModel {
                 selectedAgentID = ""
                 showNotice("Connected")
                 refresh()
+                followActivity()
             } catch {
                 errorText = friendlyError(error)
             }
@@ -820,6 +892,23 @@ func messageOrder(_ id: String) -> [Int] {
 }
 
 func newRequestID() -> String { UUID().uuidString.lowercased() }
+
+struct SignInError: LocalizedError {
+    var errorDescription: String?
+}
+
+/// Reads the code and state from a sign-in callback, or the provider's reason for refusing.
+func oauthResult(from callback: URL) throws -> (code: String, state: String) {
+    let items = URLComponents(url: callback, resolvingAgainstBaseURL: false)?.queryItems ?? []
+    let value = { (name: String) in items.first { $0.name == name }?.value }
+    if let error = value("error") {
+        throw SignInError(errorDescription: "Sign-in was refused: " + (value("error_description") ?? error))
+    }
+    guard let code = value("code"), let state = value("state") else {
+        throw SignInError(errorDescription: "Sign-in returned no authorization code.")
+    }
+    return (code, state)
+}
 
 func validateTask(name: String, prompt: String, cron: String, runAt: String) -> String? {
     if name.trimmingCharacters(in: .whitespaces).isEmpty || prompt.trimmingCharacters(in: .whitespaces).isEmpty {

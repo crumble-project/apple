@@ -277,6 +277,14 @@ struct MCPServer: Codable, Identifiable, Hashable, Sendable {
     var url: String
     var enabled: Bool
     var authenticated: Bool?
+    /// How the server signs in: "oauth", "token", or "none".
+    var auth: String?
+}
+
+/// The start of an OAuth sign-in: a URL to open, or `authorized` when saved tokens still work.
+struct OAuthStart: Decodable, Sendable {
+    var authorizationUrl: String?
+    var authorized: Bool?
 }
 
 struct Approval: Codable, Identifiable, Hashable, Sendable {

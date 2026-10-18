@@ -15,7 +15,11 @@ struct CrumbleApp: App {
             ContentView()
                 .environment(model)
                 .frame(minWidth: 860, minHeight: 560)
-                .task { model.refresh() }
+                .task {
+                    Notifier.shared.start(model: model)
+                    model.refresh()
+                    model.followActivity()
+                }
         }
         .defaultSize(width: 1120, height: 760)
         .commands {

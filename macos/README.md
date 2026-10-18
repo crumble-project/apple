@@ -57,6 +57,14 @@ The app sends the token as an `Authorization: Bearer` header. It does not send p
 - Return sends a message; Shift-Return or Option-Return starts a new line.
 - The plus button beside the message field attaches files, and you can also drag files onto the field. A message can carry up to eight images (PNG, JPEG, GIF, WebP, up to 5 MB) or UTF-8 text files (up to 512 KB). The app converts other image formats, and larger images, to JPEG first.
 
+## Notifications
+
+The app notifies you when a bot finishes a reply you aren't looking at, including replies to scheduled tasks, and when a tool call waits for your approval. Click a notification to open the chat or Approvals. macOS asks for permission on first launch. Notifications need the app bundle from `./scripts/build-app.sh`; `swift run` posts none.
+
+## Integrations
+
+Add MCP servers under **Integrations**. For a server that uses a token, enter it in the server's form. For a server that uses OAuth, leave the token empty, save, and choose **Sign In…** in the list; the app shows the provider's sign-in page, and the Crumble server keeps the tokens.
+
 ## Current scope and limitations
 
 The server remains the source of truth for persistent state. The product is still under active development. Hermes Agent and Grok Bot parity is a target for end-to-end acceptance, not a statement that every capability is complete. Review the server's [`docs/product-parity.md`](../bot/docs/product-parity.md) and [`docs/architecture.md`](../bot/docs/architecture.md) before planning a release.
