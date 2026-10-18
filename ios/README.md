@@ -15,7 +15,26 @@ It uses the same authenticated API as the macOS and Android apps, with no third-
 Open `Crumble.xcodeproj` in Xcode and select the **Crumble** scheme.
 Select an iPhone or iPad simulator, then run the app.
 For a physical device, select your team under **Signing & Capabilities** before running.
-The bundle identifier is `dev.crumble.ios`; change it if your signing account requires a unique identifier.
+The bundle identifier is `dev.crumble-project.ios`; change it if your signing account requires a unique identifier.
+
+## Configure push notifications
+
+Push notifications use Apple Push Notification service (APNs). You need an Apple Developer Program team with push access.
+
+1. Enable **Push Notifications** for the explicit App ID `dev.crumble-project.ios` in your Apple Developer account.
+2. Select the **Crumble** target and your team under **Signing & Capabilities**.
+3. Refresh the provisioning profile so it includes Push Notifications and `aps-environment`.
+4. Configure the server with `CRUMBLE_APNS_TEAM_ID`, `CRUMBLE_APNS_KEY_ID`, and `CRUMBLE_APNS_PRIVATE_KEY_PATH`.
+5. Add `dev.crumble-project.ios` to the server's `CRUMBLE_APNS_ALLOWED_TOPICS`.
+6. Run the signed app, save your server connection, and allow notifications.
+
+A wildcard provisioning profile cannot provide push access. The project includes the Push Notifications capability and entitlement.
+Debug builds use the APNs sandbox (`APNS_ENVIRONMENT=development`); Release builds use production (`APNS_ENVIRONMENT=production`).
+The signing profile must match this environment. Override `APNS_ENVIRONMENT` when using a different signing configuration.
+Keep APNs keys on the server, outside source control.
+
+Verify actual delivery on a physical device, including foreground, background, terminated, and notification-tap launches.
+Compatible simulators can receive sandbox APNs, but simulated payload injection alone does not verify provider delivery.
 
 ## Connect to your server
 
@@ -56,11 +75,25 @@ On foregrounding, the app refreshes the selected chat and reconnects its event s
 
 ## Notifications and background behavior
 
-The app can post local notifications for replies received while it runs, except for the chat you are viewing.
-Tapping a notification opens that agent.
-iOS suspends network streams in the background. This client does not provide APNs push delivery or continuous background execution.
-Replies completed while the app is suspended appear when you return.
-Unsent drafts are held in memory and do not survive termination by iOS.
+Completed replies notify with the agent name, a message preview, and the default sound.
+Replies from delegated bots stay quiet. The visible chat stays quiet while the app is active.
+Tap an alert to open its agent, including after a cold launch. Alerts from another server cannot switch your connection.
+
+With server push configured, APNs can show alerts while the app is suspended or terminated.
+The app stops posting local stream alerts when the server confirms remote delivery, preventing duplicate delivery paths.
+Without remote delivery, local alerts work while the app receives the activity stream.
+Use **Settings > Notifications** to disable reply alerts or open iOS notification settings.
+iOS controls lock-screen previews, Focus filtering, and notification permissions.
+
+Device registrations update after token rotation. Disabling notifications or changing servers removes the previous registration.
+Failed removal stays in Keychain for retries on launch and while active. New remote registration waits for cleanup.
+The settings status reports pending cleanup. Local fallback remains available for a different current server.
+An unreachable previous server might continue sending alerts until cleanup succeeds.
+Visible-chat suppression uses a presence lease refreshed every 30 seconds and expiring after 120 seconds.
+A forced quit or lost connection can leave that lease active briefly. Push delivery is best effort.
+
+The app stops network streams in the background and refreshes content when you return or open an alert.
+It does not keep streams running through silent pushes. Unsent drafts stay in memory and do not survive app termination.
 
 OAuth uses an authentication browser session and the callback `dev.crumble.ios:/oauth/callback`.
 Your MCP provider must accept that redirect URI.
