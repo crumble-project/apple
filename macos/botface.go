@@ -94,7 +94,7 @@ func drawBotFace(p *ui.Painter, r ui.Rect, spec botSpec, state botState, t float
 	}
 	open := 1.0
 	blinkPeriod := 4.1
-	if phase := math.Mod(t, blinkPeriod); phase < 0.14 {
+	if phase := math.Mod(t, blinkPeriod); live && phase < 0.14 {
 		open = math.Max(0.08, math.Abs(phase-0.07)/0.07)
 	}
 	if live {
@@ -107,33 +107,42 @@ func drawBotFace(p *ui.Painter, r ui.Rect, spec botSpec, state botState, t float
 		}
 	}
 
+	if spec.blush {
+		for _, side := range []float64{-1, 1} {
+			bx, by := cx+side*(gap+eyeR*0.55), cy+eyeR*1.25
+			for k := 3; k >= 1; k-- {
+				grow := 1 + 0.18*float64(k)
+				p.FillPath(ellipsePath(bx, by, eyeR*0.62*grow, eyeR*0.36*grow), ui.RGBA(255, 105, 135, 0.13))
+			}
+		}
+	}
 	shift := eyeR * 0.45
 	for _, side := range []float64{-1, 1} {
 		ex, ey := cx+side*gap+lx*shift, cy+ly*shift
 		p.FillPath(ellipsePath(ex, ey, eyeR*0.82, eyeR*open), ink)
 		if open > 0.5 {
-			glint := ui.RGBA(255, 255, 255, 0.92)
-			p.FillPath(ellipsePath(ex-eyeR*0.28, ey-eyeR*0.34, eyeR*0.26, eyeR*0.26), glint)
-			p.FillPath(ellipsePath(ex+eyeR*0.24, ey+eyeR*0.28, eyeR*0.11, eyeR*0.11), ui.RGBA(255, 255, 255, 0.6))
+			glint := ui.RGBA(255, 255, 255, 0.95)
+			p.FillPath(ellipsePath(ex-eyeR*0.24, ey-eyeR*0.32, eyeR*0.32, eyeR*0.32), glint)
+			p.FillPath(ellipsePath(ex+eyeR*0.26, ey+eyeR*0.3, eyeR*0.13, eyeR*0.13), ui.RGBA(255, 255, 255, 0.7))
 		}
 	}
 	if spec.mouth {
-		my := cy + eyeR*1.9
+		my := cy + eyeR*1.15
 		if state == botWorking {
-			p.FillPath(ellipsePath(cx, my+eyeR*0.2, eyeR*0.38, eyeR*0.48), ink)
+			p.FillPath(ellipsePath(cx, my+eyeR*0.25, eyeR*0.26, eyeR*0.32), ink)
 			return
 		}
 		var smile ui.Path
 		for i := 0; i <= 12; i++ {
 			a := math.Pi * float64(i) / 12
-			x, y := float32(cx-eyeR*0.7*math.Cos(a)), float32(my+eyeR*0.45*math.Sin(a))
+			x, y := float32(cx-eyeR*0.38*math.Cos(a)), float32(my+eyeR*0.3*math.Sin(a))
 			if i == 0 {
 				smile.MoveTo(x, y)
 			} else {
 				smile.LineTo(x, y)
 			}
 		}
-		p.StrokePath(&smile, float32(math.Max(1, eyeR*0.3)), ink)
+		p.StrokePath(&smile, float32(math.Max(1, eyeR*0.22)), ink)
 	}
 }
 

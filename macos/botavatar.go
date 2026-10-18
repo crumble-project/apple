@@ -15,9 +15,9 @@ import (
 	"golang.org/x/image/vector"
 )
 
-// Bot avatars are lit, rounded shapes with live faces. The body is baked once per seed:
-// its outline is rasterized, a distance field raises it into a bevelled dome, and the
-// resulting normals are shaded per pixel. The face is drawn live over it (botface.go).
+// Bot avatars are soft, toy-like shapes with live faces. The body is baked once per seed:
+// its outline is rasterized, blurred into a pillow, and shaded per pixel with wrapped
+// light, a broad sheen, and a little grain. The face is drawn live over it (botface.go).
 
 const (
 	botScale     = 0.47 // unit coordinates to the image's size
@@ -32,6 +32,7 @@ type botSpec struct {
 	color  [3]float64 // sRGB 0..1
 	matte  bool
 	mouth  bool
+	blush  bool
 	eyeGap float64 // unit offset of each eye from the face center
 	eyeR   float64 // unit eye radius
 	faceY  float64 // unit face center
@@ -65,21 +66,21 @@ func botSpecFor(seed string) botSpec {
 	spec := botSpec{
 		shape:  botShapes[rng.IntN(len(botShapes))],
 		color:  botPalette[rng.IntN(len(botPalette))],
-		matte:  rng.IntN(3) == 0,
-		mouth:  rng.IntN(3) == 0,
-		eyeGap: 0.24 + rng.Float64()*0.08,
-		eyeR:   0.12 + rng.Float64()*0.035,
+		matte:  rng.IntN(3) != 0,
+		mouth:  rng.IntN(3) != 0,
+		blush:  rng.IntN(4) != 0,
+		eyeGap: 0.25 + rng.Float64()*0.06,
+		eyeR:   0.13 + rng.Float64()*0.03,
+		faceY:  0.08,
 		wander: rng.Float64() * 100,
 	}
 	switch spec.shape {
 	case "ghost":
-		spec.faceY = -0.16
+		spec.faceY = -0.08
 	case "drop":
-		spec.faceY = 0.22
-	case "cat":
-		spec.faceY = 0.14
-	case "droid":
-		spec.faceY = 0.12
+		spec.faceY = 0.3
+	case "cat", "droid":
+		spec.faceY = 0.2
 	case "star", "flower", "clover":
 		spec.eyeGap, spec.eyeR = spec.eyeGap*0.85, spec.eyeR*0.85
 	case "pill":
@@ -250,57 +251,6 @@ func boxBlur(field []float64, n, radius int) {
 	}
 }
 
-// distanceInside returns each pixel's Euclidean distance to the nearest outside pixel (Felzenszwalb).
-func distanceInside(inside []bool, n int) []float64 {
-	const inf = 1e12
-	grid := make([]float64, n*n)
-	for i, in := range inside {
-		if in {
-			grid[i] = inf
-		}
-	}
-	line := func(f []float64) []float64 {
-		d := make([]float64, len(f))
-		v := make([]int, len(f))
-		z := make([]float64, len(f)+1)
-		k := 0
-		z[0], z[1] = -inf, inf
-		for q := 1; q < len(f); q++ {
-			s := ((f[q] + float64(q*q)) - (f[v[k]] + float64(v[k]*v[k]))) / float64(2*q-2*v[k])
-			for s <= z[k] {
-				k--
-				s = ((f[q] + float64(q*q)) - (f[v[k]] + float64(v[k]*v[k]))) / float64(2*q-2*v[k])
-			}
-			k++
-			v[k], z[k], z[k+1] = q, s, inf
-		}
-		k = 0
-		for q := range f {
-			for z[k+1] < float64(q) {
-				k++
-			}
-			d[q] = float64((q-v[k])*(q-v[k])) + f[v[k]]
-		}
-		return d
-	}
-	column := make([]float64, n)
-	for x := 0; x < n; x++ {
-		for y := 0; y < n; y++ {
-			column[y] = grid[y*n+x]
-		}
-		for y, value := range line(column) {
-			grid[y*n+x] = value
-		}
-	}
-	for y := 0; y < n; y++ {
-		copy(grid[y*n:(y+1)*n], line(grid[y*n:(y+1)*n]))
-	}
-	for i := range grid {
-		grid[i] = math.Sqrt(grid[i])
-	}
-	return grid
-}
-
 // bakeBotBody renders the lit body, with a soft contact shadow, as an n×n image.
 func bakeBotBody(spec botSpec, n int) *image.NRGBA {
 	scale := float64(n) * botScale
@@ -324,40 +274,41 @@ func bakeBotBody(spec botSpec, n int) *image.NRGBA {
 	mask := image.NewAlpha(image.Rect(0, 0, n, n))
 	raster.Draw(mask, mask.Bounds(), image.Opaque, image.Point{})
 
-	inside := make([]bool, n*n)
 	coverage := make([]float64, n*n)
-	for i := range inside {
+	for i := range coverage {
 		coverage[i] = float64(mask.Pix[i]) / 255
-		inside[i] = coverage[i] >= 0.5
 	}
-	dist := distanceInside(inside, n)
-	maxDist := 1.0
-	for _, d := range dist {
-		maxDist = math.Max(maxDist, d)
+	// A heavily blurred silhouette is a pillow with no creases, which reads as soft clay or
+	// plush rather than machined plastic.
+	height := append([]float64(nil), coverage...)
+	boxBlur(height, n, n/18+1)
+	amplitude := float64(n) * 0.16
+	for i, h := range height {
+		height[i] = math.Pow(h, 0.6) * amplitude
 	}
-	bevel := math.Max(6, maxDist*0.55)
-	height := make([]float64, n*n)
-	for i, d := range dist {
-		t := math.Min(d/bevel, 1)
-		height[i] = bevel*math.Sqrt(1-(1-t)*(1-t)) + 0.2*bevel*math.Min(d/maxDist, 1)
-	}
-	boxBlur(height, n, n/96+1)
 
 	shadow := append([]float64(nil), coverage...)
-	boxBlur(shadow, n, n/40+1)
-	shadowOffset := n / 28
+	boxBlur(shadow, n, n/36+1)
+	shadowOffset := n / 30
 
-	light := normalize3(-0.38, -0.58, 0.72)
+	light := normalize3(-0.45, -0.65, 0.62)
 	half := normalize3(light[0], light[1], light[2]+1)
-	base := [3]float64{srgbToLinear(spec.color[0]), srgbToLinear(spec.color[1]), srgbToLinear(spec.color[2])}
+	var lit, shade [3]float64
+	for c, v := range spec.color {
+		linear := srgbToLinear(v)
+		lit[c] = linear + (1-linear)*0.16
+		shade[c] = math.Pow(linear, 1.18) * 0.66
+	}
+	grain := rand.New(rand.NewPCG(uint64(n), 7))
 	out := image.NewNRGBA(image.Rect(0, 0, n, n))
 	for y := 0; y < n; y++ {
 		for x := 0; x < n; x++ {
 			i := y*n + x
 			var shadowAlpha float64
 			if sy := y - shadowOffset; sy >= 0 {
-				shadowAlpha = shadow[sy*n+x] * 0.3
+				shadowAlpha = shadow[sy*n+x] * 0.18
 			}
+			noise := 1 + (grain.Float64()-0.5)*0.05
 			alpha := coverage[i]
 			if alpha <= 0 {
 				out.SetNRGBA(x, y, color.NRGBA{0, 0, 0, uint8(shadowAlpha * 255)})
@@ -366,19 +317,16 @@ func bakeBotBody(spec botSpec, n int) *image.NRGBA {
 			hx := height[y*n+min(x+1, n-1)] - height[y*n+max(x-1, 0)]
 			hy := height[min(y+1, n-1)*n+x] - height[max(y-1, 0)*n+x]
 			normal := normalize3(-hx/2, -hy/2, 1)
-			diffuse := math.Max(0, dot3(normal, light))
+			wrap := math.Max(0, math.Min(1, (dot3(normal, light)+0.55)/1.55))
+			wrap = wrap * wrap * (3 - 2*wrap)
 			facing := math.Max(0, dot3(normal, half))
-			specular := math.Pow(facing, 60)*0.6 + math.Pow(facing, 10)*0.1
-			ambient, gain := 0.34, 0.78
-			if spec.matte {
-				specular = math.Pow(facing, 12) * 0.08
-				ambient, gain = 0.42, 0.68
+			sheen := math.Pow(facing, 6) * 0.14
+			if !spec.matte {
+				sheen += math.Pow(facing, 28) * 0.18
 			}
-			rim := math.Pow(1-normal[2], 2.5) * 0.22
-			fade := 1.06 - 0.16*float64(y)/float64(n)
 			var rgb [3]float64
 			for c := range rgb {
-				rgb[c] = linearToSRGB(base[c]*(ambient+gain*diffuse)*fade + specular + rim*0.5*(1+base[c]))
+				rgb[c] = linearToSRGB((shade[c]+(lit[c]-shade[c])*wrap)*noise + sheen)
 			}
 			// Edge pixels blend the body over its shadow, so the outline stays antialiased.
 			a := alpha + shadowAlpha*(1-alpha)
