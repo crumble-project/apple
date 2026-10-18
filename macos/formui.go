@@ -153,3 +153,39 @@ func rowButton(c *ui.Context, key, label string, destructive bool) bool {
 	button.Children(func() { ui.Text(c, label).FontSize(13).TextColor(color) })
 	return button.Clicked()
 }
+
+// pushButton draws AppKit's push button: a raised face with a hairline edge, or the accent
+// fill for the default button. Native push buttons have no hover state.
+func pushButton(c *ui.Context, key, label string, isDefault, disabled bool) bool {
+	theme := c.Theme()
+	button := ui.ButtonBase(c.Key(key)).MinHeight(22).Padding(3, 12).Radius(6).Disabled(disabled).Label(label)
+	pressed := button.Pressed() && !disabled
+	text := theme.Text
+	switch {
+	case isDefault:
+		text = theme.AccentText
+		top, bottom := theme.Accent.Mix(ui.Hex("#ffffff"), 0.12), theme.Accent
+		if pressed {
+			top, bottom = theme.AccentPressed, theme.AccentPressed
+		}
+		button.Gradient(top, bottom, 180)
+	case theme.Dark:
+		face := ui.RGBA(255, 255, 255, 0.2)
+		if pressed {
+			face = ui.RGBA(255, 255, 255, 0.3)
+		}
+		button.Background(face).Border(0.5, ui.RGBA(255, 255, 255, 0.08))
+	default:
+		face := ui.Hex("#ffffff")
+		if pressed {
+			face = ui.Hex("#e6e6e6")
+		}
+		button.Background(face).Border(0.5, ui.RGBA(0, 0, 0, 0.12))
+	}
+	button.Shadow(0, 0.5, 1, 0, ui.RGBA(0, 0, 0, 0.18))
+	if disabled {
+		button.Opacity(0.5)
+	}
+	button.Children(func() { ui.Text(c, label).FontSize(13).TextColor(text).SingleLine() })
+	return button.Clicked()
+}

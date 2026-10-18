@@ -684,14 +684,14 @@ func (a *app) agentEditorView(c *ui.Context) {
 		title = "New Agent"
 	}
 	a.page(c, title, func() {
-		if ui.Button(c, "Cancel").Clicked() {
+		if pushButton(c, "cancel-agent", "Cancel", false, false) {
 			a.editor = false
 		}
 		label := "Save"
 		if a.newAgent {
 			label = "Create"
 		}
-		if ui.PrimaryButton(c, label).Disabled(a.loading).Clicked() {
+		if pushButton(c, "save-agent", label, true, a.loading) {
 			a.saveAgentEditor()
 		}
 	}, func() {
@@ -865,10 +865,10 @@ func (a *app) modelHint() string {
 func formButtons(c *ui.Context, save string, onSave, onCancel func()) {
 	ui.Row(c).Gap(8).Children(func() {
 		ui.Spacer(c)
-		if ui.Button(c, "Cancel").Clicked() {
+		if pushButton(c, "cancel", "Cancel", false, false) {
 			onCancel()
 		}
-		if ui.PrimaryButton(c, save).Clicked() {
+		if pushButton(c, "save", save, true, false) {
 			onSave()
 		}
 	})
