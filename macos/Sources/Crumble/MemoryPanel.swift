@@ -6,7 +6,6 @@ struct MemoryPanel: View {
     @Environment(AppModel.self) private var model
     @State private var query = ""
     @State private var scope = "all"
-    @State private var collapsedSections: Set<String> = []
 
     var body: some View {
         Form {
@@ -28,18 +27,16 @@ struct MemoryPanel: View {
     @ViewBuilder private var sharedSection: some View {
         if scope == "all" || scope == "shared" {
             Section {
-                DisclosureGroup(isExpanded: expansion(for: "shared")) {
-                    let memories = filtered(model.sharedMemories)
-                    if memories.isEmpty {
-                        Text(query.isEmpty ? "No shared memories yet." : "No shared memories match your search.")
-                            .foregroundStyle(.secondary)
-                    }
-                    ForEach(memories) { memory in
-                        row(memory, agentID: nil)
-                    }
-                } label: {
-                    Text("Shared · \(model.sharedMemories.count)")
+                let memories = filtered(model.sharedMemories)
+                if memories.isEmpty {
+                    Text(query.isEmpty ? "No shared memories yet." : "No shared memories match your search.")
+                        .foregroundStyle(.secondary)
                 }
+                ForEach(memories) { memory in
+                    row(memory, agentID: nil)
+                }
+            } header: {
+                Text("Shared · \(model.sharedMemories.count)")
             } footer: {
                 Text(sharedFooter).foregroundStyle(.secondary)
             }
@@ -50,30 +47,19 @@ struct MemoryPanel: View {
         if scope != "shared" {
             ForEach(model.agents.filter { scope == "all" || $0.id == scope }) { agent in
                 Section {
-                    DisclosureGroup(isExpanded: expansion(for: agent.id)) {
-                        let memories = filtered(model.agentMemories[agent.id] ?? [])
-                        if memories.isEmpty {
-                            Text(query.isEmpty ? "No memories yet." : "No memories match your search.")
-                                .foregroundStyle(.secondary)
-                        }
-                        ForEach(memories) { memory in
-                            row(memory, agentID: agent.id)
-                        }
-                    } label: {
-                        Text("\(agent.name) · \(model.agentMemories[agent.id, default: []].count)")
+                    let memories = filtered(model.agentMemories[agent.id] ?? [])
+                    if memories.isEmpty {
+                        Text(query.isEmpty ? "No memories yet." : "No memories match your search.")
+                            .foregroundStyle(.secondary)
                     }
+                    ForEach(memories) { memory in
+                        row(memory, agentID: agent.id)
+                    }
+                } header: {
+                    Text("\(agent.name) · \(model.agentMemories[agent.id, default: []].count)")
                 }
             }
         }
-    }
-
-    private func expansion(for section: String) -> Binding<Bool> {
-        Binding(
-            get: { !collapsedSections.contains(section) },
-            set: { expanded in
-                if expanded { collapsedSections.remove(section) } else { collapsedSections.insert(section) }
-            }
-        )
     }
 
     private func filtered(_ memories: [Memory]) -> [Memory] {
@@ -89,16 +75,28 @@ struct MemoryPanel: View {
     }
 
     private func row(_ memory: Memory, agentID: String?) -> some View {
-        HStack(alignment: .top) {
+        HStack {
             Text(memory.content)
                 .fixedSize(horizontal: false, vertical: true)
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            Button("Edit") { model.openMemoryForm(memory.id, agentID: agentID) }
-                .disabled(memory.id.hasPrefix("pending-"))
-            Button("Delete", role: .destructive) { model.deleteMemory(memory.id, agentID: agentID) }
-                .tint(.red)
-                .disabled(memory.id.hasPrefix("pending-"))
+            Menu {
+                rowActions(memory, agentID: agentID)
+            } label: {
+                Image(systemName: "ellipsis.circle")
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .foregroundStyle(.secondary)
+            .help("More")
         }
+        .contextMenu { rowActions(memory, agentID: agentID) }
+        .disabled(memory.id.hasPrefix("pending-"))
+    }
+
+    @ViewBuilder private func rowActions(_ memory: Memory, agentID: String?) -> some View {
+        Button("Edit…") { model.openMemoryForm(memory.id, agentID: agentID) }
+        Button("Delete", role: .destructive) { model.deleteMemory(memory.id, agentID: agentID) }
     }
 }
