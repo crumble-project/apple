@@ -10,6 +10,12 @@ Crumble for macOS is a native SwiftUI client for a running Crumble server. It pr
 
 The app has no third-party dependencies.
 
+## Shared Swift package
+
+The app and unit tests fetch `git@github.com:crumble-project/apfelkern.git`, tracking `main`.
+Configure SSH access to GitHub before resolving packages. A sibling checkout is not required.
+The package provides common models, API transport, drafts, and pure helpers. See the [package documentation](https://github.com/crumble-project/apfelkern).
+
 ## Run the app
 
 Run it straight from the package during development:

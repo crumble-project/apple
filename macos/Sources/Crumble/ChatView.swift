@@ -1,3 +1,4 @@
+import apfelkern
 import SwiftUI
 
 /// One row of the chat list: a transcript message or a transient row around it.
