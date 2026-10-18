@@ -296,6 +296,7 @@ final class AppModel {
           messages = []
         } else {
           selectAgent(chosen)
+          Notifier.shared.routePendingTap()
         }
       }
     }
@@ -1743,6 +1744,7 @@ final class AppModel {
         snapshot = nil
         messages = []
         client = candidate
+        Notifier.shared.connectionChanged()
         activeRequests = 0
         loading = false
         errorText = ""

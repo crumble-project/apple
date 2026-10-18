@@ -37,6 +37,17 @@ struct SettingsView: View {
             "The token is stored securely on this device and never written to the project. For a physical iPhone, use your Mac’s LAN address instead of 127.0.0.1."
           ).foregroundStyle(.secondary)
         }
+        Section("Notifications") {
+          Toggle("Reply notifications", isOn: Binding(
+            get: { PushController.shared.enabled },
+            set: { Notifier.shared.setEnabled($0) }))
+          Text(PushController.shared.status).font(.footnote).foregroundStyle(.secondary)
+          Button("Open iOS Notification Settings") {
+            if let url = URL(string: UIApplication.openNotificationSettingsURLString) {
+              UIApplication.shared.open(url)
+            }
+          }
+        }
         Section {
           if model.client?.token.isEmpty != false {
             Text("Save a server connection above before managing provider keys.")

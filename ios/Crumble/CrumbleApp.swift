@@ -2,6 +2,7 @@ import SwiftUI
 
 @main
 struct CrumbleApp: App {
+  @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
   @State private var model = AppModel(
     loadKeychain: ProcessInfo.processInfo.environment["CRUMBLE_SKIP_KEYCHAIN"] != "1")
   @Environment(\.scenePhase) private var scenePhase
@@ -20,10 +21,18 @@ struct CrumbleApp: App {
             model.followActivity()
           }
         }
+        .onChange(of: model.route) { _, _ in Notifier.shared.updatePresence() }
         .onChange(of: scenePhase) { _, phase in
           guard started else { return }
-          if phase == .background { model.suspendStreams() }
-          if phase == .active, model.client?.token.isEmpty == false { model.resumeStreams() }
+          if phase == .background {
+            Notifier.shared.updatePresence(active: false)
+            model.suspendStreams()
+          }
+          if phase == .active {
+            Notifier.shared.refreshAuthorization()
+            Notifier.shared.updatePresence(active: true)
+            if model.client?.token.isEmpty == false { model.resumeStreams() }
+          }
         }
     }
   }

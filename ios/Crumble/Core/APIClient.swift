@@ -44,7 +44,7 @@ struct APIClient: Sendable {
     return request
   }
 
-  private func send(
+  func send(
     _ method: String, _ path: String, body: (any Encodable)? = nil, timeout: TimeInterval = 20
   ) async throws -> Data {
     let payload = try body.map { try JSONEncoder().encode($0) }
@@ -59,7 +59,7 @@ struct APIClient: Sendable {
     return data
   }
 
-  private func call<T: Decodable>(
+  func call<T: Decodable>(
     _ method: String, _ path: String, body: (any Encodable)? = nil, timeout: TimeInterval = 20
   ) async throws -> T {
     try JSONDecoder().decode(
