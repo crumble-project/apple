@@ -21,16 +21,30 @@ The package provides common models, API transport, drafts, and pure helpers. See
 Run it straight from the package during development:
 
 ```bash
-swift run
+swift run Crumble
 ```
 
 The app uses `http://127.0.0.1:7337` by default. Configure a different server without changing stored settings by setting these variables before starting the app:
 
 ```bash
-CRUMBLE_URL="http://127.0.0.1:7338" CRUMBLE_TOKEN="REPLACE_WITH_A_SERVER_TOKEN" swift run
+CRUMBLE_URL="http://127.0.0.1:7338" CRUMBLE_TOKEN="REPLACE_WITH_A_SERVER_TOKEN" swift run Crumble
 ```
 
 `CRUMBLE_TOKEN` must be treated as a secret. When you save connection settings, the app stores the server URL and token in the macOS Keychain under the `dev.crumble.desktop` service.
+
+## Tune bot avatars
+
+Bot avatars live in the `BotAvatar` library. The avatar playground shows a grid of random bots at every size, with state, live motion, a freeze-frame scrubber, and light and dark appearance controls:
+
+```bash
+swift run AvatarPlayground
+```
+
+To write a still contact sheet of every state as a PNG instead, pass `--snapshot` with an output path and an optional moment in seconds:
+
+```bash
+swift run AvatarPlayground --snapshot avatars.png 0.3
+```
 
 ## Verify the client
 

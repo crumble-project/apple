@@ -1,5 +1,6 @@
 import apfelkern
 import AppKit
+import BotAvatar
 import Foundation
 import SwiftUI
 import Testing

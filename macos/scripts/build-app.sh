@@ -61,7 +61,7 @@ if [ -n "$signing_identity" ] || [ -n "$provisioning_profile" ] || [ -n "$push_e
 	fi
 fi
 
-swift build -c "$configuration"
+swift build -c "$configuration" --product Crumble
 rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 cp ".build/$configuration/Crumble" "$app/Contents/MacOS/Crumble"

@@ -2,7 +2,7 @@
 
 ## Bot avatars
 
-Bot avatars (`Sources/Crumble/BotAvatar.swift`) are adapted from Hermex's drawn bot faces: their shapes, palette, eye geometry, blink schedule, and working pose. Hermex is available under the MIT License, Copyright (c) 2026 Uzair Ansar. The eye expressions follow Bloub's measured catalogue (jeremy-prt/bloub), also under the MIT License.
+Bot avatars (`Sources/BotAvatar`) are adapted from Hermex's drawn bot faces: their shapes, palette, eye geometry, blink schedule, and working pose. Hermex is available under the MIT License, Copyright (c) 2026 Uzair Ansar. The eye expressions follow Bloub's measured catalogue (jeremy-prt/bloub), also under the MIT License.
 
 ```text
 MIT License

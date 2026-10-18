@@ -1,5 +1,6 @@
 import apfelkern
 import AppKit
+import BotAvatar
 import SwiftUI
 
 @main
@@ -129,7 +130,7 @@ struct SidebarView: View {
 
     private func agentRow(_ agent: Agent) -> some View {
         HStack(spacing: 12) {
-            BotAvatarView(agent: agent, size: 44, state: model.botState(agent))
+            BotAvatarView(agent: agent, size: 44, state: model.botState(agent), live: model.route == .agent(agent.id))
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Text(agent.name)

@@ -1,5 +1,6 @@
 import apfelkern
 import AppKit
+import BotAvatar
 import Foundation
 import Observation
 
@@ -98,10 +99,10 @@ final class AppModel {
 
     var selectedAgent: Agent? { agents.first { $0.id == selectedAgentID } }
 
+    /// A bot is awake only while its chat is open, and sleeps otherwise or while paused.
     func botState(_ agent: Agent) -> BotState {
-        if !agent.enabled { return .sleeping }
-        if agent.id == selectedAgentID, snapshot?.isRunning == true { return .working }
-        return .idle
+        guard agent.enabled, route == .agent(agent.id) else { return .sleeping }
+        return snapshot?.isRunning == true ? .working : .idle
     }
 }
 
