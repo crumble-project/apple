@@ -279,6 +279,8 @@ struct ReplyQuote: View {
 }
 
 struct Composer: View {
+    /// The height of the message field and the attach button beside it.
+    static let height: CGFloat = 40
     @Environment(AppModel.self) private var model
     let agent: Agent
     @FocusState private var focused: Bool
@@ -306,15 +308,18 @@ struct Composer: View {
                 .glassEffect(.regular, in: .rect(cornerRadius: 12))
             }
             HStack(alignment: .bottom, spacing: 8) {
-                Button("Attach Files", systemImage: "plus") { importing = true }
-                    .labelStyle(.iconOnly)
-                    .font(.system(size: 15, weight: .semibold))
-                    .frame(width: 30, height: 30)
-                    .buttonStyle(.glass)
-                    .buttonBorderShape(.circle)
-                    .controlSize(.large)
-                    .disabled(model.sending || !agent.enabled)
-                    .help("Attach images or text files")
+                // Drawn as a glass circle of the field's height; the glass button style keeps its own smaller size.
+                Button { importing = true } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 16, weight: .medium))
+                        .frame(width: Composer.height, height: Composer.height)
+                        .contentShape(.circle)
+                }
+                .buttonStyle(.plain)
+                .glassEffect(.regular.interactive(), in: .circle)
+                .disabled(model.sending || !agent.enabled)
+                .accessibilityLabel("Attach Files")
+                .help("Attach images or text files")
                 VStack(alignment: .leading, spacing: 6) {
                     if !model.attachments.isEmpty {
                         ScrollView(.horizontal, showsIndicators: false) {
@@ -358,8 +363,8 @@ struct Composer: View {
                 .padding(.leading, 14)
                 .padding(.trailing, 6)
                 .padding(.vertical, 4)
-                .frame(minHeight: 40)
-                .glassEffect(.regular, in: .rect(cornerRadius: 20))
+                .frame(minHeight: Composer.height)
+                .glassEffect(.regular, in: .rect(cornerRadius: Composer.height / 2))
             }
         }
         .padding(.horizontal, 20)
