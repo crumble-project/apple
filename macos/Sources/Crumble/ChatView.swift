@@ -331,40 +331,44 @@ struct Composer: View {
                             .padding(.top, 8)
                         }
                     }
-                    HStack(alignment: .bottom, spacing: 8) {
-                        TextField(agent.enabled ? "Message \(agent.name)" : "\(agent.name) is paused. Enable it in its profile.",
-                                  text: $model.draft, selection: $selection, axis: .vertical)
-                            .textFieldStyle(.plain)
-                            .lineLimit(1...8)
-                            .focused($focused)
-                            .disabled(model.sending || !agent.enabled)
-                            .padding(.vertical, 7)
-                            .onKeyPress(.return, phases: .down) { press in
-                                // A multi-line TextField inserts nothing for Shift-Return, so the composer does.
-                                if press.modifiers.contains(.shift) || press.modifiers.contains(.option) {
-                                    var range: Range<String.Index>?
-                                    if case .selection(let selected)? = selection?.indices { range = selected }
-                                    let (text, caret) = insertingNewline(into: model.draft, replacing: range)
-                                    model.draft = text
-                                    selection = TextSelection(insertionPoint: caret)
-                                } else {
-                                    model.sendMessage()
-                                }
-                                return .handled
+                    TextField(agent.enabled ? "Message \(agent.name)" : "\(agent.name) is paused. Enable it in its profile.",
+                              text: $model.draft, selection: $selection, axis: .vertical)
+                        .textFieldStyle(.plain)
+                        .lineLimit(1...8)
+                        .focused($focused)
+                        .disabled(model.sending || !agent.enabled)
+                        .padding(.vertical, 7)
+                        .onKeyPress(.return, phases: .down) { press in
+                            // A multi-line TextField inserts nothing for Shift-Return, so the composer does.
+                            if press.modifiers.contains(.shift) || press.modifiers.contains(.option) {
+                                var range: Range<String.Index>?
+                                if case .selection(let selected)? = selection?.indices { range = selected }
+                                let (text, caret) = insertingNewline(into: model.draft, replacing: range)
+                                model.draft = text
+                                selection = TextSelection(insertionPoint: caret)
+                            } else {
+                                model.sendMessage()
                             }
-                        if running {
-                            Button("Stop", systemImage: "stop.fill") { model.abortChat() }
-                                .labelStyle(.iconOnly)
-                                .buttonStyle(.glassProminent)
-                                .buttonBorderShape(.circle)
+                            return .handled
                         }
-                    }
                 }
                 .padding(.leading, 14)
-                .padding(.trailing, 6)
+                .padding(.trailing, 14)
                 .padding(.vertical, 4)
                 .frame(minHeight: Composer.height)
                 .glassEffect(.regular, in: .rect(cornerRadius: Composer.height / 2))
+                if running {
+                    Button { model.abortChat() } label: {
+                        Image(systemName: "stop.fill")
+                            .font(.system(size: 16, weight: .medium))
+                            .frame(width: Composer.height, height: Composer.height)
+                            .contentShape(.circle)
+                    }
+                    .buttonStyle(.plain)
+                    .glassEffect(.regular.interactive(), in: .circle)
+                    .accessibilityLabel("Stop")
+                    .help("Stop the current run")
+                }
             }
         }
         .padding(.horizontal, 20)
