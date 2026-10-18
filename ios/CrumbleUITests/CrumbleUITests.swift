@@ -45,7 +45,7 @@ final class CrumbleUITests: XCTestCase {
       XCTAssertTrue(app.navigationBars[title].waitForExistence(timeout: 5))
       let action: String? =
         switch title {
-        case "Memory": "New Shared Memory"
+        case "Memory": "New Memory"
         case "Skills": "New Shared Skill"
         case "Integrations": "Add Shared MCP Server"
         default: nil
