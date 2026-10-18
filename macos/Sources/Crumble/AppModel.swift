@@ -22,6 +22,8 @@ final class AppModel {
     var selectionVersion = 0
 
     var snapshot: ChatSnapshot?
+    var runningAgentIDs: Set<String> = []
+    @ObservationIgnored var backgroundChats: [String: (id: UUID, task: Task<Void, Never>)] = [:]
     var messages: [Message] = []
     var hasMore = false
     var oldestEntryID = ""
@@ -100,10 +102,10 @@ final class AppModel {
 
     var selectedAgent: Agent? { agents.first { $0.id == selectedAgentID } }
 
-    /// A bot is awake only while its chat is open, and sleeps otherwise or while paused.
     func botState(_ agent: Agent) -> BotState {
+        if runningAgentIDs.contains(agent.id) { return .working }
         guard agent.enabled, route == .agent(agent.id) else { return .sleeping }
-        return snapshot?.isRunning == true ? .working : .idle
+        return .idle
     }
 }
 
@@ -212,7 +214,8 @@ extension AppModel {
     }
 
     private func applyConnection(_ candidate: APIClient) {
-        cancelStream()
+        cancelStream(preservingWork: false)
+        resetRunningBots()
         generation += 1
         pendingMutations.removeAll()
         mutationRevision += 1

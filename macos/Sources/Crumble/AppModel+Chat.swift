@@ -39,6 +39,7 @@ extension AppModel {
     /// Opens the bot's one continuous chat and follows its event stream.
     func selectAgent(_ id: String) {
         cancelStream()
+        stopFollowingBackgroundChat(id)
         selectionVersion += 1
         let version = selectionVersion
         selectedAgentID = id
@@ -83,6 +84,7 @@ extension AppModel {
 
     /// Keeps older pages the owner already loaded; snapshots only carry the newest page.
     func applySnapshot(_ incoming: ChatSnapshot) {
+        updateRunningBot(selectedAgentID, running: incoming.isRunning)
         let incomingMessages = incoming.messages ?? []
         let acknowledged = Set(incomingMessages.compactMap(\.requestId))
         if !acknowledged.isEmpty {
@@ -102,7 +104,10 @@ extension AppModel {
         self.snapshot = snapshot
     }
 
-    func cancelStream() {
+    func cancelStream(preservingWork: Bool = true) {
+        if preservingWork, runningAgentIDs.contains(selectedAgentID) {
+            followBackgroundChat(selectedAgentID)
+        }
         streamTask?.cancel()
         streamTask = nil
         streamStatus = ""

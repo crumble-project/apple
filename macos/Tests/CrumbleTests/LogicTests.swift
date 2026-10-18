@@ -8,6 +8,24 @@ import Testing
 @testable import Crumble
 
 struct LogicTests {
+    @MainActor @Test func workingSidebarStateSurvivesNavigation() {
+        let model = AppModel(client: APIClient(baseURL: "http://127.0.0.1:1", token: ""))
+        let first = Agent(id: "a1", name: "Atlas")
+        let second = Agent(id: "a2", name: "Beacon")
+        model.selectedAgentID = first.id
+        model.route = .agent(first.id)
+        model.applySnapshot(ChatSnapshot(status: "running", agentId: first.id))
+        #expect(model.botState(first) == .working)
+
+        model.selectedAgentID = second.id
+        model.route = .agent(second.id)
+        model.snapshot = nil
+        #expect(model.botState(first) == .working)
+        #expect(model.botState(second) == .idle)
+        model.applySnapshot(ChatSnapshot(status: "idle", agentId: second.id))
+        #expect(model.botState(first) == .working)
+    }
+
     @MainActor @Test func sidebarPreviewsUpdateWithoutOpeningTheBotChat() throws {
         let model = AppModel(client: APIClient(baseURL: "http://127.0.0.1:1", token: ""))
         model.agents = [Agent(id: "a1", name: "Atlas", lastMessage: "Earlier"), Agent(id: "a2", name: "Beacon")]

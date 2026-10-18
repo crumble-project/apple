@@ -1,4 +1,5 @@
 import apfelkern
+import BotAvatar
 import Foundation
 import Testing
 
@@ -21,6 +22,39 @@ extension APIClientTests {
         model.selectAgent("a1")
         await waitUntil { model.snapshot != nil }
         return model
+    }
+
+    @MainActor @Test func backgroundBotStopsWorkingWithoutReplacingSelectedChat() async {
+        let model = AppModel(client: StubProtocol.client { request in
+            switch request.url?.path {
+            case "/v1/agents/a1/events":
+                return (200, "event: snapshot\ndata: {\"agentId\":\"a1\",\"status\":\"idle\",\"messages\":[]}\n\n")
+            case "/v1/agents/a2/chat":
+                return (200, #"{"agentId":"a2","status":"idle","messages":[]}"#)
+            default: return (404, "")
+            }
+        })
+        defer {
+            model.cancelStream(preservingWork: false)
+            model.resetRunningBots()
+        }
+        let first = Agent(id: "a1", name: "Atlas")
+        let second = Agent(id: "a2", name: "Beacon")
+        model.selectedAgentID = first.id
+        model.route = .agent(first.id)
+        model.applySnapshot(ChatSnapshot(status: "running", agentId: first.id))
+        model.selectAgent(second.id)
+        #expect(model.botState(first) == .working)
+        await waitUntil { model.botState(first) == .sleeping && model.snapshot?.agentId == second.id }
+        #expect(model.botState(first) == .sleeping)
+        #expect(model.backgroundChats.isEmpty)
+        #expect(model.snapshot?.agentId == second.id)
+        #expect(model.route == .agent(second.id))
+
+        model.updateRunningBot(first.id, running: true)
+        model.resetRunningBots()
+        #expect(model.botState(first) == .sleeping)
+        #expect(model.runningAgentIDs.isEmpty)
     }
 
     @MainActor @Test func messageAppearsBeforeHTTPResponseAndSSEAckReconciles() async {
