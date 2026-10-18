@@ -282,7 +282,7 @@ func (a *app) chatView(c *ui.Context) {
 		if len(rows) == 0 {
 			a.emptyChat(c, agent)
 		}
-		ui.Box(c).Absolute().Top(0).Left(0).Right(0).Height(titleBarHeight + 10).PassThrough().Material(glass.ScrollEdge{})
+		ui.Box(c).Absolute().Top(0).Left(0).Right(0).Height(titleBarHeight).PassThrough().Material(glass.ScrollEdge{Hard: true})
 		ui.Box(c).Absolute().Bottom(0).Left(0).Right(0).Height(bottom).PassThrough().Material(glass.ScrollEdge{Bottom: true})
 		a.chatHeader(c, agent)
 		if a.errorText != "" {
