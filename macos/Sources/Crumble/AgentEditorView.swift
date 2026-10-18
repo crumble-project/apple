@@ -70,25 +70,7 @@ struct AgentEditorView: View {
             } footer: {
                 Text("How the agent should behave in every chat.").foregroundStyle(.secondary)
             }
-            Section {
-                Toggle("Memory", isOn: $draft.toolsMemory)
-                if draft.toolsMemory {
-                    Toggle("Use shared memory", isOn: $draft.sharedMemory).padding(.leading, 16)
-                }
-                Toggle("Schedule tasks", isOn: $draft.toolsSchedule)
-                Toggle("Message other bots", isOn: $draft.toolsDelegate)
-                if draft.toolsDelegate {
-                    ForEach(model.agents.filter { $0.id != draft.agentID }) { agent in
-                        Toggle(agent.name, isOn: membership(\.delegates, agent.id)).padding(.leading, 16)
-                    }
-                }
-                Toggle("Code mode", isOn: $draft.toolsCodemode)
-            } header: {
-                Text("Capabilities")
-            } footer: {
-                Text("Memory lets the agent keep notes between chats; with shared memory it also recalls and keeps notes every bot using shared memory sees. Schedule tasks lets it save one-time and recurring tasks for itself, or for a bot it is allowed to message. Each task runs in that bot’s chat. When Message other bots is enabled, it can ask the permitted bots you select and relay their answers; bounded task delegation remains supported. Code mode has the agent write a short script that calls its tools, so many tool calls take one step. Enabled tools run directly using the integrations permitted in this profile.")
-                    .foregroundStyle(.secondary)
-            }
+            capabilitiesSection
             Section("Integrations") {
                 let servers = model.usableServers(for: draft.agentID)
                 if servers.isEmpty {
@@ -131,6 +113,35 @@ struct AgentEditorView: View {
             Button("Delete", role: .destructive) { model.deleteSelected() }
         } message: {
             Text("The agent, its chat, memories and tasks will be removed.")
+        }
+    }
+
+    private var capabilitiesSection: some View {
+        Section {
+            Toggle("Memory", isOn: $draft.toolsMemory)
+            if draft.toolsMemory {
+                Toggle("Use shared memory", isOn: $draft.sharedMemory).padding(.leading, 16)
+            }
+            Toggle("Schedule tasks", isOn: $draft.toolsSchedule)
+            Toggle("Message other bots", isOn: $draft.toolsDelegate)
+            if draft.toolsDelegate {
+                ForEach(model.agents.filter { $0.id != draft.agentID }) { agent in
+                    Toggle(agent.name, isOn: membership(\.delegates, agent.id)).padding(.leading, 16)
+                }
+            }
+            Toggle("Code mode", isOn: $draft.toolsCodemode)
+        } header: {
+            Text("Capabilities")
+        } footer: {
+            Text("""
+                Memory lets the agent keep notes between chats; with shared memory it also recalls and keeps notes \
+                every bot using shared memory sees. Schedule tasks lets it save one-time and recurring tasks for \
+                itself, or for a bot it is allowed to message. Each task runs in that bot’s chat. When Message other \
+                bots is enabled, it can ask the permitted bots you select and relay their answers; bounded task \
+                delegation remains supported. Code mode has the agent write a short script that calls its tools, \
+                so many tool calls take one step. Enabled tools run directly using the integrations permitted in this profile.
+                """)
+                .foregroundStyle(.secondary)
         }
     }
 

@@ -99,8 +99,7 @@ private struct MemoryPanel: View {
         Binding(
             get: { !collapsedSections.contains(section) },
             set: { expanded in
-                if expanded { collapsedSections.remove(section) }
-                else { collapsedSections.insert(section) }
+                if expanded { collapsedSections.remove(section) } else { collapsedSections.insert(section) }
             }
         )
     }

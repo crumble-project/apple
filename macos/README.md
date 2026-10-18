@@ -28,6 +28,20 @@ CRUMBLE_URL="http://127.0.0.1:7338" CRUMBLE_TOKEN="REPLACE_WITH_A_SERVER_TOKEN" 
 
 ## Verify the client
 
+Install [SwiftLint](https://github.com/realm/SwiftLint) with Homebrew:
+
+```bash
+brew install swiftlint
+```
+
+Run lint checks from the repository root:
+
+```bash
+swiftlint lint
+```
+
+SwiftLint uses `.swiftlint.yml`, which excludes generated files in `.build` and `build`. Lint checks run separately from builds.
+
 Run the tests:
 
 ```bash

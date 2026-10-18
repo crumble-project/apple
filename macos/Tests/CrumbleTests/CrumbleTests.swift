@@ -66,7 +66,11 @@ struct APIClientTests {
     @Test func sharedCatalogIncludesDefaultsAndOptionalSkills() async throws {
         let client = StubProtocol.client { request in
             #expect(request.url?.path == "/v1/skills")
-            return (200, #"[{"id":"common:tasks/SKILL.md","name":"tasks","instructions":"Complete tasks","source":"bundled","path":"tasks/SKILL.md"},{"id":"s1","name":"Writing","instructions":"Write plainly","source":"shared"},{"id":"legacy","name":"Legacy","instructions":"Existing skill"}]"#)
+            return (200, #"""
+                [{"id":"common:tasks/SKILL.md","name":"tasks","instructions":"Complete tasks","source":"bundled","path":"tasks/SKILL.md"},
+                 {"id":"s1","name":"Writing","instructions":"Write plainly","source":"shared"},
+                 {"id":"legacy","name":"Legacy","instructions":"Existing skill"}]
+                """#)
         }
         let skills = try await client.sharedSkills()
         #expect(skills.map(\.isDefault) == [true, false, false])
@@ -191,7 +195,11 @@ struct APIClientTests {
         let body = try JSONSerialization.jsonObject(with: StubProtocol.requests.last?.httpBody ?? Data()) as? [String: Any]
         #expect(body?["replyTo"] == nil)
         #expect((body?["attachments"] as? [[String: String]])?.first?["mimeType"] == "image/png")
-        let message = try JSONDecoder().decode(Message.self, from: Data(#"{"id":"a1:5:0","role":"user","content":"","attachments":[{"name":"dot.png","mimeType":"image/png","size":70,"kind":"image"}]}"#.utf8))
+        let data = Data(#"""
+            {"id":"a1:5:0","role":"user","content":"",
+             "attachments":[{"name":"dot.png","mimeType":"image/png","size":70,"kind":"image"}]}
+            """#.utf8)
+        let message = try JSONDecoder().decode(Message.self, from: data)
         #expect(message.attachments?.first?.isImage == true)
         #expect(ChatRow.shownInChat(message))
     }
@@ -435,7 +443,11 @@ struct LogicTests {
     }
 
     @Test func botCommunicationEventRetainsAttributionAndAppearsInChat() throws {
-        let data = Data(#"{"id":"exchange-1","role":"event","kind":"bot-message","content":"I asked how Bot2 feels.","communication":{"executionId":"run-1","fromAgentId":"a1","fromName":"Atlas","toAgentId":"a2","toName":"Beacon","status":"done"}}"#.utf8)
+        let data = Data(#"""
+            {"id":"exchange-1","role":"event","kind":"bot-message","content":"I asked how Bot2 feels.",
+             "communication":{"executionId":"run-1","fromAgentId":"a1","fromName":"Atlas",
+                              "toAgentId":"a2","toName":"Beacon","status":"done"}}
+            """#.utf8)
         let message = try JSONDecoder().decode(Message.self, from: data)
         let rows = ChatRow.rows(messages: [message], snapshot: nil, hasMore: false)
 
@@ -476,7 +488,7 @@ struct LogicTests {
         #expect(blocks == [
             .paragraph("Two meetings:"),
             .list([.init(marker: "•", text: "09:00 Design", indent: 0), .init(marker: "•", text: "14:30 Call", indent: 0)]),
-            .code("code"),
+            .code("code")
         ])
     }
 }

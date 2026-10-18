@@ -91,7 +91,7 @@ struct SidebarView: View {
     private static let workspace: [(Route, String, String)] = [
         (.memory, "Memory", "brain"), (.skills, "Skills", "book.closed"), (.tasks, "Tasks", "calendar.badge.clock"),
         (.activity, "Activity", "waveform.path.ecg"),
-        (.integrations, "Integrations", "powerplug"),
+        (.integrations, "Integrations", "powerplug")
     ]
 
     var body: some View {
@@ -145,9 +145,7 @@ struct ConnectionStatus: View {
 
     var body: some View {
         let (status, color): (String, Color) =
-            if !model.streamStatus.isEmpty { (model.streamStatus, .red) }
-            else if model.loading { ("Syncing…", .secondary) }
-            else { ("Connected", .green) }
+            if !model.streamStatus.isEmpty { (model.streamStatus, .red) } else if model.loading { ("Syncing…", .secondary) } else { ("Connected", .green) }
         HStack(spacing: 6) {
             Circle().fill(color).frame(width: 7, height: 7)
             Text(status).font(.caption).foregroundStyle(.secondary)

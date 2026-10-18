@@ -34,5 +34,4 @@ extension MentionComposerTests {
     #expect(model.draft == "ab\n")
     #expect(!model.sending)
 }
-
 }

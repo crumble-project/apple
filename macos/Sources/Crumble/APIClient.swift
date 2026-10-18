@@ -187,7 +187,6 @@ struct APIClient: Sendable {
     }
     func deleteProviderKey(_ provider: String) async throws { try await perform("DELETE", "/v1/providers/\(provider)") }
 
-
     func mcpServers() async throws -> [MCPServer] { try await call("GET", "/v1/mcp-servers") }
     func createMCPServer(_ payload: [String: JSONValue]) async throws -> MCPServer { try await call("POST", "/v1/mcp-servers", body: payload) }
     func updateMCPServer(_ id: String, patch: [String: JSONValue]) async throws -> MCPServer {

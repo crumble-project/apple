@@ -16,7 +16,11 @@ final class PushNotificationProtocol: URLProtocol, @unchecked Sendable {
         var request = self.request
         if let stream = request.httpBodyStream {
             stream.open(); var data = Data(); var bytes = [UInt8](repeating: 0, count: 4096)
-            while stream.hasBytesAvailable { let n = stream.read(&bytes, maxLength: bytes.count); if n <= 0 { break }; data.append(bytes, count: n) }
+            while stream.hasBytesAvailable {
+                let count = stream.read(&bytes, maxLength: bytes.count)
+                if count <= 0 { break }
+                data.append(bytes, count: count)
+            }
             stream.close(); request.httpBody = data
         }
         Self.requests.append(request)
@@ -57,7 +61,11 @@ struct PushNotificationsTests {
         return APIClient(baseURL: url, token: token, session: session())
     }
 
-    private func manager(client: APIClient, defaults: UserDefaults = UserDefaults(suiteName: "push-tests-\(UUID().uuidString)")!, removals: Reference<[PendingPushRemoval]> = Reference([])) -> PushNotifications {
+    private func manager(
+        client: APIClient,
+        defaults: UserDefaults = UserDefaults(suiteName: "push-tests-\(UUID().uuidString)")!,
+        removals: Reference<[PendingPushRemoval]> = Reference([])
+    ) -> PushNotifications {
         PushNotifications(defaults: defaults, environment: "development", bundleId: "com.example.test",
                           loadRemovals: { removals.value }, saveRemovals: { removals.value = $0 },
                           makeClient: { base, token in APIClient(baseURL: base, token: token, session: client.session) },
@@ -108,7 +116,7 @@ struct PushNotificationsTests {
         #expect(first)
         #expect(!duplicate)
         #expect(otherServer)
-        for i in 0..<600 { _ = ledger.insert(server: "a", event: "\(i)") }
+        for index in 0..<600 { _ = ledger.insert(server: "a", event: "\(index)") }
         #expect(ledger.keys.count == 512)
     }
 

@@ -195,8 +195,7 @@ final class PushNotifications {
     }
 
     private func persistRemovals() {
-        do { try saveRemovals(pendingRemovals) }
-        catch { status = "Could not save pending push removal" }
+        do { try saveRemovals(pendingRemovals) } catch { status = "Could not save pending push removal" }
     }
 
     func synchronize() {

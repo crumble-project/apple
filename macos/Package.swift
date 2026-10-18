@@ -6,6 +6,6 @@ let package = Package(
     platforms: [.macOS(.v26)],
     targets: [
         .executableTarget(name: "Crumble"),
-        .testTarget(name: "CrumbleTests", dependencies: ["Crumble"]),
+        .testTarget(name: "CrumbleTests", dependencies: ["Crumble"])
     ]
 )

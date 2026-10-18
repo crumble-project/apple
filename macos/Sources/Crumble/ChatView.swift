@@ -553,7 +553,6 @@ struct Composer: View {
         selectedMention = (selectedMention + direction + completion.bots.count) % completion.bots.count
         return .handled
     }
-
 }
 
 /// A file in the composer: a thumbnail for an image, the file name for text, with a remove button.

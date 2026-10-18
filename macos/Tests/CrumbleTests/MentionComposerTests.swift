@@ -74,7 +74,6 @@ struct MentionComposerTests {
         }
     }
 
-
     @MainActor
     @Test func hostedComposerNavigatesAndDismissesOnlyPermittedBots() async throws {
         _ = NSApplication.shared
@@ -100,8 +99,6 @@ struct MentionComposerTests {
         try await press(window, characters: "\u{1b}", keyCode: 53)
         #expect(model.draft == "Ask @Buddy and @At")
     }
-
-
 }
 
 private extension NSView {
