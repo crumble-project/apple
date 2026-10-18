@@ -1,8 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// The app's Settings window (⌘,): the server connection and provider API keys.
-struct SettingsView: View {
+struct ConnectionSettingsView: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
@@ -13,8 +12,8 @@ struct SettingsView: View {
             providerSection
         }
         .formStyle(.grouped)
-        .frame(width: 480)
-        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: 620)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .onAppear { model.loadProviders() }
     }
 

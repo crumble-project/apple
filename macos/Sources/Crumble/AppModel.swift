@@ -17,6 +17,7 @@ final class AppModel {
     var route: Route? { didSet { onNotificationContextChange?() } }
     @ObservationIgnored var onNotificationContextChange: (() -> Void)?
     @ObservationIgnored var onNotificationConnectionChange: ((APIClient) -> Void)?
+    var workspaceRoute: Route?
     var selectedAgentID = ""
     var selectionVersion = 0
 

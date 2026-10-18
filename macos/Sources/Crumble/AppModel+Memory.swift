@@ -37,7 +37,7 @@ extension AppModel {
                     items.removeAll { $0.id == provisionalID }
                     if let old { items.append(old) }
                 }
-                if route == .memory, memoryDraft == nil { memoryDraft = form }
+                if workspaceRoute == .memory, memoryDraft == nil { memoryDraft = form }
             },
             work: { client in
                 let saved = isNew

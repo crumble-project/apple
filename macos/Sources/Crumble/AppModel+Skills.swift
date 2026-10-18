@@ -74,7 +74,7 @@ extension AppModel {
             rollback: { [self] in
                 sharedSkills.removeAll { $0.id == provisionalID }
                 if let old { sharedSkills.append(old) }
-                if route == .skills, skillDraft == nil { skillDraft = form }
+                if workspaceRoute == .skills, skillDraft == nil { skillDraft = form }
             },
             work: { client in
                 if isNew {
@@ -113,7 +113,7 @@ extension AppModel {
             },
             rollback: { [self] in
                 if let index = agents.firstIndex(where: { $0.id == agentID }) { agents[index].skills = old }
-                if let draftToRestore, route == .skills, skillDraft == nil { skillDraft = draftToRestore }
+                if let draftToRestore, workspaceRoute == .skills, skillDraft == nil { skillDraft = draftToRestore }
             },
             work: { client in
                 let saved = try await client.updateAgent(agentID, patch: ["skills": try JSONValue(encoding: skills)])

@@ -13,19 +13,19 @@ extension APIClientTests {
             return (404, "")
         }
         let model = AppModel(client: client)
-        model.route = .memory
+        model.workspaceRoute = .memory
         model.openMemoryForm("")
         model.memoryDraft?.content = "Remember this"
 
         model.saveMemory()
 
         #expect(model.memoryDraft == nil)
-        #expect(model.route == .memory)
+        #expect(model.workspaceRoute == .memory)
         #expect(model.sharedMemories.count == 1)
         #expect(model.sharedMemories[0].id.hasPrefix("pending-memory-"))
         while model.loading { try await Task.sleep(for: .milliseconds(5)) }
         #expect(model.sharedMemories.map(\.id) == ["m1"])
-        #expect(model.route == .memory)
+        #expect(model.workspaceRoute == .memory)
         #expect(model.errorText.isEmpty)
     }
 
@@ -34,7 +34,7 @@ extension APIClientTests {
             request.httpMethod == "DELETE" ? (500, #"{"error":"busy"}"#) : (404, "")
         }
         let model = AppModel(client: client)
-        model.route = .memory
+        model.workspaceRoute = .memory
         model.sharedMemories = [Memory(id: "m1", content: "First"), Memory(id: "m2", content: "Second")]
 
         model.deleteMemory("m1")
@@ -50,7 +50,7 @@ extension APIClientTests {
             request.httpMethod == "POST" ? (500, #"{"error":"busy"}"#) : (404, "")
         }
         let model = AppModel(client: client)
-        model.route = .memory
+        model.workspaceRoute = .memory
         model.openMemoryForm("")
         model.memoryDraft?.content = "Old draft"
         model.saveMemory()

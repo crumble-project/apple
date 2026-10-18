@@ -75,7 +75,7 @@ extension AppModel {
             rollback: { [self] in
                 schedules.removeAll { $0.id == provisionalID }
                 if let old { schedules.append(old) }
-                if route == .tasks, taskDraft == nil { taskDraft = form }
+                if workspaceRoute == .tasks, taskDraft == nil { taskDraft = form }
             },
             work: { client in
                 let saved: Schedule
@@ -98,7 +98,8 @@ extension AppModel {
     }
 
     func runSchedule(_ id: String) {
-        let routeAtStart = route
+        let routeAtStart = workspaceRoute
+        let chatSelectionAtStart = selectionVersion
         showNotice("Starting task…")
         optimisticMutation(
             key: "schedule-run:\(id)", update: {},
@@ -109,7 +110,8 @@ extension AppModel {
                 let execution = try await client.runSchedule(id)
                 return { [self] in
                     showNotice("Task started")
-                    if route == routeAtStart, routeAtStart == .tasks,
+                    if workspaceRoute == routeAtStart, routeAtStart == .tasks,
+                        selectionVersion == chatSelectionAtStart,
                         let agent = execution.agentId, !agent.isEmpty {
                         selectAgent(agent)
                     }

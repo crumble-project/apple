@@ -70,7 +70,7 @@ extension AppModel {
                 if isNew, let owner, let index = agents.firstIndex(where: { $0.id == owner }) {
                     agents[index].mcpServers?.removeAll { $0 == provisionalID }
                 }
-                if route == .integrations, mcpDraft == nil { mcpDraft = form }
+                if workspaceRoute == .integrations, mcpDraft == nil { mcpDraft = form }
             },
             work: { client in
                 let saved: MCPServer

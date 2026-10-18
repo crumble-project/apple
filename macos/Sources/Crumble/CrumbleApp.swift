@@ -35,6 +35,9 @@ struct CrumbleApp: App {
         Settings {
             SettingsView().environment(model)
         }
+        .windowToolbarStyle(.unifiedCompact)
+        .windowResizability(.contentMinSize)
+        .defaultSize(width: 800, height: 680)
     }
 }
 
@@ -46,7 +49,7 @@ struct ContentView: View {
         @Bindable var model = model
         NavigationSplitView {
             SidebarView()
-                .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 340)
+                .navigationSplitViewColumnWidth(min: 260, ideal: 300, max: 380)
         } detail: {
             detail
                 .overlay(alignment: .top) { ErrorBanner() }
@@ -56,22 +59,13 @@ struct ContentView: View {
             PushNotifications.shared.openMainWindow = { openWindow(id: "main") }
         }
         .sheet(item: $model.agentDraft) { AgentEditorView(draft: sheetBinding($model.agentDraft, for: $0)) }
-        .sheet(item: $model.memoryDraft) { MemoryFormView(draft: sheetBinding($model.memoryDraft, for: $0)) }
-        .sheet(item: $model.taskDraft) { TaskFormView(draft: sheetBinding($model.taskDraft, for: $0)) }
-        .sheet(item: $model.mcpDraft) { MCPFormView(draft: sheetBinding($model.mcpDraft, for: $0)) }
-        .sheet(item: $model.skillDraft) { SkillFormView(draft: sheetBinding($model.skillDraft, for: $0)) }
     }
 
     @ViewBuilder private var detail: some View {
-        switch model.route {
-        case .agent?, nil:
-            if let agent = model.selectedAgent {
-                ChatView(agent: agent)
-            } else {
-                WelcomeView()
-            }
-        case let panel?:
-            PanelView(panel: panel)
+        if let agent = model.selectedAgent {
+            ChatView(agent: agent)
+        } else {
+            WelcomeView()
         }
     }
 }
@@ -89,43 +83,60 @@ func sheetBinding<Draft: Identifiable & Sendable>(_ source: Binding<Draft?>, for
 
 struct SidebarView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.openSettings) private var openSettings
+    @State private var search = ""
 
-    private struct WorkspaceItem {
-        let route: Route
-        let title: String
-        let symbol: String
+    private var filteredAgents: [Agent] {
+        guard !search.isEmpty else { return model.agents }
+        return model.agents.filter {
+            $0.name.localizedStandardContains(search) || ($0.lastMessage ?? "").localizedStandardContains(search)
+        }
     }
 
-    private static let workspace = [
-        WorkspaceItem(route: .memory, title: "Memory", symbol: "brain"),
-        WorkspaceItem(route: .skills, title: "Skills", symbol: "book.closed"),
-        WorkspaceItem(route: .tasks, title: "Tasks", symbol: "calendar.badge.clock"),
-        WorkspaceItem(route: .activity, title: "Activity", symbol: "waveform.path.ecg"),
-        WorkspaceItem(route: .integrations, title: "Integrations", symbol: "powerplug")
-    ]
-
     var body: some View {
-        List(selection: Binding(get: { model.route }, set: { model.navigate(to: $0) })) {
-            Section("Agents") {
-                ForEach(model.agents) { agent in
+        VStack(spacing: 0) {
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+                TextField("Search", text: $search).textFieldStyle(.plain)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            .glassEffect(.regular, in: .capsule)
+            .padding(12)
+
+            List(selection: Binding(get: { model.route }, set: { model.navigate(to: $0) })) {
+                ForEach(filteredAgents) { agent in
                     agentRow(agent)
-                }
-                if model.agents.isEmpty {
-                    Text("No agents yet").foregroundStyle(.secondary)
+                        .listRowSeparator(.hidden)
                 }
             }
-            Section("Workspace") {
-                ForEach(Self.workspace, id: \.route) { item in
-                    Label(item.title, systemImage: item.symbol).tag(item.route)
+            .listStyle(.sidebar)
+            .overlay {
+                if filteredAgents.isEmpty {
+                    Text(model.agents.isEmpty ? "No agents yet" : "No results")
+                        .foregroundStyle(.secondary)
                 }
             }
         }
+        .tint(.blue)
         .toolbar {
-            ToolbarItem {
+            ToolbarItem(placement: .primaryAction) {
                 Button("New Agent", systemImage: "square.and.pencil") { model.createAgent() }
+                    .help("New Agent (⌘N)")
             }
         }
-        .safeAreaInset(edge: .bottom) { ConnectionStatus() }
+        .safeAreaInset(edge: .bottom) {
+            HStack {
+                if model.loading || !model.streamStatus.isEmpty { ConnectionStatus() }
+                Spacer(minLength: 0)
+                Button("Settings", systemImage: "gearshape") { openSettings() }
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.borderless)
+                    .frame(width: 40, height: 40)
+                    .help("Settings (⌘,)")
+            }
+            .padding(.horizontal, 8)
+        }
     }
 
     private func agentRow(_ agent: Agent) -> some View {
@@ -147,7 +158,7 @@ struct SidebarView: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(.vertical, 10)
+        .padding(.vertical, 14)
         .contentShape(Rectangle())
         .tag(Route.agent(agent.id))
         .disabled(model.pendingMutations.contains("agent:\(agent.id)"))

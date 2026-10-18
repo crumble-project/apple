@@ -84,24 +84,27 @@ struct ChatView: View {
         .safeAreaInset(edge: .bottom) {
             if model.snapshot != nil { Composer(agent: agent) }
         }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            Button {
+                model.openEditor()
+            } label: {
+                headerTitle
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Open \(agent.name) profile")
+            .accessibilityHint("Shows the agent profile")
+            .accessibilityValue(subtitle)
+            .help("Agent Profile")
+            .frame(maxWidth: .infinity)
+            .padding(.top, 8)
+            .padding(.bottom, 14)
+        }
+        .ignoresSafeArea(.container, edges: .top)
+        .background(.background)
+        .tint(.blue)
         .navigationTitle(agent.name)
         .toolbar(removing: .title)
         .toolbarBackground(.hidden, for: .windowToolbar)
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                Button {
-                    model.openEditor()
-                } label: {
-                    headerTitle
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Open \(agent.name) profile")
-                .accessibilityHint("Shows the agent profile")
-                .accessibilityValue(subtitle)
-                .help("Agent Profile")
-            }
-            .sharedBackgroundVisibility(.hidden)
-        }
     }
 
     private var subtitle: String {
@@ -111,27 +114,26 @@ struct ChatView: View {
     }
 
     @ViewBuilder private var headerTitle: some View {
-        HStack(spacing: 12) {
-            BotAvatarView(agent: agent, size: 28, state: model.botState(agent), live: true)
+        VStack(spacing: 4) {
+            BotAvatarView(agent: agent, size: 40, state: model.botState(agent), live: true)
                 .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 1) {
+            HStack(spacing: 5) {
                 Text(agent.name)
-                    .font(.headline)
+                    .font(.system(size: 13, weight: .semibold))
                     .lineLimit(1)
-                if !subtitle.isEmpty {
-                    Text(subtitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .glassEffect(.regular.interactive(), in: .capsule)
+            if !agent.enabled || model.snapshot?.isRunning == true {
+                Text(subtitle).font(.caption).foregroundStyle(.secondary)
             }
         }
-        .padding(.horizontal, 10)
-        .frame(minWidth: 40, maxWidth: 340)
-        .frame(height: 48, alignment: .center)
-        .fixedSize(horizontal: false, vertical: true)
-        .glassEffect(.regular.interactive(), in: .capsule)
-        .contentShape(Capsule())
+        .frame(maxWidth: 340)
+        .contentShape(Rectangle())
     }
 }
 

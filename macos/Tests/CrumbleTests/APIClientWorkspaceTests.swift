@@ -22,7 +22,8 @@ extension APIClientTests {
             try await Task.sleep(for: .milliseconds(10))
         }
         #expect(!model.loading)
-        #expect(model.route == .memory)
+        #expect(model.workspaceRoute == .memory)
+        #expect(model.route == nil)
         #expect(model.selectedAgentID.isEmpty)
         #expect(model.agents.map(\.id) == ["a1", "a2"])
         #expect(model.agentMemories["a1"]?.map(\.id) == ["personal-1"])
@@ -71,7 +72,7 @@ extension APIClientTests {
         }
         let skill = Skill(name: "Old", instructions: "Old instructions")
         let model = AppModel(client: client)
-        model.route = .skills
+        model.workspaceRoute = .skills
         model.agents = [Agent(id: "a1", name: "Atlas", skills: [skill])]
         model.openPersonalSkillForm(agentID: "a1", skillID: skill.id.uuidString)
         model.skillDraft?.name = "Updated"

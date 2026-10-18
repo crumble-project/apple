@@ -4,7 +4,7 @@ import SwiftUI
 
 struct Composer: View {
     /// The height of the message field and the attach button beside it.
-    static let height: CGFloat = 40
+    static let height: CGFloat = 32
     @Environment(AppModel.self) private var model
     let agent: Agent
     @FocusState private var focused: Bool
@@ -18,8 +18,8 @@ struct Composer: View {
             replyPreview
             inputRow
         }
-        .padding(.horizontal, 20)
-        .padding(.bottom, 14)
+        .padding(.horizontal, 12)
+        .padding(.bottom, 12)
         .onAppear { focused = true }
         .fileImporter(
             isPresented: $importing, allowedContentTypes: [.image, .text, .sourceCode, .json, .xml],
@@ -126,7 +126,7 @@ struct Composer: View {
                 .accessibilityHidden(true)
             }
         }
-        .padding(.vertical, 7)
+        .padding(.vertical, 3)
         .onChange(of: model.draft) { _, _ in
             selectedMention = 0
             dismissedMention = false

@@ -88,6 +88,10 @@ The app sends the token as an `Authorization: Bearer` header. It does not send p
 
 ## Chat
 
+The main window contains searchable agent conversations. Click an agent's avatar or name in the conversation header to edit its profile.
+
+Open **Settings** with **⌘,** or the sidebar's gear button. **General** contains connection, provider, and notification settings. The **Workspace** section contains **Memory**, **Skills**, **Tasks**, **Activity**, and **Integrations**. Workspace forms open in Settings without replacing your chat.
+
 - Messages appear immediately with a sending indicator. Failed messages stay visible with **Retry**, which resends the original request without creating a duplicate.
 - Return sends a message; Shift-Return or Option-Return starts a new line.
 - The plus button beside the message field attaches files, and you can also drag files onto the field. A message can carry up to eight images (PNG, JPEG, GIF, WebP, up to 5 MB) or UTF-8 text files (up to 512 KB). The app converts other image formats, and larger images, to JPEG first.
