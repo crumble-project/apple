@@ -1,0 +1,229 @@
+import SwiftUI
+
+// Bot avatars are Hermex's drawn faces (MIT, see THIRD_PARTY_NOTICES.md): a flat shape in one
+// color with two leaning capsule eyes. The seed picks the shape and color.
+
+enum BotState { case idle, working, sleeping }
+
+func agentAvatarSeed(_ agent: Agent) -> String {
+    let avatar = agent.avatar ?? ""
+    for prefix in ["bot:", "critters:"] where avatar.hasPrefix(prefix) {
+        let seed = avatar.dropFirst(prefix.count).trimmingCharacters(in: .whitespaces)
+        if !seed.isEmpty { return seed }
+    }
+    return agent.id.trimmingCharacters(in: .whitespaces).isEmpty ? "crumble" : agent.id
+}
+
+enum BotShape: CaseIterable { case circle, squircle, pill, triangle, hexagon, cloud, drop }
+
+struct BotLook: Equatable {
+    static let palette = ["#8b5cf6", "#38bdf8", "#14b8a6", "#22c55e", "#f59e0b", "#f97316", "#ef4444", "#ec4899"]
+
+    let shape: BotShape
+    let hex: String
+    let hash: UInt64
+
+    init(seed: String) {
+        hash = seed.utf8.reduce(UInt64(1_469_598_103_934_665_603)) { ($0 ^ UInt64($1)) &* 1_099_511_628_211 }
+        shape = BotShape.allCases[Int(hash % UInt64(BotShape.allCases.count))]
+        hex = Self.palette[Int(hash % UInt64(Self.palette.count))]
+    }
+
+    var rgb: (Double, Double, Double) {
+        let value = UInt64(hex.dropFirst(), radix: 16) ?? 0
+        return (Double((value >> 16) & 0xff), Double((value >> 8) & 0xff), Double(value & 0xff))
+    }
+
+    var color: Color {
+        let (r, g, b) = rgb
+        return Color(red: r / 255, green: g / 255, blue: b / 255)
+    }
+
+    var eyeColor: Color {
+        let (r, g, b) = rgb
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b < 110 ? .white.opacity(0.9) : .black.opacity(0.85)
+    }
+}
+
+/// An expression's eyes in Bloub's units: width and height against the body radius, lean in degrees.
+struct BotEyes {
+    struct Eye { let width: Double; let height: Double; let tilt: Double }
+    let left: Eye
+    let right: Eye
+    let split: Double
+
+    static let neutral = BotEyes(left: Eye(width: 0.186, height: 0.412, tilt: 0), right: Eye(width: 0.186, height: 0.412, tilt: 0), split: 15.46)
+    static let sleepy = BotEyes(left: Eye(width: 0.2, height: 0.42 * 0.42, tilt: 0), right: Eye(width: 0.2, height: 0.42 * 0.42, tilt: 0), split: 16)
+}
+
+/// One frame of a face: gaze as a fraction of the size, roll in degrees, and the lid factor.
+struct BotPose: Equatable {
+    var gazeX = 0.0
+    var gazeY = 0.0
+    var roll = 0.0
+    var lid = 1.0
+
+    static let rest = BotPose()
+    static let shutLid = 0.06
+
+    /// Leans aside and sways, as Hermex's working face does.
+    static func working(at t: Double) -> BotPose {
+        let turn = -11 + sin(t * 0.48) * 8
+        let tilt = sin(t * 0.42) * 8 + sin(t * 1.1) * 1.6
+        let blink = t.truncatingRemainder(dividingBy: 1.45) > 1.26
+        return BotPose(gazeX: turn * 0.0025, gazeY: -tilt * 0.0025, roll: sin(t * 0.75) * 4.2, lid: blink ? shutLid : 1)
+    }
+}
+
+/// Blinks for 180 ms every 3 to 5 seconds, seeded so faces in a list never blink together.
+/// The timeline fires only at blink edges, so nothing repaints in between.
+struct BotBlinkSchedule: TimelineSchedule {
+    static let shut = 0.18
+    let period: Double
+    let phase: Double
+
+    init(hash: UInt64) {
+        period = 3 + Double(hash % 2001) / 1000
+        phase = Double((hash >> 20) % 5000) / 1000
+    }
+
+    func isShut(at date: Date) -> Bool {
+        let offset = (date.timeIntervalSinceReferenceDate - phase).truncatingRemainder(dividingBy: period)
+        return (offset < 0 ? offset + period : offset) + 0.0001 < Self.shut
+    }
+
+    func entries(from start: Date, mode: TimelineScheduleMode) -> AnyIterator<Date> {
+        let period = period, shut = Self.shut
+        let base = start.timeIntervalSinceReferenceDate
+        let firstShut = phase + (floor((base - phase) / period) + 1) * period
+        var edges = [start]
+        if isShut(at: start) { edges.append(Date(timeIntervalSinceReferenceDate: firstShut - period + shut)) }
+        var index = -1
+        return AnyIterator {
+            index += 1
+            if index < edges.count { return edges[index] }
+            let step = index - edges.count
+            let blink = firstShut + Double(step / 2) * period
+            return Date(timeIntervalSinceReferenceDate: step.isMultiple(of: 2) ? blink : blink + shut)
+        }
+    }
+}
+
+struct BotAvatarView: View {
+    let seed: String
+    let size: CGFloat
+    var state: BotState = .idle
+    /// Live avatars blink and sway while working; small ones in lists stay still.
+    var live = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    init(agent: Agent, size: CGFloat, state: BotState = .idle, live: Bool = false) {
+        self.init(seed: agentAvatarSeed(agent), size: size, state: state, live: live)
+    }
+
+    init(seed: String, size: CGFloat, state: BotState = .idle, live: Bool = false) {
+        self.seed = seed
+        self.size = size
+        self.state = state
+        self.live = live
+    }
+
+    var body: some View {
+        let look = BotLook(seed: seed)
+        let eyes: BotEyes = state == .sleeping ? .sleepy : .neutral
+        Group {
+            if !live || reduceMotion || state == .sleeping {
+                BotMark(look: look, eyes: eyes, size: size, pose: .rest)
+            } else if state == .working {
+                TimelineView(.periodic(from: .now, by: 1.0 / 15)) { context in
+                    BotMark(look: look, eyes: eyes, size: size, pose: .working(at: context.date.timeIntervalSinceReferenceDate))
+                }
+            } else {
+                let schedule = BotBlinkSchedule(hash: look.hash)
+                TimelineView(schedule) { context in
+                    BotMark(look: look, eyes: eyes, size: size,
+                            pose: schedule.isShut(at: context.date) ? BotPose(lid: BotPose.shutLid) : .rest)
+                }
+            }
+        }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
+    }
+}
+
+private struct BotMark: View {
+    let look: BotLook
+    let eyes: BotEyes
+    let size: CGFloat
+    let pose: BotPose
+
+    var body: some View {
+        ZStack {
+            BotBody(shape: look.shape).fill(look.color)
+            HStack(spacing: size * 0.1 * eyes.split / 15.46) {
+                eye(eyes.left)
+                eye(eyes.right)
+            }
+            .offset(x: size * (0.12 + pose.gazeX), y: size * (-0.08 + pose.gazeY))
+        }
+        .rotationEffect(.degrees(pose.roll))
+        .frame(width: size, height: size)
+    }
+
+    private func eye(_ eye: BotEyes.Eye) -> some View {
+        Capsule().fill(look.eyeColor)
+            .frame(width: size * 0.075 * eye.width / 0.186, height: size * 0.22 * eye.height / 0.412 * pose.lid)
+            .rotationEffect(.degrees(-18 + eye.tilt))
+    }
+}
+
+private struct BotBody: Shape {
+    let shape: BotShape
+
+    func path(in rect: CGRect) -> Path {
+        let inset = rect.insetBy(dx: rect.width * 0.08, dy: rect.height * 0.08)
+        switch shape {
+        case .circle:
+            return Path(ellipseIn: inset)
+        case .squircle:
+            return Path(roundedRect: inset, cornerRadius: rect.width * 0.28, style: .continuous)
+        case .pill:
+            let pill = CGRect(x: inset.minX, y: rect.midY - rect.height * 0.27, width: inset.width, height: rect.height * 0.54)
+            return Path(roundedRect: pill, cornerRadius: pill.height / 2)
+        case .triangle:
+            var path = Path()
+            path.move(to: CGPoint(x: rect.midX, y: inset.minY))
+            path.addLine(to: CGPoint(x: inset.maxX, y: inset.maxY))
+            path.addLine(to: CGPoint(x: inset.minX, y: inset.maxY))
+            path.closeSubpath()
+            return path
+        case .hexagon:
+            var path = Path()
+            path.addLines([
+                CGPoint(x: rect.midX, y: inset.minY), CGPoint(x: inset.maxX, y: rect.minY + rect.height * 0.3),
+                CGPoint(x: inset.maxX, y: rect.minY + rect.height * 0.7), CGPoint(x: rect.midX, y: inset.maxY),
+                CGPoint(x: inset.minX, y: rect.minY + rect.height * 0.7), CGPoint(x: inset.minX, y: rect.minY + rect.height * 0.3),
+            ])
+            path.closeSubpath()
+            return path
+        case .cloud:
+            var path = Path()
+            path.addEllipse(in: CGRect(x: rect.minX + rect.width * 0.08, y: rect.minY + rect.height * 0.38, width: rect.width * 0.48, height: rect.height * 0.48))
+            path.addEllipse(in: CGRect(x: rect.minX + rect.width * 0.28, y: rect.minY + rect.height * 0.12, width: rect.width * 0.5, height: rect.height * 0.64))
+            path.addEllipse(in: CGRect(x: rect.minX + rect.width * 0.55, y: rect.minY + rect.height * 0.35, width: rect.width * 0.38, height: rect.height * 0.45))
+            return path
+        case .drop:
+            var path = Path()
+            path.move(to: CGPoint(x: rect.midX, y: inset.minY))
+            path.addCurve(to: CGPoint(x: inset.maxX, y: rect.minY + rect.height * 0.62),
+                          control1: CGPoint(x: rect.midX + rect.width * 0.22, y: rect.minY + rect.height * 0.2),
+                          control2: CGPoint(x: inset.maxX, y: rect.minY + rect.height * 0.42))
+            path.addCurve(to: CGPoint(x: inset.minX, y: rect.minY + rect.height * 0.62),
+                          control1: CGPoint(x: inset.maxX, y: inset.maxY), control2: CGPoint(x: inset.minX, y: inset.maxY))
+            path.addCurve(to: CGPoint(x: rect.midX, y: inset.minY),
+                          control1: CGPoint(x: inset.minX, y: rect.minY + rect.height * 0.42),
+                          control2: CGPoint(x: rect.midX - rect.width * 0.22, y: rect.minY + rect.height * 0.2))
+            return path
+        }
+    }
+}

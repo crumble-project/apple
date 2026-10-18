@@ -1,0 +1,208 @@
+import Foundation
+
+struct APIError: Error, LocalizedError, Sendable {
+    var method: String
+    var path: String
+    var statusCode: Int
+    var body: String
+
+    var errorDescription: String? { "api \(method) \(path) (\(statusCode)): \(body)" }
+}
+
+struct SSEClosedError: Error, LocalizedError {
+    var errorDescription: String? { "server-sent event stream closed" }
+}
+
+/// The Crumble server's HTTP API. Every request carries the bearer token when one is set.
+struct APIClient: Sendable {
+    let baseURL: String
+    let token: String
+    let session: URLSession
+
+    init(baseURL: String, token: String, session: URLSession = .shared) {
+        var trimmed = baseURL
+        while trimmed.hasSuffix("/") { trimmed.removeLast() }
+        self.baseURL = trimmed
+        self.token = token
+        self.session = session
+    }
+
+    private func makeRequest(_ method: String, _ path: String, body: Data? = nil) throws -> URLRequest {
+        guard let url = URL(string: baseURL + path) else { throw URLError(.badURL) }
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        if !token.isEmpty {
+            request.setValue("Bearer " + token, forHTTPHeaderField: "Authorization")
+        }
+        if let body {
+            request.httpBody = body
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        }
+        return request
+    }
+
+    private func send(_ method: String, _ path: String, body: (any Encodable)? = nil) async throws -> Data {
+        let payload = try body.map { try JSONEncoder().encode($0) }
+        let request = try makeRequest(method, path, body: payload)
+        let (data, response) = try await session.data(for: request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        guard (200..<300).contains(status) else {
+            let text = String(decoding: data.prefix(8 << 10), as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+            throw APIError(method: method, path: path, statusCode: status, body: text)
+        }
+        return data
+    }
+
+    private func call<T: Decodable>(_ method: String, _ path: String, body: (any Encodable)? = nil) async throws -> T {
+        try JSONDecoder().decode(T.self, from: try await send(method, path, body: body))
+    }
+
+    private func perform(_ method: String, _ path: String, body: (any Encodable)? = nil) async throws {
+        _ = try await send(method, path, body: body)
+    }
+
+    private static func escape(_ value: String) -> String {
+        value.addingPercentEncoding(withAllowedCharacters: .alphanumerics.union(CharacterSet(charactersIn: "-._~"))) ?? value
+    }
+
+    func agents() async throws -> [Agent] { try await call("GET", "/v1/agents") }
+    func createAgent(_ agent: Agent) async throws -> Agent { try await call("POST", "/v1/agents", body: agent) }
+    func updateAgent(_ id: String, patch: [String: JSONValue]) async throws -> Agent { try await call("PATCH", "/v1/agents/\(id)", body: patch) }
+    func deleteAgent(_ id: String) async throws { try await perform("DELETE", "/v1/agents/\(id)") }
+    func duplicateAgent(_ id: String) async throws -> Agent { try await call("POST", "/v1/agents/\(id)/duplicate") }
+
+    func chat(_ agentID: String) async throws -> ChatSnapshot { try await call("GET", "/v1/agents/\(agentID)/chat") }
+    func chatHistory(_ agentID: String, before: String, limit: Int) async throws -> ChatHistoryResponse {
+        var query: [String] = []
+        if !before.isEmpty { query.append("before=" + Self.escape(before)) }
+        if limit > 0 { query.append("limit=\(limit)") }
+        let suffix = query.isEmpty ? "" : "?" + query.joined(separator: "&")
+        return try await call("GET", "/v1/agents/\(agentID)/chat/history" + suffix)
+    }
+    func sendChatMessage(_ agentID: String, content: String, requestID: String, replyTo: String) async throws {
+        var body: [String: String] = ["content": content, "requestId": requestID]
+        if !replyTo.isEmpty { body["replyTo"] = replyTo }
+        try await perform("POST", "/v1/agents/\(agentID)/messages", body: body)
+    }
+    func abortChat(_ agentID: String) async throws { try await perform("POST", "/v1/agents/\(agentID)/abort") }
+    func compactChat(_ agentID: String) async throws { try await perform("POST", "/v1/agents/\(agentID)/compact") }
+
+    /// Follows the bot chat's server-sent events, passing each snapshot payload to onEvent.
+    /// It returns only by throwing: SSEClosedError when the server ends the stream.
+    func chatEvents(_ agentID: String, onEvent: @Sendable (String) async -> Void) async throws -> Never {
+        let path = "/v1/agents/\(agentID)/events"
+        var request = try makeRequest("GET", path)
+        request.timeoutInterval = .infinity
+        let (bytes, response) = try await session.bytes(for: request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        guard (200..<300).contains(status) else {
+            var data = Data()
+            for try await byte in bytes {
+                data.append(byte)
+                if data.count >= 8 << 10 { break }
+            }
+            throw APIError(method: "GET", path: path, statusCode: status,
+                           body: String(decoding: data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines))
+        }
+        var parser = SSEParser()
+        // AsyncLineSequence skips empty lines, so read raw lines to keep the blank line that ends an event.
+        var line = Data()
+        for try await byte in bytes {
+            if byte != UInt8(ascii: "\n") {
+                line.append(byte)
+                continue
+            }
+            if line.last == UInt8(ascii: "\r") { line.removeLast() }
+            if let payload = try parser.feed(String(decoding: line, as: UTF8.self)) {
+                await onEvent(payload)
+            }
+            line.removeAll(keepingCapacity: true)
+        }
+        try Task.checkCancellation()
+        if let payload = try parser.feed(String(decoding: line, as: UTF8.self)) { await onEvent(payload) }
+        if let payload = try parser.feed("") { await onEvent(payload) }
+        throw SSEClosedError()
+    }
+
+    func memories(_ agentID: String) async throws -> [Memory] { try await call("GET", "/v1/agents/\(agentID)/memories") }
+    func addMemory(_ agentID: String, content: String) async throws -> Memory {
+        try await call("POST", "/v1/agents/\(agentID)/memories", body: ["content": content])
+    }
+    func updateMemory(_ agentID: String, memoryID: String, content: String) async throws -> Memory {
+        try await call("PATCH", "/v1/agents/\(agentID)/memories/\(memoryID)", body: ["content": content])
+    }
+    func deleteMemory(_ agentID: String, memoryID: String) async throws {
+        try await perform("DELETE", "/v1/agents/\(agentID)/memories/\(memoryID)")
+    }
+
+    func schedules() async throws -> [Schedule] { try await call("GET", "/v1/schedules") }
+    func createSchedule(_ payload: [String: JSONValue]) async throws -> Schedule { try await call("POST", "/v1/schedules", body: payload) }
+    func updateSchedule(_ id: String, patch: [String: JSONValue]) async throws -> Schedule {
+        try await call("PATCH", "/v1/schedules/\(id)", body: patch)
+    }
+    func deleteSchedule(_ id: String) async throws { try await perform("DELETE", "/v1/schedules/\(id)") }
+    func runSchedule(_ id: String) async throws -> Execution {
+        struct Envelope: Decodable { var result: Execution }
+        let envelope: Envelope = try await call("POST", "/v1/schedules/\(id)/run")
+        return envelope.result
+    }
+    func executions() async throws -> [Execution] { try await call("GET", "/v1/executions") }
+
+    func providers() async throws -> [ProviderStatus] { try await call("GET", "/v1/providers") }
+    func models(provider: String) async throws -> [ModelSummary] { try await call("GET", "/v1/models?provider=" + Self.escape(provider)) }
+    func setProviderKey(_ provider: String, apiKey: String) async throws {
+        try await perform("PUT", "/v1/providers/\(provider)", body: ["apiKey": apiKey])
+    }
+    func deleteProviderKey(_ provider: String) async throws { try await perform("DELETE", "/v1/providers/\(provider)") }
+
+    func approvals() async throws -> [Approval] { try await call("GET", "/v1/approvals") }
+    func decideApproval(_ id: String, decision: String) async throws {
+        try await perform("POST", "/v1/approvals/\(id)", body: ["decision": decision])
+    }
+
+    func mcpServers() async throws -> [MCPServer] { try await call("GET", "/v1/mcp-servers") }
+    func createMCPServer(_ payload: [String: JSONValue]) async throws -> MCPServer { try await call("POST", "/v1/mcp-servers", body: payload) }
+    func updateMCPServer(_ id: String, patch: [String: JSONValue]) async throws -> MCPServer {
+        try await call("PATCH", "/v1/mcp-servers/\(id)", body: patch)
+    }
+    func deleteMCPServer(_ id: String) async throws { try await perform("DELETE", "/v1/mcp-servers/\(id)") }
+}
+
+/// Splits a server-sent event stream into snapshot payloads, line by line. Heartbeats and other
+/// event types are skipped; a snapshot without an agentId is a protocol error.
+struct SSEParser {
+    private var data: [String] = []
+    private var eventType = "message"
+
+    struct InvalidPayload: Error, LocalizedError {
+        var reason: String
+        var errorDescription: String? { reason }
+    }
+
+    mutating func feed(_ line: String) throws -> String? {
+        if line.hasPrefix("event:") {
+            eventType = line.dropFirst(6).trimmingCharacters(in: .whitespaces)
+        } else if line.hasPrefix("data:") {
+            data.append(line.dropFirst(5).trimmingCharacters(in: .whitespaces))
+        } else if line.isEmpty {
+            return try dispatch()
+        }
+        return nil
+    }
+
+    private mutating func dispatch() throws -> String? {
+        defer { eventType = "message" }
+        guard !data.isEmpty else { return nil }
+        let payload = data.joined(separator: "\n")
+        data = []
+        guard eventType == "snapshot" || eventType == "message" else { return nil }
+        struct Envelope: Decodable { var agentId: String? }
+        guard let envelope = try? JSONDecoder().decode(Envelope.self, from: Data(payload.utf8)) else {
+            throw InvalidPayload(reason: "invalid SSE payload")
+        }
+        guard let agentID = envelope.agentId, !agentID.isEmpty else {
+            throw InvalidPayload(reason: "snapshot event missing agentId")
+        }
+        return payload
+    }
+}

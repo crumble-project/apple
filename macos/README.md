@@ -2,6 +2,24 @@
 
 Crumble for macOS is a native client built with [MyGo](https://mygo.egoist.dev/). It connects to a running Crumble server and provides agent management, one continuous chat per agent, streaming updates, memory, schedules, tools, approvals, and settings as those server capabilities become available.
 
+## Swift app
+
+`mac/` holds a SwiftUI port of this client, which is meant to replace the Go app. It needs macOS 26 or later and Xcode 26 or later. It reads the same Keychain entries as the Go app, so a saved connection carries over; macOS asks once whether the new app may read them.
+
+Run the tests:
+
+```bash
+cd mac && swift test
+```
+
+Build `mac/build/Crumble.app`, signed ad hoc for local use:
+
+```bash
+cd mac && ./scripts/build-app.sh
+```
+
+`CRUMBLE_URL` and `CRUMBLE_TOKEN` work as they do for the Go app. Settings open with **⌘,** instead of from the sidebar.
+
 ## Requirements
 
 - macOS 12 or later for the native MyGo runtime.
