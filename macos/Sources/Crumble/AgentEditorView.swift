@@ -102,51 +102,10 @@ struct AgentEditorView: View {
                     .disabled(!server.enabled)
                 }
             }
-            Section {
-                ForEach($draft.skills) { $skill in
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack {
-                            TextField("Skill name", text: $skill.name, prompt: Text("Skill name"))
-                                .labelsHidden()
-                                .fontWeight(.semibold)
-                            Button("Remove Skill", systemImage: "xmark") { draft.skills.removeAll { $0.id == skill.id } }
-                                .labelStyle(.iconOnly)
-                                .buttonStyle(.borderless)
-                        }
-                        TextField("Skill instructions", text: $skill.instructions, prompt: Text("What the agent should do"), axis: .vertical)
-                            .labelsHidden()
-                            .lineLimit(2...10)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                Button("Add Skill…") { draft.skills.append(Skill()) }
-                ForEach(model.sharedSkills) { skill in
-                    if skill.isDefault {
-                        DisclosureGroup {
-                            Text(skill.instructions)
-                                .textSelection(.enabled)
-                            if let path = skill.path, !path.isEmpty {
-                                Text("Source: \(path)").font(.caption).foregroundStyle(.secondary)
-                            }
-                        } label: {
-                            HStack {
-                                Text(skill.name)
-                                Spacer()
-                                Text("Default · Every bot").font(.caption).foregroundStyle(.secondary)
-                            }
-                        }
-                    } else {
-                        Toggle(isOn: membership(\.sharedSkills, skill.id)) {
-                            Text(skill.name)
-                            Text("Shared skill")
-                        }
-                    }
-                }
-            } header: {
-                Text("Skills")
-            } footer: {
-                Text("Every bot follows the shared defaults, along with its personal skills and the optional shared skills you turn on. Manage shared skills under Skills.")
+            Section("Skills") {
+                Text("Manage this bot’s personal skills and shared skill assignments in the Skills tab.")
                     .foregroundStyle(.secondary)
+                Button("Open Skills") { model.openPanel(.skills) }
             }
             if !draft.isNew {
                 Section {

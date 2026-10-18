@@ -64,6 +64,8 @@ struct MemoryDraft: Identifiable, Sendable {
 struct SkillDraft: Identifiable, Sendable {
     let id = UUID()
     var skillID: String
+    var agentID: String?
+    var personal = false
     var name = ""
     var instructions = ""
 }
@@ -150,6 +152,7 @@ final class AppModel {
     var sharedSkills: [SharedSkill] = []
     var schedules: [Schedule] = []
     var executions: [Execution] = []
+    var activities: [ActivityEntry] = []
     var mcpServers: [MCPServer] = []
     var providers: [ProviderStatus] = []
     var models: [ModelSummary] = []
@@ -922,8 +925,8 @@ final class AppModel {
             }
         case .activity:
             request { client in
-                let items = try await client.executions()
-                return { [self] in executions = items }
+                let feed = try await client.activityFeed()
+                return { [self] in activities = feed.activities }
             }
         case .integrations:
             let mutationVersion = mutationRevision
@@ -1241,8 +1244,17 @@ final class AppModel {
     }
 
     func openSkillForm(_ id: String) {
-        var form = SkillDraft(skillID: id)
+        var form = SkillDraft(skillID: id, agentID: nil, personal: false)
         if let skill = sharedSkills.first(where: { $0.id == id }) {
+            form.name = skill.name
+            form.instructions = skill.instructions
+        }
+        skillDraft = form
+    }
+
+    func openPersonalSkillForm(agentID: String, skillID: String = "") {
+        var form = SkillDraft(skillID: skillID, agentID: agentID, personal: true)
+        if let skill = agents.first(where: { $0.id == agentID })?.skills?.first(where: { $0.id.uuidString == skillID }) {
             form.name = skill.name
             form.instructions = skill.instructions
         }
@@ -1256,12 +1268,31 @@ final class AppModel {
             errorText = "Each skill needs a name and instructions."
             return
         }
+        if form.personal {
+            guard let agentID = form.agentID, let index = agents.firstIndex(where: { $0.id == agentID }) else {
+                errorText = "Choose which bot owns this skill."
+                return
+            }
+            var skills = agents[index].skills ?? []
+            if let skillIndex = skills.firstIndex(where: { $0.id.uuidString == form.skillID }) {
+                skills[skillIndex].name = name
+                skills[skillIndex].instructions = instructions
+            } else {
+                skills.append(Skill(name: name, instructions: instructions))
+            }
+            if saveAgentSkills(agentID: agentID, skills: skills, draftToRestore: form) {
+                skillDraft = nil
+            }
+            return
+        }
         let isNew = form.skillID.isEmpty
         let provisionalID = isNew ? "pending-skill-" + newRequestID() : form.skillID
         let provisional = SharedSkill(id: provisionalID, name: name, instructions: instructions, source: nil, path: nil)
         let old = sharedSkills.first { $0.id == form.skillID }
+        let mutationKey = "skill:\(provisionalID)"
+        guard client != nil, !pendingMutations.contains(mutationKey) else { return }
         skillDraft = nil
-        optimisticMutation(key: "skill:\(provisionalID)", update: { [self] in
+        optimisticMutation(key: mutationKey, update: { [self] in
             if let index = sharedSkills.firstIndex(where: { $0.id == provisionalID || $0.id == form.skillID }) { sharedSkills[index] = provisional }
             else { sharedSkills.append(provisional) }
         }, rollback: { [self] in
@@ -1276,6 +1307,32 @@ final class AppModel {
             let saved = try await client.updateSharedSkill(form.skillID, name: name, instructions: instructions)
             return { [self] in if let index = sharedSkills.firstIndex(where: { $0.id == provisionalID }) { sharedSkills[index] = saved } }
         })
+    }
+
+    func deletePersonalSkill(agentID: String, skillID: String) {
+        guard let agent = agents.first(where: { $0.id == agentID }) else { return }
+        saveAgentSkills(agentID: agentID, skills: (agent.skills ?? []).filter { $0.id.uuidString != skillID })
+    }
+
+    @discardableResult
+    func saveAgentSkills(agentID: String, skills: [Skill], draftToRestore: SkillDraft? = nil) -> Bool {
+        guard let agentIndex = agents.firstIndex(where: { $0.id == agentID }) else { return false }
+        let key = "agent-skills:\(agentID)"
+        guard client != nil, !pendingMutations.contains(key) else { return false }
+        let old = agents[agentIndex].skills ?? []
+        optimisticMutation(key: key, update: { [self] in
+            guard let index = agents.firstIndex(where: { $0.id == agentID }) else { return }
+            agents[index].skills = skills
+        }, rollback: { [self] in
+            if let index = agents.firstIndex(where: { $0.id == agentID }) { agents[index].skills = old }
+            if let draftToRestore, route == .skills, skillDraft == nil { skillDraft = draftToRestore }
+        }, work: { client in
+            let saved = try await client.updateAgent(agentID, patch: ["skills": try JSONValue(encoding: skills)])
+            return { [self] in
+                if let index = agents.firstIndex(where: { $0.id == agentID }) { agents[index].skills = saved.skills }
+            }
+        })
+        return true
     }
 
     func deleteSharedSkill(_ id: String) {
@@ -1295,6 +1352,25 @@ final class AppModel {
         }, work: { client in
             try await client.deleteSharedSkill(id)
             return nil
+        })
+    }
+
+    func setSharedSkill(_ skillID: String, for agentID: String, enabled: Bool) {
+        guard let index = agents.firstIndex(where: { $0.id == agentID }) else { return }
+        let key = "agent-shared-skills:\(agentID)"
+        guard client != nil, !pendingMutations.contains(key) else { return }
+        let old = agents[index].sharedSkills ?? []
+        var memberships = old
+        if enabled { memberships.append(skillID) } else { memberships.removeAll { $0 == skillID } }
+        memberships = Array(Set(memberships)).sorted()
+        agents[index].sharedSkills = memberships
+        optimisticMutation(key: key, update: {}, rollback: { [self] in
+            if let index = agents.firstIndex(where: { $0.id == agentID }) { agents[index].sharedSkills = old }
+        }, work: { client in
+            let saved = try await client.updateAgent(agentID, patch: ["sharedSkills": .array(memberships.map(JSONValue.string))])
+            return { [self] in
+                if let index = agents.firstIndex(where: { $0.id == agentID }) { agents[index].sharedSkills = saved.sharedSkills }
+            }
         })
     }
 

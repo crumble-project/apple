@@ -42,42 +42,64 @@ struct PanelView: View {
 
 private struct MemoryPanel: View {
     @Environment(AppModel.self) private var model
+    @State private var query = ""
+    @State private var scope = "all"
 
     var body: some View {
         Form {
             Section {
-                if model.sharedMemories.isEmpty {
-                    Text("No shared memories yet.").foregroundStyle(.secondary)
+                TextField("Search memories", text: $query)
+                Picker("Scope", selection: $scope) {
+                    Text("All").tag("all")
+                    Text("Shared").tag("shared")
+                    ForEach(model.agents) { agent in Text(agent.name).tag(agent.id) }
                 }
-                ForEach(model.sharedMemories) { memory in
-                    row(memory, agentID: nil)
-                }
-                Button("New Shared Memory", systemImage: "plus") { model.openMemoryForm("", agentID: nil) }
-            } header: {
-                Text("Shared")
-            } footer: {
-                Text(sharedFooter).foregroundStyle(.secondary)
+                .pickerStyle(.menu)
             }
-            ForEach(model.agents) { agent in
-                let memories = model.agentMemories[agent.id] ?? []
+            if scope == "all" || scope == "shared" {
                 Section {
+                    let memories = filtered(model.sharedMemories)
                     if memories.isEmpty {
-                        Text("No memories yet.").foregroundStyle(.secondary)
+                        Text(query.isEmpty ? "No shared memories yet." : "No shared memories match your search.").foregroundStyle(.secondary)
                     }
                     ForEach(memories) { memory in
-                        row(memory, agentID: agent.id)
+                        row(memory, agentID: nil, owner: "Shared")
                     }
-                    Text("\(memories.count) personal memor\(memories.count == 1 ? "y" : "ies")")
-                        .font(.caption).foregroundStyle(.secondary)
-                    Button("New Memory", systemImage: "plus") { model.openMemoryForm("", agentID: agent.id) }
+                    Button("New Shared Memory", systemImage: "plus") { model.openMemoryForm("", agentID: nil) }
                 } header: {
-                    Text(agent.name)
+                    Text("Shared · \(model.sharedMemories.count)")
                 } footer: {
-                    Text("What \(agent.name) remembers between chats.").foregroundStyle(.secondary)
+                    Text(sharedFooter).foregroundStyle(.secondary)
+                }
+            }
+            if scope != "shared" {
+                ForEach(model.agents.filter { scope == "all" || $0.id == scope }) { agent in
+                    let memories = filtered(model.agentMemories[agent.id] ?? [])
+                    let total = model.agentMemories[agent.id, default: []].count
+                    Section {
+                        if memories.isEmpty {
+                            Text(query.isEmpty ? "No memories yet." : "No memories match your search.").foregroundStyle(.secondary)
+                        }
+                        ForEach(memories) { memory in
+                            row(memory, agentID: agent.id, owner: agent.name)
+                        }
+                        Text("\(total) personal memor\(total == 1 ? "y" : "ies")")
+                            .font(.caption).foregroundStyle(.secondary)
+                        Button("New Memory", systemImage: "plus") { model.openMemoryForm("", agentID: agent.id) }
+                    } header: {
+                        Text("\(agent.name) · \(total)")
+                    } footer: {
+                        Text("Personal to \(agent.name).").foregroundStyle(.secondary)
+                    }
                 }
             }
         }
         .formStyle(.grouped)
+    }
+
+    private func filtered(_ memories: [Memory]) -> [Memory] {
+        guard !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return memories }
+        return memories.filter { $0.content.localizedCaseInsensitiveContains(query) }
     }
 
     private var sharedFooter: String {
@@ -85,12 +107,17 @@ private struct MemoryPanel: View {
         return enabled.isEmpty ? "No bots use shared memory. Turn it on in a bot's profile." : "Used by: " + enabled.joined(separator: ", ")
     }
 
-    private func row(_ memory: Memory, agentID: String?) -> some View {
-        HStack(alignment: .firstTextBaseline) {
+    private func row(_ memory: Memory, agentID: String?, owner: String) -> some View {
+        DisclosureGroup {
             Text(memory.content).textSelection(.enabled)
-            Spacer()
-            Button("Edit") { model.openMemoryForm(memory.id, agentID: agentID) }.disabled(memory.id.hasPrefix("pending-"))
-            Button("Delete") { model.deleteMemory(memory.id, agentID: agentID) }.disabled(memory.id.hasPrefix("pending-"))
+        } label: {
+            HStack {
+                Text(memory.content).lineLimit(2)
+                Spacer()
+                Text(owner).font(.caption).foregroundStyle(.secondary)
+                Button("Edit") { model.openMemoryForm(memory.id, agentID: agentID) }.disabled(memory.id.hasPrefix("pending-"))
+                Button("Delete", role: .destructive) { model.deleteMemory(memory.id, agentID: agentID) }.disabled(memory.id.hasPrefix("pending-"))
+            }
         }
     }
 }
@@ -111,6 +138,17 @@ private struct SkillsPanel: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                         if let path = skill.path, !path.isEmpty {
                             Text("Source: \(path)").font(.caption).foregroundStyle(.secondary)
+                        }
+                        if !skill.isDefault {
+                            Divider()
+                            Text("Assign to bots").font(.caption.weight(.medium))
+                            ForEach(model.agents) { agent in
+                                Toggle(agent.name, isOn: Binding(
+                                    get: { agent.sharedSkills?.contains(skill.id) == true },
+                                    set: { model.setSharedSkill(skill.id, for: agent.id, enabled: $0) }
+                                ))
+                                .disabled(model.pendingMutations.contains("agent-shared-skills:\(agent.id)"))
+                            }
                         }
                     } label: {
                         HStack {
@@ -135,7 +173,7 @@ private struct SkillsPanel: View {
             } header: {
                 Text("Shared")
             } footer: {
-                Text("Defaults apply to every bot. Enable optional shared skills in a bot’s profile. Edit default files on the server and restart it to load changes.").foregroundStyle(.secondary)
+                Text("Defaults apply to every bot. Assign optional shared skills to bots here. Edit default files on the server and restart it to load changes.").foregroundStyle(.secondary)
             }
             ForEach(model.agents) { agent in
                 Section {
@@ -149,14 +187,22 @@ private struct SkillsPanel: View {
                                 .textSelection(.enabled)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         } label: {
-                            Text(skill.name).fontWeight(.semibold)
+                            HStack {
+                                Text(skill.name).fontWeight(.semibold)
+                                Spacer()
+                                Button("Edit") { model.openPersonalSkillForm(agentID: agent.id, skillID: skill.id.uuidString) }
+                                    .disabled(model.pendingMutations.contains("agent-skills:\(agent.id)"))
+                                Button("Delete", role: .destructive) { model.deletePersonalSkill(agentID: agent.id, skillID: skill.id.uuidString) }
+                                    .disabled(model.pendingMutations.contains("agent-skills:\(agent.id)"))
+                            }
                         }
                     }
-                    Button("Edit in Profile…") { model.openEditor(agentID: agent.id) }
+                    Button("Add Skill…") { model.openPersonalSkillForm(agentID: agent.id) }
+                        .disabled(model.pendingMutations.contains("agent-skills:\(agent.id)"))
                 } header: {
                     Text(agent.name)
                 } footer: {
-                    Text("Instructions only \(agent.name) follows.").foregroundStyle(.secondary)
+                    Text("Instructions only \(agent.name) follows. Manage these skills here; shared skills are assigned above.").foregroundStyle(.secondary)
                 }
             }
         }
@@ -218,37 +264,57 @@ private struct ActivityPanel: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        if model.executions.isEmpty {
-            ContentUnavailableView("No Activity", systemImage: "waveform.path.ecg", description: Text("Work from chats and tasks will appear here."))
+        if model.activities.isEmpty {
+            ContentUnavailableView("No Activity", systemImage: "waveform.path.ecg", description: Text("Tool calls and bot messages will appear here."))
         } else {
             Form {
                 Section {
-                    ForEach(model.executions) { execution in
+                    ForEach(model.activities) { activity in
                         HStack {
                             VStack(alignment: .leading, spacing: 3) {
                                 HStack(spacing: 6) {
-                                    Text(execution.status ?? "")
+                                    Text(title(for: activity))
                                         .font(.caption.weight(.medium))
                                         .padding(.horizontal, 6)
                                         .padding(.vertical, 1)
                                         .background(.quaternary, in: .capsule)
-                                    Text(activityTime(execution.createdAt)).font(.caption).foregroundStyle(.secondary)
+                                    Text(activity.timestamp.map { timeLabel(Date(timeIntervalSince1970: Double($0) / 1000)) } ?? "")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    Text(activity.agentName).font(.caption).foregroundStyle(.secondary)
                                 }
-                                Text(execution.prompt ?? "").lineLimit(2)
-                                if let error = execution.error, !error.isEmpty {
-                                    Text(error).font(.callout).foregroundStyle(.red).textSelection(.enabled)
+                                DisclosureGroup("Details") {
+                                    Text(details(for: activity))
+                                        .font(.callout)
+                                        .textSelection(.enabled)
                                 }
                             }
                             Spacer()
-                            if let agent = execution.agentId, !agent.isEmpty {
-                                Button("Open Chat") { model.selectAgent(agent) }
-                            }
+                            Button("Open Chat") { model.selectAgent(activity.agentId) }
                         }
                     }
                 }
             }
             .formStyle(.grouped)
         }
+    }
+
+    private func title(for activity: ActivityEntry) -> String {
+        switch activity.kind {
+        case "tool-call": return "Tool call · " + (activity.details["toolName"]?.stringValue ?? activity.details["name"]?.stringValue ?? "Unknown tool")
+        case "tool-result": return "Tool result · " + (activity.details["toolName"]?.stringValue ?? activity.details["name"]?.stringValue ?? "Unknown tool")
+        case "mcp-call": return "MCP call · " + (activity.details["name"]?.stringValue ?? activity.details["toolName"]?.stringValue ?? "Unknown server")
+        case "bot-message":
+            let from = activity.details["communication"]?["fromName"]?.stringValue ?? activity.agentName
+            let to = activity.details["communication"]?["toName"]?.stringValue ?? "another bot"
+            return "Bot message · \(from) → \(to)"
+        default: return activity.kind.capitalized
+        }
+    }
+
+    private func details(for activity: ActivityEntry) -> String {
+        if activity.kind == "bot-message", let content = activity.details["content"]?.stringValue { return content }
+        return activity.details.map { "\($0.key): \($0.value.prettyPrinted)" }.sorted().joined(separator: "\n")
     }
 }
 
@@ -354,6 +420,10 @@ struct MemoryFormView: View {
                         Text(agent.name).tag(Optional(agent.id))
                     }
                 }
+                Text(draft.agentID == nil ? "Shared memory is available to bots with shared memory enabled." : "Personal memory is available only to this bot.")
+                    .font(.caption).foregroundStyle(.secondary)
+            } else {
+                LabeledContent("Owner", value: draft.agentID.flatMap { ownerID in model.agents.first(where: { $0.id == ownerID })?.name } ?? "Shared")
             }
             Section("Memory Entry") {
                 TextEditor(text: $draft.content).frame(minHeight: 120)
@@ -457,12 +527,24 @@ struct SkillFormView: View {
         Form {
             SheetError()
             Section {
+                if draft.personal {
+                    if draft.skillID.isEmpty {
+                        Picker("Bot", selection: Binding(get: { draft.agentID ?? "" }, set: { draft.agentID = $0 })) {
+                            Text("Choose a bot").tag("")
+                            ForEach(model.agents) { agent in
+                                Text(agent.name).tag(agent.id)
+                            }
+                        }
+                    } else if let agent = model.agents.first(where: { $0.id == draft.agentID }) {
+                        LabeledContent("Bot", value: agent.name)
+                    }
+                }
                 TextField("Name", text: $draft.name, prompt: Text("Required"))
                 TextEditor(text: $draft.instructions).frame(minHeight: 120)
             } header: {
-                Text("Shared Skill")
+                Text(draft.personal ? "Bot Skill" : "Shared Skill")
             } footer: {
-                Text("Bots that turn this skill on in their profile follow these instructions.").foregroundStyle(.secondary)
+                Text(draft.personal ? "This bot follows these instructions in every chat." : "Bots that turn this skill on in their profile follow these instructions.").foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
