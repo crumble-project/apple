@@ -373,6 +373,8 @@ struct Composer: View {
     let agent: Agent
     @FocusState private var focused: Bool
     @State private var selection: TextSelection?
+    @State private var selectedMention = 0
+    @State private var dismissedMention = false
     @State private var importing = false
 
     var body: some View {
@@ -425,16 +427,36 @@ struct Composer: View {
                         .lineLimit(1...8)
                         .focused($focused)
                         .disabled(!agent.enabled)
+                        .overlay(alignment: .topLeading) {
+                            if let completion, !dismissedMention {
+                                let bot = completion.bots[min(selectedMention, completion.bots.count - 1)]
+                                let suffix = String(bot.name.dropFirst(completion.query.count))
+                                Text("\(Text(model.draft).foregroundStyle(.clear))\(Text(suffix + " ⇥").foregroundStyle(.tertiary))")
+                                    .allowsHitTesting(false)
+                                    .accessibilityHidden(true)
+                            }
+                        }
                         .padding(.vertical, 7)
+                        .onChange(of: model.draft) { _, _ in
+                            selectedMention = 0
+                            dismissedMention = false
+                        }
+                        .onKeyPress(.tab) { acceptMention() ? .handled : .ignored }
+                        .onKeyPress(.escape) {
+                            guard completion != nil, !dismissedMention else { return .ignored }
+                            dismissedMention = true
+                            return .handled
+                        }
+                        .onKeyPress(.downArrow) { cycleMention(by: 1) }
+                        .onKeyPress(.upArrow) { cycleMention(by: -1) }
                         .onKeyPress(.return, phases: .down) { press in
-                            // A multi-line TextField inserts nothing for Shift-Return, so the composer does.
                             if press.modifiers.contains(.shift) || press.modifiers.contains(.option) {
                                 var range: Range<String.Index>?
                                 if case .selection(let selected)? = selection?.indices { range = selected }
                                 let (text, caret) = insertingNewline(into: model.draft, replacing: range)
                                 model.draft = text
                                 selection = TextSelection(insertionPoint: caret)
-                            } else {
+                            } else if !acceptMention() {
                                 model.sendMessage()
                             }
                             return .handled
@@ -471,6 +493,34 @@ struct Composer: View {
             model.addAttachments(urls)
             return true
         }
+    }
+
+    private var completion: MentionCompletion? {
+        let text = model.draft
+        var caret = NSRange(location: (text as NSString).length, length: 0)
+        if case .selection(let range)? = selection?.indices,
+           range.lowerBound >= text.startIndex, range.upperBound <= text.endIndex {
+            caret = NSRange(range, in: text)
+        }
+        let bots = model.agents.filter {
+            $0.enabled && $0.id != agent.id && (agent.delegates ?? []).contains($0.id) && (agent.tools ?? []).contains("delegate")
+        }
+        return MentionCompletion.find(in: text, selection: caret, bots: bots)
+    }
+
+    private func acceptMention() -> Bool {
+        guard !dismissedMention, let completion,
+              let range = Range(completion.range, in: model.draft) else { return false }
+        let bot = completion.bots[min(selectedMention, completion.bots.count - 1)]
+        model.draft.replaceSubrange(range, with: "@" + bot.name + " ")
+        selection = TextSelection(insertionPoint: model.draft.endIndex)
+        return true
+    }
+
+    private func cycleMention(by direction: Int) -> KeyPress.Result {
+        guard !dismissedMention, let completion else { return .ignored }
+        selectedMention = (selectedMention + direction + completion.bots.count) % completion.bots.count
+        return .handled
     }
 
 }

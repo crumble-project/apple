@@ -3,13 +3,15 @@ import SwiftUI
 import Testing
 @testable import Crumble
 
-/// Drives the real composer with keyboard events, since SwiftUI's text field decides which keys reach it.
+extension MentionComposerTests {
+/// Drives the real composer with keyboard events.
 @MainActor @Test func shiftReturnBreaksTheLineInsteadOfSending() async throws {
     _ = NSApplication.shared
     let model = AppModel(client: APIClient(baseURL: "http://127.0.0.1:1", token: ""))
     let agent = Agent(id: "a1", name: "Atlas")
     model.snapshot = ChatSnapshot(status: "idle", agentId: "a1")
     let window = NSWindow(contentRect: NSRect(x: -10_000, y: -10_000, width: 600, height: 200), styleMask: [.titled], backing: .buffered, defer: false)
+    window.isReleasedWhenClosed = false
     window.contentView = NSHostingView(rootView: Composer(agent: agent).environment(model))
     window.makeKeyAndOrderFront(nil)
     defer { window.close() }
@@ -31,4 +33,6 @@ import Testing
     try await press("\r", keyCode: 36, .shift)
     #expect(model.draft == "ab\n")
     #expect(!model.sending)
+}
+
 }
