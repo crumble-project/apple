@@ -23,11 +23,11 @@ struct MessageView: View {
         case "user":
             HStack(spacing: 6) {
                 Spacer(minLength: 60)
+                replyButton
                 ViewThatFits(in: .horizontal) {
                     sentMessageContent.fixedSize(horizontal: true, vertical: false)
                     sentMessageContent.frame(maxWidth: 520, alignment: .trailing)
                 }
-                replyButton
             }
             .onHover { hovered = $0 }
         default:
