@@ -2,7 +2,7 @@
 
 ## Bot avatars
 
-Bot avatars (`botavatar.go`, `botface.go`, and `mac/Sources/Crumble/BotAvatar.swift`) are adapted from Hermex's drawn bot faces: their shapes, palette, eye geometry, blink schedule, and working pose. Hermex is available under the MIT License, Copyright (c) 2026 Uzair Ansar. The eye expressions follow Bloub's measured catalogue (jeremy-prt/bloub), also under the MIT License.
+Bot avatars (`Sources/Crumble/BotAvatar.swift`) are adapted from Hermex's drawn bot faces: their shapes, palette, eye geometry, blink schedule, and working pose. Hermex is available under the MIT License, Copyright (c) 2026 Uzair Ansar. The eye expressions follow Bloub's measured catalogue (jeremy-prt/bloub), also under the MIT License.
 
 ```text
 MIT License
@@ -30,4 +30,4 @@ SOFTWARE.
 
 ## SF Symbols
 
-Icons are SF Symbols that macOS draws at runtime through AppKit. The app ships no symbol artwork. Apple's SF Symbols license permits their use in software for Apple platforms.
+Icons are SF Symbols that macOS draws at runtime through SwiftUI. The app ships no symbol artwork. Apple's SF Symbols license permits their use in software for Apple platforms.
