@@ -78,10 +78,14 @@ struct Agent: Codable, Identifiable, Hashable, Sendable {
     var inference: Inference?
     var lastMessage: String?
 
-    init(id: String = "", name: String = "", description: String? = nil, instructions: String? = nil, avatar: String? = nil,
-         enabled: Bool = true, provider: String? = nil, model: String? = nil, folder: String? = nil, tools: [String]? = nil,
-         delegates: [String]? = nil, skills: [Skill]? = nil, sharedSkills: [String]? = nil, sharedMemory: Bool? = nil,
-         mcpServers: [String]? = nil, inference: Inference? = nil, lastMessage: String? = nil) {
+    init(
+        id: String = "", name: String = "", description: String? = nil, instructions: String? = nil,
+        avatar: String? = nil,
+        enabled: Bool = true, provider: String? = nil, model: String? = nil, folder: String? = nil,
+        tools: [String]? = nil,
+        delegates: [String]? = nil, skills: [Skill]? = nil, sharedSkills: [String]? = nil, sharedMemory: Bool? = nil,
+        mcpServers: [String]? = nil, inference: Inference? = nil, lastMessage: String? = nil
+    ) {
         self.id = id
         self.name = name
         self.description = description
@@ -198,10 +202,14 @@ struct Message: Codable, Identifiable, Hashable, Sendable {
     var requestId: String?
     var deliveryState: MessageDeliveryState
 
-    init(id: String, entryId: String? = nil, role: String, content: JSONValue? = nil, blocks: JSONValue? = nil, kind: String? = nil,
-         replyTo: String? = nil, replyPreview: String? = nil, origin: MessageOrigin? = nil, communication: BotCommunication? = nil, timestamp: Int64? = nil,
-         attachments: [AttachmentInfo]? = nil, requestId: String? = nil,
-         deliveryState: MessageDeliveryState = .confirmed) {
+    init(
+        id: String, entryId: String? = nil, role: String, content: JSONValue? = nil, blocks: JSONValue? = nil,
+        kind: String? = nil,
+        replyTo: String? = nil, replyPreview: String? = nil, origin: MessageOrigin? = nil,
+        communication: BotCommunication? = nil, timestamp: Int64? = nil,
+        attachments: [AttachmentInfo]? = nil, requestId: String? = nil,
+        deliveryState: MessageDeliveryState = .confirmed
+    ) {
         self.id = id
         self.entryId = entryId
         self.role = role

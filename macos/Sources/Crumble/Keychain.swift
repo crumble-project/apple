@@ -6,7 +6,10 @@ enum Keychain {
     static let service = "dev.crumble.desktop"
 
     private static func query(_ account: String) -> [String: Any] {
-        [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service, kSecAttrAccount as String: account]
+        [
+            kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service,
+            kSecAttrAccount as String: account
+        ]
     }
 
     static func read(_ account: String) -> String? {
@@ -14,7 +17,9 @@ enum Keychain {
         request[kSecReturnData as String] = true
         request[kSecMatchLimit as String] = kSecMatchLimitOne
         var result: CFTypeRef?
-        guard SecItemCopyMatching(request as CFDictionary, &result) == errSecSuccess, let data = result as? Data else { return nil }
+        guard SecItemCopyMatching(request as CFDictionary, &result) == errSecSuccess, let data = result as? Data else {
+            return nil
+        }
         return String(data: data, encoding: .utf8)
     }
 
@@ -33,7 +38,9 @@ enum Keychain {
     private static func check(_ status: OSStatus) throws {
         guard status == errSecSuccess else {
             let message = SecCopyErrorMessageString(status, nil) as String? ?? "OSStatus \(status)"
-            throw NSError(domain: NSOSStatusErrorDomain, code: Int(status), userInfo: [NSLocalizedDescriptionKey: "Keychain: " + message])
+            throw NSError(
+                domain: NSOSStatusErrorDomain, code: Int(status),
+                userInfo: [NSLocalizedDescriptionKey: "Keychain: " + message])
         }
     }
 }

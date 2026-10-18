@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import Testing
+
 @testable import Crumble
 
 @MainActor
@@ -10,12 +11,14 @@ struct MentionComposerTests {
     @MainActor
     @Test func mentionQueryFindsNamesWithoutTreatingEmailAddressesAsMentions() {
         let multiword = "Ask @Research Buddy"
-        let multiwordMatch = mentionQuery(in: multiword, selection: NSRange(location: (multiword as NSString).length, length: 0))
+        let multiwordMatch = mentionQuery(
+            in: multiword, selection: NSRange(location: (multiword as NSString).length, length: 0))
         #expect(multiwordMatch?.query == "Research Buddy")
         #expect(multiwordMatch?.range == NSRange(location: 4, length: 15))
 
         let unicode = "Ask @Zoë"
-        let unicodeMatch = mentionQuery(in: unicode, selection: NSRange(location: (unicode as NSString).length, length: 0))
+        let unicodeMatch = mentionQuery(
+            in: unicode, selection: NSRange(location: (unicode as NSString).length, length: 0))
         #expect(unicodeMatch?.query == "Zoë")
         #expect(unicodeMatch?.range == NSRange(location: 4, length: 4))
 
@@ -25,7 +28,8 @@ struct MentionComposerTests {
         #expect(mentionQuery(in: multiword, selection: NSRange(location: 3, length: 1)) == nil)
     }
 
-    private func testBot(_ id: String, _ name: String, delegates: [String] = [], tools: [String] = ["delegate"]) -> Agent {
+    private func testBot(_ id: String, _ name: String, delegates: [String] = [], tools: [String] = ["delegate"])
+        -> Agent {
         Agent(id: id, name: name, avatar: "bot:" + id, enabled: true, tools: tools, delegates: delegates)
     }
 
@@ -33,18 +37,24 @@ struct MentionComposerTests {
     private func hostedComposerWindow(source: Agent, bots: [Agent], model: AppModel) -> NSWindow {
         model.agents = bots
         model.snapshot = ChatSnapshot(status: "idle", agentId: source.id)
-        let window = NSWindow(contentRect: NSRect(x: -10_000, y: -10_000, width: 700, height: 260), styleMask: [.titled], backing: .buffered, defer: false)
+        let window = NSWindow(
+            contentRect: NSRect(x: -10_000, y: -10_000, width: 700, height: 260), styleMask: [.titled],
+            backing: .buffered, defer: false)
         window.contentView = NSHostingView(rootView: Composer(agent: source).environment(model))
         window.makeKeyAndOrderFront(nil)
         return window
     }
 
     @MainActor
-    private func press(_ window: NSWindow, characters: String, keyCode: UInt16, modifiers: NSEvent.ModifierFlags = []) async throws {
+    private func press(_ window: NSWindow, characters: String, keyCode: UInt16, modifiers: NSEvent.ModifierFlags = [])
+        async throws {
         for type in [NSEvent.EventType.keyDown, .keyUp] {
-            let event = try #require(NSEvent.keyEvent(with: type, location: .zero, modifierFlags: modifiers, timestamp: ProcessInfo.processInfo.systemUptime,
-                                                      windowNumber: window.windowNumber, context: nil, characters: characters,
-                                                      charactersIgnoringModifiers: characters, isARepeat: false, keyCode: keyCode))
+            let event = try #require(
+                NSEvent.keyEvent(
+                    with: type, location: .zero, modifierFlags: modifiers,
+                    timestamp: ProcessInfo.processInfo.systemUptime,
+                    windowNumber: window.windowNumber, context: nil, characters: characters,
+                    charactersIgnoringModifiers: characters, isARepeat: false, keyCode: keyCode))
             window.sendEvent(event)
         }
         try await Task.sleep(for: .milliseconds(120))
@@ -90,7 +100,8 @@ struct MentionComposerTests {
         try await Task.sleep(for: .milliseconds(300))
         _ = try #require(window.firstResponder as? NSTextView)
         try await press(window, characters: "Ask @", keyCode: 0)
-        let completion = MentionCompletion.find(in: model.draft, selection: NSRange(location: 5, length: 0), bots: [atlas, buddy])
+        let completion = MentionCompletion.find(
+            in: model.draft, selection: NSRange(location: 5, length: 0), bots: [atlas, buddy])
         #expect(completion?.bots.map(\.id) == [atlas.id, buddy.id])
         try await press(window, characters: "\u{f701}", keyCode: 125)
         try await press(window, characters: "\r", keyCode: 36)
@@ -101,8 +112,8 @@ struct MentionComposerTests {
     }
 }
 
-private extension NSView {
-    func descendant<T: NSView>(of type: T.Type) -> T? {
+extension NSView {
+    fileprivate func descendant<T: NSView>(of type: T.Type) -> T? {
         if let match = self as? T { return match }
         for child in subviews {
             if let match = child.descendant(of: type) { return match }

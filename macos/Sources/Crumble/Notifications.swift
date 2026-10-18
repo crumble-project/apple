@@ -62,14 +62,18 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
         content.title = title
         content.body = body
         content.sound = .default
-        content.userInfo = ["type": event.type, "agentId": event.agentId, "local": true,
-                            "serverURL": model?.client?.baseURL ?? ""]
+        content.userInfo = [
+            "type": event.type, "agentId": event.agentId, "local": true,
+            "serverURL": model?.client?.baseURL ?? ""
+        ]
         // Replies from one bot replace each other, so a busy bot leaves one notification.
         let id = "reply-\(event.agentId)"
         center.add(UNNotificationRequest(identifier: id, content: content, trigger: nil))
     }
 
-    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter, willPresent notification: UNNotification
+    ) async
         -> UNNotificationPresentationOptions {
         let info = notification.request.content.userInfo
         if info["local"] as? Bool == true {
@@ -82,11 +86,14 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
             }
         }
         guard let data = try? JSONSerialization.data(withJSONObject: info),
-              let event = try? JSONDecoder().decode(ActivityEvent.self, from: data) else { return [] }
+            let event = try? JSONDecoder().decode(ActivityEvent.self, from: data)
+        else { return [] }
         return await PushNotifications.shared.presentation(for: event)
     }
 
-    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse
+    ) async {
         let info = response.notification.request.content.userInfo
         if info["local"] as? Bool == true {
             let agentID = info["agentId"] as? String
@@ -94,7 +101,7 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
             guard let agentID, let serverURL else { return }
             await PushNotifications.shared.openLocal(agentId: agentID, serverURL: serverURL)
         } else if let data = try? JSONSerialization.data(withJSONObject: info),
-                  let event = try? JSONDecoder().decode(ActivityEvent.self, from: data) {
+            let event = try? JSONDecoder().decode(ActivityEvent.self, from: data) {
             await PushNotifications.shared.open(event)
         }
     }

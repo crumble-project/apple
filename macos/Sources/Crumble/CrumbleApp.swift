@@ -88,46 +88,33 @@ func sheetBinding<Draft: Identifiable & Sendable>(_ source: Binding<Draft?>, for
 struct SidebarView: View {
     @Environment(AppModel.self) private var model
 
-    private static let workspace: [(Route, String, String)] = [
-        (.memory, "Memory", "brain"), (.skills, "Skills", "book.closed"), (.tasks, "Tasks", "calendar.badge.clock"),
-        (.activity, "Activity", "waveform.path.ecg"),
-        (.integrations, "Integrations", "powerplug")
+    private struct WorkspaceItem {
+        let route: Route
+        let title: String
+        let symbol: String
+    }
+
+    private static let workspace = [
+        WorkspaceItem(route: .memory, title: "Memory", symbol: "brain"),
+        WorkspaceItem(route: .skills, title: "Skills", symbol: "book.closed"),
+        WorkspaceItem(route: .tasks, title: "Tasks", symbol: "calendar.badge.clock"),
+        WorkspaceItem(route: .activity, title: "Activity", symbol: "waveform.path.ecg"),
+        WorkspaceItem(route: .integrations, title: "Integrations", symbol: "powerplug")
     ]
 
     var body: some View {
         List(selection: Binding(get: { model.route }, set: { model.navigate(to: $0) })) {
             Section("Agents") {
                 ForEach(model.agents) { agent in
-                    HStack(spacing: 12) {
-                        BotAvatarView(agent: agent, size: 44, state: model.botState(agent))
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack(spacing: 6) {
-                                Text(agent.name)
-                                    .font(.body.weight(.semibold))
-                                    .lineLimit(1)
-                                if !agent.enabled {
-                                    Text("Paused").font(.caption).foregroundStyle(.secondary)
-                                }
-                            }
-                            Text(preview(agent.lastMessage ?? "").nilIfEmpty ?? "No messages yet")
-                                .font(.callout)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(2)
-                        }
-                        Spacer(minLength: 0)
-                    }
-                    .padding(.vertical, 10)
-                    .contentShape(Rectangle())
-                    .tag(Route.agent(agent.id))
-                    .disabled(model.pendingMutations.contains("agent:\(agent.id)"))
+                    agentRow(agent)
                 }
                 if model.agents.isEmpty {
                     Text("No agents yet").foregroundStyle(.secondary)
                 }
             }
             Section("Workspace") {
-                ForEach(Self.workspace, id: \.0) { route, title, symbol in
-                    Label(title, systemImage: symbol).tag(route)
+                ForEach(Self.workspace, id: \.route) { item in
+                    Label(item.title, systemImage: item.symbol).tag(item.route)
                 }
             }
         }
@@ -138,6 +125,31 @@ struct SidebarView: View {
         }
         .safeAreaInset(edge: .bottom) { ConnectionStatus() }
     }
+
+    private func agentRow(_ agent: Agent) -> some View {
+        HStack(spacing: 12) {
+            BotAvatarView(agent: agent, size: 44, state: model.botState(agent))
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Text(agent.name)
+                        .font(.body.weight(.semibold))
+                        .lineLimit(1)
+                    if !agent.enabled {
+                        Text("Paused").font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                Text(preview(agent.lastMessage ?? "").nilIfEmpty ?? "No messages yet")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 10)
+        .contentShape(Rectangle())
+        .tag(Route.agent(agent.id))
+        .disabled(model.pendingMutations.contains("agent:\(agent.id)"))
+    }
 }
 
 struct ConnectionStatus: View {
@@ -145,7 +157,9 @@ struct ConnectionStatus: View {
 
     var body: some View {
         let (status, color): (String, Color) =
-            if !model.streamStatus.isEmpty { (model.streamStatus, .red) } else if model.loading { ("Syncing…", .secondary) } else { ("Connected", .green) }
+            if !model.streamStatus.isEmpty { (model.streamStatus, .red) } else if model.loading {
+                ("Syncing…", .secondary)
+            } else { ("Connected", .green) }
         HStack(spacing: 6) {
             Circle().fill(color).frame(width: 7, height: 7)
             Text(status).font(.caption).foregroundStyle(.secondary)
@@ -178,8 +192,9 @@ struct ErrorBanner: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        if !model.errorText.isEmpty, model.agentDraft == nil, model.memoryDraft == nil, model.taskDraft == nil, model.mcpDraft == nil,
-           model.skillDraft == nil {
+        if !model.errorText.isEmpty, model.agentDraft == nil, model.memoryDraft == nil, model.taskDraft == nil,
+            model.mcpDraft == nil,
+            model.skillDraft == nil {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.red)
                 Text(model.errorText).font(.callout).textSelection(.enabled)

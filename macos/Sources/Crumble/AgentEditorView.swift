@@ -7,34 +7,7 @@ struct AgentEditorView: View {
     var body: some View {
         @Bindable var model = model
         Form {
-            Section {
-                VStack(spacing: 8) {
-                    BotAvatarView(seed: agentAvatarSeed(Agent(id: draft.agentID, avatar: draft.avatar)), size: 96, live: true)
-                    Text(draft.name.trimmingCharacters(in: .whitespaces).nilIfEmpty ?? "New Agent").font(.title2.bold())
-                    HStack(spacing: 6) {
-                        ForEach(draft.avatarChoices, id: \.self) { seed in
-                            Button {
-                                draft.avatar = "bot:" + seed
-                            } label: {
-                                BotAvatarView(seed: seed, size: 36)
-                                    .padding(3)
-                                    .overlay {
-                                        if draft.avatar == "bot:" + seed {
-                                            RoundedRectangle(cornerRadius: 10).strokeBorder(.tint, lineWidth: 2)
-                                        }
-                                    }
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel("Choose this avatar")
-                        }
-                        Button("More Avatars", systemImage: "shuffle") { draft.shuffleAvatars() }
-                            .labelStyle(.iconOnly)
-                            .buttonStyle(.borderless)
-                            .help("More avatars")
-                    }
-                }
-                .frame(maxWidth: .infinity)
-            }
+            avatarSection
             SheetError()
             Section {
                 TextField("Name", text: $draft.name, prompt: Text("Required"))
@@ -42,48 +15,10 @@ struct AgentEditorView: View {
                 TextField("Folder", text: $draft.folder, prompt: Text("Personal"))
                 Toggle("Enabled", isOn: $draft.enabled)
             }
-            Section {
-                if model.providerChoices.isEmpty {
-                    TextField("Provider", text: Binding(get: { draft.provider }, set: { model.changeEditorProvider($0) }))
-                } else {
-                    Picker("Provider", selection: Binding(get: { draft.provider }, set: { model.changeEditorProvider($0) })) {
-                        ForEach(model.providerChoices, id: \.self) { Text($0).tag($0) }
-                    }
-                }
-                TextField("Model", text: $draft.model, prompt: Text("Model ID"))
-                    .textInputSuggestions {
-                        ForEach(model.models, id: \.id) { summary in
-                            Text(summary.id).textInputCompletion(summary.id)
-                        }
-                    }
-            } header: {
-                Text("Model")
-            } footer: {
-                Text(model.modelHint).foregroundStyle(.secondary)
-            }
-            Section {
-                TextEditor(text: $draft.instructions)
-                    .font(.body)
-                    .frame(minHeight: 90)
-            } header: {
-                Text("Instructions")
-            } footer: {
-                Text("How the agent should behave in every chat.").foregroundStyle(.secondary)
-            }
+            modelSection
+            instructionsSection
             capabilitiesSection
-            Section("Integrations") {
-                let servers = model.usableServers(for: draft.agentID)
-                if servers.isEmpty {
-                    Text("Add an MCP server under Integrations to use its tools here.").foregroundStyle(.secondary)
-                }
-                ForEach(servers) { server in
-                    Toggle(isOn: membership(\.mcpServers, server.id)) {
-                        Text(server.name)
-                        if server.agentId != nil { Text("Only this agent") }
-                    }
-                    .disabled(!server.enabled)
-                }
-            }
+            integrationsSection
             Section("Skills") {
                 Text("Manage this bot’s personal skills and shared skill assignments in the Skills tab.")
                     .foregroundStyle(.secondary)
@@ -116,6 +51,91 @@ struct AgentEditorView: View {
         }
     }
 
+    private var avatarSection: some View {
+        Section {
+            VStack(spacing: 8) {
+                BotAvatarView(
+                    seed: agentAvatarSeed(Agent(id: draft.agentID, avatar: draft.avatar)), size: 96, live: true)
+                Text(draft.name.trimmingCharacters(in: .whitespaces).nilIfEmpty ?? "New Agent").font(.title2.bold())
+                HStack(spacing: 6) {
+                    ForEach(draft.avatarChoices, id: \.self) { seed in
+                        Button {
+                            draft.avatar = "bot:" + seed
+                        } label: {
+                            BotAvatarView(seed: seed, size: 36)
+                                .padding(3)
+                                .overlay {
+                                    if draft.avatar == "bot:" + seed {
+                                        RoundedRectangle(cornerRadius: 10).strokeBorder(.tint, lineWidth: 2)
+                                    }
+                                }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Choose this avatar")
+                    }
+                    Button("More Avatars", systemImage: "shuffle") { draft.shuffleAvatars() }
+                        .labelStyle(.iconOnly)
+                        .buttonStyle(.borderless)
+                        .help("More avatars")
+                }
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    private var modelSection: some View {
+        Section {
+            if model.providerChoices.isEmpty {
+                TextField(
+                    "Provider", text: Binding(get: { draft.provider }, set: { model.changeEditorProvider($0) }))
+            } else {
+                Picker(
+                    "Provider", selection: Binding(get: { draft.provider }, set: { model.changeEditorProvider($0) })
+                ) {
+                    ForEach(model.providerChoices, id: \.self) { Text($0).tag($0) }
+                }
+            }
+            TextField("Model", text: $draft.model, prompt: Text("Model ID"))
+                .textInputSuggestions {
+                    ForEach(model.models, id: \.id) { summary in
+                        Text(summary.id).textInputCompletion(summary.id)
+                    }
+                }
+        } header: {
+            Text("Model")
+        } footer: {
+            Text(model.modelHint).foregroundStyle(.secondary)
+        }
+    }
+
+    private var instructionsSection: some View {
+        Section {
+            TextEditor(text: $draft.instructions)
+                .font(.body)
+                .frame(minHeight: 90)
+        } header: {
+            Text("Instructions")
+        } footer: {
+            Text("How the agent should behave in every chat.").foregroundStyle(.secondary)
+        }
+    }
+
+    private var integrationsSection: some View {
+        Section("Integrations") {
+            let servers = model.usableServers(for: draft.agentID)
+            if servers.isEmpty {
+                Text("Add an MCP server under Integrations to use its tools here.").foregroundStyle(.secondary)
+            }
+            ForEach(servers) { server in
+                Toggle(isOn: membership(\.mcpServers, server.id)) {
+                    Text(server.name)
+                    if server.agentId != nil { Text("Only this agent") }
+                }
+                .disabled(!server.enabled)
+            }
+        }
+    }
+
     private var capabilitiesSection: some View {
         Section {
             Toggle("Memory", isOn: $draft.toolsMemory)
@@ -133,15 +153,18 @@ struct AgentEditorView: View {
         } header: {
             Text("Capabilities")
         } footer: {
-            Text("""
+            Text(
+                """
                 Memory lets the agent keep notes between chats; with shared memory it also recalls and keeps notes \
                 every bot using shared memory sees. Schedule tasks lets it save one-time and recurring tasks for \
                 itself, or for a bot it is allowed to message. Each task runs in that bot’s chat. When Message other \
                 bots is enabled, it can ask the permitted bots you select and relay their answers; bounded task \
                 delegation remains supported. Code mode has the agent write a short script that calls its tools, \
-                so many tool calls take one step. Enabled tools run directly using the integrations permitted in this profile.
-                """)
-                .foregroundStyle(.secondary)
+                so many tool calls take one step. Enabled tools run directly using the integrations permitted in \
+                this profile.
+                """
+            )
+            .foregroundStyle(.secondary)
         }
     }
 

@@ -3,52 +3,6 @@ import Foundation
 import Observation
 import UserNotifications
 
-struct PushStatus: Codable, Sendable {
-    var serverId: String
-    var transports: [String: Bool]
-}
-struct PushRegistration: Codable, Sendable {
-    var serverId: String
-    var remoteDelivery: Bool
-}
-struct PushDevice: Encodable, Sendable {
-    var platform = "macos"
-    var transport = "apns"
-    var token: String
-    var environment: String
-    var bundleId: String
-    var enabled = true
-}
-
-extension APIClient {
-    func pushStatus() async throws -> PushStatus { try await call("GET", "/v1/push") }
-    func registerPush(_ id: String, device: PushDevice) async throws -> PushRegistration {
-        try await call("PUT", "/v1/push/devices/\(id)", body: device)
-    }
-    func unregisterPush(_ id: String) async throws { _ = try await send("DELETE", "/v1/push/devices/\(id)") }
-    func pushPresence(_ id: String, active: Bool, agentId: String?, timeout: TimeInterval = 20) async throws {
-        struct Presence: Encodable { var active: Bool; var agentId: JSONValue }
-        _ = try await send("PUT", "/v1/push/devices/\(id)/presence", body: Presence(active: active, agentId: agentId.map(JSONValue.string) ?? .null), timeout: timeout)
-    }
-}
-
-/// A bounded, persisted ledger shared by stream fallback and foreground APNs delivery.
-struct PushEventLedger {
-    var keys: [String] = []
-    mutating func insert(server: String, event: String) -> Bool {
-        let key = server + ":" + event
-        guard !keys.contains(key) else { return false }
-        keys.append(key)
-        if keys.count > 512 { keys.removeFirst(keys.count - 512) }
-        return true
-    }
-}
-
-struct PendingPushRemoval: Codable, Equatable {
-    var baseURL: String
-    var token: String
-}
-
 @MainActor @Observable
 final class PushNotifications {
     static let shared = PushNotifications()
@@ -59,7 +13,11 @@ final class PushNotifications {
         didSet {
             revision += 1
             defaults.set(enabled, forKey: "push-enabled")
-            if !enabled { queueRemoval(client); remoteDelivery = false; clearRemoteBinding() }
+            if !enabled {
+                queueRemoval(client)
+                remoteDelivery = false
+                clearRemoteBinding()
+            }
             synchronize()
         }
     }
@@ -90,12 +48,15 @@ final class PushNotifications {
         environment: String? = Bundle.main.object(forInfoDictionaryKey: "CrumblePushEnvironment") as? String,
         bundleId: String? = Bundle.main.bundleIdentifier,
         loadRemovals: @escaping () -> [PendingPushRemoval] = {
-            guard let text = Keychain.read("push-pending-removals"), let data = text.data(using: .utf8) else { return [] }
+            guard let text = Keychain.read("push-pending-removals"), let data = text.data(using: .utf8) else {
+                return []
+            }
             return (try? JSONDecoder().decode([PendingPushRemoval].self, from: data)) ?? []
         },
         saveRemovals: @escaping ([PendingPushRemoval]) throws -> Void = { removals in
             let data = try JSONEncoder().encode(removals)
-            try Keychain.write("push-pending-removals", value: String(decoding: data, as: UTF8.self))
+            guard let text = String(data: data, encoding: .utf8) else { throw URLError(.cannotDecodeRawData) }
+            try Keychain.write("push-pending-removals", value: text)
         },
         makeClient: @escaping (String, String) -> APIClient = { APIClient(baseURL: $0, token: $1) },
         permission: @escaping () async -> Bool = {
@@ -128,11 +89,14 @@ final class PushNotifications {
         connect(model.client)
         routePendingTap()
         guard heartbeat == nil, Bundle.main.bundleIdentifier != nil else { return }
-        for name in [NSApplication.didBecomeActiveNotification, NSApplication.didResignActiveNotification,
-                     NSWindow.didBecomeKeyNotification, NSWindow.didResignKeyNotification] {
-            observations.append(NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { _ in
-                Task { @MainActor in self.synchronize() }
-            })
+        for name in [
+            NSApplication.didBecomeActiveNotification, NSApplication.didResignActiveNotification,
+            NSWindow.didBecomeKeyNotification, NSWindow.didResignKeyNotification
+        ] {
+            observations.append(
+                NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { _ in
+                    Task { @MainActor in self.synchronize() }
+                })
         }
         heartbeat = Task {
             while !Task.isCancelled {
@@ -210,18 +174,11 @@ final class PushNotifications {
             syncTask = nil
         }
     }
+}
 
+extension PushNotifications {
     private func syncOnce() async {
-        for item in pendingRemovals {
-            do {
-                try await makeClient(item.baseURL, item.token).unregisterPush(installationId)
-                pendingRemovals.removeAll { $0 == item }
-                persistRemovals()
-            } catch let error as APIError where error.statusCode == 404 {
-                pendingRemovals.removeAll { $0 == item }
-                persistRemovals()
-            } catch { /* Retain credentials in Keychain and retry after reconnection. */ }
-        }
+        await removePendingRegistrations()
         guard enabled, let client else { return }
         let version = revision
         do {
@@ -230,45 +187,13 @@ final class PushNotifications {
             guard !identity.serverId.isEmpty else { throw URLError(.badServerResponse) }
             serverId = identity.serverId
             routePendingTap()
-            if identity.transports["apns"] != true { remoteDelivery = false; clearRemoteBinding() }
-            guard let environment, let bundle = bundleId else {
-                if remoteDelivery { queueRemoval(client) }
+            if identity.transports["apns"] != true {
                 remoteDelivery = false
                 clearRemoteBinding()
-                status = "Local notifications · APNs signing not configured"
-                return
             }
-            guard let apnsToken else {
-                status = "Waiting for APNs device registration"
-                return
-            }
-            authorized = await permission()
-            guard version == revision else { return }
-            guard authorized else {
-                queueRemoval(client)
-                remoteDelivery = false
-                status = "Notifications disabled in System Settings"
-                return
-            }
-            let result = try await client.registerPush(installationId, device: PushDevice(token: apnsToken, environment: environment, bundleId: bundle))
-            guard version == revision else {
-                queueRemoval(client)
-                needsSync = true
-                return
-            }
-            guard result.serverId == identity.serverId else { throw URLError(.badServerResponse) }
-            serverId = result.serverId
-            remoteDelivery = result.remoteDelivery
-            if result.remoteDelivery {
-                defaults.set(client.baseURL, forKey: "push-remote-server-url")
-                defaults.set(result.serverId, forKey: "push-remote-server-id")
-            } else { clearRemoteBinding() }
-            status = result.remoteDelivery ? "Remote notifications connected" : "Local notifications · Server push not configured"
-            let agentId: String? = if case let .agent(id) = model?.route { id } else { nil }
-            let active = NSApp?.isActive == true && NSApp.windows.contains { $0.identifier?.rawValue == "main" && $0.isVisible && !$0.isMiniaturized }
-            // A key content window is a fallback for SwiftUI's generated window identifier.
-            let chatVisible = active || (NSApp?.isActive == true && NSApp.keyWindow?.isVisible == true && NSApp.keyWindow?.title == "Crumble")
-            try await client.pushPresence(installationId, active: chatVisible, agentId: chatVisible ? agentId : nil)
+            guard let device = registrationDevice(client: client) else { return }
+            guard await authorizeRegistration(client: client, version: version) else { return }
+            try await register(client: client, identity: identity, device: device, version: version)
         } catch let error as APIError where error.statusCode == 404 {
             guard version == revision else { return }
             remoteDelivery = false
@@ -280,6 +205,79 @@ final class PushNotifications {
             // Keep an acknowledged remote registration authoritative during a transient outage.
             status = "Push connection interrupted; retrying automatically"
         }
+    }
+
+    private func removePendingRegistrations() async {
+        for item in pendingRemovals {
+            do {
+                try await makeClient(item.baseURL, item.token).unregisterPush(installationId)
+                pendingRemovals.removeAll { $0 == item }
+                persistRemovals()
+            } catch let error as APIError where error.statusCode == 404 {
+                pendingRemovals.removeAll { $0 == item }
+                persistRemovals()
+            } catch { /* Retain credentials in Keychain and retry after reconnection. */  }
+        }
+    }
+
+    private func registrationDevice(client: APIClient) -> PushDevice? {
+        guard let environment, let bundle = bundleId else {
+            if remoteDelivery { queueRemoval(client) }
+            remoteDelivery = false
+            clearRemoteBinding()
+            status = "Local notifications · APNs signing not configured"
+            return nil
+        }
+        guard let apnsToken else {
+            status = "Waiting for APNs device registration"
+            return nil
+        }
+        return PushDevice(token: apnsToken, environment: environment, bundleId: bundle)
+    }
+
+    private func authorizeRegistration(client: APIClient, version: Int) async -> Bool {
+        authorized = await permission()
+        guard version == revision else { return false }
+        guard authorized else {
+            queueRemoval(client)
+            remoteDelivery = false
+            status = "Notifications disabled in System Settings"
+            return false
+        }
+        return true
+    }
+
+    private func register(
+        client: APIClient, identity: PushStatus, device: PushDevice, version: Int
+    ) async throws {
+        let result = try await client.registerPush(installationId, device: device)
+        guard version == revision else {
+            queueRemoval(client)
+            needsSync = true
+            return
+        }
+        guard result.serverId == identity.serverId else { throw URLError(.badServerResponse) }
+        serverId = result.serverId
+        remoteDelivery = result.remoteDelivery
+        if result.remoteDelivery {
+            defaults.set(client.baseURL, forKey: "push-remote-server-url")
+            defaults.set(result.serverId, forKey: "push-remote-server-id")
+        } else {
+            clearRemoteBinding()
+        }
+        status =
+            result.remoteDelivery
+            ? "Remote notifications connected" : "Local notifications · Server push not configured"
+        let agentId: String? = if case .agent(let id) = model?.route { id } else { nil }
+        let active =
+            NSApp?.isActive == true
+            && NSApp.windows.contains { $0.identifier?.rawValue == "main" && $0.isVisible && !$0.isMiniaturized }
+        // A key content window is a fallback for SwiftUI's generated window identifier.
+        let chatVisible =
+            active
+            || (NSApp?.isActive == true && NSApp.keyWindow?.isVisible == true
+                && NSApp.keyWindow?.title == "Crumble")
+        try await client.pushPresence(installationId, active: chatVisible, agentId: chatVisible ? agentId : nil)
     }
 
     private func clearRemoteBinding() {
@@ -299,8 +297,10 @@ final class PushNotifications {
 
     func presentation(for event: ActivityEvent) -> UNNotificationPresentationOptions {
         guard enabled, let server = event.serverId, server == serverId, let id = event.eventId,
-              remember(server: server, event: id),
-              notification(for: event, in: NotificationContext(appActive: NSApp?.isActive ?? false, route: model?.route)) != nil else { return [] }
+            remember(server: server, event: id),
+            notification(for: event, in: NotificationContext(appActive: NSApp?.isActive ?? false, route: model?.route))
+                != nil
+        else { return [] }
         return [.banner, .sound]
     }
 

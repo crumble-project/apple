@@ -17,51 +17,83 @@ extension AppModel {
 
     func saveMCP() {
         guard let form = mcpDraft else { return }
-        let name = form.name.trimmingCharacters(in: .whitespaces), rawURL = form.url.trimmingCharacters(in: .whitespaces)
-        guard !name.isEmpty, let url = URL(string: rawURL), url.host() != nil, ["http", "https"].contains(url.scheme ?? "") else {
+        let name = form.name.trimmingCharacters(in: .whitespaces)
+        let rawURL = form.url.trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty, let url = URL(string: rawURL), url.host() != nil,
+            ["http", "https"].contains(url.scheme ?? "")
+        else {
             errorText = "MCP name and an HTTP(S) URL are required."
             return
         }
-        var payload: [String: JSONValue] = ["name": .string(name), "url": .string(rawURL), "enabled": .bool(form.enabled)]
+        var payload: [String: JSONValue] = [
+            "name": .string(name), "url": .string(rawURL), "enabled": .bool(form.enabled)
+        ]
         if !form.token.isEmpty { payload["token"] = .string(form.token) }
         let isNew = form.serverID.isEmpty
         let provisionalID = isNew ? "pending-mcp-" + newRequestID() : form.serverID
         let old = mcpServers.first { $0.id == form.serverID }
-        var provisional = MCPServer(id: provisionalID, name: name, url: rawURL, enabled: form.enabled, agentId: form.agentID, authenticated: false, auth: form.token.isEmpty ? "none" : "token")
+        var provisional = MCPServer(
+            id: provisionalID, name: name, url: rawURL, enabled: form.enabled, agentId: form.agentID,
+            authenticated: false, auth: form.token.isEmpty ? "none" : "token")
         if let old, form.token.isEmpty, old.url == rawURL {
             provisional.authenticated = old.authenticated
             provisional.auth = old.auth
         }
+        persistMCP(form, provisional: provisional, payload: payload)
+    }
+
+    private func persistMCP(_ form: MCPDraft, provisional: MCPServer, payload: [String: JSONValue]) {
+        let isNew = form.serverID.isEmpty
+        let provisionalID = provisional.id
+        let old = mcpServers.first { $0.id == form.serverID }
+        var payload = payload
         let owner = form.agentID
         mcpDraft = nil
-        optimisticMutation(key: "mcp:\(provisionalID)", update: { [self] in
-            if let index = mcpServers.firstIndex(where: { $0.id == provisionalID || $0.id == form.serverID }) { mcpServers[index] = provisional } else { mcpServers.append(provisional) }
-            if isNew, let owner, let index = agents.firstIndex(where: { $0.id == owner }) {
-                var memberships = agents[index].mcpServers ?? []
-                if !memberships.contains(provisionalID) { memberships.append(provisionalID) }
-                agents[index].mcpServers = memberships
-            }
-        }, rollback: { [self] in
-            mcpServers.removeAll { $0.id == provisionalID }
-            if let old { mcpServers.append(old) }
-            if isNew, let owner, let index = agents.firstIndex(where: { $0.id == owner }) {
-                agents[index].mcpServers?.removeAll { $0 == provisionalID }
-            }
-            if route == .integrations, mcpDraft == nil { mcpDraft = form }
-        }, work: { client in
-            if isNew {
-                if let owner = form.agentID { payload["agentId"] = .string(owner) }
-                let saved = try await client.createMCPServer(payload)
-                return { [self] in
-                    if let index = mcpServers.firstIndex(where: { $0.id == provisionalID }) { mcpServers[index] = saved }
-                    if let owner, let index = agents.firstIndex(where: { $0.id == owner }) {
-                        agents[index].mcpServers = (agents[index].mcpServers ?? []).map { $0 == provisionalID ? saved.id : $0 }
-                    }
+        optimisticMutation(
+            key: "mcp:\(provisionalID)",
+            update: { [self] in
+                if let index = mcpServers.firstIndex(where: { $0.id == provisionalID || $0.id == form.serverID }) {
+                    mcpServers[index] = provisional
+                } else {
+                    mcpServers.append(provisional)
                 }
+                if isNew, let owner, let index = agents.firstIndex(where: { $0.id == owner }) {
+                    var memberships = agents[index].mcpServers ?? []
+                    if !memberships.contains(provisionalID) { memberships.append(provisionalID) }
+                    agents[index].mcpServers = memberships
+                }
+            },
+            rollback: { [self] in
+                mcpServers.removeAll { $0.id == provisionalID }
+                if let old { mcpServers.append(old) }
+                if isNew, let owner, let index = agents.firstIndex(where: { $0.id == owner }) {
+                    agents[index].mcpServers?.removeAll { $0 == provisionalID }
+                }
+                if route == .integrations, mcpDraft == nil { mcpDraft = form }
+            },
+            work: { client in
+                let saved: MCPServer
+                if isNew {
+                    if let owner { payload["agentId"] = .string(owner) }
+                    saved = try await client.createMCPServer(payload)
+                } else {
+                    saved = try await client.updateMCPServer(form.serverID, patch: payload)
+                }
+                return { [self] in
+                    reconcileMCP(saved, replacing: provisionalID, owner: isNew ? owner : nil)
+                }
+            })
+    }
+
+    private func reconcileMCP(_ saved: MCPServer, replacing provisionalID: String, owner: String?) {
+        if let index = mcpServers.firstIndex(where: { $0.id == provisionalID }) {
+            mcpServers[index] = saved
+        }
+        if let owner, let index = agents.firstIndex(where: { $0.id == owner }) {
+            agents[index].mcpServers = (agents[index].mcpServers ?? []).map {
+                $0 == provisionalID ? saved.id : $0
             }
-            let saved = try await client.updateMCPServer(form.serverID, patch: payload)
-            return { [self] in if let index = mcpServers.firstIndex(where: { $0.id == provisionalID }) { mcpServers[index] = saved } }
-        })
+        }
     }
 
     /// Where the system sign-in sheet returns; the sheet watches this scheme, so nothing registers it.
@@ -80,12 +112,9 @@ extension AppModel {
             let start = try await client.startMCPSignIn(id, redirectURI: Self.oauthRedirectURI)
             guard generation == generationAtStart else { return }
             if let address = start.authorizationUrl, let url = URL(string: address) {
-                let callback = try await session.authenticate(using: url, callbackURLScheme: Self.oauthCallbackScheme)
-                let (code, state, iss) = try oauthResult(from: callback)
-                guard generation == generationAtStart else { return }
-                let saved = try await client.finishMCPSignIn(id, code: code, state: state, iss: iss)
-                guard generation == generationAtStart else { return }
-                if let index = mcpServers.firstIndex(where: { $0.id == id }) { mcpServers[index] = saved }
+                guard try await completeMCPSignIn(
+                    id, client: client, session: session, url: url, generationAtStart: generationAtStart
+                ) else { return }
             } else if start.authorized == true, let index = mcpServers.firstIndex(where: { $0.id == id }) {
                 mcpServers[index].authenticated = true
             }
@@ -98,38 +127,68 @@ extension AppModel {
         }
     }
 
+    private func completeMCPSignIn(
+        _ id: String, client: APIClient, session: WebAuthenticationSession, url: URL, generationAtStart: Int
+    ) async throws -> Bool {
+        let callback = try await session.authenticate(using: url, callbackURLScheme: Self.oauthCallbackScheme)
+        let result = try oauthResult(from: callback)
+        guard generation == generationAtStart else { return false }
+        let saved = try await client.finishMCPSignIn(id, code: result.code, state: result.state, iss: result.iss)
+        guard generation == generationAtStart else { return false }
+        if let index = mcpServers.firstIndex(where: { $0.id == id }) { mcpServers[index] = saved }
+        return true
+    }
+
     func signOutOfMCP(_ id: String) {
-        guard let old = mcpServers.first(where: { $0.id == id }), let index = mcpServers.firstIndex(where: { $0.id == id }) else { return }
+        guard let old = mcpServers.first(where: { $0.id == id }),
+            let index = mcpServers.firstIndex(where: { $0.id == id })
+        else { return }
         var signedOut = old
         signedOut.authenticated = false
         signedOut.auth = "none"
-        optimisticMutation(key: "mcp:\(id)", update: { [self] in mcpServers[index] = signedOut }, rollback: { [self] in
-            if let current = mcpServers.firstIndex(where: { $0.id == id }) { mcpServers[current] = old }
-        }, work: { client in
-            let saved = try await client.signOutOfMCP(id)
-            return { [self] in if let current = mcpServers.firstIndex(where: { $0.id == id }) { mcpServers[current] = saved } }
-        })
+        optimisticMutation(
+            key: "mcp:\(id)", update: { [self] in mcpServers[index] = signedOut },
+            rollback: { [self] in
+                if let current = mcpServers.firstIndex(where: { $0.id == id }) { mcpServers[current] = old }
+            },
+            work: { client in
+                let saved = try await client.signOutOfMCP(id)
+                return { [self] in
+                    if let current = mcpServers.firstIndex(where: { $0.id == id }) { mcpServers[current] = saved }
+                }
+            })
     }
 
     func deleteMCP(_ id: String) {
-        guard let old = mcpServers.first(where: { $0.id == id }), let index = mcpServers.firstIndex(where: { $0.id == id }) else { return }
+        guard let old = mcpServers.first(where: { $0.id == id }),
+            let index = mcpServers.firstIndex(where: { $0.id == id })
+        else { return }
         let affectedAgents = agents.compactMap { agent -> (String, [String])? in
             guard agent.mcpServers?.contains(id) == true else { return nil }
             return (agent.id, agent.mcpServers ?? [])
         }
-        optimisticMutation(key: "mcp:\(id)", update: { [self] in
-            mcpServers.removeAll { $0.id == id }
-            for (agentID, _) in affectedAgents {
-                if let index = agents.firstIndex(where: { $0.id == agentID }) { agents[index].mcpServers?.removeAll { $0 == id } }
-            }
-        }, rollback: { [self] in
-            mcpServers.insert(old, at: min(index, mcpServers.count))
-            for (agentID, memberships) in affectedAgents {
-                if let index = agents.firstIndex(where: { $0.id == agentID }) { agents[index].mcpServers = memberships }
-            }
-        }, work: { client in
-            try await client.deleteMCPServer(id); return nil
-        })
+        optimisticMutation(
+            key: "mcp:\(id)",
+            update: { [self] in
+                mcpServers.removeAll { $0.id == id }
+                for (agentID, _) in affectedAgents {
+                    if let index = agents.firstIndex(where: { $0.id == agentID }) {
+                        agents[index].mcpServers?.removeAll { $0 == id }
+                    }
+                }
+            },
+            rollback: { [self] in
+                mcpServers.insert(old, at: min(index, mcpServers.count))
+                for (agentID, memberships) in affectedAgents {
+                    if let index = agents.firstIndex(where: { $0.id == agentID }) {
+                        agents[index].mcpServers = memberships
+                    }
+                }
+            },
+            work: { client in
+                try await client.deleteMCPServer(id)
+                return nil
+            })
     }
 
     /// Servers a bot may use: the shared ones and its own.

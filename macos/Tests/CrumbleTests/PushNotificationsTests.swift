@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import Testing
+
 @testable import Crumble
 
 /// URLProtocol isolated from the other client suites; Swift Testing may run suites concurrently.
@@ -10,18 +11,21 @@ final class PushNotificationProtocol: URLProtocol, @unchecked Sendable {
 
     nonisolated(unsafe) static var asyncHandler: (@Sendable (URLRequest) async -> (Int, String))?
 
-    override class func canInit(with request: URLRequest) -> Bool { true }
-    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+    override static func canInit(with request: URLRequest) -> Bool { true }
+    override static func canonicalRequest(for request: URLRequest) -> URLRequest { request }
     override func startLoading() {
         var request = self.request
         if let stream = request.httpBodyStream {
-            stream.open(); var data = Data(); var bytes = [UInt8](repeating: 0, count: 4096)
+            stream.open()
+            var data = Data()
+            var bytes = [UInt8](repeating: 0, count: 4096)
             while stream.hasBytesAvailable {
                 let count = stream.read(&bytes, maxLength: bytes.count)
                 if count <= 0 { break }
                 data.append(bytes, count: count)
             }
-            stream.close(); request.httpBody = data
+            stream.close()
+            request.httpBody = data
         }
         Self.requests.append(request)
         if let handler = Self.asyncHandler {
@@ -36,9 +40,16 @@ final class PushNotificationProtocol: URLProtocol, @unchecked Sendable {
         }
     }
     private func respond(status: Int, body: String) {
-        let response = HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: "HTTP/1.1", headerFields: nil)!
+        guard let url = request.url,
+            let response = HTTPURLResponse(
+                url: url, statusCode: status, httpVersion: "HTTP/1.1", headerFields: nil) else {
+            Issue.record("Invalid stub response")
+            client?.urlProtocol(self, didFailWithError: URLError(.badURL))
+            return
+        }
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-        client?.urlProtocol(self, didLoad: Data(body.utf8)); client?.urlProtocolDidFinishLoading(self)
+        client?.urlProtocol(self, didLoad: Data(body.utf8))
+        client?.urlProtocolDidFinishLoading(self)
     }
     override func stopLoading() {}
 }
@@ -63,13 +74,15 @@ struct PushNotificationsTests {
 
     private func manager(
         client: APIClient,
-        defaults: UserDefaults = UserDefaults(suiteName: "push-tests-\(UUID().uuidString)")!,
+        defaults: UserDefaults? = nil,
         removals: Reference<[PendingPushRemoval]> = Reference([])
-    ) -> PushNotifications {
-        PushNotifications(defaults: defaults, environment: "development", bundleId: "com.example.test",
-                          loadRemovals: { removals.value }, saveRemovals: { removals.value = $0 },
-                          makeClient: { base, token in APIClient(baseURL: base, token: token, session: client.session) },
-                          permission: { true })
+    ) throws -> PushNotifications {
+        let defaults = try #require(defaults ?? UserDefaults(suiteName: "push-tests-\(UUID().uuidString)"))
+        return PushNotifications(
+            defaults: defaults, environment: "development", bundleId: "com.example.test",
+            loadRemovals: { removals.value }, saveRemovals: { removals.value = $0 },
+            makeClient: { base, token in APIClient(baseURL: base, token: token, session: client.session) },
+            permission: { true })
     }
 
     @Test func APIClientEncodesRegistrationAndNullPresenceAgent() async throws {
@@ -80,10 +93,11 @@ struct PushNotificationsTests {
             return (204, "")
         }
         _ = try await client.pushStatus()
-        _ = try await client.registerPush("i", device: PushDevice(token: "aa", environment: "development", bundleId: "b"))
+        _ = try await client.registerPush(
+            "i", device: PushDevice(token: "aa", environment: "development", bundleId: "b"))
         try await client.pushPresence("i", active: false, agentId: nil)
         let presence = PushNotificationProtocol.requests.first { $0.url?.path.contains("presence") == true }
-        let presenceBody = String(decoding: presence?.httpBody ?? Data(), as: UTF8.self)
+        let presenceBody = try #require(String(data: presence?.httpBody ?? Data(), encoding: .utf8))
         #expect(presenceBody.contains(#""agentId":null"#))
     }
 
@@ -94,17 +108,24 @@ struct PushNotificationsTests {
             if path.hasPrefix("/v1/push/devices/") { return (200, #"{"serverId":"srv","remoteDelivery":true}"#) }
             return (204, "")
         }
-        let manager = manager(client: client)
+        let manager = try manager(client: client)
         manager.receivedToken(Data([0xaa]))
-        let model = AppModel(client: client); manager.start(model: model); await manager.waitForSynchronization()
+        let model = AppModel(client: client)
+        manager.start(model: model)
+        await manager.waitForSynchronization()
         #expect(manager.remoteDelivery)
-        let event = ActivityEvent(eventId: "e", serverId: "srv", createdAt: nil, type: "reply", agentId: "a", agentName: "A", entryId: nil, origin: "user", preview: "hi", lastMessage: nil)
+        let event = ActivityEvent(
+            eventId: "e", serverId: "srv", createdAt: nil, type: "reply", agentId: "a", agentName: "A", entryId: nil,
+            origin: "user", preview: "hi", lastMessage: nil)
         #expect(!manager.shouldPostLocal(event))
 
         let unavailable = self.client { request in request.url?.path == "/v1/push" ? (404, "") : (404, "") }
-        manager.connect(unavailable); await manager.waitForSynchronization()
+        manager.connect(unavailable)
+        await manager.waitForSynchronization()
         #expect(!manager.remoteDelivery)
-        let fallbackEvent = ActivityEvent(eventId: "e2", serverId: "srv", createdAt: nil, type: "reply", agentId: "a", agentName: "A", entryId: nil, origin: "user", preview: "hi", lastMessage: nil)
+        let fallbackEvent = ActivityEvent(
+            eventId: "e2", serverId: "srv", createdAt: nil, type: "reply", agentId: "a", agentName: "A", entryId: nil,
+            origin: "user", preview: "hi", lastMessage: nil)
         #expect(manager.shouldPostLocal(fallbackEvent))
     }
 
@@ -120,15 +141,19 @@ struct PushNotificationsTests {
         #expect(ledger.keys.count == 512)
     }
 
-    @Test func emptyServerEventsUseLegacyLocalFallbackAndLedgerPersists() {
-        let defaults = UserDefaults(suiteName: "push-ledger-\(UUID().uuidString)")!
+    @Test func emptyServerEventsUseLegacyLocalFallbackAndLedgerPersists() throws {
+        let defaults = try #require(UserDefaults(suiteName: "push-ledger-\(UUID().uuidString)"))
         let client = APIClient(baseURL: url, token: "secret", session: session())
-        let first = manager(client: client, defaults: defaults)
-        let legacy = ActivityEvent(eventId: "legacy", serverId: "", createdAt: nil, type: "reply", agentId: "a", agentName: "A", entryId: nil, origin: "user", preview: "hi", lastMessage: nil)
+        let first = try manager(client: client, defaults: defaults)
+        let legacy = ActivityEvent(
+            eventId: "legacy", serverId: "", createdAt: nil, type: "reply", agentId: "a", agentName: "A", entryId: nil,
+            origin: "user", preview: "hi", lastMessage: nil)
         #expect(first.shouldPostLocal(legacy))
-        let scoped = ActivityEvent(eventId: "same", serverId: "srv", createdAt: nil, type: "reply", agentId: "a", agentName: "A", entryId: nil, origin: "user", preview: "hi", lastMessage: nil)
+        let scoped = ActivityEvent(
+            eventId: "same", serverId: "srv", createdAt: nil, type: "reply", agentId: "a", agentName: "A", entryId: nil,
+            origin: "user", preview: "hi", lastMessage: nil)
         #expect(first.shouldPostLocal(scoped))
-        let second = manager(client: client, defaults: defaults)
+        let second = try manager(client: client, defaults: defaults)
         #expect(!second.shouldPostLocal(scoped))
     }
 
@@ -136,11 +161,14 @@ struct PushNotificationsTests {
         let client = client { request in
             request.url?.path == "/v1/push" ? (200, #"{"serverId":"srv","transports":{"apns":false}}"#) : (204, "")
         }
-        let manager = manager(client: client)
+        let manager = try manager(client: client)
         let model = AppModel(client: client)
         var opened = false
         manager.openMainWindow = { opened = true }
-        manager.open(ActivityEvent(eventId: "tap", serverId: "srv", createdAt: nil, type: "reply", agentId: "a", agentName: "A", entryId: nil, origin: "user", preview: nil, lastMessage: nil))
+        manager.open(
+            ActivityEvent(
+                eventId: "tap", serverId: "srv", createdAt: nil, type: "reply", agentId: "a", agentName: "A",
+                entryId: nil, origin: "user", preview: nil, lastMessage: nil))
         manager.start(model: model)
         await manager.waitForSynchronization()
         #expect(opened)
@@ -155,13 +183,23 @@ struct PushNotificationsTests {
             if path.hasPrefix("/v1/push/devices/") { return (200, #"{"serverId":"one","remoteDelivery":true}"#) }
             return (204, "")
         }
-        let manager = manager(client: first, removals: removals)
-        manager.receivedToken(Data([1])); let model = AppModel(client: first); manager.start(model: model); await manager.waitForSynchronization()
-        let second = client("new-secret") { request in request.url?.path == "/v1/push" ? (200, #"{"serverId":"two","transports":{"apns":true}}"#) : (404, "") }
-        manager.connect(second); manager.receivedToken(Data([2])); await manager.waitForSynchronization()
+        let manager = try manager(client: first, removals: removals)
+        manager.receivedToken(Data([1]))
+        let model = AppModel(client: first)
+        manager.start(model: model)
+        await manager.waitForSynchronization()
+        let second = client("new-secret") { request in
+            request.url?.path == "/v1/push" ? (200, #"{"serverId":"two","transports":{"apns":true}}"#) : (404, "")
+        }
+        manager.connect(second)
+        manager.receivedToken(Data([2]))
+        await manager.waitForSynchronization()
         let methods = PushNotificationProtocol.requests.compactMap(\.httpMethod)
         #expect(methods.contains("DELETE"))
-        #expect(PushNotificationProtocol.requests.contains { String(decoding: $0.httpBody ?? Data(), as: UTF8.self).contains("02") })
+        #expect(
+            try PushNotificationProtocol.requests.contains {
+                try #require(String(data: $0.httpBody ?? Data(), encoding: .utf8)).contains("02")
+            })
     }
 
     @Test func staleRegistrationResponseCannotBindDifferentServer() async throws {
@@ -169,16 +207,27 @@ struct PushNotificationsTests {
             if request.url?.path == "/v1/push" { return (200, #"{"serverId":"identity","transports":{"apns":true}}"#) }
             return (200, #"{"serverId":"other","remoteDelivery":true}"#)
         }
-        let manager = manager(client: client); manager.receivedToken(Data([1])); let model = AppModel(client: client); manager.start(model: model); await manager.waitForSynchronization()
+        let manager = try manager(client: client)
+        manager.receivedToken(Data([1]))
+        let model = AppModel(client: client)
+        manager.start(model: model)
+        await manager.waitForSynchronization()
         #expect(!manager.remoteDelivery)
     }
 
     @Test func coldTapWaitsForIdentityAndRejectsWrongServer() async throws {
         let client = client { _ in (200, #"{"serverId":"srv","transports":{"apns":false}}"#) }
-        let manager = manager(client: client); let model = AppModel(client: client); var opened = false
-        manager.openMainWindow = { opened = true }; manager.start(model: model)
-        manager.open(ActivityEvent(eventId: "e", serverId: "wrong", createdAt: nil, type: "reply", agentId: "a", agentName: "A", entryId: nil, origin: "user", preview: nil, lastMessage: nil))
-        await manager.waitForSynchronization(); #expect(!opened)
+        let manager = try manager(client: client)
+        let model = AppModel(client: client)
+        var opened = false
+        manager.openMainWindow = { opened = true }
+        manager.start(model: model)
+        manager.open(
+            ActivityEvent(
+                eventId: "e", serverId: "wrong", createdAt: nil, type: "reply", agentId: "a", agentName: "A",
+                entryId: nil, origin: "user", preview: nil, lastMessage: nil))
+        await manager.waitForSynchronization()
+        #expect(!opened)
     }
 
     @Test func oldRegistrationCompletingAfterSwitchIsRemovedBeforeNewBinding() async throws {
@@ -188,20 +237,23 @@ struct PushNotificationsTests {
         let new = APIClient(baseURL: "http://new.push.test", token: "new-secret", session: networkSession)
         PushNotificationProtocol.requests = []
         PushNotificationProtocol.asyncHandler = { request in
-            let host = request.url!.host!
-            if host == "old.push.test", request.httpMethod == "PUT", !request.url!.path.hasSuffix("presence") {
+            guard let url = request.url, let host = url.host else {
+                Issue.record("Missing push request URL")
+                return (400, "")
+            }
+            if host == "old.push.test", request.httpMethod == "PUT", !url.path.hasSuffix("presence") {
                 return await gate.response()
             }
-            if request.url!.path == "/v1/push" {
+            if url.path == "/v1/push" {
                 return (200, "{\"serverId\":\"\(host)\",\"transports\":{\"apns\":true}}")
             }
-            if request.httpMethod == "PUT", !request.url!.path.hasSuffix("presence") {
+            if request.httpMethod == "PUT", !url.path.hasSuffix("presence") {
                 return (200, "{\"serverId\":\"\(host)\",\"remoteDelivery\":true}")
             }
             return (204, "")
         }
         defer { PushNotificationProtocol.asyncHandler = nil }
-        let manager = manager(client: old)
+        let manager = try manager(client: old)
         manager.receivedToken(Data([0xab]))
         manager.connect(old)
         await gate.waitUntilRequested()
@@ -211,15 +263,18 @@ struct PushNotificationsTests {
         #expect(manager.serverId == "new.push.test")
         #expect(manager.remoteDelivery)
         let deletions = PushNotificationProtocol.requests.filter { $0.httpMethod == "DELETE" }
-        #expect(deletions.contains { $0.url?.host == "old.push.test" && $0.value(forHTTPHeaderField: "Authorization") == "Bearer old-secret" })
+        #expect(
+            deletions.contains {
+                $0.url?.host == "old.push.test" && $0.value(forHTTPHeaderField: "Authorization") == "Bearer old-secret"
+            })
         #expect(!deletions.contains { $0.url?.host == "new.push.test" })
     }
 
     @Test func removalSurvivesRestartAndRetriesUsingOldCredentials() async throws {
         let saved = Reference<[PendingPushRemoval]>([])
-        let defaults = UserDefaults(suiteName: "push-removal-\(UUID().uuidString)")!
+        let defaults = try #require(UserDefaults(suiteName: "push-removal-\(UUID().uuidString)"))
         let failed = client("old-secret") { _ in (503, "offline") }
-        let first = manager(client: failed, defaults: defaults, removals: saved)
+        let first = try manager(client: failed, defaults: defaults, removals: saved)
         first.connect(failed)
         first.enabled = false
         await first.waitForSynchronization()
@@ -227,24 +282,31 @@ struct PushNotificationsTests {
         let restored = client("new-secret") { request in
             request.httpMethod == "DELETE" ? (204, "") : (404, "")
         }
-        let second = manager(client: restored, defaults: defaults, removals: saved)
+        let second = try manager(client: restored, defaults: defaults, removals: saved)
         second.connect(restored)
         await second.waitForSynchronization()
         #expect(saved.value.isEmpty)
-        #expect(PushNotificationProtocol.requests.contains {
-            $0.httpMethod == "DELETE" && $0.value(forHTTPHeaderField: "Authorization") == "Bearer old-secret"
-        })
+        #expect(
+            PushNotificationProtocol.requests.contains {
+                $0.httpMethod == "DELETE" && $0.value(forHTTPHeaderField: "Authorization") == "Bearer old-secret"
+            })
     }
 
     @Test func disablingQueuesUnregistrationAndPersistsFailures() async throws {
         let removals = Reference<[PendingPushRemoval]>([])
         let client = client { _ in (503, "down") }
-        let manager = manager(client: client, removals: removals); manager.connect(client); manager.enabled = false; await manager.waitForSynchronization()
+        let manager = try manager(client: client, removals: removals)
+        manager.connect(client)
+        manager.enabled = false
+        await manager.waitForSynchronization()
         #expect(removals.value.contains { $0.baseURL == url })
     }
 }
 
-private final class Reference<T>: @unchecked Sendable { var value: T; init(_ value: T) { self.value = value } }
+private final class Reference<T>: @unchecked Sendable {
+    var value: T
+    init(_ value: T) { self.value = value }
+}
 
 private actor DeferredPushResponse {
     private var continuation: CheckedContinuation<(Int, String), Never>?

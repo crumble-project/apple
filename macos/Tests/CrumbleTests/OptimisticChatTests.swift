@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import Crumble
 
 /// Focused coverage for the local-first chat contract. These tests live in the serialized
@@ -39,9 +40,11 @@ extension APIClientTests {
         #expect(requestID != nil)
         await waitUntil { StubProtocol.requests.filter { $0.url?.path == "/v1/agents/a1/messages" }.count == 1 }
 
-        model.applySnapshot(ChatSnapshot(messages: [
-            Message(id: "a1:1:0", role: "user", content: .string("instant"), requestId: requestID)
-        ], status: "idle", agentId: "a1"))
+        model.applySnapshot(
+            ChatSnapshot(
+                messages: [
+                    Message(id: "a1:1:0", role: "user", content: .string("instant"), requestId: requestID)
+                ], status: "idle", agentId: "a1"))
         #expect(model.messages.filter { $0.text == "instant" }.count == 1)
         #expect(model.messages.first?.deliveryState == .confirmed)
     }
@@ -62,7 +65,10 @@ extension APIClientTests {
         model.draft = "retry me"
         model.sendMessage()
         await waitUntil { model.messages.first?.deliveryState == .failed }
-        let failed = model.messages.first!
+        guard let failed = model.messages.first else {
+            Issue.record("Missing failed message")
+            return
+        }
         model.retryMessage(failed)
         await waitUntil { StubProtocol.requests.filter { $0.url?.path == "/v1/agents/a1/messages" }.count == 2 }
 

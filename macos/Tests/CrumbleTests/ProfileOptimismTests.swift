@@ -1,12 +1,14 @@
 import Foundation
 import Testing
+
 @testable import Crumble
 
 extension APIClientTests {
     @MainActor @Test func profileEditAppearsImmediatelyAndFailurePreservesNewerDraft() async throws {
-        let model = AppModel(client: StubProtocol.client { request in
-            request.httpMethod == "PATCH" ? (500, #"{"error":"busy"}"#) : (404, "")
-        })
+        let model = AppModel(
+            client: StubProtocol.client { request in
+                request.httpMethod == "PATCH" ? (500, #"{"error":"busy"}"#) : (404, "")
+            })
         model.agents = [Agent(id: "a1", name: "Before", lastMessage: "Latest reply")]
         model.route = .memory
         model.agentDraft = AgentDraft(isNew: false, agentID: "a1", name: "After")
@@ -22,9 +24,10 @@ extension APIClientTests {
     }
 
     @MainActor @Test func agentCreationUsesProvisionalRowWithoutStealingNavigation() async throws {
-        let model = AppModel(client: StubProtocol.client { request in
-            request.httpMethod == "POST" ? (201, #"{"id":"created","name":"New bot","enabled":true}"#) : (404, "")
-        })
+        let model = AppModel(
+            client: StubProtocol.client { request in
+                request.httpMethod == "POST" ? (201, #"{"id":"created","name":"New bot","enabled":true}"#) : (404, "")
+            })
         model.route = .memory
         model.agentDraft = AgentDraft(isNew: true, agentID: "", name: "New bot")
         model.saveAgentEditor()

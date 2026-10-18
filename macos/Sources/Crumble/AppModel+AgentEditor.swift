@@ -85,7 +85,8 @@ extension AppModel {
 
     /// The server's providers, configured ones first, keeping the current choice.
     var providerChoices: [String] {
-        let ordered = providers.filter(\.configured).map(\.provider) + providers.filter { !$0.configured }.map(\.provider)
+        let ordered =
+            providers.filter(\.configured).map(\.provider) + providers.filter { !$0.configured }.map(\.provider)
         let current = agentDraft?.provider ?? ""
         return ordered.contains(current) || current.isEmpty ? ordered : [current] + ordered
     }
@@ -98,11 +99,15 @@ extension AppModel {
     }
 
     func saveAgentEditor() {
-        guard let draft = agentDraft else { return }
+        guard let draft = agentDraft, let input = editorInput(for: draft) else { return }
+        persistAgentEditor(draft, input: input)
+    }
+
+    private func editorInput(for draft: AgentDraft) -> Agent? {
         let name = draft.name.trimmingCharacters(in: .whitespaces)
         guard !name.isEmpty else {
             errorText = "Give your agent a name."
-            return
+            return nil
         }
         var tools: [String] = []
         if draft.toolsMemory { tools.append("memory") }
@@ -110,18 +115,25 @@ extension AppModel {
         if draft.toolsSchedule { tools.append("schedule") }
         if draft.toolsCodemode { tools.append("codemode") }
         if draft.skills.contains(where: {
-            $0.name.trimmingCharacters(in: .whitespaces).isEmpty || $0.instructions.trimmingCharacters(in: .whitespaces).isEmpty
+            $0.name.trimmingCharacters(in: .whitespaces).isEmpty
+                || $0.instructions.trimmingCharacters(in: .whitespaces).isEmpty
         }) {
             errorText = "Each skill needs a name and instructions."
-            return
+            return nil
         }
-        guard let inference = editorInference(for: draft) else { return }
-        let delegates = draft.delegates.sorted(), servers = draft.mcpServers.sorted()
+        guard let inference = editorInference(for: draft) else { return nil }
+        let delegates = draft.delegates.sorted()
+        let servers = draft.mcpServers.sorted()
         let shared = draft.sharedSkills.filter { id in sharedSkills.contains { $0.id == id && !$0.isDefault } }.sorted()
-        let input = Agent(name: name, description: draft.description.nilIfEmpty, instructions: draft.instructions.nilIfEmpty,
-                          avatar: draft.avatar, enabled: draft.enabled, provider: draft.provider.nilIfEmpty, model: draft.model.nilIfEmpty,
-                          folder: draft.folder.nilIfEmpty, tools: tools, delegates: delegates, skills: draft.skills,
-                          sharedSkills: shared, sharedMemory: draft.sharedMemory, mcpServers: servers, inference: inference)
+        return Agent(
+            name: name, description: draft.description.nilIfEmpty, instructions: draft.instructions.nilIfEmpty,
+            avatar: draft.avatar, enabled: draft.enabled, provider: draft.provider.nilIfEmpty,
+            model: draft.model.nilIfEmpty,
+            folder: draft.folder.nilIfEmpty, tools: tools, delegates: delegates, skills: draft.skills,
+            sharedSkills: shared, sharedMemory: draft.sharedMemory, mcpServers: servers, inference: inference)
+    }
+
+    private func persistAgentEditor(_ draft: AgentDraft, input: Agent) {
         let isNew = draft.isNew
         let id = isNew ? "pending:" + newRequestID() : draft.agentID
         let old = agents.first { $0.id == id }
@@ -129,45 +141,65 @@ extension AppModel {
         provisional.id = id
         provisional.lastMessage = old?.lastMessage
         let originalRoute = route
-        optimisticMutation(key: "agent:\(id)", update: { [self] in
-            if let index = agents.firstIndex(where: { $0.id == id }) {
-                agents[index] = provisional
-            } else {
-                agents.append(provisional)
-            }
-            agentDraft = nil
-        }, rollback: { [self] in
-            if let old, let index = agents.firstIndex(where: { $0.id == id }) {
-                agents[index] = old
-            } else {
-                agents.removeAll { $0.id == id }
-            }
-            if agentDraft == nil, route == originalRoute { agentDraft = draft }
-        }, work: { client in
-            let agent: Agent
-            if isNew {
-                agent = try await client.createAgent(input)
-            } else {
-                agent = try await client.updateAgent(id, patch: [
-                    "name": .string(name), "description": .string(draft.description), "instructions": .string(draft.instructions),
-                    "provider": .string(draft.provider), "model": .string(draft.model), "avatar": .string(draft.avatar),
-                    "folder": .string(draft.folder), "enabled": .bool(draft.enabled), "tools": .array(tools.map(JSONValue.string)),
-                    "skills": try JSONValue(encoding: draft.skills), "sharedSkills": .array(shared.map(JSONValue.string)),
-                    "sharedMemory": .bool(draft.sharedMemory), "mcpServers": .array(servers.map(JSONValue.string)),
-                    "delegates": .array(delegates.map(JSONValue.string)), "inference": try JSONValue(encoding: inference)
-                ])
-            }
-            return { [self] in
+        optimisticMutation(
+            key: "agent:\(id)",
+            update: { [self] in
                 if let index = agents.firstIndex(where: { $0.id == id }) {
-                    let lastMessage = agents[index].lastMessage
-                    agents[index] = agent
-                    agents[index].lastMessage = agent.lastMessage ?? lastMessage
+                    agents[index] = provisional
+                } else {
+                    agents.append(provisional)
                 }
-                if isNew, route == originalRoute, agentDraft == nil {
-                    selectAgent(agent.id)
+                agentDraft = nil
+            },
+            rollback: { [self] in
+                if let old, let index = agents.firstIndex(where: { $0.id == id }) {
+                    agents[index] = old
+                } else {
+                    agents.removeAll { $0.id == id }
                 }
-            }
-        })
+                if agentDraft == nil, route == originalRoute { agentDraft = draft }
+            },
+            work: { client in
+                let agent: Agent
+                if isNew {
+                    agent = try await client.createAgent(input)
+                } else {
+                    agent = try await client.updateAgent(
+                        id,
+                        patch: try self.editorPatch(for: draft, input: input))
+                }
+                return { [self] in
+                    reconcileAgentEditor(agent, replacing: id, isNew: isNew, originalRoute: originalRoute)
+                }
+            })
+    }
+
+    private func reconcileAgentEditor(_ agent: Agent, replacing id: String, isNew: Bool, originalRoute: Route?) {
+        if let index = agents.firstIndex(where: { $0.id == id }) {
+            let lastMessage = agents[index].lastMessage
+            agents[index] = agent
+            agents[index].lastMessage = agent.lastMessage ?? lastMessage
+        }
+        if isNew, route == originalRoute, agentDraft == nil {
+            selectAgent(agent.id)
+        }
+    }
+
+    private func editorPatch(for draft: AgentDraft, input: Agent) throws -> [String: JSONValue] {
+        [
+            "name": .string(input.name), "description": .string(draft.description),
+            "instructions": .string(draft.instructions),
+            "provider": .string(draft.provider), "model": .string(draft.model),
+            "avatar": .string(draft.avatar),
+            "folder": .string(draft.folder), "enabled": .bool(draft.enabled),
+            "tools": .array((input.tools ?? []).map(JSONValue.string)),
+            "skills": try JSONValue(encoding: draft.skills),
+            "sharedSkills": .array((input.sharedSkills ?? []).map(JSONValue.string)),
+            "sharedMemory": .bool(draft.sharedMemory),
+            "mcpServers": .array((input.mcpServers ?? []).map(JSONValue.string)),
+            "delegates": .array((input.delegates ?? []).map(JSONValue.string)),
+            "inference": try JSONValue(encoding: input.inference)
+        ]
     }
 
     private func editorInference(for draft: AgentDraft) -> Inference? {
@@ -196,50 +228,59 @@ extension AppModel {
         copy.id = temporaryID
         copy.name += " copy"
         copy.lastMessage = nil
-        let originalRoute = route, originalDraft = agentDraft
-        optimisticMutation(key: "agent:\(temporaryID)", update: { [self] in
-            agents.append(copy)
-            agentDraft = nil
-        }, rollback: { [self] in
-            agents.removeAll { $0.id == temporaryID }
-            if agentDraft == nil, route == originalRoute { agentDraft = originalDraft }
-        }, work: { client in
-            let agent = try await client.duplicateAgent(id)
-            return { [self] in
-                if let index = agents.firstIndex(where: { $0.id == temporaryID }) { agents[index] = agent }
-                if route == originalRoute, agentDraft == nil {
-                    selectAgent(agent.id)
-                    openEditor()
+        let originalRoute = route
+        let originalDraft = agentDraft
+        optimisticMutation(
+            key: "agent:\(temporaryID)",
+            update: { [self] in
+                agents.append(copy)
+                agentDraft = nil
+            },
+            rollback: { [self] in
+                agents.removeAll { $0.id == temporaryID }
+                if agentDraft == nil, route == originalRoute { agentDraft = originalDraft }
+            },
+            work: { client in
+                let agent = try await client.duplicateAgent(id)
+                return { [self] in
+                    if let index = agents.firstIndex(where: { $0.id == temporaryID }) { agents[index] = agent }
+                    if route == originalRoute, agentDraft == nil {
+                        selectAgent(agent.id)
+                        openEditor()
+                    }
                 }
-            }
-        })
+            })
     }
 
     func deleteSelected() {
         let id = agentDraft?.agentID ?? selectedAgentID
         guard !id.hasPrefix("pending:"), let index = agents.firstIndex(where: { $0.id == id }) else { return }
-        let removed = agents[index], memories = agentMemories[id]
+        let removed = agents[index]
+        let memories = agentMemories[id]
         let wasSelected = selectedAgentID == id
         var routeAfterDeletion = route
-        optimisticMutation(key: "agent:\(id)", update: { [self] in
-            agents.removeAll { $0.id == id }
-            agentMemories[id] = nil
-            agentDraft = nil
-            if wasSelected {
-                clearSelectedChat()
-                if case .agent = route {
-                    if let next = agents.first { selectAgent(next.id) } else { route = nil }
+        optimisticMutation(
+            key: "agent:\(id)",
+            update: { [self] in
+                agents.removeAll { $0.id == id }
+                agentMemories[id] = nil
+                agentDraft = nil
+                if wasSelected {
+                    clearSelectedChat()
+                    if case .agent = route {
+                        if let next = agents.first { selectAgent(next.id) } else { route = nil }
+                    }
                 }
-            }
-            routeAfterDeletion = route
-        }, rollback: { [self] in
-            agents.insert(removed, at: min(index, agents.count))
-            agentMemories[id] = memories
-            if wasSelected, route == routeAfterDeletion { selectAgent(id) }
-        }, work: { client in
-            try await client.deleteAgent(id)
-            return nil
-        })
+                routeAfterDeletion = route
+            },
+            rollback: { [self] in
+                agents.insert(removed, at: min(index, agents.count))
+                agentMemories[id] = memories
+                if wasSelected, route == routeAfterDeletion { selectAgent(id) }
+            },
+            work: { client in
+                try await client.deleteAgent(id)
+                return nil
+            })
     }
-
 }
