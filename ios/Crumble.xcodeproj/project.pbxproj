@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		C00000000000000000000001 /* apfelkern in Frameworks */ = {isa = PBXBuildFile; productRef = C00000000000000000000002 /* apfelkern */; };
 		C00000000000000000000003 /* apfelkern in Frameworks */ = {isa = PBXBuildFile; productRef = C00000000000000000000004 /* apfelkern */; };
+		C00000000000000000000006 /* BotAvatar in Frameworks */ = {isa = PBXBuildFile; productRef = C00000000000000000000007 /* BotAvatar */; };
+		C00000000000000000000008 /* BotAvatar in Frameworks */ = {isa = PBXBuildFile; productRef = C00000000000000000000009 /* BotAvatar */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,6 +59,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C00000000000000000000001 /* apfelkern in Frameworks */,
+				C00000000000000000000006 /* BotAvatar in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +68,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C00000000000000000000003 /* apfelkern in Frameworks */,
+				C00000000000000000000008 /* BotAvatar in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -119,6 +123,7 @@
 			name = Crumble;
 			packageProductDependencies = (
 				C00000000000000000000002 /* apfelkern */,
+				C00000000000000000000007 /* BotAvatar */,
 			);
 			productName = Crumble;
 			productReference = A00000000000000000000006 /* Crumble.app */;
@@ -143,6 +148,7 @@
 			name = CrumbleTests;
 			packageProductDependencies = (
 				C00000000000000000000004 /* apfelkern */,
+				C00000000000000000000009 /* BotAvatar */,
 			);
 			productName = CrumbleTests;
 			productReference = A00000000000000000000007 /* CrumbleTests.xctest */;
@@ -298,6 +304,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = C00000000000000000000005 /* XCRemoteSwiftPackageReference "apfelkern" */;
 			productName = apfelkern;
+		};
+		C00000000000000000000007 /* BotAvatar */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C00000000000000000000005 /* XCRemoteSwiftPackageReference "apfelkern" */;
+			productName = BotAvatar;
+		};
+		C00000000000000000000009 /* BotAvatar */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C00000000000000000000005 /* XCRemoteSwiftPackageReference "apfelkern" */;
+			productName = BotAvatar;
 		};
 /* End XCSwiftPackageProductDependency section */
 

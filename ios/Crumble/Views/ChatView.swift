@@ -1,4 +1,5 @@
 import apfelkern
+import BotAvatar
 import PhotosUI
 import SwiftUI
 import UIKit

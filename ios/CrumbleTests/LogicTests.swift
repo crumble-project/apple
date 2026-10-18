@@ -1,4 +1,5 @@
 import apfelkern
+import BotAvatar
 import Foundation
 import ImageIO
 import Testing

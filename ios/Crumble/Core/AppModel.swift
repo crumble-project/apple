@@ -1,5 +1,6 @@
 import apfelkern
 import AuthenticationServices
+import BotAvatar
 import Foundation
 import Observation
 import SwiftUI
