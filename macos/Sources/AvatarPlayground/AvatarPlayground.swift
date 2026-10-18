@@ -9,6 +9,13 @@ struct AvatarPlayground: App {
     init() {
         NSApplication.shared.setActivationPolicy(.regular)
         let arguments = CommandLine.arguments
+        if let index = arguments.firstIndex(of: "--benchmark") {
+            let frames = arguments.count > index + 1 ? Int(arguments[index + 1]) ?? 300 : 300
+            let size = arguments.count > index + 2 ? Double(arguments[index + 2]) ?? 44 : 44
+            guard (1...10_000).contains(frames), size.isFinite, (16...200).contains(size) else { exit(1) }
+            AvatarBenchmark.run(frames: frames, size: size)
+            exit(0)
+        }
         if let index = arguments.firstIndex(of: "--snapshot"), index + 1 < arguments.count {
             let time = arguments.count > index + 2 ? Double(arguments[index + 2]) ?? 0 : 0
             ContactSheet.write(to: URL(fileURLWithPath: arguments[index + 1]), time: time)
@@ -18,7 +25,11 @@ struct AvatarPlayground: App {
 
     var body: some Scene {
         Window("Avatar Playground", id: "main") {
-            PlaygroundView().frame(minWidth: 720, minHeight: 560)
+            if CommandLine.arguments.contains("--profile") {
+                AvatarProfileView().frame(width: 640, height: 480)
+            } else {
+                PlaygroundView().frame(minWidth: 720, minHeight: 560)
+            }
         }
         .defaultSize(width: 1040, height: 780)
     }
@@ -37,6 +48,8 @@ enum Appearance: String, CaseIterable, Identifiable {
 }
 
 struct PlaygroundView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var reactions: [String: Int] = [:]
     @State private var seeds = PlaygroundView.randomSeeds()
     @State private var selected = "crumble"
     @State private var state = BotState.idle
@@ -54,6 +67,7 @@ struct PlaygroundView: View {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: size + 24), spacing: 16)], spacing: 16) {
                     ForEach(seeds, id: \.self) { seed in
                         tile(seed)
+                            .transition(.opacity.combined(with: .scale(scale: 0.96)))
                     }
                 }
             }
@@ -86,14 +100,18 @@ struct PlaygroundView: View {
         .background(
             seed == selected ? AnyShapeStyle(.tint.opacity(0.15)) : AnyShapeStyle(.clear), in: .rect(cornerRadius: 12))
         .contentShape(.rect)
-        .onTapGesture { selected = seed }
+        .onTapGesture {
+            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.18)) { selected = seed }
+            reactions[seed, default: 0] += 1
+        }
+        .help("Click to select and greet; hover to catch their attention")
     }
 
     @ViewBuilder private func avatar(_ seed: String, size: Double) -> some View {
         if frozen {
             BotAvatarStill(seed: seed, size: size, state: state, time: time)
         } else {
-            BotAvatarView(seed: seed, size: size, state: state, live: live)
+            BotAvatarView(seed: seed, size: size, state: state, live: live, reaction: reactions[seed, default: 0])
         }
     }
 
@@ -112,7 +130,12 @@ struct PlaygroundView: View {
             Picker("Appearance", selection: $appearance) {
                 ForEach(Appearance.allCases) { Text($0.rawValue).tag($0) }
             }
-            Button("Shuffle", systemImage: "shuffle") { seeds = Self.randomSeeds() }
+            Button("Shuffle", systemImage: "shuffle") {
+                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) {
+                    seeds = Self.randomSeeds()
+                    reactions = [:]
+                }
+            }
         }
     }
 

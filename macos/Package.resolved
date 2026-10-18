@@ -1,5 +1,5 @@
 {
-  "originHash" : "3a3760286faf753dcd37b99a86ca8dd844b8bb77fd38e1ab02c8ab042b79ca36",
+  "originHash" : "03cfbc08e9439518583e235eb72c5294143ef152242ee3d98935ee35ebf5bbf0",
   "pins" : [
     {
       "identity" : "apfelkern",
@@ -7,7 +7,7 @@
       "location" : "git@github.com:crumble-project/apfelkern.git",
       "state" : {
         "branch" : "main",
-        "revision" : "2950137491a8b6e54df0094e5081b3d5bd43f17e"
+        "revision" : "88c5740a9e9cb1aba6f387037dd3946268e1bcc7"
       }
     }
   ],

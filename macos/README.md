@@ -34,11 +34,15 @@ CRUMBLE_URL="http://127.0.0.1:7338" CRUMBLE_TOKEN="REPLACE_WITH_A_SERVER_TOKEN" 
 
 ## Tune bot avatars
 
-Bot avatars live in the `BotAvatar` library. The avatar playground shows a grid of random bots at every size, with state, live motion, a freeze-frame scrubber, and light and dark appearance controls:
+Bot avatars live in the `BotAvatar` library from apfelkern, shared with the iOS app. The avatar playground shows a grid of random bots at every size, with state, live motion, a freeze-frame scrubber, and light and dark appearance controls:
 
 ```bash
 swift run AvatarPlayground
 ```
+
+Live avatars stretch, blink, and move at seed-specific rhythms. State changes blend poses and expressions, including closing eyes and fading sleep symbols. Hover over an awake idle avatar to catch its attention. Click a grid avatar to select it and trigger a greeting while awake. **Shuffle** fades between groups. Reduce Motion disables live movement and playground transitions.
+
+Live avatars run their motion as Core Animation loops, so animating avatars use almost no CPU. Live avatars in Crumble use the same library, so they also get the movement and state transitions. Sidebar avatars keep working after you leave a running chat, then sleep when the server confirms completion.
 
 To write a still contact sheet of every state as a PNG instead, pass `--snapshot` with an output path and an optional moment in seconds:
 

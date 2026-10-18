@@ -6,9 +6,13 @@ let package = Package(
     platforms: [.macOS(.v26)],
     dependencies: [.package(url: "git@github.com:crumble-project/apfelkern.git", branch: "main")],
     targets: [
-        .target(name: "BotAvatar"),
-        .executableTarget(name: "Crumble", dependencies: ["apfelkern", "BotAvatar"]),
-        .executableTarget(name: "AvatarPlayground", dependencies: ["BotAvatar"]),
-        .testTarget(name: "CrumbleTests", dependencies: ["Crumble", "apfelkern", "BotAvatar"])
+        .executableTarget(
+            name: "Crumble",
+            dependencies: ["apfelkern", .product(name: "BotAvatar", package: "apfelkern")]),
+        .executableTarget(
+            name: "AvatarPlayground", dependencies: [.product(name: "BotAvatar", package: "apfelkern")]),
+        .testTarget(
+            name: "CrumbleTests",
+            dependencies: ["Crumble", "apfelkern", .product(name: "BotAvatar", package: "apfelkern")])
     ]
 )
