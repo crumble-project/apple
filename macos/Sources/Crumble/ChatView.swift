@@ -99,7 +99,7 @@ struct ChatView: View {
                 .accessibilityValue(subtitle)
                 .help("Agent Profile")
             }
-            .sharedBackgroundVisibility(.visible)
+            .sharedBackgroundVisibility(.hidden)
         }
     }
 
@@ -110,7 +110,7 @@ struct ChatView: View {
     }
 
     @ViewBuilder private var headerTitle: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 12) {
             BotAvatarView(agent: agent, size: 28, state: model.botState(agent), live: true)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 1) {
@@ -125,8 +125,12 @@ struct ChatView: View {
                 }
             }
         }
-        .frame(minWidth: 40, maxWidth: 320, minHeight: 40)
-        .contentShape(Rectangle())
+        .padding(.horizontal, 10)
+        .frame(minWidth: 40, maxWidth: 340)
+        .frame(height: 48, alignment: .center)
+        .fixedSize(horizontal: false, vertical: true)
+        .glassEffect(.regular.interactive(), in: .capsule)
+        .contentShape(Capsule())
     }
 }
 
