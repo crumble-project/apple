@@ -1,0 +1,104 @@
+name: Nightly
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nightly
+
+jobs:
+  nightly:
+    runs-on: xcode-27
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Skip when main is unchanged
+        id: changes
+        run: |
+          last="$(git ls-remote --tags origin refs/tags/nightly | cut -f1)"
+          if [ "$GITHUB_EVENT_NAME" = schedule ] && [ "$last" = "$GITHUB_SHA" ]; then
+            echo "The nightly release already has $GITHUB_SHA."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Test
+        if: steps.changes.outputs.skip != 'true'
+        run: swift test
+
+      - name: Import the signing certificate
+        if: steps.changes.outputs.skip != 'true'
+        id: certificate
+        env:
+          P12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+          P12_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        run: |
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          password="$(uuidgen)"
+          security create-keychain -p "$password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          echo "$P12" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
+          security import "$RUNNER_TEMP/certificate.p12" -k "$keychain" -P "$P12_PASSWORD" -T /usr/bin/codesign
+          rm "$RUNNER_TEMP/certificate.p12"
+          security set-key-partition-list -S apple-tool:,apple: -k "$password" "$keychain" >/dev/null
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+          identity="$(security find-identity -v -p codesigning "$keychain" | awk '/Developer ID Application/ { print $2; exit }')"
+          if [ -z "$identity" ]; then
+            echo "No Developer ID Application identity in MACOS_CERTIFICATE_P12." >&2
+            exit 1
+          fi
+          echo "identity=$identity" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        if: steps.changes.outputs.skip != 'true'
+        env:
+          CRUMBLE_SIGNING_IDENTITY: ${{ steps.certificate.outputs.identity }}
+        run: |
+          CRUMBLE_VERSION=0.1.0 \
+          CRUMBLE_BUILD_NUMBER="$(date -u +%Y%m%d).$GITHUB_RUN_NUMBER" \
+          ./scripts/build-app.sh release
+
+      - name: Notarize
+        if: steps.changes.outputs.skip != 'true'
+        env:
+          NOTARY_KEY_P8: ${{ secrets.NOTARY_KEY_P8 }}
+          NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
+          NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
+        run: |
+          key="$RUNNER_TEMP/notary.p8"
+          echo "$NOTARY_KEY_P8" | base64 --decode > "$key"
+          ditto -c -k --keepParent build/Crumble.app "$RUNNER_TEMP/submission.zip"
+          xcrun notarytool submit "$RUNNER_TEMP/submission.zip" \
+            --key "$key" --key-id "$NOTARY_KEY_ID" --issuer "$NOTARY_ISSUER_ID" \
+            --wait --timeout 30m --output-format json > "$RUNNER_TEMP/notary.json"
+          status="$(jq -r .status "$RUNNER_TEMP/notary.json")"
+          if [ "$status" != Accepted ]; then
+            xcrun notarytool log "$(jq -r .id "$RUNNER_TEMP/notary.json")" \
+              --key "$key" --key-id "$NOTARY_KEY_ID" --issuer "$NOTARY_ISSUER_ID"
+            echo "Notarization finished with status $status." >&2
+            exit 1
+          fi
+          xcrun stapler staple build/Crumble.app
+          spctl --assess --type execute --verbose=2 build/Crumble.app
+          ditto -c -k --keepParent build/Crumble.app Crumble-nightly.zip
+
+      - name: Publish
+        if: steps.changes.outputs.skip != 'true'
+        run: |
+          gh release delete nightly --cleanup-tag --yes || true
+          gh release create nightly Crumble-nightly.zip \
+            --prerelease --target "$GITHUB_SHA" \
+            --title "Nightly $(date -u +%Y-%m-%d) (${GITHUB_SHA::7})" \
+            --notes "Developer ID signed and notarized build of $GITHUB_SHA. Unzip and move Crumble.app to /Applications."
+
+      - name: Remove the signing keychain
+        if: always()
+        run: security delete-keychain "$RUNNER_TEMP/signing.keychain-db" || true

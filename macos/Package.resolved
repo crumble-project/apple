@@ -1,10 +1,10 @@
 {
-  "originHash" : "03cfbc08e9439518583e235eb72c5294143ef152242ee3d98935ee35ebf5bbf0",
+  "originHash" : "28c64af8840732caa86d7c5e298c4627dfb19648e3f94e23e6635059ff765978",
   "pins" : [
     {
       "identity" : "apfelkern",
       "kind" : "remoteSourceControl",
-      "location" : "git@github.com:crumble-project/apfelkern.git",
+      "location" : "https://github.com/crumble-project/apfelkern.git",
       "state" : {
         "branch" : "main",
         "revision" : "d08fbc4ede22e8f2a1adffd4fdb4b09011d22862"

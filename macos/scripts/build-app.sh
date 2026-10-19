@@ -1,10 +1,12 @@
 #!/bin/sh
 # Builds Crumble.app from the Swift package.
 #
-# The default is an ad hoc local build. Set all three CRUMBLE_SIGNING_IDENTITY,
-# CRUMBLE_PROVISIONING_PROFILE, and CRUMBLE_PUSH_ENVIRONMENT variables to make
-# a provisioned APNs build. Set CRUMBLE_VARIANT=dev to build Crumble Dev.app,
+# The default is an ad hoc local build. Set CRUMBLE_SIGNING_IDENTITY alone to
+# sign with the hardened runtime and a timestamp, as notarization requires. Add
+# CRUMBLE_PROVISIONING_PROFILE and CRUMBLE_PUSH_ENVIRONMENT to make a
+# provisioned APNs build. Set CRUMBLE_VARIANT=dev to build Crumble Dev.app,
 # which has its own bundle ID and so its own Keychain items and settings.
+# CRUMBLE_VERSION and CRUMBLE_BUILD_NUMBER set the app's version.
 set -eu
 cd "$(dirname "$0")/.."
 configuration="${1:-release}"
@@ -18,10 +20,17 @@ app="$output_root/$app_name.app"
 signing_identity="${CRUMBLE_SIGNING_IDENTITY:-}"
 provisioning_profile="${CRUMBLE_PROVISIONING_PROFILE:-}"
 push_environment="${CRUMBLE_PUSH_ENVIRONMENT:-}"
+version="${CRUMBLE_VERSION:-0.1.0}"
+build_number="${CRUMBLE_BUILD_NUMBER:-1}"
 
-if [ -n "$signing_identity" ] || [ -n "$provisioning_profile" ] || [ -n "$push_environment" ]; then
+if [ -n "$signing_identity" ] && ! security find-identity -v -p codesigning | grep -F "$signing_identity" >/dev/null; then
+	echo "Signing identity is not available in the keychain: $signing_identity" >&2
+	exit 2
+fi
+
+if [ -n "$provisioning_profile" ] || [ -n "$push_environment" ]; then
 	if [ -z "$signing_identity" ] || [ -z "$provisioning_profile" ] || [ -z "$push_environment" ]; then
-		echo "Configured signing requires CRUMBLE_SIGNING_IDENTITY, CRUMBLE_PROVISIONING_PROFILE, and CRUMBLE_PUSH_ENVIRONMENT." >&2
+		echo "Push signing requires CRUMBLE_SIGNING_IDENTITY, CRUMBLE_PROVISIONING_PROFILE, and CRUMBLE_PUSH_ENVIRONMENT." >&2
 		exit 2
 	fi
 	case "$push_environment" in
@@ -61,10 +70,6 @@ if [ -n "$signing_identity" ] || [ -n "$provisioning_profile" ] || [ -n "$push_e
 		*"($profile_team_identifier)") ;;
 		*) echo "Signing identity team does not match provisioning profile team $profile_team_identifier." >&2; exit 2 ;;
 	esac
-	if ! security find-identity -v -p codesigning | grep -F "$signing_identity" >/dev/null; then
-		echo "Signing identity is not available in the keychain: $signing_identity" >&2
-		exit 2
-	fi
 fi
 
 swift build -c "$configuration" --product Crumble
@@ -89,8 +94,8 @@ cat > "$app/Contents/Info.plist" <<PLIST
 	<key>CFBundleIdentifier</key><string>$bundle_id</string>
 	<key>CFBundleName</key><string>$app_name</string>
 	<key>CFBundlePackageType</key><string>APPL</string>
-	<key>CFBundleShortVersionString</key><string>0.1.0</string>
-	<key>CFBundleVersion</key><string>1</string>
+	<key>CFBundleShortVersionString</key><string>$version</string>
+	<key>CFBundleVersion</key><string>$build_number</string>
 	<key>LSMinimumSystemVersion</key><string>26.0</string>
 	<key>CrumblePushEnvironment</key><string>${push_environment:-disabled}</string>
 	<key>NSHighResolutionCapable</key><true/>
@@ -99,7 +104,7 @@ cat > "$app/Contents/Info.plist" <<PLIST
 </dict>
 </plist>
 PLIST
-if [ -n "$signing_identity" ]; then
+if [ -n "$provisioning_profile" ]; then
 	cp "$provisioning_profile" "$app/Contents/embedded.provisionprofile"
 	entitlements="$(mktemp)"
 	trap 'rm -f "$entitlements" "$profile_plist"' EXIT HUP INT TERM
@@ -112,6 +117,8 @@ if [ -n "$signing_identity" ]; then
 	else
 		codesign --force --sign "$signing_identity" --entitlements "$entitlements" "$app"
 	fi
+elif [ -n "$signing_identity" ]; then
+	codesign --force --sign "$signing_identity" --timestamp --options runtime "$app"
 else
 	codesign --force --sign - "$app"
 fi

@@ -12,8 +12,7 @@ The app has no third-party dependencies.
 
 ## Shared Swift package
 
-The app and unit tests fetch `git@github.com:crumble-project/apfelkern.git`, tracking `main`.
-Configure SSH access to GitHub before resolving packages. A sibling checkout is not required.
+The app and unit tests fetch `https://github.com/crumble-project/apfelkern.git`, tracking `main`. A sibling checkout is not required.
 The package provides common models, API transport, drafts, and pure helpers. See the [package documentation](https://github.com/crumble-project/apfelkern).
 
 Bot chat delivery uses `BotChatDelivery` from `apfelkern`. It coordinates pending messages, retry payloads, and previews. HTTP acceptance retains pending messages until a transcript snapshot confirms them. `AppModel` retains transport tasks, connection and selection guards, and composer behavior. Delivery behavior tests live in `apfelkern`; controlled transport tests remain in the app.
@@ -82,13 +81,27 @@ Build `build/Crumble.app`, with the icon from `resources/icon.png`:
 ./scripts/build-app.sh
 ```
 
-The script signs the app ad hoc for local use. It is not notarized. Distribution requires a Developer ID signing identity and a separate notarization workflow.
+The script signs the app ad hoc for local use. Set `CRUMBLE_SIGNING_IDENTITY` to a Developer ID Application identity to sign with the hardened runtime and a secure timestamp, which notarization requires. `CRUMBLE_VERSION` and `CRUMBLE_BUILD_NUMBER` set the version; both must be dot-separated numbers.
 
 To install the app, copy `build/Crumble.app` to `/Applications`. For a development bundle that sits beside it with its own Keychain items, settings, and notifications, build `build/Crumble Dev.app`:
 
 ```bash
 CRUMBLE_VARIANT=dev ./scripts/build-app.sh
 ```
+
+## Nightly builds
+
+[`.github/workflows/nightly.yml`](.github/workflows/nightly.yml) runs daily at 03:00 UTC when `main` has changed, and on demand from the Actions tab. It runs the tests, builds `Crumble.app`, signs it with Developer ID, notarizes and staples it, then replaces the `nightly` pre-release with `Crumble-nightly.zip`. The version is `0.1.0` with a `YYYYMMDD.run` build number. Nightlies have no push entitlement.
+
+The workflow reads these repository secrets:
+
+| Secret | Value |
+| --- | --- |
+| `MACOS_CERTIFICATE_P12` | Base64 of the Developer ID Application certificate and private key, exported as `.p12` |
+| `MACOS_CERTIFICATE_PASSWORD` | The `.p12` export password |
+| `NOTARY_KEY_P8` | Base64 of an App Store Connect Team API key (`.p8`) with the Developer role |
+| `NOTARY_KEY_ID` | That key's ID |
+| `NOTARY_ISSUER_ID` | The App Store Connect issuer ID |
 
 ## Connect to a server
 
