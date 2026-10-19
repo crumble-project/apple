@@ -18,6 +18,7 @@ struct CrumbleApp: App {
         Window("Crumble", id: "main") {
             ContentView()
                 .environment(model)
+                .environment(\.botFinish, .dither)
                 .frame(minWidth: 860, minHeight: 560)
                 .task {
                     Notifier.shared.start(model: model)
@@ -33,7 +34,7 @@ struct CrumbleApp: App {
         }
 
         Settings {
-            SettingsView().environment(model)
+            SettingsView().environment(model).environment(\.botFinish, .dither)
         }
         .windowToolbarStyle(.unifiedCompact)
         .windowResizability(.contentMinSize)

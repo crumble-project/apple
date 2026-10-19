@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Paint bots with a dithered finish instead of a glossy one. The playground's **Finish** picker and `--finishes` sheet compare all finishes.
 - Tone down avatar blush, eye sparkle, and smiles. Use smaller working hops and restrained click greetings while retaining live motion and state transitions.
 
 - Blend live avatar poses and expressions across idle, working, and sleeping states. Add occasional stretches, individual movement rhythms, fading sleep symbols, click greetings in the playground, and shuffle transitions. Respect Reduce Motion.

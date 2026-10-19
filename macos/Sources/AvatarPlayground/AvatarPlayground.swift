@@ -3,7 +3,8 @@ import BotAvatar
 import SwiftUI
 
 /// A bench for bot avatars: `swift run AvatarPlayground` opens a window of faces to tune;
-/// `swift run AvatarPlayground --snapshot out.png [time]` writes a still contact sheet instead.
+/// `swift run AvatarPlayground --snapshot out.png [time]` writes a still contact sheet instead, and
+/// `--finishes out.png` writes one row per body finish.
 @main
 struct AvatarPlayground: App {
     init() {
@@ -19,6 +20,10 @@ struct AvatarPlayground: App {
         if let index = arguments.firstIndex(of: "--snapshot"), index + 1 < arguments.count {
             let time = arguments.count > index + 2 ? Double(arguments[index + 2]) ?? 0 : 0
             ContactSheet.write(to: URL(fileURLWithPath: arguments[index + 1]), time: time)
+            exit(0)
+        }
+        if let index = arguments.firstIndex(of: "--finishes"), index + 1 < arguments.count {
+            ContactSheet.writeFinishes(to: URL(fileURLWithPath: arguments[index + 1]))
             exit(0)
         }
     }
@@ -58,6 +63,7 @@ struct PlaygroundView: View {
     @State private var frozen = false
     @State private var time = 0.0
     @State private var appearance = Appearance.system
+    @State private var finish = BotFinish.dither
 
     var body: some View {
         ScrollView {
@@ -74,6 +80,7 @@ struct PlaygroundView: View {
             .padding(24)
         }
         .toolbar { controls }
+        .environment(\.botFinish, finish)
         .preferredColorScheme(appearance.scheme)
     }
 
@@ -127,6 +134,9 @@ struct PlaygroundView: View {
             Toggle("Freeze", isOn: $frozen)
             Slider(value: $time, in: 0...12).frame(width: 140).disabled(!frozen).help("Moment to freeze at")
             Slider(value: $size, in: 24...200).frame(width: 120).help("Grid size")
+            Picker("Finish", selection: $finish) {
+                ForEach(BotFinish.allCases) { Text($0.rawValue.capitalized).tag($0) }
+            }
             Picker("Appearance", selection: $appearance) {
                 ForEach(Appearance.allCases) { Text($0.rawValue).tag($0) }
             }
@@ -171,6 +181,29 @@ enum ContactSheet {
         }
         .padding(24)
         .background(.white)
+        save(sheet, to: url)
+    }
+
+    static func writeFinishes(to url: URL) {
+        let sheet = VStack(alignment: .leading, spacing: 14) {
+            ForEach(BotFinish.allCases) { finish in
+                HStack(alignment: .bottom, spacing: 10) {
+                    Text(finish.rawValue).font(.headline).frame(width: 80, alignment: .leading)
+                    ForEach(seeds.prefix(8), id: \.self) { seed in
+                        BotAvatarStill(seed: seed, size: 88, state: .idle, time: 0.3)
+                    }
+                    BotAvatarStill(seed: seeds[2], size: 44, state: .idle, time: 0.3)
+                    BotAvatarStill(seed: seeds[2], size: 28, state: .idle, time: 0.3)
+                }
+                .environment(\.botFinish, finish)
+            }
+        }
+        .padding(24)
+        .background(.white)
+        save(sheet, to: url)
+    }
+
+    private static func save(_ sheet: some View, to url: URL) {
         let renderer = ImageRenderer(content: sheet)
         renderer.scale = 2
         guard let image = renderer.cgImage else { return }
