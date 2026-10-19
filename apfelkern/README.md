@@ -5,7 +5,7 @@ Shared Swift code for the Crumble iOS and macOS clients. Requires Swift 6.2 or l
 ## Package contents
 
 - API request encoding, response decoding, bearer authentication, and server-sent event parsing.
-- Common server models, JSON values, and message delivery state.
+- Common server models, JSON values, and bot chat delivery state, including optimistic messages, retries, and transcript acknowledgement.
 - Agent, memory, task, and integration drafts.
 - Transcript merging, mention completion, message previews, OAuth callbacks, task validation, and date formatting.
 - Attachment metadata, encoding, and limits, plus avatar seed selection.
@@ -21,7 +21,7 @@ A sibling checkout is not required. Import the public API with `import apfelkern
 
 Commit and push package changes before updating either client's resolved revision. Uncommitted local changes are not included in remote dependencies.
 
-The apps retain UI, observable application state, optimistic operation orchestration, notifications, Keychain storage, and image conversion.
+`BotChatDelivery` owns pending messages, retry payloads, and previews for both clients. HTTP acceptance retains pending messages until a transcript snapshot confirms them. The apps retain UI, observable application state, network tasks, connection and selection guards, composer restoration, notifications, Keychain storage, and image conversion.
 Activity payload models remain app-specific because their `details` representations differ. Skill drafts also retain their platform-specific fields.
 The transport preserves each platform's existing handling of invalid UTF-8.
 
@@ -41,6 +41,6 @@ Build `BotAvatar` for iOS as well, because its live view has separate AppKit and
 xcodebuild -scheme BotAvatar -destination 'generic/platform=iOS Simulator' build
 ```
 
-The `apfelkernTests` target currently contains only the scaffold test; `BotAvatarTests` covers avatar motion. Existing client suites exercise the extracted APIs and logic.
+The `apfelkernTests` target covers bot chat delivery transitions; `BotAvatarTests` covers avatar motion. Client suites retain controlled transport tests for acknowledgement ordering, late failures, and connection or bot changes.
 Run `swift test` in `../desktop` and the unit tests in the `../ios` Xcode project after changing shared behavior.
 The iOS test script also runs UI tests; see the [iOS build and test instructions](../ios/README.md#build-and-test).
