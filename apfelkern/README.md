@@ -12,7 +12,7 @@ Shared Swift code for the Crumble iOS and macOS clients. Requires Swift 6.2 or l
 
 The `apfelkern` library uses Foundation. It has no third-party dependencies and contains no SwiftUI, UIKit, or AppKit code.
 
-The separate `BotAvatar` library draws the bot avatars with SwiftUI. Live avatars run their motion as looping Core Animation keyframes, hosted in an AppKit or UIKit view, so they cost the app almost no CPU while they animate. Import it with `import BotAvatar`. Choose a body finish with `.environment(\.botFinish, .dither)`: `glossy` (the default), `matte`, `dither`, `halftone`, `grain`, or `outline`. The avatar drawing is adapted from MIT-licensed work; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+The separate `BotAvatar` library draws the bot avatars with SwiftUI. Live avatars run their motion as looping Core Animation keyframes, hosted in an AppKit or UIKit view, so they cost the app almost no CPU while they animate. Import it with `import BotAvatar`. Choose a body finish with `.environment(\.botFinish, .dither)`: `glossy` (the default), `matte`, `dither`, `halftone`, `grain`, or `outline`. The avatar drawing is adapted from MIT-licensed work; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The Android client ports the same drawing and motion with the `dither` finish in `android/app/src/main/java/dev/crumble/android/ui/BotAvatar.kt`, so carry avatar changes over to keep a seed's bot the same on every platform.
 
 ## Use the package
 
