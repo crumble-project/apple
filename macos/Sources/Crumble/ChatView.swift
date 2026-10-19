@@ -41,10 +41,12 @@ enum ChatRow: Identifiable {
         return rows
     }
 
-    /// Keeps the conversation itself: owner and agent text and context events, not thinking,
-    /// tool calls, or tool results.
+    /// Keeps the conversation itself: owner and agent text, context events, and visuals the agent
+    /// showed, not thinking, tool calls, or other tool results.
     static func shownInChat(_ message: Message) -> Bool {
         switch message.role {
+        case "toolResult":
+            return DisplayComponent(message: message) != nil
         case "user":
             return !message.text.isEmpty || !(message.attachments ?? []).isEmpty
         case "event":

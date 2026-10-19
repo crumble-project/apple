@@ -30,6 +30,13 @@ struct MessageView: View {
                 }
             }
             .onHover { hovered = $0 }
+        case "toolResult":
+            if let component = DisplayComponent(message: message) {
+                HStack {
+                    DisplayView(component: component)
+                    Spacer(minLength: 60)
+                }
+            }
         default:
             HStack(spacing: 6) {
                 ViewThatFits(in: .horizontal) {
