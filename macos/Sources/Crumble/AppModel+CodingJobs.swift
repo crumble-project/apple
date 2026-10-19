@@ -84,14 +84,16 @@ extension AppModel {
         Task {
             do {
                 let page = try await client.codingJobHistory(open.agentID, name: open.name, before: "", limit: 100)
-                guard codingJobHistory?.id == key else { return }
-                codingJobHistory?.messages = mergeMessages(codingJobHistory?.messages ?? [], page.messages ?? [])
-                if codingJobHistory?.loaded != true {
-                    codingJobHistory?.hasMore = page.hasMore ?? false
-                    codingJobHistory?.oldestEntryID = page.oldestEntryId ?? ""
+                // Changed as a copy: reading the observed property while writing it is an exclusivity violation.
+                guard var history = codingJobHistory, history.id == key else { return }
+                history.messages = mergeMessages(history.messages, page.messages ?? [])
+                if !history.loaded {
+                    history.hasMore = page.hasMore ?? false
+                    history.oldestEntryID = page.oldestEntryId ?? ""
                 }
-                codingJobHistory?.loaded = true
-                codingJobHistory?.error = ""
+                history.loaded = true
+                history.error = ""
+                codingJobHistory = history
             } catch {
                 guard codingJobHistory?.id == key else { return }
                 codingJobHistory?.error = friendlyError(error)
@@ -108,11 +110,12 @@ extension AppModel {
             do {
                 let page = try await client.codingJobHistory(
                     open.agentID, name: open.name, before: open.oldestEntryID, limit: 100)
-                guard codingJobHistory?.id == key else { return }
-                codingJobHistory?.messages = mergeMessages(codingJobHistory?.messages ?? [], page.messages ?? [])
-                codingJobHistory?.hasMore = page.hasMore ?? false
-                codingJobHistory?.oldestEntryID = page.oldestEntryId ?? ""
-                codingJobHistory?.loadingOlder = false
+                guard var history = codingJobHistory, history.id == key else { return }
+                history.messages = mergeMessages(history.messages, page.messages ?? [])
+                history.hasMore = page.hasMore ?? false
+                history.oldestEntryID = page.oldestEntryId ?? ""
+                history.loadingOlder = false
+                codingJobHistory = history
             } catch {
                 guard codingJobHistory?.id == key else { return }
                 codingJobHistory?.loadingOlder = false

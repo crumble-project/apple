@@ -32,6 +32,21 @@ extension APIClientTests {
         #expect(model.offersCoding(for: plain))
     }
 
+    @MainActor @Test func openingACodingJobLoadsItsHistory() async {
+        let model = AppModel(client: StubProtocol.client { request in
+            request.url?.path == "/v1/agents/a1/coding-jobs/fix/history"
+                ? (200, #"{"messages":[{"id":"a1:1:0","role":"user","content":"Fix it"}],"hasMore":true,"#
+                    + #""oldestEntryId":"a1:1"}"#)
+                : (404, "")
+        })
+        model.selectedAgentID = "a1"
+        model.openCodingJob("fix")
+        await waitForJobs { model.codingJobHistory?.loaded == true }
+        #expect(model.codingJobHistory?.messages.map(\.text) == ["Fix it"])
+        #expect(model.codingJobHistory?.hasMore == true)
+        #expect(model.codingJobHistory?.oldestEntryID == "a1:1")
+    }
+
     @MainActor @Test func codingJobStatusRefreshesWhenItsReportArrives() async {
         nonisolated(unsafe) var status = "working"
         let model = AppModel(client: StubProtocol.client { request in

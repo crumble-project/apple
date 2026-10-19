@@ -49,6 +49,8 @@ enum ChatRow: Identifiable {
         case "toolResult":
             return DisplayComponent(message: message) != nil || CodingJob(message: message) != nil
         case "user":
+            // A coding job's report is behind its card; the bot relays what matters.
+            guard message.origin?.kind != CodingJob.originKind else { return false }
             return !message.text.isEmpty || !(message.attachments ?? []).isEmpty
         case "event":
             return !message.text.isEmpty
