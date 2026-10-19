@@ -24,6 +24,23 @@ extension APIClientTests {
         #expect(model.agentDraft?.name == "Newer draft")
     }
 
+    @MainActor @Test func profileEditKeepsToolsTheEditorDoesNotManage() async throws {
+        nonisolated(unsafe) var sentTools: [String]?
+        let model = AppModel(
+            client: StubProtocol.client { request in
+                guard request.httpMethod == "PATCH" else { return (404, "") }
+                let body = try? JSONSerialization.jsonObject(with: request.httpBody ?? Data()) as? [String: Any]
+                sentTools = body?["tools"] as? [String]
+                return (200, #"{"id":"a1","name":"After","enabled":true,"tools":["memory","coding"]}"#)
+            })
+        model.agents = [Agent(id: "a1", name: "Before", tools: ["memory", "coding"])]
+        model.openEditor(agentID: "a1")
+        model.agentDraft?.name = "After"
+        model.saveAgentEditor()
+        for _ in 0..<100 where model.loading { try await Task.sleep(for: .milliseconds(10)) }
+        #expect(sentTools == ["memory", "coding"])
+    }
+
     @MainActor @Test func agentCreationUsesProvisionalRowWithoutStealingNavigation() async throws {
         let model = AppModel(
             client: StubProtocol.client { request in

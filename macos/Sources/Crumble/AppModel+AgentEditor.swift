@@ -114,6 +114,10 @@ extension AppModel {
         if draft.toolsDelegate { tools.append("delegate") }
         if draft.toolsSchedule { tools.append("schedule") }
         if draft.toolsCodemode { tools.append("codemode") }
+        // Capabilities without a toggle here, such as coding, were set elsewhere; saving must not drop them.
+        let toggled: Set = ["memory", "delegate", "schedule", "codemode"]
+        let stored = agents.first { $0.id == draft.agentID }?.tools ?? []
+        tools += stored.filter { !toggled.contains($0) }
         if draft.skills.contains(where: {
             $0.name.trimmingCharacters(in: .whitespaces).isEmpty
                 || $0.instructions.trimmingCharacters(in: .whitespaces).isEmpty
