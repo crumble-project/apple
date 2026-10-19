@@ -2,11 +2,12 @@
 
 The build script creates a local ad hoc app by default. A provisioned build
 requires an Apple Developer account, a signing identity, and a provisioning
-profile for `dev.crumble.desktop`.
+profile for the app's bundle ID: `ng.crumbli.mac`, or `ng.crumbli.mac.dev` for
+a build with `CRUMBLE_VARIANT=dev`.
 
 ## Create the Apple identifiers
 
-1. Create an App ID with the bundle ID `dev.crumble.desktop` in [Certificates,
+1. Create an App ID with the bundle ID `ng.crumbli.mac` in [Certificates,
    Identifiers and Profiles](https://developer.apple.com/account/resources/).
 2. Enable Push Notifications for the App ID.
 3. Create a macOS development provisioning profile and an Apple Development

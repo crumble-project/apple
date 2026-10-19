@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Use the `ng.crumbli.mac` bundle ID, and build a separate `Crumble Dev.app` (`ng.crumbli.mac.dev`) with `CRUMBLE_VARIANT=dev`. Keychain items and the sign-in callback follow the bundle ID, so `swift run` and dev builds no longer overwrite the installed app's connection. Saved connections from `dev.crumble.desktop` are not migrated; enter the server URL and token again.
 - Restyle the app after the GPUI client with native components: the system split view with a searchable sidebar list, toolbar buttons for a new agent and the details inspector, and a centered transcript column under a dithered arch in the bot's color. Bot bubbles are gray and owner bubbles use the accent color, with reply and copy on hover and reactions in glass badges at the message corner; the glass composer has a send button. The inspector shows the live avatar, routines with switches that pause and resume them, memories, and the model, and opens the profile editor.
 - Show a bot's emoji reaction under the message it answers, instead of an empty reply.
 - Render visuals a bot shows with its `show` tool inline in chat: headline numbers, tables, and compiled charts drawn natively with hover tooltips, in light and dark appearance. Render Markdown tables in replies.

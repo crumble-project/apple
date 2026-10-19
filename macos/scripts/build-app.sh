@@ -3,12 +3,18 @@
 #
 # The default is an ad hoc local build. Set all three CRUMBLE_SIGNING_IDENTITY,
 # CRUMBLE_PROVISIONING_PROFILE, and CRUMBLE_PUSH_ENVIRONMENT variables to make
-# a provisioned APNs build.
+# a provisioned APNs build. Set CRUMBLE_VARIANT=dev to build Crumble Dev.app,
+# which has its own bundle ID and so its own Keychain items and settings.
 set -eu
 cd "$(dirname "$0")/.."
 configuration="${1:-release}"
 output_root="${CRUMBLE_APP_OUTPUT:-build}"
-app="$output_root/Crumble.app"
+case "${CRUMBLE_VARIANT:-production}" in
+	production) bundle_id="ng.crumbli.mac"; app_name="Crumble" ;;
+	dev) bundle_id="ng.crumbli.mac.dev"; app_name="Crumble Dev" ;;
+	*) echo "CRUMBLE_VARIANT must be production or dev." >&2; exit 2 ;;
+esac
+app="$output_root/$app_name.app"
 signing_identity="${CRUMBLE_SIGNING_IDENTITY:-}"
 provisioning_profile="${CRUMBLE_PROVISIONING_PROFILE:-}"
 push_environment="${CRUMBLE_PUSH_ENVIRONMENT:-}"
@@ -40,8 +46,8 @@ if [ -n "$signing_identity" ] || [ -n "$provisioning_profile" ] || [ -n "$push_e
 	profile_team_identifier="$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:com.apple.developer.team-identifier' "$profile_plist" 2>/dev/null || true)"
 	profile_aps_environment="$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:com.apple.developer.aps-environment' "$profile_plist" 2>/dev/null || true)"
 	case "$profile_application_id" in
-		*.dev.crumble.desktop) ;;
-		*) echo "Provisioning profile application ID must end in .dev.crumble.desktop (found: ${profile_application_id:-missing})." >&2; exit 2 ;;
+		*."$bundle_id") ;;
+		*) echo "Provisioning profile application ID must end in .$bundle_id (found: ${profile_application_id:-missing})." >&2; exit 2 ;;
 	esac
 	if [ "$profile_aps_environment" != "$push_environment" ]; then
 		echo "Provisioning profile APNs environment must be $push_environment (found: ${profile_aps_environment:-missing})." >&2
@@ -80,8 +86,8 @@ cat > "$app/Contents/Info.plist" <<PLIST
 <dict>
 	<key>CFBundleExecutable</key><string>Crumble</string>
 	<key>CFBundleIconFile</key><string>AppIcon</string>
-	<key>CFBundleIdentifier</key><string>dev.crumble.desktop</string>
-	<key>CFBundleName</key><string>Crumble</string>
+	<key>CFBundleIdentifier</key><string>$bundle_id</string>
+	<key>CFBundleName</key><string>$app_name</string>
 	<key>CFBundlePackageType</key><string>APPL</string>
 	<key>CFBundleShortVersionString</key><string>0.1.0</string>
 	<key>CFBundleVersion</key><string>1</string>

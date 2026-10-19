@@ -209,7 +209,7 @@ struct LogicTests {
     }
 
     @Test func signInCallbacksCarryACodeOrAReason() throws {
-        let callback = "dev.crumble.desktop:/oauth/callback"
+        let callback = AppIdentity.bundleID + ":/oauth/callback"
         let result = try oauthResult(from: #require(URL(string: callback + "?code=abc&state=xyz")))
         #expect(result.code == "abc" && result.state == "xyz" && result.iss == nil)
         let issuedURL = try #require(

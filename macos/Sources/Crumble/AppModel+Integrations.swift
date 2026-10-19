@@ -98,7 +98,7 @@ extension AppModel {
     }
 
     /// Where the system sign-in sheet returns; the sheet watches this scheme, so nothing registers it.
-    static let oauthCallbackScheme = "dev.crumble.desktop"
+    static let oauthCallbackScheme = AppIdentity.bundleID
     static let oauthRedirectURI = oauthCallbackScheme + ":/oauth/callback"
 
     /// Signs in to an OAuth MCP server: the server prepares the request, the system sheet shows the

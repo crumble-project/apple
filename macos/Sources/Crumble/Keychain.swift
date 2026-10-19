@@ -1,9 +1,9 @@
 import Foundation
 import Security
 
-/// Generic passwords under the service the Go client used, so a saved connection carries over.
+/// Generic passwords under the app's bundle ID.
 enum Keychain {
-    static let service = "dev.crumble.desktop"
+    static let service = AppIdentity.bundleID
 
     private static func query(_ account: String) -> [String: Any] {
         [

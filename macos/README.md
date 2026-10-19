@@ -32,7 +32,7 @@ The app uses `http://127.0.0.1:7337` by default. Configure a different server wi
 CRUMBLE_URL="http://127.0.0.1:7338" CRUMBLE_TOKEN="REPLACE_WITH_A_SERVER_TOKEN" swift run Crumble
 ```
 
-`CRUMBLE_TOKEN` must be treated as a secret. When you save connection settings, the app stores the server URL and token in the macOS Keychain under the `dev.crumble.desktop` service.
+`CRUMBLE_TOKEN` must be treated as a secret. When you save connection settings, the app stores the server URL and token in the macOS Keychain under its bundle ID: `ng.crumbli.mac` for the installed app, and `ng.crumbli.mac.dev` for `swift run` and dev builds. Development never overwrites the installed app's connection.
 
 ## Tune bot avatars
 
@@ -83,6 +83,12 @@ Build `build/Crumble.app`, with the icon from `resources/icon.png`:
 ```
 
 The script signs the app ad hoc for local use. It is not notarized. Distribution requires a Developer ID signing identity and a separate notarization workflow.
+
+To install the app, copy `build/Crumble.app` to `/Applications`. For a development bundle that sits beside it with its own Keychain items, settings, and notifications, build `build/Crumble Dev.app`:
+
+```bash
+CRUMBLE_VARIANT=dev ./scripts/build-app.sh
+```
 
 ## Connect to a server
 
