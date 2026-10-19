@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Render visuals a bot shows with its `show` tool inline in chat: headline numbers, tables, and bar or line charts. Render Markdown tables in replies.
+- Render visuals a bot shows with its `show` tool inline in chat: headline numbers, tables, and compiled charts drawn natively with hover tooltips, in light and dark appearance. Render Markdown tables in replies.
 - Use apfelkern's shared bot chat delivery module, preserving optimistic sends, retries, and transcript confirmation. Keep transport timing tests in the app.
 
 - Paint bots with a dithered finish instead of a glossy one. The playground's **Finish** picker and `--finishes` sheet compare all finishes.

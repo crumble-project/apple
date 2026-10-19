@@ -1,5 +1,4 @@
 import apfelkern
-import Charts
 import SwiftUI
 
 /// A visual a bot showed inline with its `show` tool: headline numbers, a table, or a chart.
@@ -32,7 +31,7 @@ struct DisplayView: View {
         case .table(_, let columns, let rows):
             DisplayTable(columns: columns, rows: rows.map { $0.map(\.text) }, numeric: numericColumns(rows))
         case .chart(let chart):
-            DisplayChart(chart: chart)
+            ChartView(chart: chart)
         }
     }
 
@@ -79,16 +78,16 @@ private struct StatsView: View {
 
     private func symbol(_ trend: DisplayComponent.Trend?) -> String {
         switch trend {
-        case .up: "arrow.up.right"
-        case .down: "arrow.down.right"
+        case .rising: "arrow.up.right"
+        case .falling: "arrow.down.right"
         case .flat, nil: "arrow.right"
         }
     }
 
     private func color(_ trend: DisplayComponent.Trend?) -> Color {
         switch trend {
-        case .up: .green
-        case .down: .red
+        case .rising: .green
+        case .falling: .red
         case .flat, nil: .secondary
         }
     }
@@ -127,41 +126,5 @@ struct DisplayTable: View {
 
     private func cell(_ text: String) -> AttributedString {
         markdown ? inlineMarkdown(text) : AttributedString(text)
-    }
-}
-
-private struct DisplayChart: View {
-    let chart: DisplayComponent.Chart
-
-    private struct Point: Identifiable {
-        var id: String { series + "\u{0}" + label }
-        let series: String
-        let label: String
-        let value: Double
-    }
-
-    private var points: [Point] {
-        chart.series.flatMap { series in
-            zip(chart.labels, series.values).map { Point(series: series.name, label: $0, value: $1) }
-        }
-    }
-
-    var body: some View {
-        Chart(points) { point in
-            switch chart.chart {
-            case .bar:
-                BarMark(x: .value("Label", point.label), y: .value(chart.unit ?? "Value", point.value))
-                    .foregroundStyle(by: .value("Series", point.series))
-                    .position(by: .value("Series", point.series))
-            case .line:
-                LineMark(x: .value("Label", point.label), y: .value(chart.unit ?? "Value", point.value))
-                    .foregroundStyle(by: .value("Series", point.series))
-                    .symbol(by: .value("Series", point.series))
-            }
-        }
-        .chartXScale(domain: chart.labels)
-        .chartLegend(chart.series.count > 1 ? .visible : .hidden)
-        .chartYAxisLabel(chart.unit ?? "")
-        .frame(minWidth: 280, minHeight: 180, idealHeight: 200)
     }
 }
