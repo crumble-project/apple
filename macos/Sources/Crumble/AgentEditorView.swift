@@ -14,7 +14,6 @@ struct AgentEditorView: View {
             Section {
                 TextField("Name", text: $draft.name, prompt: Text("Required"))
                 TextField("Description", text: $draft.description, prompt: Text("What it helps with"))
-                TextField("Folder", text: $draft.folder, prompt: Text("Personal"))
                 Toggle("Enabled", isOn: $draft.enabled)
             }
             modelSection

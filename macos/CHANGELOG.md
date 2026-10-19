@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Remove the unused **Folder** field from the bot profile editor.
 - Publish a Developer ID signed, notarized nightly build to the `nightly` pre-release. `build-app.sh` signs with `CRUMBLE_SIGNING_IDENTITY` alone, without push provisioning, and takes `CRUMBLE_VERSION` and `CRUMBLE_BUILD_NUMBER`. Fetch apfelkern over HTTPS, so builds need no SSH access.
 - Use the `ng.crumbli.mac` bundle ID, and build a separate `Crumble Dev.app` (`ng.crumbli.mac.dev`) with `CRUMBLE_VARIANT=dev`. Keychain items and the sign-in callback follow the bundle ID, so `swift run` and dev builds no longer overwrite the installed app's connection. Saved connections from `dev.crumble.desktop` are not migrated; enter the server URL and token again.
 - Restyle the app after the GPUI client with native components: the system split view with a searchable sidebar list, toolbar buttons for a new agent and the details inspector, and a centered transcript column under a dithered arch in the bot's color. Bot bubbles are gray and owner bubbles use the accent color, with reply and copy on hover and reactions in glass badges at the message corner; the glass composer has a send button. The inspector shows the live avatar, routines with switches that pause and resume them, memories, and the model, and opens the profile editor.
