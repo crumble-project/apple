@@ -21,8 +21,16 @@ public struct BotLook: Equatable, Sendable {
   public let hash: UInt64
   let mouth: BotMouth
   let topper: BotTopper
+  public var finish = BotFinish.glossy
 
-  public init(seed: String) {
+  /// The same bot with another finish.
+  init(_ look: BotLook, finish: BotFinish) {
+    self = look
+    self.finish = finish
+  }
+
+  public init(seed: String, finish: BotFinish = .glossy) {
+    self.finish = finish
     hash = seed.utf8.reduce(UInt64(1_469_598_103_934_665_603)) { ($0 ^ UInt64($1)) &* 1_099_511_628_211 }
     shape = BotShape.allCases[Int(hash % UInt64(BotShape.allCases.count))]
     hex = Self.palette[Int(hash % UInt64(Self.palette.count))]
@@ -213,6 +221,7 @@ public struct BotAvatarView: View {
   var live = false
   var reaction = 0
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.botFinish) private var finish
   @State private var pointer: CGPoint?
 
   public init(seed: String, size: CGFloat, state: BotState = .idle, live: Bool = false, reaction: Int = 0) {
@@ -224,7 +233,7 @@ public struct BotAvatarView: View {
   }
 
   public var body: some View {
-    let look = BotLook(seed: seed)
+    let look = BotLook(seed: seed, finish: finish)
     Group {
       if !live || reduceMotion {
         BotCanvas(look: look, size: size, pose: .rest, expression: state.expression)
@@ -276,6 +285,7 @@ public struct BotAvatarStill: View {
   let state: BotState
   let time: Double
   let attention: BotAttention
+  @Environment(\.botFinish) private var finish
 
   public init(seed: String, size: CGFloat, state: BotState, time: Double, pointer: CGPoint? = nil) {
     var attention = BotAttention()
@@ -294,7 +304,7 @@ public struct BotAvatarStill: View {
 
   public var body: some View {
     BotLiveFrame(
-      look: look, size: size, time: time, blend: BotBlend(state: state),
+      look: BotLook(look, finish: finish), size: size, time: time, blend: BotBlend(state: state),
       attention: attention, reactionTime: Date.distantPast.timeIntervalSinceReferenceDate)
   }
 }

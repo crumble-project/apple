@@ -288,7 +288,7 @@ enum BotSprites {
   }
 
   private static func image(_ look: BotLook, size: CGFloat, part: BotPart) -> CGImage? {
-    let key = "\(look.hash)-\(size)-\(scale)-\(part)" as NSString
+    let key = "\(look.hash)-\(look.finish)-\(size)-\(scale)-\(part)" as NSString
     if let cached = cache.object(forKey: key) { return cached }
     let renderer = ImageRenderer(content: BotPartCanvas(look: look, size: size, part: part))
     renderer.scale = scale

@@ -90,7 +90,7 @@ private struct BotLayout {
   }
 }
 
-private struct BotPainter {
+struct BotPainter {
   // swiftlint:disable:previous type_body_length
   let look: BotLook
   let size: CGFloat
@@ -171,26 +171,11 @@ private struct BotPainter {
   }
 
   private func paintBody(_ context: inout GraphicsContext, _ body: Path, _ bounds: CGRect) {
-    context.fill(
-      body,
-      with: .linearGradient(
-        Gradient(colors: [look.tint(0.22), look.color, look.tint(-0.16)]),
-        startPoint: CGPoint(x: bounds.minX, y: bounds.minY), endPoint: CGPoint(x: bounds.maxX, y: bounds.maxY)))
+    paintSurface(&context, body, bounds)
     var inside = context
     inside.clip(to: body)
-      let sheen = CGRect(
-        x: bounds.minX + bounds.width * 0.08, y: bounds.minY + bounds.height * 0.02,
-        width: bounds.width * 0.55, height: bounds.height * 0.42)
-      inside.fill(
-        Path(ellipseIn: sheen),
-        with: .radialGradient(
-          Gradient(colors: [.white.opacity(0.42), .white.opacity(0)]),
-          center: CGPoint(x: sheen.midX, y: sheen.midY), startRadius: 0, endRadius: sheen.width / 2))
-      inside.stroke(
-        body.offsetBy(dx: -size * 0.02, dy: -size * 0.03), with: .color(look.tint(-0.3).opacity(0.28)),
-        lineWidth: size * 0.05)
     if detailed { paintCheeks(&inside) }
-    context.stroke(body, with: .color(look.tint(-0.45).opacity(0.3)), lineWidth: max(0.6, size * 0.01))
+    paintRim(&context, body)
   }
 
   // MARK: Face
@@ -356,7 +341,7 @@ private struct BotPainter {
     }
     context.fill(
       ball,
-      with: .radialGradient(
+      with: look.finish != .glossy ? .color(look.tint(0.4 + 0.3 * glow)) : .radialGradient(
         Gradient(colors: [.white, look.tint(0.45 + 0.3 * glow), look.tint(0.1)]),
         center: CGPoint(x: tip.x - radius * 0.35, y: tip.y - radius * 0.35), startRadius: 0,
         endRadius: radius * 1.4))
