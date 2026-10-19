@@ -17,7 +17,9 @@ public enum DisplayComponent: Decodable, Hashable, Sendable {
   }
 
   public enum Trend: String, Decodable, Hashable, Sendable {
-    case up, down, flat
+    case rising = "up"
+    case falling = "down"
+    case flat
   }
 
   public enum Cell: Decodable, Hashable, Sendable {
@@ -41,21 +43,16 @@ public enum DisplayComponent: Decodable, Hashable, Sendable {
     }
   }
 
+  /// A TanStack chart the bot server compiled into flat drawing primitives at a few widths.
   public struct Chart: Decodable, Hashable, Sendable {
-    public enum Style: String, Decodable, Hashable, Sendable {
-      case bar, line
-    }
-
-    public struct Series: Decodable, Hashable, Sendable {
-      public var name: String
-      public var values: [Double]
-    }
-
     public var title: String?
-    public var chart: Style
-    public var unit: String?
-    public var labels: [String]
-    public var series: [Series]
+    public var layouts: [ChartLayout]
+
+    /// The widest layout that fits, so text keeps its size; narrower space scales the narrowest one down.
+    public func layout(fitting width: Double) -> ChartLayout? {
+      layouts.filter { $0.width <= width }.max { $0.width < $1.width }
+        ?? layouts.min { $0.width < $1.width }
+    }
   }
 
   private enum CodingKeys: String, CodingKey {
