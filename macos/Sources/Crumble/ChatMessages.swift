@@ -35,6 +35,11 @@ struct MessageView: View {
                     DisplayView(component: component)
                     Spacer(minLength: 56)
                 }
+            } else if let job = CodingJob(message: message) {
+                HStack {
+                    CodingJobCard(job: model.codingJob(job))
+                    Spacer(minLength: 56)
+                }
             }
         default:
             receivedMessage
@@ -104,6 +109,18 @@ struct MessageView: View {
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 4)
+            } else if message.origin?.kind == CodingJob.originKind, let name = message.origin?.name, !name.isEmpty {
+                Button {
+                    model.openCodingJob(name)
+                } label: {
+                    Label(messageLabel(message), systemImage: "hammer.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 4)
+                .help("Open coding job")
+                .accessibilityHint("Opens the coding job")
             } else {
                 Text(messageLabel(message)).font(.system(size: 12)).foregroundStyle(.secondary).padding(.horizontal, 4)
             }

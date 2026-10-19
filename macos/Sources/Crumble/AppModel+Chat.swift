@@ -12,6 +12,7 @@ extension AppModel {
             return { [self] in
                 guard mutationRevision == revision, pendingMutations.isEmpty else { return }
                 self.agents = agents
+                loadCapabilities()
                 var chosen = selectedAgentID
                 if !agents.contains(where: { $0.id == chosen }) { chosen = agents.first?.id ?? "" }
                 if chosen.isEmpty {
@@ -50,6 +51,9 @@ extension AppModel {
         oldestEntryID = ""
         loadingOlder = false
         replyTo = nil
+        codingJobs = [:]
+        codingActivity = 0
+        codingJobHistory = nil
         draft = ""
         attachments = []
         failedDraft = ""
@@ -93,6 +97,7 @@ extension AppModel {
         let local = delivery.messages(botID: selectedAgentID)
         messages = mergeMessages(messages.filter { $0.deliveryState == .confirmed }, incomingMessages)
         messages.append(contentsOf: local)
+        refreshCodingJobsIfChanged()
         var snapshot = incoming
         snapshot.messages = nil
         self.snapshot = snapshot

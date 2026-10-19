@@ -31,6 +31,7 @@ extension AppModel {
         draft.toolsDelegate = tools.contains("delegate")
         draft.toolsSchedule = tools.contains("schedule")
         draft.toolsCodemode = tools.contains("codemode")
+        draft.toolsCoding = tools.contains("coding")
         draft.skills = agent.skills ?? []
         draft.sharedSkills = Set(agent.sharedSkills ?? [])
         draft.sharedMemory = agent.sharedMemory ?? false
@@ -114,8 +115,9 @@ extension AppModel {
         if draft.toolsDelegate { tools.append("delegate") }
         if draft.toolsSchedule { tools.append("schedule") }
         if draft.toolsCodemode { tools.append("codemode") }
-        // Capabilities without a toggle here, such as coding, were set elsewhere; saving must not drop them.
-        let toggled: Set = ["memory", "delegate", "schedule", "codemode"]
+        if draft.toolsCoding { tools.append("coding") }
+        // Capabilities without a toggle here were set elsewhere; saving must not drop them.
+        let toggled: Set = ["memory", "delegate", "schedule", "codemode", "coding"]
         let stored = agents.first { $0.id == draft.agentID }?.tools ?? []
         tools += stored.filter { !toggled.contains($0) }
         if draft.skills.contains(where: {

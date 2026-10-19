@@ -151,6 +151,9 @@ struct AgentEditorView: View {
                 }
             }
             Toggle("Code mode", isOn: $draft.toolsCodemode)
+            if model.offersCoding(for: draft) {
+                Toggle("Coding", isOn: $draft.toolsCoding)
+            }
         } header: {
             Text("Capabilities")
         } footer: {
@@ -166,6 +169,10 @@ struct AgentEditorView: View {
                 """
             )
             .foregroundStyle(.secondary)
+            if model.offersCoding(for: draft) {
+                Text("Coding lets the agent start coding jobs that read, write, and run code in its workspace.")
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 

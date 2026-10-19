@@ -47,7 +47,7 @@ enum ChatRow: Identifiable {
     static func shownInChat(_ message: Message) -> Bool {
         switch message.role {
         case "toolResult":
-            return DisplayComponent(message: message) != nil
+            return DisplayComponent(message: message) != nil || CodingJob(message: message) != nil
         case "user":
             return !message.text.isEmpty || !(message.attachments ?? []).isEmpty
         case "event":

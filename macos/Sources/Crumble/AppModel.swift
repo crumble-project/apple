@@ -29,6 +29,12 @@ final class AppModel {
     var oldestEntryID = ""
     var loadingOlder = false
     var expanded: Set<String> = []
+    /// Nil until the server answers; the editor offers only what the server can run.
+    var capabilities: ServerCapabilities?
+    /// The selected bot's coding jobs by name, refreshed when the chat shows job activity.
+    var codingJobs: [String: CodingJob] = [:]
+    var codingActivity = 0
+    var codingJobHistory: CodingJobHistory?
 
     var draft = ""
     var attachments: [PendingAttachment] = []
@@ -221,6 +227,10 @@ extension AppModel {
         mcpServers = []
         providers = []
         models = []
+        capabilities = nil
+        codingJobs = [:]
+        codingActivity = 0
+        codingJobHistory = nil
         signingIn = nil
         agentDraft = nil
         memoryDraft = nil

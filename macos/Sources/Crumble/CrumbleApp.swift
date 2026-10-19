@@ -62,6 +62,7 @@ struct ContentView: View {
             PushNotifications.shared.openMainWindow = { openWindow(id: "main") }
         }
         .sheet(item: $model.agentDraft) { AgentEditorView(draft: sheetBinding($model.agentDraft, for: $0)) }
+        .sheet(item: $model.codingJobHistory) { CodingJobSheet(job: $0) }
     }
 
     @ViewBuilder private var detail: some View {
