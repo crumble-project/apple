@@ -3,7 +3,7 @@ import Security
 
 /// Generic passwords stored in the iOS app's own keychain access group.
 enum Keychain {
-  static let service = "dev.crumble.ios"
+  static let service = AppIdentity.bundleID
 
   private static func query(_ account: String) -> [String: Any] {
     [

@@ -158,9 +158,8 @@ struct APIClientTests {
     let start = try await client.startMCPSignIn("s1", redirectURI: AppModel.oauthRedirectURI)
     #expect(start.authorizationUrl?.hasPrefix("https://auth.example.com/") == true)
     let sent = try #require(String(data: StubProtocol.requests.last?.httpBody ?? Data(), encoding: .utf8))
-    #expect(
-      sent.contains("dev.crumble.ios:\\/oauth\\/callback")
-        || sent.contains("dev.crumble.ios:/oauth/callback"))
+    let scheme = AppIdentity.bundleID
+    #expect(sent.contains(scheme + ":\\/oauth\\/callback") || sent.contains(scheme + ":/oauth/callback"))
     let server = try await client.finishMCPSignIn(
       "s1", code: "c", state: "x", iss: "https://auth.example.com")
     #expect(server.auth == "oauth")

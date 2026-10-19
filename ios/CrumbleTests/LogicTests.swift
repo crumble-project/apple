@@ -201,23 +201,23 @@ struct LogicTests {
 
   @Test func signInCallbacksCarryACodeOrAReason() throws {
     let result = try oauthResult(
-      from: URL(string: "dev.crumble.ios:/oauth/callback?code=abc&state=xyz")!)
+      from: URL(string: "ng.crumbli.ios:/oauth/callback?code=abc&state=xyz")!)
     #expect(result.code == "abc" && result.state == "xyz" && result.iss == nil)
     let issued = try oauthResult(
       from: URL(
         string:
-          "dev.crumble.ios:/oauth/callback?code=abc&state=xyz&iss=https%3A%2F%2Fexecutor.sh%2Fapi%2Fauth"
+          "ng.crumbli.ios:/oauth/callback?code=abc&state=xyz&iss=https%3A%2F%2Fexecutor.sh%2Fapi%2Fauth"
       )!)
     #expect(issued.iss == "https://executor.sh/api/auth")
     #expect(throws: SignInError.self) {
       try oauthResult(
         from: URL(
           string:
-            "dev.crumble.ios:/oauth/callback?error=access_denied&error_description=User%20declined")!
+            "ng.crumbli.ios:/oauth/callback?error=access_denied&error_description=User%20declined")!
       )
     }
     #expect(throws: SignInError.self) {
-      try oauthResult(from: URL(string: "dev.crumble.ios:/oauth/callback")!)
+      try oauthResult(from: URL(string: "ng.crumbli.ios:/oauth/callback")!)
     }
   }
 

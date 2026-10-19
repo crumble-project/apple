@@ -25,17 +25,17 @@ The iOS app uses `BotChatDelivery` from `apfelkern` to coordinate pending messag
 Open `Crumble.xcodeproj` in Xcode and select the **Crumble** scheme.
 Select an iPhone or iPad simulator, then run the app.
 For a physical device, select your team under **Signing & Capabilities** before running.
-The bundle identifier is `dev.crumble-project.ios`; change it if your signing account requires a unique identifier.
+Debug builds install as **Crumble Dev** (`ng.crumbli.ios.dev`) and Release builds as **Crumble** (`ng.crumbli.ios`), so both can sit on one device. Keychain items, the sign-in callback, and the push topic follow the bundle ID, so a development connection never replaces the installed app's.
 
 ## Configure push notifications
 
 Push notifications use Apple Push Notification service (APNs). You need an Apple Developer Program team with push access.
 
-1. Enable **Push Notifications** for the explicit App ID `dev.crumble-project.ios` in your Apple Developer account.
+1. Enable **Push Notifications** for the explicit App IDs `ng.crumbli.ios` and `ng.crumbli.ios.dev` in your Apple Developer account.
 2. Select the **Crumble** target and your team under **Signing & Capabilities**.
 3. Refresh the provisioning profile so it includes Push Notifications and `aps-environment`.
 4. Configure the server with `CRUMBLE_APNS_TEAM_ID`, `CRUMBLE_APNS_KEY_ID`, and `CRUMBLE_APNS_PRIVATE_KEY_PATH`.
-5. Add `dev.crumble-project.ios` to the server's `CRUMBLE_APNS_ALLOWED_TOPICS`.
+5. Add the bundle IDs the server should notify to its `CRUMBLE_APNS_ALLOWED_TOPICS`: `ng.crumbli.ios` in production, and `ng.crumbli.ios.dev` on a development server.
 6. Run the signed app, save your server connection, and allow notifications.
 
 A wildcard provisioning profile cannot provide push access. The project includes the Push Notifications capability and entitlement.
@@ -105,7 +105,7 @@ A forced quit or lost connection can leave that lease active briefly. Push deliv
 The app stops network streams in the background and refreshes content when you return or open an alert.
 It does not keep streams running through silent pushes. Unsent drafts stay in memory and do not survive app termination.
 
-OAuth uses an authentication browser session and the callback `dev.crumble.ios:/oauth/callback`.
+OAuth uses an authentication browser session and the callback `<bundle ID>:/oauth/callback`, for example `ng.crumbli.ios:/oauth/callback`.
 Your MCP provider must accept that redirect URI.
 
 ## Lint Swift code

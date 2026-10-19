@@ -112,8 +112,8 @@ extension AppModel {
     if route == .integrations, mcpDraft == nil { mcpDraft = form }
   }
 
-  /// Where the system sign-in sheet returns; the sheet watches this scheme, so nothing registers it.
-  static let oauthCallbackScheme = "dev.crumble.ios"
+  /// Where the system sign-in sheet returns. Info.plist registers the same bundle-ID scheme.
+  static let oauthCallbackScheme = AppIdentity.bundleID
   static let oauthRedirectURI = oauthCallbackScheme + ":/oauth/callback"
 
   /// Signs in to an OAuth MCP server: the server prepares the request, the system sheet shows the

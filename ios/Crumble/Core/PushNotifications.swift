@@ -110,7 +110,7 @@ final class PushController {
 
   init(
     defaults: UserDefaults = .standard, persistCredentials: Bool = true,
-    bundleID: String = Bundle.main.bundleIdentifier ?? "dev.crumble-project.ios",
+    bundleID: String = AppIdentity.bundleID,
     environment: String = Bundle.main.object(forInfoDictionaryKey: "CrumbleAPNSEnvironment") as? String
       ?? "development"
   ) {
