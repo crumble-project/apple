@@ -22,7 +22,6 @@ public struct AgentDraft: Identifiable, Sendable {
   public var agentID: String
   public var name = ""
   public var description = ""
-  public var folder = "Personal"
   public var enabled = true
   public var provider = "melious"
   public var model = ""
@@ -53,7 +52,6 @@ public struct AgentDraft: Identifiable, Sendable {
     agentID: String,
     name: String = "",
     description: String = "",
-    folder: String = "Personal",
     enabled: Bool = true,
     provider: String = "melious",
     model: String = "",
@@ -77,7 +75,6 @@ public struct AgentDraft: Identifiable, Sendable {
     self.agentID = agentID
     self.name = name
     self.description = description
-    self.folder = folder
     self.enabled = enabled
     self.provider = provider
     self.model = model

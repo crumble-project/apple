@@ -68,7 +68,6 @@ public struct Agent: Codable, Identifiable, Hashable, Sendable {
   public var enabled: Bool
   public var provider: String?
   public var model: String?
-  public var folder: String?
   public var tools: [String]?
   public var delegates: [String]?
   public var skills: [Skill]?
@@ -81,8 +80,7 @@ public struct Agent: Codable, Identifiable, Hashable, Sendable {
   public init(
     id: String = "", name: String = "", description: String? = nil, instructions: String? = nil,
     avatar: String? = nil,
-    enabled: Bool = true, provider: String? = nil, model: String? = nil, folder: String? = nil,
-    tools: [String]? = nil,
+    enabled: Bool = true, provider: String? = nil, model: String? = nil, tools: [String]? = nil,
     delegates: [String]? = nil, skills: [Skill]? = nil, sharedSkills: [String]? = nil,
     sharedMemory: Bool? = nil,
     mcpServers: [String]? = nil, inference: Inference? = nil, lastMessage: String? = nil
@@ -95,7 +93,6 @@ public struct Agent: Codable, Identifiable, Hashable, Sendable {
     self.enabled = enabled
     self.provider = provider
     self.model = model
-    self.folder = folder
     self.tools = tools
     self.delegates = delegates
     self.skills = skills
@@ -116,7 +113,6 @@ public struct Agent: Codable, Identifiable, Hashable, Sendable {
     enabled = try container.decodeIfPresent(Bool.self, forKey: .enabled) ?? false
     provider = try container.decodeIfPresent(String.self, forKey: .provider)
     model = try container.decodeIfPresent(String.self, forKey: .model)
-    folder = try container.decodeIfPresent(String.self, forKey: .folder)
     tools = try container.decodeIfPresent([String].self, forKey: .tools)
     delegates = try container.decodeIfPresent([String].self, forKey: .delegates)
     skills = try container.decodeIfPresent([Skill].self, forKey: .skills)
