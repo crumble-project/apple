@@ -123,6 +123,22 @@ public struct APIClient: Sendable {
     let suffix = query.isEmpty ? "" : "?" + query.joined(separator: "&")
     return try await call("GET", "/v1/agents/\(agentID)/chat/history" + suffix)
   }
+  public func capabilities() async throws -> ServerCapabilities {
+    try await call("GET", "/v1/capabilities")
+  }
+  public func codingJobs(_ agentID: String) async throws -> [CodingJob] {
+    let response: CodingJobsResponse = try await call("GET", "/v1/agents/\(agentID)/coding-jobs")
+    return response.jobs
+  }
+  public func codingJobHistory(_ agentID: String, name: String, before: String, limit: Int) async throws
+    -> ChatHistoryResponse {
+    var query: [String] = []
+    if !before.isEmpty { query.append("before=" + Self.escape(before)) }
+    if limit > 0 { query.append("limit=\(limit)") }
+    let suffix = query.isEmpty ? "" : "?" + query.joined(separator: "&")
+    return try await call(
+      "GET", "/v1/agents/\(agentID)/coding-jobs/\(Self.escape(name))/history" + suffix)
+  }
   public func sendChatMessage(
     _ agentID: String, content: String, requestID: String, replyTo: String,
     attachments: [OutgoingAttachment] = [], timezone: String = TimeZone.current.identifier

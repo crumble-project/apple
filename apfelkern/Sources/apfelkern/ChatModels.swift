@@ -65,6 +65,7 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
   public var createdAt: String?
   public var attachments: [AttachmentInfo]?
   public var toolName: String?
+  public var toolCallId: String?
   public var isError: Bool?
   /// Tool result details for UIs, such as a `show` tool's `DisplayComponent`.
   public var toolDetails: JSONValue?
@@ -77,7 +78,8 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
     blocks: JSONValue? = nil, kind: String? = nil,
     replyTo: String? = nil, replyPreview: String? = nil, origin: MessageOrigin? = nil,
     communication: BotCommunication? = nil, timestamp: Int64? = nil,
-    attachments: [AttachmentInfo]? = nil, toolName: String? = nil, isError: Bool? = nil,
+    attachments: [AttachmentInfo]? = nil, toolName: String? = nil, toolCallId: String? = nil,
+    isError: Bool? = nil,
     toolDetails: JSONValue? = nil, requestId: String? = nil,
     deliveryState: MessageDeliveryState = .confirmed
   ) {
@@ -94,6 +96,7 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
     self.timestamp = timestamp
     self.attachments = attachments
     self.toolName = toolName
+    self.toolCallId = toolCallId
     self.isError = isError
     self.toolDetails = toolDetails
     self.requestId = requestId
@@ -116,6 +119,7 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
     createdAt = try container.decodeIfPresent(String.self, forKey: .createdAt)
     attachments = try container.decodeIfPresent([AttachmentInfo].self, forKey: .attachments)
     toolName = try container.decodeIfPresent(String.self, forKey: .toolName)
+    toolCallId = try container.decodeIfPresent(String.self, forKey: .toolCallId)
     isError = try container.decodeIfPresent(Bool.self, forKey: .isError)
     toolDetails = try container.decodeIfPresent(JSONValue.self, forKey: .toolDetails)
     requestId = try container.decodeIfPresent(String.self, forKey: .requestId)

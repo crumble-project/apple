@@ -35,6 +35,7 @@ public struct AgentDraft: Identifiable, Sendable {
   public var toolsDelegate = false
   public var toolsSchedule = false
   public var toolsCodemode = false
+  public var toolsCoding = false
   public var sharedMemory = false
   public var delegates: Set<String> = []
   public var mcpServers: Set<String> = []
@@ -65,6 +66,7 @@ public struct AgentDraft: Identifiable, Sendable {
     toolsDelegate: Bool = false,
     toolsSchedule: Bool = false,
     toolsCodemode: Bool = false,
+    toolsCoding: Bool = false,
     sharedMemory: Bool = false,
     delegates: Set<String> = [],
     mcpServers: Set<String> = [],
@@ -88,6 +90,7 @@ public struct AgentDraft: Identifiable, Sendable {
     self.toolsDelegate = toolsDelegate
     self.toolsSchedule = toolsSchedule
     self.toolsCodemode = toolsCodemode
+    self.toolsCoding = toolsCoding
     self.sharedMemory = sharedMemory
     self.delegates = delegates
     self.mcpServers = mcpServers
