@@ -26,17 +26,19 @@ struct CrumbleApp: App {
                     model.followActivity()
                 }
         }
-        .defaultSize(width: 1120, height: 760)
+        .defaultSize(width: 1280, height: 820)
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("New Agent") { model.createAgent() }.keyboardShortcut("n")
             }
+            CommandGroup(replacing: .appSettings) { SettingsButton().keyboardShortcut(",") }
         }
 
-        Settings {
+        // A plain window rather than a Settings scene: those lay their toolbar out as a row of tabs
+        // under the title, which leaves a split view with an empty band across the top.
+        Window("Settings", id: SettingsButton.windowID) {
             SettingsView().environment(model).environment(\.botFinish, .dither)
         }
-        .windowToolbarStyle(.unifiedCompact)
         .windowResizability(.contentMinSize)
         .defaultSize(width: 800, height: 680)
     }
@@ -50,7 +52,7 @@ struct ContentView: View {
         @Bindable var model = model
         NavigationSplitView {
             SidebarView()
-                .navigationSplitViewColumnWidth(min: 260, ideal: 300, max: 380)
+                .navigationSplitViewColumnWidth(min: 240, ideal: 280, max: 360)
         } detail: {
             detail
                 .overlay(alignment: .top) { ErrorBanner() }
@@ -84,7 +86,6 @@ func sheetBinding<Draft: Identifiable & Sendable>(_ source: Binding<Draft?>, for
 
 struct SidebarView: View {
     @Environment(AppModel.self) private var model
-    @Environment(\.openSettings) private var openSettings
     @State private var search = ""
 
     private var filteredAgents: [Agent] {
@@ -95,31 +96,20 @@ struct SidebarView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-                TextField("Search", text: $search).textFieldStyle(.plain)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 9)
-            .glassEffect(.regular, in: .capsule)
-            .padding(12)
-
-            List(selection: Binding(get: { model.route }, set: { model.navigate(to: $0) })) {
-                ForEach(filteredAgents) { agent in
-                    agentRow(agent)
-                        .listRowSeparator(.hidden)
-                }
-            }
-            .listStyle(.sidebar)
-            .overlay {
-                if filteredAgents.isEmpty {
-                    Text(model.agents.isEmpty ? "No agents yet" : "No results")
-                        .foregroundStyle(.secondary)
-                }
+        List(selection: Binding(get: { model.route }, set: { model.navigate(to: $0) })) {
+            ForEach(filteredAgents) { agent in
+                AgentRow(agent: agent)
+                    .tag(Route.agent(agent.id))
+                    .disabled(model.pendingMutations.contains("agent:\(agent.id)"))
             }
         }
-        .tint(.blue)
+        .listStyle(.sidebar)
+        .searchable(text: $search, placement: .sidebar, prompt: "Search")
+        .overlay {
+            if filteredAgents.isEmpty {
+                Text(model.agents.isEmpty ? "No agents yet" : "No results").foregroundStyle(.secondary)
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button("New Agent", systemImage: "square.and.pencil") { model.createAgent() }
@@ -130,7 +120,7 @@ struct SidebarView: View {
             HStack {
                 if model.loading || !model.streamStatus.isEmpty { ConnectionStatus() }
                 Spacer(minLength: 0)
-                Button("Settings", systemImage: "gearshape") { openSettings() }
+                SettingsButton()
                     .labelStyle(.iconOnly)
                     .buttonStyle(.borderless)
                     .frame(width: 40, height: 40)
@@ -139,30 +129,52 @@ struct SidebarView: View {
             .padding(.horizontal, 8)
         }
     }
+}
 
-    private func agentRow(_ agent: Agent) -> some View {
-        HStack(spacing: 12) {
-            BotAvatarView(agent: agent, size: 44, state: model.botState(agent), live: true)
-            VStack(alignment: .leading, spacing: 4) {
+struct AgentRow: View {
+    @Environment(AppModel.self) private var model
+    let agent: Agent
+
+    /// A short description reads as a label beside the name; longer ones stay in the profile.
+    private var label: String? {
+        guard let description = agent.description?.nilIfEmpty, description.count <= 24 else { return nil }
+        return description
+    }
+
+    var body: some View {
+        HStack(spacing: 11) {
+            BotAvatarView(agent: agent, size: 38, state: model.botState(agent), live: true)
+            VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(agent.name)
-                        .font(.body.weight(.semibold))
+                        .foregroundStyle(agent.enabled ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
                         .lineLimit(1)
+                        .layoutPriority(1)
                     if !agent.enabled {
-                        Text("Paused").font(.caption).foregroundStyle(.secondary)
+                        chip("Paused")
+                    } else if let label {
+                        chip(label)
                     }
                 }
                 Text(preview(agent.lastMessage ?? "").nilIfEmpty ?? "No messages yet")
                     .font(.callout)
                     .foregroundStyle(.secondary)
-                    .lineLimit(2)
+                    .lineLimit(1)
             }
             Spacer(minLength: 0)
         }
-        .padding(.vertical, 14)
+        .padding(.vertical, 6)
         .contentShape(Rectangle())
-        .tag(Route.agent(agent.id))
-        .disabled(model.pendingMutations.contains("agent:\(agent.id)"))
+    }
+
+    private func chip(_ text: String) -> some View {
+        Text(text)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 1)
+            .background(.quaternary, in: .rect(cornerRadius: 5))
     }
 }
 
@@ -176,11 +188,9 @@ struct ConnectionStatus: View {
             } else { ("Connected", .green) }
         HStack(spacing: 6) {
             Circle().fill(color).frame(width: 7, height: 7)
-            Text(status).font(.caption).foregroundStyle(.secondary)
-            Spacer()
+            Text(status).font(.caption).foregroundStyle(.secondary).lineLimit(1)
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 10)
     }
 }
 
@@ -278,5 +288,15 @@ final class CrumbleAppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         if !flag { sender.windows.first { $0.title == "Crumble" }?.makeKeyAndOrderFront(nil) }
         return true
+    }
+}
+
+/// Opens the Settings window; the app menu's copy carries ⌘,.
+struct SettingsButton: View {
+    static let windowID = "settings"
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Button("Settings…", systemImage: "gearshape") { openWindow(id: Self.windowID) }
     }
 }

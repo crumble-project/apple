@@ -4,10 +4,9 @@ import SwiftUI
 extension View {
     /// The bubble a message sits in: the accent color for the owner, a quiet gray otherwise.
     func bubble(owner: Bool) -> some View {
-        padding(.horizontal, 14)
-            .padding(.vertical, 8)
+        padding(.horizontal, owner ? 14 : 15)
+            .padding(.vertical, owner ? 9 : 10)
             .foregroundStyle(owner ? AnyShapeStyle(.white) : AnyShapeStyle(.primary))
-            .background(
-                owner ? AnyShapeStyle(.tint) : AnyShapeStyle(Color.primary.opacity(0.07)), in: .rect(cornerRadius: 18))
+            .background(owner ? AnyShapeStyle(.tint) : AnyShapeStyle(Palette.bubble), in: .rect(cornerRadius: 18))
     }
 }

@@ -64,79 +64,71 @@ enum ChatRow: Identifiable {
     }
 }
 
+extension ChatRow {
+    /// Space above a row: tight between messages from the same side, roomier around times.
+    static func gap(after previous: ChatRow?, before row: ChatRow) -> CGFloat {
+        guard let previous else { return 0 }
+        switch (previous, row) {
+        case (_, .time): return 22
+        case (.time, _): return 12
+        case (.message(let above, _), .message(let below, _))
+        where above.role == below.role && (above.role == "user" || above.role == "assistant"):
+            return 6
+        default: return 14
+        }
+    }
+}
+
 struct ChatView: View {
     @Environment(AppModel.self) private var model
+    @AppStorage("showsDetails") private var showsDetails = true
     let agent: Agent
 
     var body: some View {
         let rows = ChatRow.rows(messages: model.messages, snapshot: model.snapshot, hasMore: model.hasMore)
         ScrollView {
-            LazyVStack(spacing: 10) {
-                ForEach(rows) { row in
+            LazyVStack(spacing: 0) {
+                ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
                     ChatRowView(agent: agent, row: row)
+                        .padding(.top, ChatRow.gap(after: index > 0 ? rows[index - 1] : nil, before: row))
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
+            .frame(maxWidth: Palette.column)
+            .padding(.horizontal, 28)
+            .padding(.vertical, 20)
+            .frame(maxWidth: .infinity)
         }
         .defaultScrollAnchor(.bottom)
         .defaultScrollAnchor(.bottom, for: .sizeChanges)
+        .scrollEdgeEffectStyle(.soft, for: .all)
         .overlay {
             if rows.isEmpty { EmptyChatView(agent: agent) }
         }
-        .safeAreaInset(edge: .bottom) {
+        .background(alignment: .top) {
+            DitherGlow(color: agent.color).frame(height: 150).ignoresSafeArea(edges: .top)
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
             if model.snapshot != nil { Composer(agent: agent) }
         }
-        .safeAreaInset(edge: .top, spacing: 0) {
-            Button {
-                model.openEditor()
-            } label: {
-                headerTitle
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Open \(agent.name) profile")
-            .accessibilityHint("Shows the agent profile")
-            .accessibilityValue(subtitle)
-            .help("Agent Profile")
-            .frame(maxWidth: .infinity)
-            .padding(.top, 8)
-            .padding(.bottom, 14)
-        }
-        .ignoresSafeArea(.container, edges: .top)
-        .background(.background)
-        .tint(.blue)
         .navigationTitle(agent.name)
         .toolbar(removing: .title)
-        .toolbarBackground(.hidden, for: .windowToolbar)
-    }
-
-    private var subtitle: String {
-        if !agent.enabled { return "Paused" }
-        if model.snapshot?.isRunning == true { return "Working…" }
-        return agent.description?.nilIfEmpty ?? agent.model ?? ""
-    }
-
-    @ViewBuilder private var headerTitle: some View {
-        VStack(spacing: 4) {
-            BotAvatarView(agent: agent, size: 40, state: model.botState(agent), live: true)
-                .accessibilityHidden(true)
-            HStack(spacing: 5) {
-                Text(agent.name)
-                    .font(.system(size: 13, weight: .semibold))
-                    .lineLimit(1)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 4)
-            .glassEffect(.regular.interactive(), in: .capsule)
-            if !agent.enabled || model.snapshot?.isRunning == true {
-                Text(subtitle).font(.caption).foregroundStyle(.secondary)
+        .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+        .toolbar {
+            // With the title removed nothing pushes the button to the trailing edge.
+            ToolbarSpacer(.flexible)
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    showsDetails.toggle()
+                } label: {
+                    Label("Details", systemImage: "sidebar.trailing")
+                }
+                .help(showsDetails ? "Hide Details" : "Show Details")
             }
         }
-        .frame(maxWidth: 340)
-        .contentShape(Rectangle())
+        .inspector(isPresented: $showsDetails) {
+            DetailsPanel(agent: agent)
+                .inspectorColumnWidth(min: 260, ideal: 300, max: 400)
+        }
     }
 }
 
@@ -148,13 +140,13 @@ struct EmptyChatView: View {
         if model.snapshot == nil {
             ProgressView()
         } else {
-            VStack(spacing: 10) {
-                BotAvatarView(agent: agent, size: 96, state: model.botState(agent), live: true)
-                Text(agent.name).font(.title2.bold())
+            VStack(spacing: 4) {
+                Text("Say hello to \(agent.name)").font(.system(size: 15, weight: .medium))
                 Text(
                     agent.description?.nilIfEmpty
-                        ?? "Send a message to start. Your agent keeps its work and memory between visits."
+                        ?? "It keeps its memory and work between visits."
                 )
+                .font(.system(size: 13))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 420)
@@ -166,7 +158,7 @@ struct EmptyChatView: View {
 
 struct ChatRowView: View {
     @Environment(AppModel.self) private var model
-    @Environment(\.openSettings) private var openSettings
+    @Environment(\.openWindow) private var openWindow
     let agent: Agent
     let row: ChatRow
 
@@ -177,30 +169,58 @@ struct ChatRowView: View {
                 ProgressView().controlSize(.small)
             } else {
                 Button("Load Earlier Messages") { model.loadOlder() }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 12.5))
+                    .foregroundStyle(.secondary)
             }
         case .time(_, let label):
-            Text(label).font(.caption).foregroundStyle(.secondary).padding(.top, 6)
+            Text(label).font(.system(size: 12)).foregroundStyle(.secondary).frame(maxWidth: .infinity)
         case .message(let message, let reactions):
             MessageView(message: message, reactions: reactions)
         case .thinking:
-            HStack(spacing: 8) {
-                BotAvatarView(agent: agent, size: 24, state: .working, live: true)
-                Text("Working…").font(.callout).foregroundStyle(.secondary)
+            HStack {
+                TypingDots()
+                    .padding(.horizontal, 15)
+                    .padding(.vertical, 14)
+                    .background(Palette.bubble, in: .rect(cornerRadius: 18))
                 Spacer()
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("Working…")
         case .failure(let error):
             HStack {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("The agent couldn’t finish").font(.headline)
-                    Text(error).font(.callout).foregroundStyle(.red).textSelection(.enabled)
-                    Button("Provider Settings…") { openSettings() }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("The agent couldn’t finish").font(.system(size: 14, weight: .medium))
+                    Text(error).font(.system(size: 13)).foregroundStyle(.red).textSelection(.enabled)
+                    Button("Provider Settings…") { openWindow(id: SettingsButton.windowID) }.padding(.top, 4)
                 }
-                .padding(14)
-                .background(.red.opacity(0.08), in: .rect(cornerRadius: 12))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 11)
+                .background(.red.opacity(0.06), in: .rect(cornerRadius: 14))
+                .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(.red.opacity(0.2)))
                 .frame(maxWidth: 560, alignment: .leading)
                 Spacer(minLength: 0)
+            }
+        }
+    }
+}
+
+/// Three dots that rise in turn while a bot works on a reply.
+struct TypingDots: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1 / 30, paused: reduceMotion)) { context in
+            let time = context.date.timeIntervalSinceReferenceDate
+            HStack(spacing: 4) {
+                ForEach(0..<3, id: \.self) { index in
+                    let phase = (time / 1.2 * 3 - Double(index) * 0.45).truncatingRemainder(dividingBy: 3)
+                    let lift = phase >= 0 && phase < 1 ? sin(phase * .pi) : 0
+                    Circle()
+                        .fill(.secondary)
+                        .frame(width: 7, height: 7)
+                        .opacity(reduceMotion ? 0.6 : 0.35 + 0.65 * lift)
+                }
             }
         }
     }

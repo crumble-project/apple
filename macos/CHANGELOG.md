@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Restyle the app after the GPUI client with native components: the system split view with a searchable sidebar list, toolbar buttons for a new agent and the details inspector, and a centered transcript column under a dithered arch in the bot's color. Bot bubbles are gray and owner bubbles use the accent color, with reply and copy on hover and reactions in glass badges at the message corner; the glass composer has a send button. The inspector shows the live avatar, routines with switches that pause and resume them, memories, and the model, and opens the profile editor.
 - Show a bot's emoji reaction under the message it answers, instead of an empty reply.
 - Render visuals a bot shows with its `show` tool inline in chat: headline numbers, tables, and compiled charts drawn natively with hover tooltips, in light and dark appearance. Render Markdown tables in replies.
 - Use apfelkern's shared bot chat delivery module, preserving optimistic sends, retries, and transcript confirmation. Keep transport timing tests in the app.
@@ -11,7 +12,7 @@
 
 - Blend live avatar poses and expressions across idle, working, and sleeping states. Add occasional stretches, individual movement rhythms, fading sleep symbols, click greetings in the playground, and shuffle transitions. Respect Reduce Motion.
 
-- Use a compact Settings toolbar and a resizable window with a bounded General form. Position the chat profile header near the window's top edge.
+- Open Settings (⌘, or the sidebar's gear) in a regular resizable window, so its toolbar shares the title row instead of leaving an empty band above the content, with a bounded General form. Position the chat profile header near the window's top edge.
 
 - Move bot avatars into apfelkern's `BotAvatar` library, shared with the iOS app.
 - Play live avatars with Core Animation: each part is drawn once and each state loops as keyframes in the render server, so animating avatars use almost no app CPU (24 live avatars went from about 17% to under 0.3%).

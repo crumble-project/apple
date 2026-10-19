@@ -18,8 +18,10 @@ struct Composer: View {
             replyPreview
             inputRow
         }
-        .padding(.horizontal, 12)
-        .padding(.bottom, 12)
+        .frame(maxWidth: Palette.column)
+        .padding(.horizontal, 28)
+        .padding(.bottom, 16)
+        .frame(maxWidth: .infinity)
         .onAppear { focused = true }
         .fileImporter(
             isPresented: $importing, allowedContentTypes: [.image, .text, .sourceCode, .json, .xml],
@@ -60,7 +62,32 @@ struct Composer: View {
             if model.snapshot?.isRunning == true {
                 stopButton
             }
+            if model.snapshot?.isRunning != true || canSend {
+                sendButton
+            }
         }
+    }
+
+    private var canSend: Bool {
+        agent.enabled
+            && (!model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !model.attachments.isEmpty)
+    }
+
+    private var sendButton: some View {
+        Button {
+            model.sendMessage()
+        } label: {
+            Image(systemName: "arrow.up")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(canSend ? AnyShapeStyle(.white) : AnyShapeStyle(.tertiary))
+                .frame(width: Composer.height, height: Composer.height)
+                .contentShape(.circle)
+        }
+        .buttonStyle(.plain)
+        .composerGlass(canSend ? .regular.tint(.accentColor).interactive() : .regular, in: .circle)
+        .disabled(!canSend)
+        .accessibilityLabel("Send")
+        .help("Send (Return)")
     }
 
     private var attachButton: some View {
@@ -74,7 +101,7 @@ struct Composer: View {
                 .contentShape(.circle)
         }
         .buttonStyle(.plain)
-        .glassEffect(.regular.interactive(), in: .circle)
+        .composerGlass(.regular.interactive(), in: .circle)
         .disabled(!agent.enabled)
         .accessibilityLabel("Attach Files")
         .help("Attach images or text files")
@@ -89,7 +116,7 @@ struct Composer: View {
         .padding(.trailing, 14)
         .padding(.vertical, 4)
         .frame(minHeight: Composer.height)
-        .glassEffect(.regular, in: .rect(cornerRadius: Composer.height / 2))
+        .composerGlass(.regular, in: .rect(cornerRadius: Composer.height / 2))
     }
 
     @ViewBuilder private var pendingAttachments: some View {
@@ -112,6 +139,7 @@ struct Composer: View {
             text: $model.draft, selection: $selection, axis: .vertical
         )
         .textFieldStyle(.plain)
+        .font(Palette.messageFont)
         .lineLimit(1...8)
         .focused($focused)
         .disabled(!agent.enabled)
@@ -163,7 +191,7 @@ struct Composer: View {
                 .contentShape(.circle)
         }
         .buttonStyle(.plain)
-        .glassEffect(.regular.interactive(), in: .circle)
+        .composerGlass(.regular.interactive(), in: .circle)
         .accessibilityLabel("Stop")
         .help("Stop the current run")
     }
@@ -196,5 +224,15 @@ struct Composer: View {
         guard !dismissedMention, let completion else { return .ignored }
         selectedMention = (selectedMention + direction + completion.bots.count) % completion.bots.count
         return .handled
+    }
+}
+
+extension View {
+    /// Glass alone all but vanishes over the plain chat background, so the composer's pieces get a
+    /// hairline edge and a soft shadow.
+    fileprivate func composerGlass(_ glass: Glass, in shape: some InsettableShape) -> some View {
+        glassEffect(glass, in: shape)
+            .overlay(shape.strokeBorder(.separator, lineWidth: 0.5))
+            .shadow(color: .black.opacity(0.08), radius: 6, y: 2)
     }
 }

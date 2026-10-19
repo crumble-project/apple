@@ -8,13 +8,14 @@ struct DisplayView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             if let title {
-                Text(title).font(.headline)
+                Text(title).font(.system(size: 13, weight: .medium)).foregroundStyle(.secondary)
             }
             content
+                .padding(14)
+                .background(.background, in: .rect(cornerRadius: 16))
+                .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(.separator))
         }
-        .padding(14)
-        .frame(maxWidth: 560, alignment: .leading)
-        .background(Color.primary.opacity(0.05), in: .rect(cornerRadius: 18))
+        .frame(maxWidth: Palette.column - 96, alignment: .leading)
     }
 
     private var title: String? {
@@ -31,7 +32,8 @@ struct DisplayView: View {
         case .table(_, let columns, let rows):
             DisplayTable(columns: columns, rows: rows.map { $0.map(\.text) }, numeric: numericColumns(rows))
         case .chart(let chart):
-            ChartView(chart: chart)
+            // The card hugs the widest layout the server compiled instead of stretching past it.
+            ChartView(chart: chart).frame(maxWidth: chart.layouts.map(\.width).max().map { CGFloat($0) })
         }
     }
 

@@ -6,7 +6,7 @@ struct MarkdownText: View {
     let text: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 10) {
             ForEach(Array(MarkdownBlock.parse(text).enumerated()), id: \.offset) { _, block in
                 blockView(block)
             }

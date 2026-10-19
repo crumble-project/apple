@@ -119,6 +119,25 @@ extension AppModel {
             })
     }
 
+    /// Pauses or resumes a routine at once; the switch flips back if the server refuses.
+    func setScheduleEnabled(_ id: String, _ enabled: Bool) {
+        guard let old = schedules.first(where: { $0.id == id }), old.enabled != enabled else { return }
+        optimisticMutation(
+            key: "schedule:\(id)",
+            update: { [self] in
+                if let index = schedules.firstIndex(where: { $0.id == id }) { schedules[index].enabled = enabled }
+            },
+            rollback: { [self] in
+                if let index = schedules.firstIndex(where: { $0.id == id }) { schedules[index].enabled = old.enabled }
+            },
+            work: { client in
+                let saved = try await client.updateSchedule(id, patch: ["enabled": .bool(enabled)])
+                return { [self] in
+                    if let index = schedules.firstIndex(where: { $0.id == id }) { schedules[index] = saved }
+                }
+            })
+    }
+
     func deleteSchedule(_ id: String) {
         guard let old = schedules.first(where: { $0.id == id }),
             let index = schedules.firstIndex(where: { $0.id == id })

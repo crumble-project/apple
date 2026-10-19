@@ -21,6 +21,21 @@ extension AppModel {
         }
     }
 
+    /// Routines and memories for the details panel beside a bot's chat.
+    func loadAgentDetails(_ agentID: String) {
+        let mutationVersion = mutationRevision
+        request { client in
+            async let schedules = client.schedules()
+            async let memories = client.memories(agentID)
+            let (loadedSchedules, loadedMemories) = try await (schedules, memories)
+            return { [self] in
+                guard mutationRevision == mutationVersion, pendingMutations.isEmpty else { return }
+                self.schedules = loadedSchedules
+                agentMemories[agentID] = loadedMemories
+            }
+        }
+    }
+
     private func loadMemoryPanel() {
         memoryLoadVersion += 1
         let version = memoryLoadVersion

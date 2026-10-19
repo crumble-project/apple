@@ -12,7 +12,6 @@ struct MessageView: View {
         !(message.entryId ?? "").isEmpty && (message.role == "user" || message.role == "assistant")
     }
     private var owner: Bool { message.origin == nil || message.origin?.kind == "owner" }
-
     var body: some View {
         switch message.role {
         case "event":
@@ -22,36 +21,39 @@ struct MessageView: View {
                 EventView(message: message)
             }
         case "user":
-            HStack(spacing: 6) {
-                Spacer(minLength: 60)
-                replyButton
-                ViewThatFits(in: .horizontal) {
-                    sentMessageContent.fixedSize(horizontal: true, vertical: false)
-                    sentMessageContent.frame(maxWidth: 520, alignment: .trailing)
-                }
+            // Without a width cap, bubbles hug their text and the actions sit right beside them; the
+            // spacer keeps long ones clear of the other side.
+            HStack(alignment: .center, spacing: 6) {
+                Spacer(minLength: 56)
+                actions
+                sentMessageContent
             }
             .onHover { hovered = $0 }
         case "toolResult":
             if let component = DisplayComponent(message: message) {
                 HStack {
                     DisplayView(component: component)
-                    Spacer(minLength: 60)
+                    Spacer(minLength: 56)
                 }
             }
         default:
-            HStack(spacing: 6) {
-                ViewThatFits(in: .horizontal) {
-                    incomingMessageContent.fixedSize(horizontal: true, vertical: false)
-                    incomingMessageContent
-                        .frame(maxWidth: 560, alignment: .leading)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .layoutPriority(1)
-                }
-                replyButton
-                Spacer(minLength: 60)
-            }
-            .onHover { hovered = $0 }
+            receivedMessage
         }
+    }
+
+    private var receivedMessage: some View {
+        HStack(alignment: .center, spacing: 6) {
+            MarkdownText(text: message.text)
+                .font(Palette.messageFont)
+                .lineSpacing(Palette.messageLineSpacing)
+                .textSelection(.enabled)
+                .bubble(owner: false)
+                .fixedSize(horizontal: false, vertical: true)
+                .contextMenu { menu }
+            actions
+            Spacer(minLength: 56)
+        }
+        .onHover { hovered = $0 }
     }
 
     @ViewBuilder private var sentMessageContent: some View {
@@ -61,25 +63,37 @@ struct MessageView: View {
             SentAttachments(message: message)
             if !message.text.isEmpty {
                 Text(message.text)
+                    .font(Palette.messageFont)
+                    .lineSpacing(Palette.messageLineSpacing)
                     .textSelection(.enabled)
                     .bubble(owner: owner)
                     .contextMenu { menu }
-            }
-            if !reactions.isEmpty { ReactionBadge(reactions: reactions) }
-            if message.deliveryState != .confirmed {
-                HStack(spacing: 5) {
-                    if message.deliveryState == .sending {
-                        ProgressView().controlSize(.mini)
-                        Text("Sending…")
-                    } else {
-                        Text("Not sent")
-                        Button("Retry") { model.retryMessage(message) }
-                            .buttonStyle(.link)
+                    .overlay(alignment: .bottomLeading) {
+                        if !reactions.isEmpty {
+                            ReactionBadge(reactions: reactions).offset(x: -8, y: 16)
+                        }
                     }
-                }
-                .font(.caption)
-                .foregroundStyle(message.deliveryState == .failed ? .red : .secondary)
+                    .padding(.bottom, reactions.isEmpty ? 0 : 14)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            deliveryStatus
+        }
+    }
+
+    @ViewBuilder private var deliveryStatus: some View {
+        if message.deliveryState != .confirmed {
+            HStack(spacing: 5) {
+                if message.deliveryState == .sending {
+                    ProgressView().controlSize(.mini)
+                    Text("Sending…")
+                } else {
+                    Text("Not sent")
+                    Button("Retry") { model.retryMessage(message) }
+                        .buttonStyle(.link)
+                }
+            }
+            .font(.system(size: 12))
+            .foregroundStyle(message.deliveryState == .failed ? .red : .secondary)
         }
     }
 
@@ -87,54 +101,62 @@ struct MessageView: View {
         if !owner {
             if message.origin?.kind == "bot" {
                 Label(messageLabel(message), systemImage: "person.2.fill")
-                    .font(.caption)
+                    .font(.system(size: 12))
                     .foregroundStyle(.secondary)
-                    .padding(.horizontal, 6)
+                    .padding(.horizontal, 4)
             } else {
-                Text(messageLabel(message)).font(.caption).foregroundStyle(.secondary).padding(.horizontal, 6)
+                Text(messageLabel(message)).font(.system(size: 12)).foregroundStyle(.secondary).padding(.horizontal, 4)
             }
         }
     }
 
-    @ViewBuilder private var incomingMessageContent: some View {
-        MarkdownText(text: message.text)
-            .textSelection(.enabled)
-            .bubble(owner: false)
-            .contextMenu { menu }
+    /// Reply and copy, shown beside a message while the pointer is over it.
+    @ViewBuilder private var actions: some View {
+        if replyable {
+            HStack(spacing: 2) {
+                actionButton("Reply", systemImage: "arrowshape.turn.up.left") { model.replyTo = message }
+                actionButton("Copy", systemImage: "doc.on.doc") { copy() }
+            }
+            .opacity(hovered ? 1 : 0)
+        }
     }
 
-    @ViewBuilder private var replyButton: some View {
-        if replyable {
-            Button("Reply", systemImage: "arrowshape.turn.up.left") { model.replyTo = message }
-                .labelStyle(.iconOnly)
-                .buttonStyle(.borderless)
+    private func actionButton(_ title: String, systemImage: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: 12))
                 .foregroundStyle(.secondary)
-                .opacity(hovered ? 1 : 0)
-                .help("Reply")
+                .frame(width: 26, height: 26)
+                .contentShape(.rect)
         }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
+        .help(title)
+    }
+
+    private func copy() {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(message.text, forType: .string)
     }
 
     @ViewBuilder private var menu: some View {
         if replyable {
             Button("Reply") { model.replyTo = message }
         }
-        Button("Copy") {
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(message.text, forType: .string)
-        }
+        Button("Copy") { copy() }
     }
 }
 
-/// Emoji a bot reacted with instead of replying, shown under the message it answers.
+/// Emoji a bot reacted with instead of replying, pinned to the corner of the message it answers.
 struct ReactionBadge: View {
     let reactions: [String]
 
     var body: some View {
         Text(reactions.joined(separator: " "))
-            .font(.callout)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
-            .background(Color.primary.opacity(0.07), in: .capsule)
+            .font(.system(size: 14))
+            .padding(.horizontal, 7)
+            .padding(.vertical, 2)
+            .glassEffect(.regular, in: .capsule)
             .accessibilityLabel("Reacted \(reactions.joined(separator: " "))")
     }
 }
@@ -201,7 +223,7 @@ struct BotMessageView: View {
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .frame(maxWidth: 560, alignment: .leading)
+            .frame(maxWidth: Palette.column - 96, alignment: .leading)
         }
     }
 }
