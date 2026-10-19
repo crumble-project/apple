@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Decode `toolName`, `isError`, and `toolDetails` on transcript messages, and add `DisplayComponent` for the visuals a bot shows with its `show` tool.
 - Share `BotChatDelivery` and its behavior tests between the Apple clients. Keep transport tasks, connection guards, composer behavior, and native image conversion in each app.
 
 - Send the device timezone with each chat message so bots know the owner's local time.

@@ -64,6 +64,10 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
   public var timestamp: Int64?
   public var createdAt: String?
   public var attachments: [AttachmentInfo]?
+  public var toolName: String?
+  public var isError: Bool?
+  /// Tool result details for UIs, such as a `show` tool's `DisplayComponent`.
+  public var toolDetails: JSONValue?
   /// The idempotency key echoed by the server for owner messages.
   public var requestId: String?
   public var deliveryState: MessageDeliveryState
@@ -73,7 +77,8 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
     blocks: JSONValue? = nil, kind: String? = nil,
     replyTo: String? = nil, replyPreview: String? = nil, origin: MessageOrigin? = nil,
     communication: BotCommunication? = nil, timestamp: Int64? = nil,
-    attachments: [AttachmentInfo]? = nil, requestId: String? = nil,
+    attachments: [AttachmentInfo]? = nil, toolName: String? = nil, isError: Bool? = nil,
+    toolDetails: JSONValue? = nil, requestId: String? = nil,
     deliveryState: MessageDeliveryState = .confirmed
   ) {
     self.id = id
@@ -88,6 +93,9 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
     self.communication = communication
     self.timestamp = timestamp
     self.attachments = attachments
+    self.toolName = toolName
+    self.isError = isError
+    self.toolDetails = toolDetails
     self.requestId = requestId
     self.deliveryState = deliveryState
   }
@@ -107,6 +115,9 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
     timestamp = try container.decodeIfPresent(Int64.self, forKey: .timestamp)
     createdAt = try container.decodeIfPresent(String.self, forKey: .createdAt)
     attachments = try container.decodeIfPresent([AttachmentInfo].self, forKey: .attachments)
+    toolName = try container.decodeIfPresent(String.self, forKey: .toolName)
+    isError = try container.decodeIfPresent(Bool.self, forKey: .isError)
+    toolDetails = try container.decodeIfPresent(JSONValue.self, forKey: .toolDetails)
     requestId = try container.decodeIfPresent(String.self, forKey: .requestId)
     deliveryState =
       try container.decodeIfPresent(MessageDeliveryState.self, forKey: .deliveryState) ?? .confirmed
