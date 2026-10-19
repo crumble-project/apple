@@ -6,7 +6,7 @@ import SwiftUI
 enum ChatRow: Identifiable {
     case older
     case time(String, String)
-    case message(Message)
+    case message(Message, reactions: [String])
     case thinking
     case failure(String)
 
@@ -14,7 +14,7 @@ enum ChatRow: Identifiable {
         switch self {
         case .older: "older"
         case .time(let id, _): "time:" + id
-        case .message(let message): message.id
+        case .message(let message, _): message.id
         case .thinking: "thinking"
         case .failure: "error"
         }
@@ -23,6 +23,7 @@ enum ChatRow: Identifiable {
     static func rows(messages: [Message], snapshot: ChatSnapshot?, hasMore: Bool) -> [ChatRow] {
         var rows: [ChatRow] = hasMore ? [.older] : []
         var last: Int64 = 0
+        let reactions = Reaction.byMessage(messages)
         for message in messages where shownInChat(message) {
             if let timestamp = message.timestamp, timestamp > 0 {
                 if timestamp - last > 30 * 60 * 1000 {
@@ -30,7 +31,7 @@ enum ChatRow: Identifiable {
                 }
                 last = timestamp
             }
-            rows.append(.message(message))
+            rows.append(.message(message, reactions: reactions[message.id] ?? []))
         }
         if let snapshot {
             if snapshot.isRunning {
@@ -179,8 +180,8 @@ struct ChatRowView: View {
             }
         case .time(_, let label):
             Text(label).font(.caption).foregroundStyle(.secondary).padding(.top, 6)
-        case .message(let message):
-            MessageView(message: message)
+        case .message(let message, let reactions):
+            MessageView(message: message, reactions: reactions)
         case .thinking:
             HStack(spacing: 8) {
                 BotAvatarView(agent: agent, size: 24, state: .working, live: true)

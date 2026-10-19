@@ -187,7 +187,7 @@ struct LogicTests {
         let rows = ChatRow.rows(messages: [message], snapshot: nil, hasMore: false)
 
         #expect(rows.count == 1)
-        guard case .message(let retained) = rows[0] else {
+        guard case .message(let retained, _) = rows[0] else {
             Issue.record("bot communication event was omitted from chat rows")
             return
         }

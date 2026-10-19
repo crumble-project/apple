@@ -5,6 +5,7 @@ import SwiftUI
 struct MessageView: View {
     @Environment(AppModel.self) private var model
     let message: Message
+    var reactions: [String] = []
     @State private var hovered = false
 
     private var replyable: Bool {
@@ -64,6 +65,7 @@ struct MessageView: View {
                     .bubble(owner: owner)
                     .contextMenu { menu }
             }
+            if !reactions.isEmpty { ReactionBadge(reactions: reactions) }
             if message.deliveryState != .confirmed {
                 HStack(spacing: 5) {
                     if message.deliveryState == .sending {
@@ -120,6 +122,20 @@ struct MessageView: View {
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(message.text, forType: .string)
         }
+    }
+}
+
+/// Emoji a bot reacted with instead of replying, shown under the message it answers.
+struct ReactionBadge: View {
+    let reactions: [String]
+
+    var body: some View {
+        Text(reactions.joined(separator: " "))
+            .font(.callout)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(Color.primary.opacity(0.07), in: .capsule)
+            .accessibilityLabel("Reacted \(reactions.joined(separator: " "))")
     }
 }
 
