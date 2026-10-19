@@ -12,6 +12,10 @@ _Avoid_: Persona, session
 The continuous direct-message exchange between a bot and its owner, including work the bot performs in the background.
 _Avoid_: Conversation session, new chat
 
+**Bot chat delivery**:
+The progress of an owner's message from sending to confirmation in the bot chat's transcript, including failed sends and retries.
+_Avoid_: Message execution, completed bot work
+
 **Transcript**:
 The complete visible history of a bot chat, including messages, replies, tool activity, and compaction events.
 _Avoid_: Model context

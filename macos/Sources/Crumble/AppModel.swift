@@ -38,15 +38,7 @@ final class AppModel {
     var failedDraft = ""
     var failedReplyTo = ""
     var failedAttachments: [UUID] = []
-    struct PendingSend: Sendable {
-        var content: String
-        var replyTo: String
-        var attachments: [PendingAttachment]
-    }
-    /// Optimistic rows and their upload payloads survive changing the selected bot.
-    var pendingMessages: [String: [Message]] = [:]
-    var pendingSends: [String: [String: PendingSend]] = [:]
-    var pendingPreviews: [String: (requestID: String, text: String)] = [:]
+    var delivery = BotChatDelivery()
     /// Sent images, keyed by entry and attachment index; they never change once sent.
     var attachmentImages: [String: NSImage] = [:]
 
@@ -213,7 +205,7 @@ extension AppModel {
         }
     }
 
-    private func applyConnection(_ candidate: APIClient) {
+    func applyConnection(_ candidate: APIClient) {
         cancelStream(preservingWork: false)
         resetRunningBots()
         generation += 1

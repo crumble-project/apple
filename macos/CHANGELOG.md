@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Use apfelkern's shared bot chat delivery module, preserving optimistic sends, retries, and transcript confirmation. Keep transport timing tests in the app.
+
 - Paint bots with a dithered finish instead of a glossy one. The playground's **Finish** picker and `--finishes` sheet compare all finishes.
 - Tone down avatar blush, eye sparkle, and smiles. Use smaller working hops and restrained click greetings while retaining live motion and state transitions.
 

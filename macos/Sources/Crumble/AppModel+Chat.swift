@@ -45,7 +45,7 @@ extension AppModel {
         selectedAgentID = id
         route = .agent(id)
         snapshot = nil
-        messages = pendingMessages[id] ?? []
+        messages = delivery.messages(botID: id)
         hasMore = false
         oldestEntryID = ""
         loadingOlder = false
@@ -87,16 +87,10 @@ extension AppModel {
         updateRunningBot(selectedAgentID, running: incoming.isRunning)
         let incomingMessages = incoming.messages ?? []
         let acknowledged = Set(incomingMessages.compactMap(\.requestId))
-        if !acknowledged.isEmpty {
-            pendingMessages[selectedAgentID]?.removeAll { acknowledged.contains($0.requestId ?? "") }
-            for requestID in acknowledged {
-                pendingSends[selectedAgentID]?[requestID] = nil
-                if pendingPreviews[selectedAgentID]?.requestID == requestID { pendingPreviews[selectedAgentID] = nil }
-            }
-        }
+        delivery.acknowledge(botID: selectedAgentID, requestIDs: acknowledged)
         // Rebuild from confirmed transcript rows and append local rows so a delayed snapshot
         // cannot erase a message the user has already seen.
-        let local = pendingMessages[selectedAgentID] ?? []
+        let local = delivery.messages(botID: selectedAgentID)
         messages = mergeMessages(messages.filter { $0.deliveryState == .confirmed }, incomingMessages)
         messages.append(contentsOf: local)
         var snapshot = incoming
@@ -171,7 +165,7 @@ extension AppModel {
 
     func handleActivity(_ event: ActivityEvent) {
         if event.type == "chat-preview", let lastMessage = event.lastMessage,
-            pendingPreviews[event.agentId] == nil,
+            delivery.preview(botID: event.agentId) == nil,
             let index = agents.firstIndex(where: { $0.id == event.agentId }) {
             agents[index].lastMessage = lastMessage
         }
@@ -220,9 +214,7 @@ extension AppModel {
     /// Drops client-only optimistic rows and payloads when switching server connections.
     /// The next chat snapshot becomes the sole source of truth.
     func resetPendingMessages() {
-        pendingMessages.removeAll()
-        pendingSends.removeAll()
-        pendingPreviews.removeAll()
+        delivery.reset()
         messages.removeAll()
         draftRequestID = ""
         failedDraft = ""
@@ -241,10 +233,9 @@ extension AppModel {
     func attachmentImage(message: Message, index: Int) -> NSImage? {
         if let entryID = message.entryId { return attachmentImage(entryID: entryID, index: index) }
         guard let requestID = message.requestId,
-            let files = pendingSends[selectedAgentID]?[requestID]?.attachments,
-            files.indices.contains(index), files[index].isImage
+            let data = delivery.imageData(botID: selectedAgentID, requestID: requestID, index: index)
         else { return nil }
-        return NSImage(data: files[index].data)
+        return NSImage(data: data)
     }
 
     func loadAttachmentImage(entryID: String, index: Int) async {
