@@ -125,17 +125,18 @@ public struct APIClient: Sendable {
   }
   public func sendChatMessage(
     _ agentID: String, content: String, requestID: String, replyTo: String,
-    attachments: [OutgoingAttachment] = []
+    attachments: [OutgoingAttachment] = [], timezone: String = TimeZone.current.identifier
   ) async throws {
     struct Body: Encodable {
       var content: String
       var requestId: String
       var replyTo: String?
       var attachments: [OutgoingAttachment]?
+      var timezone: String
     }
     let body = Body(
       content: content, requestId: requestID, replyTo: replyTo.nilIfEmpty,
-      attachments: attachments.isEmpty ? nil : attachments)
+      attachments: attachments.isEmpty ? nil : attachments, timezone: timezone)
     // Images take a while to upload; the default timeout is for small requests.
     try await perform(
       "POST", "/v1/agents/\(agentID)/messages", body: body, timeout: attachments.isEmpty ? 20 : 120)

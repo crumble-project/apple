@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Send the device timezone with each chat message so bots know the owner's local time.
 - Add `BotFinish` body finishes for bot avatars: glossy, matte, dither, halftone, grain, and outline, set with the `botFinish` environment value.
 - Add the `BotAvatar` library with the shared bot avatar drawing, motion, and Core Animation live view for iOS and macOS.
 - Extract common models, HTTP transport, event parsing, drafts, attachments, and pure helpers from the iOS and macOS clients.
