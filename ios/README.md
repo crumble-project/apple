@@ -16,6 +16,10 @@ The app and unit tests fetch `git@github.com:crumble-project/apfelkern.git`, tra
 Configure SSH access to GitHub before resolving packages. A sibling checkout is not required.
 The package provides common models, API transport, drafts, and pure helpers. See the [package documentation](https://github.com/crumble-project/apfelkern).
 
+## Chat delivery ownership
+
+The iOS app uses `BotChatDelivery` from `apfelkern` to coordinate pending messages, retry payloads, and previews. HTTP acceptance retains pending messages until a transcript snapshot confirms them. `AppModel` owns network tasks, composer state, connection and selection guards, and native image conversion. Delivery behavior tests live in `apfelkern`; controlled transport tests remain in the app.
+
 ## Open the project
 
 Open `Crumble.xcodeproj` in Xcode and select the **Crumble** scheme.

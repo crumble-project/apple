@@ -10,45 +10,31 @@ extension AppModel {
     let selection: Int
   }
 
-  func sendMessage() {
-    guard snapshot != nil, let client else { return }
+  @discardableResult
+  func sendMessage() -> Task<Void, Never>? {
+    guard snapshot != nil, let client else { return nil }
     let content = draft.trimmingCharacters(in: .whitespacesAndNewlines)
     let files = attachments
-    guard !content.isEmpty || !files.isEmpty else { return }
+    guard !content.isEmpty || !files.isEmpty else { return nil }
     let id = selectedAgentID
     let reply = replyTo?.entryId ?? ""
-    // Every explicit send gets its own idempotency key. Failed rows are retried through
-    // retryMessage, so two identical messages must remain distinct.
     draftRequestID = newRequestID()
     let requestID = draftRequestID
-    failedDraft = content
-    failedReplyTo = reply
-    failedAttachments = files.map(\.id)
-    sending = true
-    draft = ""
-    attachments = []
-    enqueueMessage(id: id, requestID: requestID, content: content, reply: reply, files: files)
-    // Clear the captured reply immediately; a later composer selection must survive this send.
-    replyTo = nil
-    let generation = generation
-    let version = selectionVersion
-    Task {
-      await performSend(
-        client: client,
-        context: SendContext(id: id, requestID: requestID, generation: generation, selection: version),
-        record: PendingSend(content: content, replyTo: reply, attachments: files), restoringDraft: true)
+    let record = BotChatDelivery.Send(
+      content: content, replyTo: reply, attachments: files, replyPreview: replyTo?.text.nilIfEmpty)
+    stageMessage(record, id: id, requestID: requestID)
+    let context = SendContext(
+      id: id, requestID: requestID, generation: generation, selection: selectionVersion)
+    return Task {
+      await performSend(client: client, context: context, record: record, restoringDraft: true)
     }
   }
 
   /// Re-sends a failed optimistic row with its original idempotency key and attachments.
   func retryMessage(_ message: Message) {
-    guard message.deliveryState == .failed, let requestID = message.requestId,
-      let record = pendingSends[selectedAgentID]?[requestID], let client
+    guard message.deliveryState == .failed, let requestID = message.requestId, let client,
+      let record = delivery.beginRetry(botID: selectedAgentID, requestID: requestID)
     else { return }
-    guard
-      let index = pendingMessages[selectedAgentID]?.firstIndex(where: { $0.requestId == requestID })
-    else { return }
-    pendingMessages[selectedAgentID]?[index].deliveryState = .sending
     if let visible = messages.firstIndex(where: { $0.requestId == requestID }) {
       messages[visible].deliveryState = .sending
     }
@@ -57,55 +43,41 @@ extension AppModel {
       attachments = []
     }
     sending = true
-    let id = selectedAgentID
-    let generation = generation
-    let version = selectionVersion
+    let context = SendContext(
+      id: selectedAgentID, requestID: requestID, generation: generation, selection: selectionVersion)
     Task {
-      await performSend(
-        client: client,
-        context: SendContext(id: id, requestID: requestID, generation: generation, selection: version),
-        record: record, restoringDraft: false)
+      await performSend(client: client, context: context, record: record, restoringDraft: false)
     }
   }
 
-  private func enqueueMessage(
-    id: String, requestID: String, content: String, reply: String, files: [PendingAttachment]
-  ) {
-    let optimistic = Message(
-      id: "local:\(requestID)", role: "user", content: .string(content), replyTo: reply.nilIfEmpty,
-      replyPreview: replyTo?.text.nilIfEmpty, timestamp: Int64(Date().timeIntervalSince1970 * 1000),
-      attachments: files.map {
-        AttachmentInfo(
-          name: $0.name, mimeType: $0.mimeType, size: $0.data.count,
-          kind: $0.isImage ? "image" : "file")
-      },
-      requestId: requestID, deliveryState: .sending
-    )
-    pendingMessages[id, default: []].append(optimistic)
-    pendingSends[id, default: [:]][requestID] = PendingSend(
-      content: content, replyTo: reply, attachments: files)
-    let preview = content.nilIfEmpty ?? files.first.map { "Attachment: \($0.name)" } ?? ""
-    pendingPreviews[id] = (requestID, preview)
+  private func stageMessage(_ record: BotChatDelivery.Send, id: String, requestID: String) {
+    failedDraft = record.content
+    failedReplyTo = record.replyTo
+    failedAttachments = record.attachments.map(\.id)
+    sending = true
+    draft = ""
+    attachments = []
+    let optimistic = delivery.stage(record, botID: id, requestID: requestID)
     if let agentIndex = agents.firstIndex(where: { $0.id == id }) {
-      agents[agentIndex].lastMessage = preview
+      agents[agentIndex].lastMessage = delivery.preview(botID: id) ?? ""
     }
     if selectedAgentID == id { messages.append(optimistic) }
+    // Clear the captured reply immediately; a later composer selection must survive this send.
+    replyTo = nil
   }
 
   private func performSend(
-    client: APIClient, context: SendContext, record: PendingSend, restoringDraft: Bool
+    client: APIClient, context: SendContext, record: BotChatDelivery.Send, restoringDraft: Bool
   ) async {
     let id = context.id
     let requestID = context.requestID
-    let generation = context.generation
-    let version = context.selection
     do {
       try await client.sendChatMessage(
         id, content: record.content, requestID: requestID, replyTo: record.replyTo,
         attachments: record.attachments.map(\.outgoing))
-      guard self.generation == generation else { return }
-      if pendingPreviews[id]?.requestID == requestID { pendingPreviews[id] = nil }
-      guard self.selectionVersion == version, selectedAgentID == id else { return }
+      guard generation == context.generation else { return }
+      delivery.accepted(botID: id, requestID: requestID)
+      guard selectionVersion == context.selection, selectedAgentID == id else { return }
       sending = false
       if restoringDraft {
         draftRequestID = ""
@@ -114,10 +86,9 @@ extension AppModel {
         failedAttachments = []
       }
     } catch {
-      guard self.generation == generation else { return }
-      failMessage(id: id, requestID: requestID, version: version, error: error)
-      if restoringDraft, self.selectionVersion == version, selectedAgentID == id,
-        pendingMessages[id]?.contains(where: { $0.requestId == requestID }) == true,
+      guard generation == context.generation else { return }
+      guard failMessage(error, id: id, requestID: requestID, version: context.selection) else { return }
+      if restoringDraft, selectionVersion == context.selection, selectedAgentID == id,
         draft.isEmpty, attachments.isEmpty {
         draft = record.content
         attachments = record.attachments
@@ -125,18 +96,16 @@ extension AppModel {
     }
   }
 
-  private func failMessage(id: String, requestID: String, version: Int, error: Error) {
-    let visible = selectionVersion == version && selectedAgentID == id
-    if visible { sending = false }
-    guard pendingMessages[id]?.contains(where: { $0.requestId == requestID }) == true else { return }
-    if visible { errorText = "Message was not confirmed: " + friendlyError(error) }
-    if let index = pendingMessages[id]?.firstIndex(where: { $0.requestId == requestID }) {
-      pendingMessages[id]?[index].deliveryState = .failed
-      if pendingPreviews[id]?.requestID == requestID { pendingPreviews[id] = nil }
-      if visible, let index = messages.firstIndex(where: { $0.requestId == requestID }) {
-        messages[index].deliveryState = .failed
+  private func failMessage(_ error: Error, id: String, requestID: String, version: Int) -> Bool {
+    if selectionVersion == version, selectedAgentID == id { sending = false }
+    guard delivery.fail(botID: id, requestID: requestID) else { return false }
+    if selectionVersion == version, selectedAgentID == id {
+      errorText = "Message was not confirmed: " + friendlyError(error)
+      if let visible = messages.firstIndex(where: { $0.requestId == requestID }) {
+        messages[visible].deliveryState = .failed
       }
     }
+    return true
   }
 
   func addAttachments(_ urls: [URL]) {
@@ -156,9 +125,7 @@ extension AppModel {
   /// Drops client-only optimistic rows and payloads when switching server connections.
   /// The next chat snapshot becomes the sole source of truth.
   func resetPendingMessages() {
-    pendingMessages.removeAll()
-    pendingSends.removeAll()
-    pendingPreviews.removeAll()
+    delivery.reset()
     messages.removeAll()
     draftRequestID = ""
     failedDraft = ""
@@ -177,10 +144,9 @@ extension AppModel {
   func attachmentImage(message: Message, index: Int) -> UIImage? {
     if let entryID = message.entryId { return attachmentImage(entryID: entryID, index: index) }
     guard let requestID = message.requestId,
-      let files = pendingSends[selectedAgentID]?[requestID]?.attachments,
-      files.indices.contains(index), files[index].isImage
+      let data = delivery.imageData(botID: selectedAgentID, requestID: requestID, index: index)
     else { return nil }
-    return UIImage(data: files[index].data)
+    return UIImage(data: data)
   }
 
   func loadAttachmentImage(entryID: String, index: Int) async {

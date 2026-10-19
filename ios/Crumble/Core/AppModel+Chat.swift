@@ -46,7 +46,7 @@ extension AppModel {
     updateSelectedAgent(id)
     route = .agent(id)
     snapshot = nil
-    messages = pendingMessages[id] ?? []
+    messages = delivery.messages(botID: id)
     hasMore = false
     oldestEntryID = ""
     loadingOlder = false
@@ -77,18 +77,10 @@ extension AppModel {
   func applySnapshot(_ incoming: ChatSnapshot) {
     let incomingMessages = incoming.messages ?? []
     let acknowledged = Set(incomingMessages.compactMap(\.requestId))
-    if !acknowledged.isEmpty {
-      pendingMessages[selectedAgentID]?.removeAll { acknowledged.contains($0.requestId ?? "") }
-      for requestID in acknowledged {
-        pendingSends[selectedAgentID]?[requestID] = nil
-        if pendingPreviews[selectedAgentID]?.requestID == requestID {
-          pendingPreviews[selectedAgentID] = nil
-        }
-      }
-    }
+    delivery.acknowledge(botID: selectedAgentID, requestIDs: acknowledged)
     // Rebuild from confirmed transcript rows and append local rows so a delayed snapshot
     // cannot erase a message the user has already seen.
-    let local = pendingMessages[selectedAgentID] ?? []
+    let local = delivery.messages(botID: selectedAgentID)
     messages = mergeMessages(messages.filter { $0.deliveryState == .confirmed }, incomingMessages)
     messages.append(contentsOf: local)
     var snapshot = incoming
@@ -205,7 +197,7 @@ extension AppModel {
 
   func handleActivity(_ event: ActivityEvent) {
     if event.type == "chat-preview", let lastMessage = event.lastMessage,
-      pendingPreviews[event.agentId] == nil,
+      delivery.preview(botID: event.agentId) == nil,
       let index = agents.firstIndex(where: { $0.id == event.agentId }) {
       agents[index].lastMessage = lastMessage
     }
