@@ -14,6 +14,7 @@ struct CrumbleApp: App {
     WindowGroup {
       ContentView()
         .environment(model)
+        .environment(\.botFinish, .dither)
         .task {
           guard !started else { return }
           started = true
