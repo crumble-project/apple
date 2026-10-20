@@ -1,16 +1,20 @@
 import Foundation
 import OpenAPIRuntime
 
+/// Servers send a heartbeat every 15 seconds, so three missed heartbeats mean the connection died,
+/// for example across sleep or a network change, and the caller should reconnect.
+public let serverSentEventsIdleTimeout: TimeInterval = 45
+
 extension APIClient {
   public func chatEvents(_ agentID: String, onEvent: @Sendable (String) async -> Void) async throws -> Never {
-    let body = try await invoke(timeout: 24 * 60 * 60) {
+    let body = try await invoke(timeout: serverSentEventsIdleTimeout) {
       try await $0.streamChatEvents(.init(path: .init(id: agentID))).ok.body.textEventStream
     }
     try await events(body, parser: SSEParser(), onEvent: onEvent)
   }
 
   public func activityEvents(onEvent: @Sendable (String) async -> Void) async throws -> Never {
-    let body = try await invoke(timeout: 24 * 60 * 60) {
+    let body = try await invoke(timeout: serverSentEventsIdleTimeout) {
       try await $0.streamActivityEvents(.init()).ok.body.textEventStream
     }
     try await events(body, parser: SSEParser(accepting: ["activity"]), onEvent: onEvent)

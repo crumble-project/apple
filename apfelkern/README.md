@@ -33,7 +33,7 @@ Ordinary builds use committed output and never fetch contracts or invoke a gener
 
 `Generation/tools.json` records Swift OpenAPI Generator `1.14.2`, Runtime `1.13.2`, HTTPTypes `1.7.0`, and repository URLSession transport `1.0.0`.
 Apple's URLSession transport `1.3.2` was evaluated but cannot set each request's timeout while retaining the injected session.
-The repository transport preserves 20-second requests, 60-second OAuth, 120-second attachment uploads, 24-hour SSE requests, cancellation, and 8 KiB error bodies.
+The repository transport preserves 20-second requests, 60-second OAuth, 120-second attachment uploads, SSE requests that time out after 45 seconds without data (three missed 15-second heartbeats), cancellation, and 8 KiB error bodies.
 Its versioned source is `Sources/apfelkern/ContractTransport.swift`; it adds no networking dependency.
 
 Regenerate committed types and client operations:

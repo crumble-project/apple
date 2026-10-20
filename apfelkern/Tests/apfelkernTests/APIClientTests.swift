@@ -213,7 +213,7 @@ private func withClient(
   let stream = "event: heartbeat\r\ndata: {}\r\n\r\nevent: future\ndata: invalid\n\nevent: activity\rdata: " + preview + "\r\r"
   let received = Mutex<[String]>([])
   try await withClient(handler: { request in
-    #expect(request.timeoutInterval == 24 * 60 * 60)
+    #expect(request.timeoutInterval == serverSentEventsIdleTimeout)
     return StubResponse(contentType: "text/event-stream", body: Data(stream.utf8))
   }) { client in
     do {
