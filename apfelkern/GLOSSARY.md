@@ -1,9 +1,3 @@
 # Crumble
 
-Crumble gives each bot an identity, ongoing responsibilities, and a continuous chat with its owner.
-
-## Language
-
-**Bot chat delivery**:
-The progress of an owner's message from sending to confirmation in the bot chat's transcript, including failed sends and retries.
-_Avoid_: Message execution, completed bot work
+Crumble's domain language is defined once, in the [canonical glossary](https://github.com/crumble-project/spec/blob/main/GLOSSARY.md). In a local checkout of the project, it is `../spec/GLOSSARY.md`. Add and change terms there, not here.

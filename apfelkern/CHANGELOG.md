@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Replace the local glossary with a link to the canonical glossary in the spec repository.
 - Time out SSE requests after 45 seconds without data instead of 24 hours. Servers send heartbeats every 15 seconds, so a connection that died silently, such as across sleep or a network change, now fails and the caller can reconnect.
 - Pin bot contract `1.0.0` as a checksum-verified local export from source commit `40d7b6a`; adopt the published release before merging the integration.
 - Generate and commit public Swift HTTP operations and event payload models with Apple Swift OpenAPI Generator `1.14.2` and Runtime `1.13.2`, without build plugins. Pin the CLI's complete dependency resolution and fail rather than silently updating its parser dependencies.
