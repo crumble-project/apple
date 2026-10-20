@@ -14,7 +14,7 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: .build/openapi-generator-1.14.2
-          key: generator-${{ runner.os }}-${{ hashFiles('Generation/tools.json') }}
+          key: generator-${{ runner.os }}-${{ hashFiles('Generation/tools.json', 'Generation/generator-Package.resolved') }}
       - run: python3 scripts/contract.py --check
       - run: swift build
       - run: swift test

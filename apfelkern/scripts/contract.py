@@ -68,7 +68,8 @@ def generate(directory):
     if revision != GENERATOR_COMMIT:
         raise ValueError("Generator checkout does not match pinned commit")
     run("git", "-C", str(cache), "diff", "--exit-code", "HEAD")
-    run("swift", "build", "--package-path", str(cache), "-c", "release", "--product", "swift-openapi-generator")
+    shutil.copyfile(ROOT / TOOLS["generator"]["dependencyLock"], cache / "Package.resolved")
+    run("swift", "build", "--package-path", str(cache), "--force-resolved-versions", "-c", "release", "--product", "swift-openapi-generator")
     binary_dir = subprocess.check_output(["swift", "build", "--package-path", str(cache), "-c", "release", "--show-bin-path"], text=True).strip()
     document = json.loads((ROOT / "Contract" / "openapi.json").read_text())
     for name, asset in [("EventChatSnapshot", "chat-snapshot.schema.json"), ("EventActivity", "activity-event.schema.json"), ("EventHeartbeat", "heartbeat.schema.json")]:

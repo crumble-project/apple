@@ -19,7 +19,7 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: .build/openapi-generator-1.14.2
-          key: generator-${{ runner.os }}-${{ hashFiles('Generation/tools.json') }}
+          key: generator-${{ runner.os }}-${{ hashFiles('Generation/tools.json', 'Generation/generator-Package.resolved') }}
       - id: release
         env:
           GH_TOKEN: ${{ github.token }}

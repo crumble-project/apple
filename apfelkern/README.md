@@ -43,6 +43,7 @@ python3 scripts/contract.py
 ```
 
 The command clones the exact generator tag, checks its commit and unmodified tracked sources, then builds its CLI in `.build`.
+`Generation/generator-Package.resolved` pins the CLI's parser and other transitive dependencies. Generation uses `--force-resolved-versions` and never silently re-resolves them.
 The first run needs public GitHub access and Swift 6.2 or later. Subsequent ordinary package builds need no generator.
 Generated `Client`, `Operations`, and `Components.Schemas` remain public. Do not edit `Sources/apfelkern/Generated`.
 `APIClient` calls typed generated operations for every endpoint, including attachments and SSE. Its generic `send` and `call` remain escape hatches only.

@@ -1,7 +1,8 @@
 {
   "generator": {
     "version": "1.14.2",
-    "revision": "164dfbcf1f78e2ddc719ab9d85c50d1157fa8d7d"
+    "revision": "164dfbcf1f78e2ddc719ab9d85c50d1157fa8d7d",
+    "dependencyLock": "Generation/generator-Package.resolved"
   },
   "runtime": "1.13.2",
   "httpTypes": "1.7.0",
