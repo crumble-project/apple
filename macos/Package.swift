@@ -1,10 +1,17 @@
 // swift-tools-version: 6.2
 import PackageDescription
 
+// APFELKERN_LOCAL builds against a sibling checkout; CI and releases use the reviewed pin.
+let apfelkern: Package.Dependency =
+    Context.environment["APFELKERN_LOCAL"] == nil
+    ? .package(
+        url: "https://github.com/crumble-project/apfelkern.git", revision: "c5f394ce988be7ff7733b0505dbceeec581b1166")
+    : .package(path: "../apfelkern")
+
 let package = Package(
     name: "Crumble",
     platforms: [.macOS(.v26)],
-    dependencies: [.package(url: "https://github.com/crumble-project/apfelkern.git", revision: "4080bf6baf011cc7daeb0ac0a679e1ca6964b36e")],
+    dependencies: [apfelkern],
     targets: [
         .executableTarget(
             name: "Crumble",

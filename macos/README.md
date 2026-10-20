@@ -21,7 +21,14 @@ Bot chat delivery uses `BotChatDelivery` from `apfelkern`. It coordinates pendin
 
 Update the contract and generated client in apfelkern first. Update the exact package revision in `Package.swift`, resolve packages, and commit `Package.resolved` together. Run `swift test`. Do not add an app-local generator or duplicate wire models.
 
-To verify unmerged shared changes locally, run `swift package edit apfelkern --path ../apfelkern`, then `swift test`. Run `swift package unedit apfelkern` before committing; local overrides must not enter the pin.
+To build against a sibling `../apfelkern` checkout, including unmerged shared changes, set `APFELKERN_LOCAL=1`:
+
+```bash
+APFELKERN_LOCAL=1 swift run Crumble
+APFELKERN_LOCAL=1 swift test
+```
+
+Local mode removes apfelkern from `Package.resolved`. Run `swift package resolve` without the variable to restore the pin before committing. CI and nightly builds don't set the variable, so they always use the pin.
 
 Apfelkern initially uses a checksum-verified local bot contract. Its pin must switch to `contract-v1.0.0` after bot's first release. Merge bot, then apfelkern, then this app, and refresh the app pin if apfelkern's merge changes the commit. Connection settings, cancellation, errors, optimistic delivery, and streaming lifetime remain app-owned.
 
