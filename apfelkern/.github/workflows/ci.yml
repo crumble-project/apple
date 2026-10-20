@@ -1,0 +1,23 @@
+name: Check
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/cache@v4
+        with:
+          path: .build/openapi-generator-1.14.2
+          key: generator-${{ runner.os }}-${{ hashFiles('Generation/tools.json') }}
+      - run: python3 scripts/contract.py --check
+      - run: swift build
+      - run: swift test
+      - run: brew install swiftlint
+      - run: swiftlint lint
+      - run: xcodebuild -scheme BotAvatar -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
