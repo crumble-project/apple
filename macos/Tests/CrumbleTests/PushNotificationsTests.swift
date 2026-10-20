@@ -89,13 +89,14 @@ struct PushNotificationsTests {
     @Test func APIClientEncodesRegistrationAndNullPresenceAgent() async throws {
         let client = client { request in
             let path = request.url?.path ?? ""
-            if path == "/v1/push" { return (200, #"{"serverId":"srv","transports":{"apns":true}}"#) }
+            if path == "/v1/push" { return (200, #"{"serverId":"srv","transports":{"apns":true,"fcm":false}}"#) }
+            if request.httpMethod == "DELETE" || path.hasSuffix("/presence") { return (204, "") }
             if path.hasPrefix("/v1/push/devices/") { return (200, #"{"serverId":"srv","remoteDelivery":true}"#) }
             return (204, "")
         }
         _ = try await client.pushStatus()
         _ = try await client.registerPush(
-            "i", device: PushDevice(token: "aa", environment: "development", bundleId: "b"))
+            "i", device: PushDevice(platform: "macos", transport: "apns", token: "aa", environment: "development", bundleId: "b"))
         try await client.pushPresence("i", active: false, agentId: nil)
         let presence = PushNotificationProtocol.requests.first { $0.url?.path.contains("presence") == true }
         let presenceBody = try #require(String(data: presence?.httpBody ?? Data(), encoding: .utf8))
@@ -105,7 +106,8 @@ struct PushNotificationsTests {
     @Test func remoteRegistrationSuppressesLocalFallbackAnd404KeepsIt() async throws {
         let client = client { request in
             let path = request.url?.path ?? ""
-            if path == "/v1/push" { return (200, #"{"serverId":"srv","transports":{"apns":true}}"#) }
+            if path == "/v1/push" { return (200, #"{"serverId":"srv","transports":{"apns":true,"fcm":false}}"#) }
+            if request.httpMethod == "DELETE" || path.hasSuffix("/presence") { return (204, "") }
             if path.hasPrefix("/v1/push/devices/") { return (200, #"{"serverId":"srv","remoteDelivery":true}"#) }
             return (204, "")
         }
@@ -160,7 +162,7 @@ struct PushNotificationsTests {
 
     @Test func validTapQueuedBeforeStartRoutesAfterIdentity() async throws {
         let client = client { request in
-            request.url?.path == "/v1/push" ? (200, #"{"serverId":"srv","transports":{"apns":false}}"#) : (204, "")
+            request.url?.path == "/v1/push" ? (200, #"{"serverId":"srv","transports":{"apns":false,"fcm":false}}"#) : (204, "")
         }
         let manager = try manager(client: client)
         let model = AppModel(client: client)
@@ -180,7 +182,8 @@ struct PushNotificationsTests {
         let removals = Reference<[PendingPushRemoval]>([])
         let first = client { request in
             let path = request.url?.path ?? ""
-            if path == "/v1/push" { return (200, #"{"serverId":"one","transports":{"apns":true}}"#) }
+            if path == "/v1/push" { return (200, #"{"serverId":"one","transports":{"apns":true,"fcm":false}}"#) }
+            if request.httpMethod == "DELETE" || path.hasSuffix("/presence") { return (204, "") }
             if path.hasPrefix("/v1/push/devices/") { return (200, #"{"serverId":"one","remoteDelivery":true}"#) }
             return (204, "")
         }
@@ -190,7 +193,7 @@ struct PushNotificationsTests {
         manager.start(model: model)
         await manager.waitForSynchronization()
         let second = client("new-secret") { request in
-            request.url?.path == "/v1/push" ? (200, #"{"serverId":"two","transports":{"apns":true}}"#) : (404, "")
+            request.url?.path == "/v1/push" ? (200, #"{"serverId":"two","transports":{"apns":true,"fcm":false}}"#) : (404, "")
         }
         manager.connect(second)
         manager.receivedToken(Data([2]))
@@ -205,7 +208,7 @@ struct PushNotificationsTests {
 
     @Test func staleRegistrationResponseCannotBindDifferentServer() async throws {
         let client = client { request in
-            if request.url?.path == "/v1/push" { return (200, #"{"serverId":"identity","transports":{"apns":true}}"#) }
+            if request.url?.path == "/v1/push" { return (200, #"{"serverId":"identity","transports":{"apns":true,"fcm":false}}"#) }
             return (200, #"{"serverId":"other","remoteDelivery":true}"#)
         }
         let manager = try manager(client: client)
@@ -217,7 +220,7 @@ struct PushNotificationsTests {
     }
 
     @Test func coldTapWaitsForIdentityAndRejectsWrongServer() async throws {
-        let client = client { _ in (200, #"{"serverId":"srv","transports":{"apns":false}}"#) }
+        let client = client { _ in (200, #"{"serverId":"srv","transports":{"apns":false,"fcm":false}}"#) }
         let manager = try manager(client: client)
         let model = AppModel(client: client)
         var opened = false
@@ -246,7 +249,7 @@ struct PushNotificationsTests {
                 return await gate.response()
             }
             if url.path == "/v1/push" {
-                return (200, "{\"serverId\":\"\(host)\",\"transports\":{\"apns\":true}}")
+                return (200, "{\"serverId\":\"\(host)\",\"transports\":{\"apns\":true,\"fcm\":false}}")
             }
             if request.httpMethod == "PUT", !url.path.hasSuffix("presence") {
                 return (200, "{\"serverId\":\"\(host)\",\"remoteDelivery\":true}")

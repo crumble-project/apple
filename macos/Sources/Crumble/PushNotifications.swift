@@ -233,7 +233,9 @@ extension PushNotifications {
             status = "Waiting for APNs device registration"
             return nil
         }
-        return PushDevice(token: apnsToken, environment: environment, bundleId: bundle)
+        return PushDevice(
+            platform: "macos", transport: "apns", token: apnsToken,
+            environment: environment, bundleId: bundle)
     }
 
     private func authorizeRegistration(client: APIClient, version: Int) async -> Bool {

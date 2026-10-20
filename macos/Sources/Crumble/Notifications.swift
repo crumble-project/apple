@@ -3,20 +3,6 @@ import AppKit
 import Foundation
 import UserNotifications
 
-/// One event from the server's activity stream.
-struct ActivityEvent: Codable, Sendable {
-    var eventId: String?
-    var serverId: String?
-    var createdAt: String?
-    var type: String
-    var agentId: String
-    var agentName: String
-    var entryId: String?
-    var origin: String?
-    var preview: String?
-    var lastMessage: String?
-}
-
 /// What the owner is looking at, which decides whether an event is worth a notification.
 struct NotificationContext {
     var appActive: Bool

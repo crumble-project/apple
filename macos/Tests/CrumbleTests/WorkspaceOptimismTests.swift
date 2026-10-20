@@ -8,7 +8,7 @@ extension APIClientTests {
     @MainActor @Test func memoryCreateAppearsBeforeServerResponseAndReconciles() async throws {
         let client = StubProtocol.client { request in
             if request.httpMethod == "POST", request.url?.path == "/v1/memories" {
-                return (200, #"{"id":"m1","content":"Remember this"}"#)
+                return (201, memoryFixture(#"{"id":"m1","content":"Remember this"}"#))
             }
             return (404, "")
         }

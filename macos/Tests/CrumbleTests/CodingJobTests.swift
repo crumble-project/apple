@@ -13,10 +13,10 @@ extension APIClientTests {
     }
 
     @Test func codingJobHistoryEncodesNameAndPaging() async throws {
-        let client = StubProtocol.client { _ in (200, #"{"messages":[],"hasMore":false}"#) }
+        let client = StubProtocol.client { _ in (200, #"{"messages":[],"hasMore":false,"oldestEntryId":null}"#) }
         _ = try await client.codingJobHistory("a1", name: "fix login/ui", before: "e:1", limit: 50)
         let url = StubProtocol.requests.first?.url?.absoluteString
-        #expect(url == "http://crumble.test/v1/agents/a1/coding-jobs/fix%20login%2Fui/history?before=e%3A1&limit=50")
+        #expect(url == "http://crumble.test/v1/agents/a1/coding-jobs/fix%20login%2Fui/history?limit=50&before=e%3A1")
     }
 
     @MainActor @Test func codingToggleFollowsCapabilitiesButKeepsExistingCoding() async {
@@ -35,7 +35,7 @@ extension APIClientTests {
     @MainActor @Test func openingACodingJobLoadsItsHistory() async {
         let model = AppModel(client: StubProtocol.client { request in
             request.url?.path == "/v1/agents/a1/coding-jobs/fix/history"
-                ? (200, #"{"messages":[{"id":"a1:1:0","role":"user","content":"Fix it"}],"hasMore":true,"#
+                ? (200, #"{"messages":[{"id":"a1:1:0","entryId":"a1:1","role":"user","content":"Fix it"}],"hasMore":true,"#
                     + #""oldestEntryId":"a1:1"}"#)
                 : (404, "")
         })

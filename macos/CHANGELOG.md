@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Use apfelkern's generated contract operations for activity and push APIs, and shared event decoding. Pin the reviewed package revision and run unsigned tests in PR CI.
+
 - Remove the unused **Folder** field from the bot profile editor.
 - Publish a Developer ID signed, notarized nightly build to the `nightly` pre-release. `build-app.sh` signs with `CRUMBLE_SIGNING_IDENTITY` alone, without push provisioning, and takes `CRUMBLE_VERSION` and `CRUMBLE_BUILD_NUMBER`. Fetch apfelkern over HTTPS, so builds need no SSH access.
 - Use the `ng.crumbli.mac` bundle ID, and build a separate `Crumble Dev.app` (`ng.crumbli.mac.dev`) with `CRUMBLE_VARIANT=dev`. Keychain items and the sign-in callback follow the bundle ID, so `swift run` and dev builds no longer overwrite the installed app's connection. Saved connections from `dev.crumble.desktop` are not migrated; enter the server URL and token again.

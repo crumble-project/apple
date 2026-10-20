@@ -8,10 +8,10 @@ extension APIClientTests {
     @MainActor @Test func memoryOverviewLoadsEveryBotWithoutSelectingOne() async throws {
         let client = StubProtocol.client { request in
             switch request.url?.path {
-            case "/v1/agents": (200, #"[{"id":"a1","name":"Atlas"},{"id":"a2","name":"Beacon"}]"#)
-            case "/v1/memories": (200, #"[{"id":"shared","content":"For every bot"}]"#)
-            case "/v1/agents/a1/memories": (200, #"[{"id":"personal-1","content":"Only Atlas"}]"#)
-            case "/v1/agents/a2/memories": (200, #"[{"id":"personal-2","content":"Only Beacon"}]"#)
+            case "/v1/agents": (200, agentFixture(#"[{"id":"a1","name":"Atlas"},{"id":"a2","name":"Beacon"}]"#))
+            case "/v1/memories": (200, memoryFixture(#"[{"id":"shared","content":"For every bot"}]"#))
+            case "/v1/agents/a1/memories": (200, memoryFixture(#"[{"id":"personal-1","content":"Only Atlas"}]"#))
+            case "/v1/agents/a2/memories": (200, memoryFixture(#"[{"id":"personal-2","content":"Only Beacon"}]"#))
             default: (404, "")
             }
         }
@@ -36,10 +36,10 @@ extension APIClientTests {
     @MainActor @Test func memoryActionsUseTheEntryOwnerWithoutAnActiveBot() async throws {
         let client = StubProtocol.client { request in
             switch request.url?.path {
-            case "/v1/agents": (200, #"[{"id":"a2","name":"Beacon"}]"#)
+            case "/v1/agents": (200, agentFixture(#"[{"id":"a2","name":"Beacon"}]"#))
             case "/v1/memories", "/v1/agents/a2/memories": (200, "[]")
             case "/v1/agents/a2/memories/m2":
-                request.httpMethod == "DELETE" ? (204, "") : (200, #"{"id":"m2","content":"Updated"}"#)
+                request.httpMethod == "DELETE" ? (204, "") : (200, memoryFixture(#"{"id":"m2","content":"Updated"}"#))
             default: (404, "")
             }
         }

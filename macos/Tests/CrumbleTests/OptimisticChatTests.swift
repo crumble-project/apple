@@ -28,9 +28,9 @@ extension APIClientTests {
         let model = AppModel(client: StubProtocol.client { request in
             switch request.url?.path {
             case "/v1/agents/a1/events":
-                return (200, "event: snapshot\ndata: {\"agentId\":\"a1\",\"status\":\"idle\",\"messages\":[]}\n\n")
+                return (200, "event: snapshot\ndata: " + chatFixture() + "\n\n")
             case "/v1/agents/a2/chat":
-                return (200, #"{"agentId":"a2","status":"idle","messages":[]}"#)
+                return (200, chatFixture("a2"))
             default: return (404, "")
             }
         })
@@ -61,8 +61,8 @@ extension APIClientTests {
         let model = await chatModel { request in
             switch request.url?.path {
             case "/v1/agents/a1/chat":
-                (200, #"{"agentId":"a1","status":"idle","messages":[]}"#)
-            case "/v1/agents/a1/messages": (202, "")
+                (200, chatFixture())
+            case "/v1/agents/a1/messages": (202, executionFixture())
             default: (404, "")
             }
         }
@@ -89,10 +89,10 @@ extension APIClientTests {
         let model = await chatModel { request in
             switch request.url?.path {
             case "/v1/agents/a1/chat":
-                return (200, #"{"agentId":"a1","status":"idle","messages":[]}"#)
+                return (200, chatFixture())
             case "/v1/agents/a1/messages":
                 attempts += 1
-                return attempts == 1 ? (500, #"{"error":"busy"}"#) : (202, "")
+                return attempts == 1 ? (500, #"{"error":"busy"}"#) : (202, executionFixture())
             default: return (404, "")
             }
         }
@@ -122,8 +122,8 @@ extension APIClientTests {
         let model = await chatModel { request in
             switch request.url?.path {
             case "/v1/agents/a1/chat":
-                (200, #"{"agentId":"a1","status":"idle","messages":[]}"#)
-            case "/v1/agents/a1/messages": (202, "")
+                (200, chatFixture())
+            case "/v1/agents/a1/messages": (202, executionFixture())
             default: (404, "")
             }
         }
@@ -143,8 +143,8 @@ extension APIClientTests {
             switch request.url?.path {
             case "/v1/agents/a1/chat", "/v1/agents/a2/chat":
                 let id = request.url?.path.contains("a2") == true ? "a2" : "a1"
-                return (200, "{\"agentId\":\"\(id)\",\"status\":\"idle\",\"messages\":[]}")
-            case "/v1/agents/a1/messages": return (202, "")
+                return (200, chatFixture(id))
+            case "/v1/agents/a1/messages": return (202, executionFixture())
             default: return (404, "")
             }
         }

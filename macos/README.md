@@ -12,10 +12,20 @@ The app has no third-party dependencies.
 
 ## Shared Swift package
 
-The app and unit tests fetch `https://github.com/crumble-project/apfelkern.git`, tracking `main`. A sibling checkout is not required.
-The package provides common models, API transport, drafts, and pure helpers. See the [package documentation](https://github.com/crumble-project/apfelkern).
+The app and unit tests fetch `https://github.com/crumble-project/apfelkern.git` at the exact reviewed commit in `Package.swift` and `Package.resolved`. A sibling checkout is not required.
+The package provides generated API operations and event decoding, common domain models, API transport, drafts, and pure helpers. See the [package documentation](https://github.com/crumble-project/apfelkern).
 
 Bot chat delivery uses `BotChatDelivery` from `apfelkern`. It coordinates pending messages, retry payloads, and previews. HTTP acceptance retains pending messages until a transcript snapshot confirms them. `AppModel` retains transport tasks, connection and selection guards, and composer behavior. Delivery behavior tests live in `apfelkern`; controlled transport tests remain in the app.
+
+## Update the API client
+
+Update the contract and generated client in apfelkern first. Update the exact package revision in `Package.swift`, resolve packages, and commit `Package.resolved` together. Run `swift test`. Do not add an app-local generator or duplicate wire models.
+
+To verify unmerged shared changes locally, run `swift package edit apfelkern --path ../apfelkern`, then `swift test`. Run `swift package unedit apfelkern` before committing; local overrides must not enter the pin.
+
+Apfelkern initially uses a checksum-verified local bot contract. Its pin must switch to `contract-v1.0.0` after bot's first release. Merge bot, then apfelkern, then this app, and refresh the app pin if apfelkern's merge changes the commit. Connection settings, cancellation, errors, optimistic delivery, and streaming lifetime remain app-owned.
+
+PR CI runs unsigned `swift test` on a public GitHub-hosted macOS runner without signing credentials. The signed nightly workflow remains separate.
 
 ## Run the app
 

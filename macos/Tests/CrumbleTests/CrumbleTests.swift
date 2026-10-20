@@ -58,7 +58,7 @@ final class StubProtocol: URLProtocol, @unchecked Sendable {
 struct APIClientTests {
     @Test func agentsSendBearerAndDecode() async throws {
         let client = StubProtocol.client(token: "test-token") { _ in
-            (200, #"[{"id":"a1","name":"Atlas","enabled":true,"lastMessage":"See you tomorrow."}]"#)
+            (200, agentFixture(#"[{"id":"a1","name":"Atlas","enabled":true,"lastMessage":"See you tomorrow."}]"#))
         }
         let agents = try await client.agents()
         #expect(agents.map(\.name) == ["Atlas"])
@@ -68,11 +68,11 @@ struct APIClientTests {
     }
 
     @Test func updateAgentCanClearCapabilities() async throws {
-        let client = StubProtocol.client { _ in (200, #"{"id":"a1"}"#) }
+        let client = StubProtocol.client { _ in (200, agentFixture(#"{"id":"a1"}"#)) }
         _ = try await client.updateAgent(
             "a1", patch: ["tools": .array([]), "skills": try JSONValue(encoding: [Skill]())])
-        let body = try #require(String(data: StubProtocol.requests.first?.httpBody ?? Data(), encoding: .utf8))
-        #expect(body.contains(#""tools":[]"#) && body.contains(#""skills":[]"#))
+        let body = try JSONDecoder().decode(JSONValue.self, from: #require(StubProtocol.requests.first?.httpBody))
+        #expect(body["tools"] == .array([]) && body["skills"] == .array([]))
     }
 
     @Test func sharedCatalogIncludesDefaultsAndOptionalSkills() async throws {
@@ -83,8 +83,10 @@ struct APIClientTests {
                 #"""
                 [{"id":"common:tasks/SKILL.md","name":"tasks","instructions":"Complete tasks",
                   "source":"bundled","path":"tasks/SKILL.md"},
-                 {"id":"s1","name":"Writing","instructions":"Write plainly","source":"shared"},
-                 {"id":"legacy","name":"Legacy","instructions":"Existing skill"}]
+                 {"id":"s1","name":"Writing","instructions":"Write plainly","source":"shared",
+                  "createdAt":"2026-10-19T12:00:00Z","updatedAt":"2026-10-19T12:00:00Z"},
+                 {"id":"legacy","name":"Legacy","instructions":"Existing skill","source":"shared",
+                  "createdAt":"2026-10-19T12:00:00Z","updatedAt":"2026-10-19T12:00:00Z"}]
                 """#
             )
         }
@@ -103,6 +105,7 @@ struct APIClientTests {
                     {
                       "messages": [
                         {
+                          "id": "a1:8:0",
                           "entryId": "a1:8",
                           "role": "user",
                           "content": "older"
@@ -113,20 +116,20 @@ struct APIClientTests {
                     }
                     """#
                 )
-            case "/v1/agents/a1/messages": (202, "")
+            case "/v1/agents/a1/messages": (202, executionFixture())
             default: (404, "")
             }
         }
         let history = try await client.chatHistory("a1", before: "a1:42", limit: 100)
         #expect(history.messages?.first?.entryId == "a1:8")
-        #expect(StubProtocol.requests.last?.url?.query == "before=a1%3A42&limit=100")
+        #expect(StubProtocol.requests.last?.url?.query == "limit=100&before=a1%3A42")
         try await client.sendChatMessage("a1", content: "hello", requestID: "req", replyTo: "a1:41")
-        let body = try #require(String(data: StubProtocol.requests.last?.httpBody ?? Data(), encoding: .utf8))
-        #expect(body.contains(#""replyTo":"a1:41""#))
+        let body = try JSONDecoder().decode(JSONValue.self, from: #require(StubProtocol.requests.last?.httpBody))
+        #expect(body["replyTo"]?.stringValue == "a1:41")
     }
 
     @Test func messagesCarryAttachments() async throws {
-        let client = StubProtocol.client { _ in (202, "") }
+        let client = StubProtocol.client { _ in (202, executionFixture()) }
         try await client.sendChatMessage(
             "a1", content: "", requestID: "req", replyTo: "",
             attachments: [OutgoingAttachment(name: "dot.png", mimeType: "image/png", data: "AAAA")])
@@ -162,7 +165,7 @@ struct APIClientTests {
             case "/v1/mcp-servers/s1/oauth":
                 (200, #"{"authorizationUrl":"https://auth.example.com/authorize?state=x"}"#)
             case "/v1/mcp-servers/s1/oauth/callback":
-                (200, #"{"id":"s1","name":"Linear","url":"https://mcp.linear.app/mcp","enabled":true,"auth":"oauth"}"#)
+                (200, #"{"id":"s1","name":"Linear","url":"https://mcp.linear.app/mcp","enabled":true,"agentId":null,"auth":"oauth","authenticated":true}"#)
             default: (404, "")
             }
         }
@@ -173,10 +176,8 @@ struct APIClientTests {
         #expect(sent.contains(scheme + ":\\/oauth\\/callback") || sent.contains(scheme + ":/oauth/callback"))
         let server = try await client.finishMCPSignIn("s1", code: "c", state: "x", iss: "https://auth.example.com")
         #expect(server.auth == "oauth")
-        let finished = try #require(String(data: StubProtocol.requests.last?.httpBody ?? Data(), encoding: .utf8))
-        #expect(
-            finished.contains(#""iss":"https:\/\/auth.example.com""#)
-                || finished.contains(#""iss":"https://auth.example.com""#))
+        let finished = try JSONDecoder().decode(JSONValue.self, from: #require(StubProtocol.requests.last?.httpBody))
+        #expect(finished["iss"]?.stringValue == "https://auth.example.com")
     }
 
     @Test func errorsCarryStatusAndBody() async throws {
@@ -191,7 +192,7 @@ struct APIClientTests {
     }
 
     @Test func scheduleRunUnwrapsTheEnvelope() async throws {
-        let client = StubProtocol.client { _ in (200, #"{"admitted":true,"result":{"id":"e1","status":"pending"}}"#) }
+        let client = StubProtocol.client { _ in (202, #"{"admitted":true,"result":{"id":"e1","status":"pending"}}"#) }
         #expect(try await client.runSchedule("s1").id == "e1")
     }
 
@@ -202,7 +203,7 @@ struct APIClientTests {
              "timezone":"Europe/Berlin","runAt":"2026-10-18T10:10:00Z"}
             """#
         let client = StubProtocol.client { request in
-            (200, request.httpMethod == "PATCH" ? response : "[]")
+            (200, request.httpMethod == "PATCH" ? scheduleFixture(response) : "[]")
         }
         let model = AppModel(client: client)
         model.agents = [Agent(id: "a1", name: "Atlas")]
@@ -231,26 +232,27 @@ struct APIClientTests {
                 #expect(payload["cron"] as? String == "0 9 * * *")
                 #expect(payload["runAt"] is NSNull)
             } else {
-                #expect(payload["runAt"] as? String == "2026-10-18T10:10:00Z")
+                #expect(taskRunDate(payload["runAt"] as? String ?? "") == draft.runDate)
                 #expect(payload["cron"] is NSNull)
             }
         }
     }
 
     @Test func chatEventsDeliverSnapshotsThenReportClosing() async throws {
+        let payload = chatFixture("a7", status: "running").replacingOccurrences(of: ",", with: ",\n")
         let client = StubProtocol.client { request in
             #expect(request.url?.path == "/v1/agents/a7/events")
             return (
                 200,
                 "event: heartbeat\ndata: {}\n\n" +
-                    "event: snapshot\ndata: {\"agentId\":\"a7\",\ndata: \"status\":\"running\"}\n\n"
+                    "event: snapshot\ndata: " + payload.replacingOccurrences(of: "\n", with: "\ndata: ") + "\n\n"
             )
         }
         let received = Received()
         do {
             try await client.chatEvents("a7") { await received.append($0) }
         } catch is SSEClosedError {}
-        #expect(await received.payloads == ["{\"agentId\":\"a7\",\n\"status\":\"running\"}"])
+        #expect(await received.payloads == [payload])
     }
 }
 

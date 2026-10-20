@@ -31,7 +31,7 @@ extension APIClientTests {
                 guard request.httpMethod == "PATCH" else { return (404, "") }
                 let body = try? JSONSerialization.jsonObject(with: request.httpBody ?? Data()) as? [String: Any]
                 sentTools = body?["tools"] as? [String]
-                return (200, #"{"id":"a1","name":"After","enabled":true,"tools":["memory","coding"]}"#)
+                return (200, agentFixture(#"{"id":"a1","name":"After","enabled":true,"tools":["memory","coding"]}"#))
             })
         model.agents = [Agent(id: "a1", name: "Before", tools: ["memory", "coding"])]
         model.openEditor(agentID: "a1")
@@ -44,7 +44,7 @@ extension APIClientTests {
     @MainActor @Test func agentCreationUsesProvisionalRowWithoutStealingNavigation() async throws {
         let model = AppModel(
             client: StubProtocol.client { request in
-                request.httpMethod == "POST" ? (201, #"{"id":"created","name":"New bot","enabled":true}"#) : (404, "")
+                request.httpMethod == "POST" ? (201, agentFixture(#"{"id":"created","name":"New bot","enabled":true}"#)) : (404, "")
             })
         model.route = .memory
         model.agentDraft = AgentDraft(isNew: true, agentID: "", name: "New bot")
