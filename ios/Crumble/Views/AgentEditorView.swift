@@ -45,7 +45,6 @@ extension AgentEditorView {
         TextField("Agent name", text: $draft.name, prompt: Text("Agent name"))
           .accessibilityLabel("Agent name")
         TextField("Description", text: $draft.description, prompt: Text("What it helps with"))
-        TextField("Folder", text: $draft.folder, prompt: Text("Personal"))
         Toggle("Enabled", isOn: $draft.enabled)
       }
       modelSection

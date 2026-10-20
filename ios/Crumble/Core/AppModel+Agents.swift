@@ -21,7 +21,6 @@ extension AppModel {
     draft.provider = agent.provider ?? ""
     draft.enabled = agent.enabled
     draft.avatar = "bot:" + agentAvatarSeed(agent)
-    draft.folder = agent.folder ?? ""
     if let inference = agent.inference {
       draft.thinking = inference.thinkingLevel
       draft.temperature = inference.temperature.map { String($0) } ?? ""
@@ -151,7 +150,7 @@ extension AppModel {
       instructions: draft.instructions.nilIfEmpty,
       avatar: draft.avatar, enabled: draft.enabled, provider: draft.provider.nilIfEmpty,
       model: draft.model.nilIfEmpty,
-      folder: draft.folder.nilIfEmpty, tools: tools, delegates: delegates, skills: draft.skills,
+      tools: tools, delegates: delegates, skills: draft.skills,
       sharedSkills: shared, sharedMemory: draft.sharedMemory, mcpServers: servers,
       inference: inference)
   }
@@ -207,7 +206,7 @@ extension AppModel {
         "name": .string(input.name), "description": .string(draft.description),
         "instructions": .string(draft.instructions),
         "provider": .string(draft.provider), "model": .string(draft.model),
-        "avatar": .string(draft.avatar), "folder": .string(draft.folder),
+        "avatar": .string(draft.avatar),
         "enabled": .bool(draft.enabled),
         "tools": .array((input.tools ?? []).map(JSONValue.string)),
         "skills": try JSONValue(encoding: draft.skills),

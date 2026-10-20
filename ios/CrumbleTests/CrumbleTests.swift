@@ -68,7 +68,7 @@ final class StubProtocol: URLProtocol, @unchecked Sendable {
 struct APIClientTests {
   @Test func agentsSendBearerAndDecode() async throws {
     let client = StubProtocol.client(token: "test-token") { _ in
-      (200, #"[{"id":"a1","name":"Atlas","enabled":true,"lastMessage":"See you tomorrow."}]"#)
+      (200, ContractFixtures.json([ContractFixtures.agent("a1", lastMessage: "See you tomorrow.")]))
     }
     let agents = try await client.agents()
     #expect(agents.map(\.name) == ["Atlas"])
@@ -80,11 +80,14 @@ struct APIClientTests {
   }
 
   @Test func updateAgentCanClearCapabilities() async throws {
-    let client = StubProtocol.client { _ in (200, #"{"id":"a1"}"#) }
+    let client = StubProtocol.client { _ in (200, ContractFixtures.json(ContractFixtures.agent("a1").value1)) }
     _ = try await client.updateAgent(
       "a1", patch: ["tools": .array([]), "skills": try JSONValue(encoding: [Skill]())])
-    let body = try #require(String(data: StubProtocol.requests.first?.httpBody ?? Data(), encoding: .utf8))
-    #expect(body.contains(#""tools":[]"#) && body.contains(#""skills":[]"#))
+    let body = try JSONDecoder().decode(
+      Operations.UpdateAgent.Input.Body.JsonPayload.self,
+      from: try #require(StubProtocol.requests.first?.httpBody))
+    #expect(body.tools == [])
+    #expect(body.skills == [])
   }
 
   @Test func sharedCatalogIncludesDefaultsAndOptionalSkills() async throws {
@@ -95,8 +98,10 @@ struct APIClientTests {
         #"""
         [{"id":"common:tasks/SKILL.md","name":"tasks","instructions":"Complete tasks",
         "source":"bundled","path":"tasks/SKILL.md"},
-        {"id":"s1","name":"Writing","instructions":"Write plainly","source":"shared"},
-        {"id":"legacy","name":"Legacy","instructions":"Existing skill"}]
+        {"id":"s1","name":"Writing","instructions":"Write plainly","source":"shared",
+        "createdAt":"2026-01-01T00:00:00.000Z","updatedAt":"2026-01-01T00:00:00.000Z"},
+        {"id":"legacy","name":"Legacy","instructions":"Existing skill","source":"shared",
+        "createdAt":"2026-01-01T00:00:00.000Z","updatedAt":"2026-01-01T00:00:00.000Z"}]
         """#
       )
     }
@@ -108,10 +113,14 @@ struct APIClientTests {
   @MainActor @Test func memoryOverviewLoadsEveryBotWithoutSelectingOne() async throws {
     let client = StubProtocol.client { request in
       switch request.url?.path {
-      case "/v1/agents": (200, #"[{"id":"a1","name":"Atlas"},{"id":"a2","name":"Beacon"}]"#)
-      case "/v1/memories": (200, #"[{"id":"shared","content":"For every bot"}]"#)
-      case "/v1/agents/a1/memories": (200, #"[{"id":"personal-1","content":"Only Atlas"}]"#)
-      case "/v1/agents/a2/memories": (200, #"[{"id":"personal-2","content":"Only Beacon"}]"#)
+      case "/v1/agents":
+        (200, ContractFixtures.json([ContractFixtures.agent("a1"), ContractFixtures.agent("a2", name: "Beacon")]))
+      case "/v1/memories":
+        (200, ContractFixtures.json([ContractFixtures.memory("shared", content: "For every bot")]))
+      case "/v1/agents/a1/memories":
+        (200, ContractFixtures.json([ContractFixtures.memory("personal-1", content: "Only Atlas", agentID: "a1")]))
+      case "/v1/agents/a2/memories":
+        (200, ContractFixtures.json([ContractFixtures.memory("personal-2", content: "Only Beacon", agentID: "a2")]))
       default: (404, "")
       }
     }
@@ -150,7 +159,9 @@ struct APIClientTests {
       case "/v1/mcp-servers/s1/oauth/callback":
         (
           200,
-          #"{"id":"s1","name":"Linear","url":"https://mcp.linear.app/mcp","enabled":true,"auth":"oauth"}"#
+          ContractFixtures.json(Components.Schemas.McpServerStatus(
+            value1: .init(enabled: true, id: "s1", name: "Linear", url: "https://mcp.linear.app/mcp"),
+            value2: .init(auth: .oauth, authenticated: true)))
         )
       default: (404, "")
       }
@@ -164,10 +175,10 @@ struct APIClientTests {
     let server = try await client.finishMCPSignIn(
       "s1", code: "c", state: "x", iss: "https://auth.example.com")
     #expect(server.auth == "oauth")
-    let finished = try #require(String(data: StubProtocol.requests.last?.httpBody ?? Data(), encoding: .utf8))
-    #expect(
-      finished.contains(#""iss":"https:\/\/auth.example.com""#)
-        || finished.contains(#""iss":"https://auth.example.com""#))
+    let finished = try JSONDecoder().decode(
+      Operations.FinishMcpOAuth.Input.Body.JsonPayload.self,
+      from: try #require(StubProtocol.requests.last?.httpBody))
+    #expect(finished.iss == "https://auth.example.com")
   }
 
   @Test func chatContracts() async throws {
@@ -176,30 +187,37 @@ struct APIClientTests {
       case "/v1/agents/a1/chat/history":
         (
           200,
-          #"{"messages":[{"entryId":"a1:8","role":"user","content":"older"}],"hasMore":false,"oldestEntryId":"a1:8"}"#
+          ContractFixtures.json(Components.Schemas.TranscriptPage(
+            hasMore: false, messages: [.init(content: "older", entryId: "a1:8", id: "a1:8:0", role: "user")],
+            oldestEntryId: "a1:8"))
         )
-      case "/v1/agents/a1/messages": (202, "")
+      case "/v1/agents/a1/messages": (202, ContractFixtures.execution())
       default: (404, "")
       }
     }
     let history = try await client.chatHistory("a1", before: "a1:42", limit: 100)
     #expect(history.messages?.first?.entryId == "a1:8")
-    #expect(StubProtocol.requests.last?.url?.query == "before=a1%3A42&limit=100")
-    try await client.sendChatMessage("a1", content: "hello", requestID: "req", replyTo: "a1:41")
-    let body = try #require(String(data: StubProtocol.requests.last?.httpBody ?? Data(), encoding: .utf8))
-    #expect(body.contains(#""replyTo":"a1:41""#))
+    let historyURL = try #require(StubProtocol.requests.last?.url)
+    let query = URLComponents(url: historyURL, resolvingAgainstBaseURL: false)?.queryItems ?? []
+    #expect(Set(query) == Set([URLQueryItem(name: "before", value: "a1:42"), URLQueryItem(name: "limit", value: "100")]))
+    try await client.sendChatMessage(
+      "a1", content: "hello", requestID: ContractFixtures.requestID, replyTo: "a1:41")
+    let body = try JSONDecoder().decode(
+      Operations.SendMessage.Input.Body.JsonPayload.self,
+      from: try #require(StubProtocol.requests.last?.httpBody))
+    #expect(body.replyTo == "a1:41")
   }
 
   @Test func messagesCarryAttachments() async throws {
-    let client = StubProtocol.client { _ in (202, "") }
+    let client = StubProtocol.client { _ in (202, ContractFixtures.execution()) }
     try await client.sendChatMessage(
-      "a1", content: "", requestID: "req", replyTo: "",
+      "a1", content: "", requestID: ContractFixtures.requestID, replyTo: "",
       attachments: [OutgoingAttachment(name: "dot.png", mimeType: "image/png", data: "AAAA")])
-    let body =
-      try JSONSerialization.jsonObject(with: StubProtocol.requests.last?.httpBody ?? Data())
-      as? [String: Any]
-    #expect(body?["replyTo"] == nil)
-    #expect((body?["attachments"] as? [[String: String]])?.first?["mimeType"] == "image/png")
+    let body = try JSONDecoder().decode(
+      Operations.SendMessage.Input.Body.JsonPayload.self,
+      from: try #require(StubProtocol.requests.last?.httpBody))
+    #expect(body.replyTo == nil)
+    #expect(body.attachments?.first?.mimeType == "image/png")
     let message = try JSONDecoder().decode(
       Message.self,
       from: Data(
@@ -225,7 +243,7 @@ struct APIClientTests {
 
   @Test func scheduleRunUnwrapsTheEnvelope() async throws {
     let client = StubProtocol.client { _ in
-      (200, #"{"admitted":true,"result":{"id":"e1","status":"pending"}}"#)
+      (202, #"{"admitted":true,"result":{"id":"e1","status":"pending"}}"#)
     }
     #expect(try await client.runSchedule("s1").id == "e1")
   }
@@ -233,15 +251,18 @@ struct APIClientTests {
   @Test func chatEventsDeliverSnapshotsThenReportClosing() async throws {
     let client = StubProtocol.client { request in
       #expect(request.url?.path == "/v1/agents/a7/events")
-      return (
-        200,
-        "event: heartbeat\ndata: {}\n\nevent: snapshot\ndata: {\"agentId\":\"a7\",\ndata: \"status\":\"running\"}\n\n"
-      )
+      let payload = ContractFixtures.snapshot("a7", status: .running)
+        .replacingOccurrences(of: "\"status\":", with: "\ndata: \"status\":")
+      return (200, "event: heartbeat\ndata: {}\n\nevent: snapshot\ndata: \(payload)\n\n")
     }
     let received = Received()
     do { try await client.chatEvents("a7") { await received.append($0) } } catch is SSEClosedError {
     }
-    #expect(await received.payloads == ["{\"agentId\":\"a7\",\n\"status\":\"running\"}"])
+    let payload = try #require(await received.payloads.first)
+    let snapshot = try JSONDecoder().decode(Components.Schemas.ChatSnapshot.self, from: Data(payload.utf8))
+    #expect(await received.payloads.count == 1)
+    #expect(snapshot.value2.agentId == "a7")
+    #expect(snapshot.value2.status == .running)
   }
 }
 

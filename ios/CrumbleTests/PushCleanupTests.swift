@@ -195,7 +195,8 @@ extension APIClientTests {
 
     let wrongServer = NotificationPayload(userInfo: [
       "type": "reply", "agentId": "a1", "agentName": "Atlas", "serverId": "other",
-      "eventId": "evt-1", "origin": "user"
+      "eventId": "evt-1", "origin": "user", "preview": "Reply",
+      "createdAt": ContractFixtures.timestamp, "entryId": NSNull()
     ])
     #expect(wrongServer.event != nil)
     #expect(!wrongServer.matches(serverID: "server-a", serverURL: nil))
@@ -220,7 +221,8 @@ extension APIClientTests {
   @Test func notificationTapRouterQueuesUntilIdentityAndAgentsThenOpensOnce() {
     let payload = NotificationPayload(userInfo: [
       "type": "reply", "agentId": "a1", "agentName": "Atlas", "serverId": "server-a",
-      "eventId": "evt-1", "origin": "user"
+      "eventId": "evt-1", "origin": "user", "preview": "Reply",
+      "createdAt": ContractFixtures.timestamp, "entryId": NSNull()
     ])
     var router = NotificationTapRouter()
     router.queue(payload)
@@ -236,7 +238,8 @@ extension APIClientTests {
     var bot = NotificationTapRouter()
     bot.queue(NotificationPayload(userInfo: [
       "type": "reply", "agentId": "a1", "agentName": "Atlas", "serverId": "server-a",
-      "eventId": "evt-2", "origin": "bot"
+      "eventId": "evt-2", "origin": "bot", "preview": "Reply",
+      "createdAt": ContractFixtures.timestamp, "entryId": NSNull()
     ]))
     #expect(bot.resolve(serverID: "server-a", serverURL: "http://server", agentIDs: ["a1"]) == nil)
   }

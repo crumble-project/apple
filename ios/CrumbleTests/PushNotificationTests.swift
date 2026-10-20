@@ -12,8 +12,9 @@ extension APIClientTests {
     return defaults
   }
 
-  func pushDeviceBody(_ request: URLRequest) throws -> PushDevice {
-    try JSONDecoder().decode(PushDevice.self, from: request.httpBody ?? Data())
+  func pushDeviceBody(_ request: URLRequest) throws -> Operations.PutPushDevice.Input.Body.JsonPayload {
+    try JSONDecoder().decode(
+      Operations.PutPushDevice.Input.Body.JsonPayload.self, from: request.httpBody ?? Data())
   }
 
   @Test func staleMockSessionCannotPolluteNewSessionRequests() async throws {
@@ -45,17 +46,18 @@ extension APIClientTests {
       }
     }
 
-    let identity = try await client.pushServer()
+    let identity = try await client.pushStatus()
     #expect(identity.serverId == "server-a")
-    #expect(identity.transports.apns)
+    #expect(identity.transports["apns"] == true)
 
     let registration = try await client.registerPush(
       "install-1",
-      device: PushDevice(token: "aabb", environment: "development", bundleId: "dev.crumble"))
+      device: PushDevice(
+        platform: "ios", transport: "apns", token: "aabb", environment: "development", bundleId: "dev.crumble"))
     #expect(registration.remoteDelivery)
 
-    try await client.pushPresence("install-1", presence: PushPresence(active: true, agentId: "a1"))
-    try await client.pushPresence("install-1", presence: PushPresence(active: false, agentId: nil))
+    try await client.pushPresence("install-1", active: true, agentId: "a1")
+    try await client.pushPresence("install-1", active: false, agentId: nil)
     try await client.unregisterPush("install-1")
 
     #expect(StubProtocol.requests.map { "\($0.httpMethod ?? "") \($0.url?.path ?? "")" } == [
@@ -67,10 +69,13 @@ extension APIClientTests {
     ])
     let registrationRequest = StubProtocol.requests[1]
     #expect(registrationRequest.value(forHTTPHeaderField: "Authorization") == "Bearer bearer")
-    #expect(try pushDeviceBody(registrationRequest) == PushDevice(
-      token: "aabb", environment: "development", bundleId: "dev.crumble"))
+    #expect(try pushDeviceBody(registrationRequest) == .init(
+      bundleId: "dev.crumble", enabled: true, environment: .development,
+      platform: .ios, token: "aabb", transport: .apns))
     let presence = try #require(StubProtocol.requests[2].httpBody)
-    #expect(try #require(String(data: presence, encoding: .utf8)).contains(#""agentId":"a1""#))
+    let active = try JSONDecoder().decode(Operations.PutPushPresence.Input.Body.JsonPayload.self, from: presence)
+    #expect(active.active)
+    #expect(active.agentId == "a1")
     let inactivePresence = try #require(StubProtocol.requests[3].httpBody)
     #expect(try #require(String(data: inactivePresence, encoding: .utf8)).contains(#""agentId":null"#))
   }

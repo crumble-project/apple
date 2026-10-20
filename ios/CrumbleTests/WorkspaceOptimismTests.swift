@@ -51,7 +51,7 @@ extension APIClientTests {
     let model = AppModel(
       client: StubProtocol.client { request in
         request.httpMethod == "POST" && request.url?.path == "/v1/memories"
-          ? (200, #"{"id":"m1","content":"Remember this"}"#) : (404, "")
+          ? (201, ContractFixtures.json(ContractFixtures.memory("m1", content: "Remember this"))) : (404, "")
       })
     model.route = .memory
     model.openMemoryForm("")

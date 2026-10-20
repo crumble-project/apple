@@ -26,7 +26,7 @@ struct ActivityPanel: View {
                 Text(activity.agentName).font(.headline)
                 Text(activitySummary(activity)).lineLimit(2)
                 DisclosureGroup("Details") {
-                  Text(activity.details.prettyPrinted).font(.caption.monospaced()).textSelection(.enabled)
+                  Text(JSONValue.object(activity.details).prettyPrinted).font(.caption.monospaced()).textSelection(.enabled)
                 }
               }
               Spacer()
@@ -39,7 +39,7 @@ struct ActivityPanel: View {
     }
   }
 
-  private func activitySummary(_ activity: ActivityRecord) -> String {
+  private func activitySummary(_ activity: ActivityEntry) -> String {
     let details = activity.details
     if let tool = details["toolName"]?.stringValue ?? details["name"]?.stringValue {
       if let status = details["status"]?.stringValue { return "\(tool) · \(status)" }
