@@ -1,0 +1,13 @@
+{
+  "checksums": {
+    "CHANGELOG.md": "a0075a753628fc939e4599991ba3906f3ffaa403dda047266e096f923cb3ea3b",
+    "activity-event.schema.json": "1f225a65f4e80470da9e8230da3a355dc60cb711f9e61a186249ed3dd6e6e9f7",
+    "chat-snapshot.schema.json": "0af60b3c79a62a0b9780ef716e4db77b33701d1c5d8a0a372d77593adf2a936c",
+    "heartbeat.schema.json": "e1fc21c5ca3e658bfbfbb5005a0d1dfec2be6e720b5a1ff86f699a13cc5db221",
+    "openapi.json": "1cb17d9cdc18c7c33e17f22491963f48e4a24c612ed150344ad258df6847ad1e",
+    "source-commit.txt": "5a016c9cb0eb678cede24e738a6dd2a0a2b49ea70bf97a39d426dfb2626c4f13"
+  },
+  "kind": "local-export",
+  "sourceCommit": "40d7b6a4872852673f5bf91bc11327d8df6b2aad",
+  "version": "1.0.0"
+}

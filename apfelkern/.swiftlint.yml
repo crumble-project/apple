@@ -3,6 +3,9 @@ included:
   - Tests
   - Package.swift
 
+excluded:
+  - Sources/apfelkern/Generated
+
 opt_in_rules:
   - force_unwrapping
   - implicitly_unwrapped_optional
