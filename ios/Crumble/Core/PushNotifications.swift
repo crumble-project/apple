@@ -2,55 +2,6 @@ import apfelkern
 import Foundation
 import Observation
 
-struct PushServer: Decodable, Sendable {
-  var serverId: String
-  var transports: Transports
-  struct Transports: Decodable, Sendable { var apns: Bool; var fcm: Bool }
-}
-
-struct PushDevice: Codable, Equatable, Sendable {
-  var platform = "ios"
-  var transport = "apns"
-  var token: String
-  var environment: String
-  var bundleId: String
-  var enabled = true
-}
-
-struct PushRegistration: Decodable, Sendable {
-  var serverId: String
-  var remoteDelivery: Bool
-}
-
-struct PushPresence: Encodable, Sendable {
-  var active: Bool
-  var agentId: String?
-
-  // The contract requires an explicit null when no chat is visible.
-  func encode(to encoder: Encoder) throws {
-    var values = encoder.container(keyedBy: CodingKeys.self)
-    try values.encode(active, forKey: .active)
-    if let agentId { try values.encode(agentId, forKey: .agentId) } else { try values.encodeNil(forKey: .agentId) }
-  }
-  private enum CodingKeys: CodingKey { case active, agentId }
-}
-
-extension APIClient {
-  func pushServer() async throws -> PushServer { try await call("GET", "/v1/push") }
-
-  func registerPush(_ id: String, device: PushDevice) async throws -> PushRegistration {
-    try await call("PUT", "/v1/push/devices/\(id)", body: device)
-  }
-
-  func unregisterPush(_ id: String) async throws {
-    _ = try await send("DELETE", "/v1/push/devices/\(id)")
-  }
-
-  func pushPresence(_ id: String, presence: PushPresence) async throws {
-    _ = try await send("PUT", "/v1/push/devices/\(id)/presence", body: presence)
-  }
-}
-
 /// A bounded, persisted set shared by stream and remote delivery, scoped to server identity.
 struct NotificationHistory {
   private(set) var keys: [String]
@@ -263,7 +214,7 @@ final class PushController {
         remoteDelivery = false
         persist()
       }
-      let identity = try await client.pushServer()
+      let identity = try await client.pushStatus()
       guard version == revision else { return }
       serverID = identity.serverId
       guard readyToRegister, let deviceToken else { return }
@@ -272,7 +223,9 @@ final class PushController {
       persist()
       let response = try await client.registerPush(
         installationID,
-        device: PushDevice(token: deviceToken, environment: environment, bundleId: bundleID))
+        device: PushDevice(
+          platform: "ios", transport: "apns", token: deviceToken,
+          environment: environment, bundleId: bundleID))
       guard version == revision else { return }
       guard response.serverId == identity.serverId else {
         remoteDelivery = false
@@ -286,7 +239,7 @@ final class PushController {
         ? "Push notifications are ready."
         : "Server push delivery is not configured. Alerts work while the app is open."
       try await client.pushPresence(
-        installationID, presence: PushPresence(active: active, agentId: active ? agentID : nil))
+        installationID, active: active, agentId: active ? agentID : nil)
     } catch {
       guard version == revision else { return }
       status = "Push setup could not reach the server. It will retry when the app is active."

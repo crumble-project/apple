@@ -62,7 +62,7 @@ final class AppModel {
   var sharedSkills: [SharedSkill] = []
   var schedules: [Schedule] = []
   var executions: [Execution] = []
-  var activities: [ActivityRecord] = []
+  var activities: [ActivityEntry] = []
   var mcpServers: [MCPServer] = []
   var providers: [ProviderStatus] = []
   var models: [ModelSummary] = []

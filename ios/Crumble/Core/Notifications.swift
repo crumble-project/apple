@@ -3,19 +3,6 @@ import Foundation
 import UIKit
 import UserNotifications
 
-/// One event from the server's activity stream or an APNs payload.
-struct ActivityEvent: Decodable, Sendable {
-  var type: String
-  var agentId: String
-  var agentName: String
-  var entryId: String?
-  var origin: String?
-  var preview: String?
-  var lastMessage: String?
-  var eventId: String?
-  var serverId: String?
-}
-
 struct NotificationContext {
   var appActive: Bool
   var route: Route?

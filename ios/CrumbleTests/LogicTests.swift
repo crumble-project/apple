@@ -174,7 +174,10 @@ struct LogicTests {
     _ = try parser.feed("data: {}")
     #expect(try parser.feed("") == nil)
     _ = try parser.feed("event: activity")
-    _ = try parser.feed(#"data: {"type":"reply","agentId":"a1","agentName":"Atlas"}"#)
+    let reply = Components.Schemas.ReplyEvent(
+      agentId: "a1", agentName: "Atlas", createdAt: ContractFixtures.timestamp,
+      eventId: "event-1", origin: "user", preview: "Reply", serverId: "server-a", _type: .reply)
+    _ = try parser.feed("data: \(ContractFixtures.json(reply))")
     #expect(try parser.feed("") != nil)
   }
 

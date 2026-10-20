@@ -28,7 +28,7 @@ extension APIClientTests {
     let model = AppModel(
       client: StubProtocol.client { request in
         request.httpMethod == "POST"
-          ? (201, #"{"id":"created","name":"New bot","enabled":true}"#) : (404, "")
+          ? (201, ContractFixtures.json(ContractFixtures.agent("created", name: "New bot").value1)) : (404, "")
       })
     model.route = .memory
     model.agentDraft = AgentDraft(isNew: true, agentID: "", name: "New bot")

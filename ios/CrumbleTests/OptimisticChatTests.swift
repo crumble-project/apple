@@ -23,8 +23,8 @@ extension APIClientTests {
   @MainActor @Test func messageAppearsBeforeHTTPResponseAndSSEAckReconciles() async {
     let model = await chatModel { request in
       switch request.url?.path {
-      case "/v1/agents/a1/chat": (200, #"{"agentId":"a1","status":"idle","messages":[]}"#)
-      case "/v1/agents/a1/messages": (202, "")
+      case "/v1/agents/a1/chat": (200, ContractFixtures.snapshot("a1"))
+      case "/v1/agents/a1/messages": (202, ContractFixtures.execution())
       default: (404, "")
       }
     }
@@ -50,10 +50,10 @@ extension APIClientTests {
     var attempts = 0
     let model = await chatModel { request in
       switch request.url?.path {
-      case "/v1/agents/a1/chat": return (200, #"{"agentId":"a1","status":"idle","messages":[]}"#)
+      case "/v1/agents/a1/chat": return (200, ContractFixtures.snapshot("a1"))
       case "/v1/agents/a1/messages":
         attempts += 1
-        return attempts == 1 ? (500, #"{"error":"busy"}"#) : (202, "")
+        return attempts == 1 ? (500, #"{"error":"busy"}"#) : (202, ContractFixtures.execution())
       default: return (404, "")
       }
     }
@@ -78,8 +78,8 @@ extension APIClientTests {
   @MainActor @Test func identicalMessagesGetDistinctOptimisticIDs() async {
     let model = await chatModel { request in
       switch request.url?.path {
-      case "/v1/agents/a1/chat": (200, #"{"agentId":"a1","status":"idle","messages":[]}"#)
-      case "/v1/agents/a1/messages": (202, "")
+      case "/v1/agents/a1/chat": (200, ContractFixtures.snapshot("a1"))
+      case "/v1/agents/a1/messages": (202, ContractFixtures.execution())
       default: (404, "")
       }
     }
@@ -100,8 +100,8 @@ extension APIClientTests {
       switch request.url?.path {
       case "/v1/agents/a1/chat", "/v1/agents/a2/chat":
         let id = request.url?.path.contains("a2") == true ? "a2" : "a1"
-        return (200, "{\"agentId\":\"\(id)\",\"status\":\"idle\",\"messages\":[]}")
-      case "/v1/agents/a1/messages": return (202, "")
+        return (200, ContractFixtures.snapshot(id))
+      case "/v1/agents/a1/messages": return (202, ContractFixtures.execution())
       default: return (404, "")
       }
     }

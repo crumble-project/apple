@@ -21,7 +21,7 @@ actor ControlledDeliveryController {
         let agentID = path.split(separator: "/").dropLast().last {
         return ControlledHTTPResponse(
           status: 200,
-          body: Data("{\"agentId\":\"\(agentID)\",\"status\":\"idle\",\"messages\":[]}".utf8))
+          body: Data(ContractFixtures.snapshot(String(agentID)).utf8))
       }
       return ControlledHTTPResponse(status: 200, body: Data())
     }
@@ -35,9 +35,10 @@ actor ControlledDeliveryController {
 
   func observedPostCount() -> Int { postCount }
 
-  func completePost(_ sequence: Int, status: Int, body: String = "") {
+  func completePost(_ sequence: Int, status: Int, body: String? = nil) {
+    let responseBody = body ?? (status == 202 ? ContractFixtures.execution() : "")
     pendingResponses.removeValue(forKey: sequence)?.resume(
-      returning: ControlledHTTPResponse(status: status, body: Data(body.utf8)))
+      returning: ControlledHTTPResponse(status: status, body: Data(responseBody.utf8)))
   }
 }
 

@@ -11,7 +11,9 @@ extension APIClientTests {
       case "/v1/agents/a1/chat":
         (
           200,
-          #"{"agentId":"a1","status":"idle","messages":[{"id":"a1:1:0","role":"assistant","content":"ready"}]}"#
+          ContractFixtures.snapshot("a1", messages: [
+            .init(content: "ready", entryId: "a1:1", id: "a1:1:0", role: "assistant")
+          ])
         )
       case "/v1/events", "/v1/agents/a1/events": (401, "")
       default: (404, "")
