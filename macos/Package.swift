@@ -4,7 +4,7 @@ import PackageDescription
 let package = Package(
     name: "Crumble",
     platforms: [.macOS(.v26)],
-    dependencies: [.package(url: "https://github.com/crumble-project/apfelkern.git", revision: "abdcd85b0b4ba8a26ef7eda8cf27c122004812f2")],
+    dependencies: [.package(url: "https://github.com/crumble-project/apfelkern.git", revision: "2057310722426aff34a0dd68a444c245c1659125")],
     targets: [
         .executableTarget(
             name: "Crumble",
