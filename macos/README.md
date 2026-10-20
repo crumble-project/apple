@@ -8,7 +8,7 @@ Crumble for macOS is a native SwiftUI client for a running Crumble server. It pr
 - Xcode 26 or later, for Swift 6.2 and the macOS 26 SDK.
 - A running Crumble server. Start the server from the sibling `bot` repository.
 
-The app has no third-party dependencies.
+API dependencies are provided by the shared `apfelkern` package and pinned in `Package.resolved`.
 
 ## Shared Swift package
 
