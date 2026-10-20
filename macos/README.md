@@ -172,7 +172,7 @@ Add MCP servers under **Integrations**. For a server that uses a token, enter it
 
 ## Current scope and limitations
 
-The server remains the source of truth for persistent state. The product is still under active development. Hermes Agent and Grok Bot parity is a target for end-to-end acceptance, not a statement that every capability is complete. Review the server's [`docs/product-parity.md`](../bot/docs/product-parity.md) and [`docs/architecture.md`](../bot/docs/architecture.md) before planning a release.
+The server remains the source of truth for persistent state. The product is still under active development. Hermes Agent and Grok Bot parity is a target for end-to-end acceptance, not a statement that every capability is complete. Review the [parity research](https://github.com/crumble-project/spec/blob/main/product/parity.md) and [`docs/architecture.md`](../bot/docs/architecture.md) before planning a release.
 
 Known limitations include:
 

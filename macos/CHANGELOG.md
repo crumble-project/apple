@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Replace the local glossary with a link to the canonical glossary in the spec repository.
 - Build against a sibling `../apfelkern` checkout when `APFELKERN_LOCAL` is set, instead of `swift package edit`. Pin apfelkern to its merged `main` commit with the 45-second SSE idle timeout.
 - Deliver notifications only as local notifications from the server's event stream, and remove APNs registration, presence, and the push provisioning options of `build-app.sh` (`CRUMBLE_PROVISIONING_PROFILE`, `CRUMBLE_PUSH_ENVIRONMENT`). Reconnect streams after wake and network changes, and reload the bot list after the activity stream reconnects. Keep running with the window closed. Notify once per reply event for each server, also when the window is closed, hidden, or minimized. A notification click opens its bot's chat only on the server it came from, and reports a deleted bot. Clicking the Dock icon reopens a closed main window. Delete the stored APNs installation, server binding, and pending-removal tokens on launch. Add `scripts/check-app-bundle.sh` and [Notifications on macOS](docs/notifications.md).
 - Use apfelkern's generated contract operations for activity and push APIs, and shared event decoding. Pin the reviewed package revision and run unsigned tests in PR CI.
