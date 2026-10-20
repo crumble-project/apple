@@ -153,19 +153,11 @@ public struct AttachmentInfo: Codable, Hashable, Sendable {
 }
 
 /// A file on its way to the server, in the shape the messages endpoint takes.
-public struct OutgoingAttachment: Encodable, Hashable, Sendable {
-  public var name: String
-  public var mimeType: String
-  public var data: String
+public typealias OutgoingAttachment = Operations.SendMessage.Input.Body.JsonPayload.AttachmentsPayloadPayload
 
-  public init(
-    name: String,
-    mimeType: String,
-    data: String
-  ) {
-    self.name = name
-    self.mimeType = mimeType
-    self.data = data
+extension OutgoingAttachment {
+  public init(name: String, mimeType: String, data: String) {
+    self.init(data: data, mimeType: mimeType, name: name)
   }
 }
 
@@ -179,6 +171,13 @@ public struct ChatSnapshot: Codable, Sendable {
   public var oldestEntryId: String?
 
   public var isRunning: Bool { status == "running" }
+
+  public init(from decoder: Decoder) throws {
+    let event = try Components.Schemas.EventChatSnapshot(from: decoder)
+    let wire = try JSONDecoder().decode(
+      Components.Schemas.ChatSnapshot.self, from: JSONEncoder().encode(event))
+    try self.init(wire: wire)
+  }
 
   public init(
     messages: [Message]? = nil,

@@ -44,13 +44,7 @@ public struct CodingJob: Codable, Identifiable, Hashable, Sendable {
   }
 }
 
-public struct CodingJobsResponse: Codable, Sendable {
-  public var jobs: [CodingJob]
-
-  public init(jobs: [CodingJob] = []) {
-    self.jobs = jobs
-  }
-}
+public typealias CodingJobsResponse = Components.Schemas.CodingJobs
 
 /// One readable step of a coding job's history.
 public enum CodingJobItem: Identifiable, Hashable, Sendable {
