@@ -14,9 +14,7 @@ final class AppModel {
     private(set) var generation = 0
 
     var agents: [Agent] = []
-    var route: Route? { didSet { onNotificationContextChange?() } }
-    @ObservationIgnored var onNotificationContextChange: (() -> Void)?
-    @ObservationIgnored var onNotificationConnectionChange: ((APIClient) -> Void)?
+    var route: Route?
     var workspaceRoute: Route?
     var selectedAgentID = ""
     var selectionVersion = 0
@@ -58,6 +56,11 @@ final class AppModel {
     private(set) var savingConnection = false
     var streamTask: Task<Void, Never>?
     var activityTask: Task<Void, Never>?
+    /// Set when the activity stream may have missed events; its next event reloads the bot list.
+    @ObservationIgnored var activityNeedsReconcile = false
+    @ObservationIgnored private var started = false
+    @ObservationIgnored private let connectionMonitor = ConnectionMonitor()
+    @ObservationIgnored var notifier = Notifier.shared
 
     var agentMemories: [String: [Memory]] = [:]
     var memoryLoadVersion = 0
@@ -99,6 +102,16 @@ final class AppModel {
     }
 
     var selectedAgent: Agent? { agents.first { $0.id == selectedAgentID } }
+
+    /// Runs once per launch; reopening the main window must not reload the chat or restart streams.
+    func start() {
+        guard !started else { return }
+        started = true
+        notifier.start(model: self)
+        connectionMonitor.start { [weak self] in self?.reconnectStreams() }
+        refresh()
+        followActivity()
+    }
 
     func botState(_ agent: Agent) -> BotState {
         if runningAgentIDs.contains(agent.id) { return .working }
@@ -240,7 +253,6 @@ extension AppModel {
         snapshot = nil
         messages = []
         client = candidate
-        onNotificationConnectionChange?(candidate)
         activeRequests = 0
         loading = false
         errorText = ""

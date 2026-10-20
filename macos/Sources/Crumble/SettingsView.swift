@@ -22,8 +22,8 @@ struct ConnectionSettingsView: View {
             Toggle(
                 "Notifications",
                 isOn: Binding(
-                    get: { PushNotifications.shared.enabled }, set: { PushNotifications.shared.enabled = $0 }))
-            Text(PushNotifications.shared.status).font(.caption).foregroundStyle(.secondary)
+                    get: { model.notifier.enabled }, set: { model.notifier.enabled = $0 }))
+            Text(model.notifier.status).font(.caption).foregroundStyle(.secondary)
             Button("Open Notification Settings") {
                 if let url = URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension") {
                     NSWorkspace.shared.open(url)

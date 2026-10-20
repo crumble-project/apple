@@ -39,7 +39,7 @@ struct LogicTests {
         #expect(model.agents[1].lastMessage == "A new reply from Beacon")
         #expect(model.route == .memory)
         #expect(model.messages.isEmpty)
-        #expect(notification(for: event, in: NotificationContext(appActive: false, route: nil)) == nil)
+        #expect(notification(for: event, in: NotificationContext(windowOnScreen: false, route: nil)) == nil)
         model.handleActivity(ActivityEvent(type: "chat-preview", agentId: "a2", agentName: "Beacon", lastMessage: ""))
         #expect(model.agents[1].lastMessage?.isEmpty == true)
     }
@@ -156,14 +156,15 @@ struct LogicTests {
         let reply = ActivityEvent(
             type: "reply", agentId: "a1", agentName: "Atlas", origin: "owner", preview: "**Done**, two meetings.")
         #expect(
-            notification(for: reply, in: NotificationContext(appActive: false, route: .agent("a1")))?.body
+            notification(for: reply, in: NotificationContext(windowOnScreen: false, route: .agent("a1")))?.body
                 == "Done, two meetings.")
-        #expect(notification(for: reply, in: NotificationContext(appActive: true, route: .agent("a1"))) == nil)
+        #expect(notification(for: reply, in: NotificationContext(windowOnScreen: true, route: .agent("a1"))) == nil)
         #expect(
-            notification(for: reply, in: NotificationContext(appActive: true, route: .agent("a2")))?.title == "Atlas")
+            notification(for: reply, in: NotificationContext(windowOnScreen: true, route: .agent("a2")))?.title
+                == "Atlas")
         var delegated = reply
         delegated.origin = "bot"
-        #expect(notification(for: delegated, in: NotificationContext(appActive: false, route: nil)) == nil)
+        #expect(notification(for: delegated, in: NotificationContext(windowOnScreen: false, route: nil)) == nil)
     }
 
     @Test func activityStreamPassesOnlyActivity() throws {

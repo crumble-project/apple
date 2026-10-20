@@ -20,11 +20,7 @@ struct CrumbleApp: App {
                 .environment(model)
                 .environment(\.botFinish, .dither)
                 .frame(minWidth: 860, minHeight: 560)
-                .task {
-                    Notifier.shared.start(model: model)
-                    model.refresh()
-                    model.followActivity()
-                }
+                .task { model.start() }
         }
         .defaultSize(width: 1280, height: 820)
         .commands {
@@ -59,7 +55,7 @@ struct ContentView: View {
                 .overlay(alignment: .bottom) { NoticeToast() }
         }
         .onAppear {
-            PushNotifications.shared.openMainWindow = { openWindow(id: "main") }
+            model.notifier.openMainWindow = { openWindow(id: "main") }
         }
         .sheet(item: $model.agentDraft) { AgentEditorView(draft: sheetBinding($model.agentDraft, for: $0)) }
         .sheet(item: $model.codingJobHistory) { CodingJobSheet(job: $0) }
@@ -273,22 +269,13 @@ final class CrumbleAppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillFinishLaunching(_ notification: Notification) {
         Notifier.shared.installDelegate()
     }
-    func application(_ application: NSApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-        PushNotifications.shared.receivedToken(deviceToken)
-    }
-    func application(_ application: NSApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
-        PushNotifications.shared.registrationFailed()
-    }
-    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        Task {
-            await PushNotifications.shared.prepareForTermination()
-            sender.reply(toApplicationShouldTerminate: true)
-        }
-        return .terminateLater
-    }
+    /// Notifications arrive over the app's own server streams, so closing the window keeps it running.
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
+    /// A closed SwiftUI window may no longer exist as an NSWindow, so the scene's own action reopens it.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        if !flag { sender.windows.first { $0.title == "Crumble" }?.makeKeyAndOrderFront(nil) }
-        return true
+        guard !flag, let open = Notifier.shared.openMainWindow else { return true }
+        open()
+        return false
     }
 }
 

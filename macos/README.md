@@ -85,6 +85,12 @@ Run the tests:
 swift test
 ```
 
+Check the app bundle that notifications depend on, without launching it:
+
+```bash
+./scripts/check-app-bundle.sh
+```
+
 Build `build/Crumble.app`, with the icon from `resources/icon.png`:
 
 ```bash
@@ -101,7 +107,7 @@ CRUMBLE_VARIANT=dev ./scripts/build-app.sh
 
 ## Nightly builds
 
-[`.github/workflows/nightly.yml`](.github/workflows/nightly.yml) runs daily at 03:00 UTC when `main` has changed, and on demand from the Actions tab. It runs the tests, builds `Crumble.app`, signs it with Developer ID, notarizes and staples it, then replaces the `nightly` pre-release with `Crumble-nightly.zip`. The version is `0.1.0` with a `YYYYMMDD.run` build number. Nightlies have no push entitlement.
+[`.github/workflows/nightly.yml`](.github/workflows/nightly.yml) runs daily at 03:00 UTC when `main` has changed, and on demand from the Actions tab. It runs the tests, builds `Crumble.app`, signs it with Developer ID, notarizes and staples it, then replaces the `nightly` pre-release with `Crumble-nightly.zip`. The version is `0.1.0` with a `YYYYMMDD.run` build number.
 
 The workflow reads these repository secrets:
 
@@ -141,9 +147,9 @@ Each task runs once, or on a cron schedule, in one bot's chat. Tasks are listed 
 
 ## Notifications
 
-The app notifies you when a bot finishes a reply you aren't looking at, including replies to scheduled tasks. Click a notification to open the chat. macOS asks for permission on first launch. Notifications need the app bundle from `./scripts/build-app.sh`; `swift run` posts none.
+The app notifies you when a bot finishes a reply you aren't looking at, including replies to scheduled tasks. Click a notification to open the chat. macOS asks for permission on first launch. Notifications need the app bundle from `./scripts/build-app.sh`; `swift run` posts none. Notifications can be disabled in Settings.
 
-The default ad hoc build uses local notifications while connected to the server. Remote delivery while Crumble is quit requires an APNs-provisioned build and configured server credentials. Setup is deferred; see [macOS push setup](docs/push-notifications.md). Notifications can be disabled in Settings.
+Notifications are local: the app receives replies over its connection to your server, with no APNs or push service. They arrive while Crumble is running, including with its window closed, but not while it is quit, asleep, or offline. After reconnecting, chats and the bot list catch up from the server, without notifying for replies that were missed. See [Notifications on macOS](docs/notifications.md).
 
 ## Shared and personal items
 

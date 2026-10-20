@@ -35,6 +35,10 @@ enum Keychain {
         }
     }
 
+    static func delete(_ account: String) {
+        SecItemDelete(query(account) as CFDictionary)
+    }
+
     private static func check(_ status: OSStatus) throws {
         guard status == errSecSuccess else {
             let message = SecCopyErrorMessageString(status, nil) as String? ?? "OSStatus \(status)"

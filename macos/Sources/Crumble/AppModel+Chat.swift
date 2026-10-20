@@ -81,9 +81,24 @@ extension AppModel {
         messages = []
     }
 
-    /// A tapped reply keeps its target while the initial agent-list refresh is in flight.
+    /// A tapped reply keeps its target while the initial agent-list refresh is in flight. A bot
+    /// missing from the list is looked up again, since it may be newer than the list or deleted.
     func openNotificationChat(_ id: String) {
-        selectAgent(id)
+        guard !agents.contains(where: { $0.id == id }) else {
+            selectAgent(id)
+            return
+        }
+        request { client in
+            let agents = try await client.agents()
+            return { [self] in
+                guard agents.contains(where: { $0.id == id }) else {
+                    errorText = "The bot for this notification no longer exists."
+                    return
+                }
+                if pendingMutations.isEmpty { self.agents = agents }
+                selectAgent(id)
+            }
+        }
     }
 
     /// Keeps older pages the owner already loaded; snapshots only carry the newest page.
@@ -156,12 +171,18 @@ extension AppModel {
                         }
                         await MainActor.run {
                             guard self.generation == generation else { return }
+                            if self.activityNeedsReconcile {
+                                self.activityNeedsReconcile = false
+                                self.reconcileAgents()
+                            }
                             self.handleActivity(event)
                         }
                     }
                 } catch {
                     if let apiError = error as? APIError, apiError.statusCode == 401 { return }
                 }
+                // Finished replies are not replayed, so missed ones are recovered from the server.
+                activityNeedsReconcile = true
                 try? await Task.sleep(for: backoff)
                 backoff = min(backoff * 2, .seconds(8))
             }
@@ -174,9 +195,44 @@ extension AppModel {
             let index = agents.firstIndex(where: { $0.id == event.agentId }) {
             agents[index].lastMessage = lastMessage
         }
-        let context = NotificationContext(appActive: NSApp?.isActive ?? false, route: route)
-        guard let note = notification(for: event, in: context) else { return }
-        Notifier.shared.post(event, title: note.title, body: note.body)
+        let context = NotificationContext(windowOnScreen: mainWindowOnScreen(), route: route)
+        guard let client, let note = notification(for: event, in: context) else { return }
+        notifier.post(event, title: note.title, body: note.body, serverURL: client.baseURL)
+    }
+
+    /// Restarts every server stream after wake or a network change. Chat streams resend a snapshot
+    /// on connection, which reconciles the transcript and running state.
+    func reconnectStreams() {
+        guard let client else { return }
+        activityNeedsReconcile = true
+        followActivity()
+        if streamTask != nil, !selectedAgentID.isEmpty {
+            streamTask?.cancel()
+            let id = selectedAgentID
+            let version = selectionVersion
+            streamTask = Task { await streamChat(client: client, id: id, version: version) }
+        }
+        for id in backgroundChats.keys {
+            stopFollowingBackgroundChat(id)
+            followBackgroundChat(id)
+        }
+    }
+
+    /// Reloads the bot list after the activity stream may have missed events. The stream replays
+    /// previews on connection, but not bots created or deleted meanwhile.
+    func reconcileAgents() {
+        guard let client else { return }
+        let generation = generation
+        let revision = mutationRevision
+        Task {
+            guard let agents = try? await client.agents(), self.generation == generation,
+                mutationRevision == revision, pendingMutations.isEmpty else { return }
+            if !selectedAgentID.isEmpty, !agents.contains(where: { $0.id == selectedAgentID }) {
+                refresh()
+                return
+            }
+            self.agents = agents
+        }
     }
 
     func loadOlder() {
