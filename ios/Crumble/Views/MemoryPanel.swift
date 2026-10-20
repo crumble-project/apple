@@ -55,7 +55,14 @@ struct MemoryPanel: View {
     }
     .formStyle(.grouped)
     .searchable(text: $query, placement: .automatic, prompt: "Search memories")
-    .confirmationDialog("Delete this memory?", item: $pendingDelete) { item in
+    .confirmationDialog(
+      "Delete this memory?",
+      isPresented: Binding(
+        get: { pendingDelete != nil },
+        set: { if !$0 { pendingDelete = nil } }
+      ),
+      presenting: pendingDelete
+    ) { item in
       Button("Delete", role: .destructive) { model.deleteMemory(item.id, agentID: item.agentID) }
       Button("Cancel", role: .cancel) {}
     } message: { item in Text(item.label) }
