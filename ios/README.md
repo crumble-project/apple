@@ -22,7 +22,7 @@ Update apfelkern first, then update its exact commit in `Crumble.xcodeproj/proje
 
 Apfelkern initially consumes a checksum-verified local contract export. After bot's first release, its pin must switch to `contract-v1.0.0` before final app adoption. Merge bot, then apfelkern, then this app. The app keeps its connection settings, task cancellation, error presentation, optimistic delivery, and streaming lifetime.
 
-`.github/workflows/ci.yml` runs unsigned simulator tests on public GitHub-hosted macOS runners. It requires no signing account, server, or custom secret.
+`.github/workflows/ci.yml` runs the unsigned simulator unit tests on public GitHub-hosted macOS runners for every push and pull request. `.github/workflows/ui-tests.yml` runs the UI tests nightly and on demand, because they take minutes. Neither requires a signing account, server, or custom secret.
 
 ## Chat delivery ownership
 
@@ -150,7 +150,7 @@ Run tests with an available simulator:
 ./scripts/test.sh
 ```
 
-The script selects the first available iPhone simulator. Set `CRUMBLE_SIMULATOR_ID` to use a specific device.
+Pass `unit` or `ui` to run only the unit or UI tests; without an argument, the script runs both. It boots the simulator while the app builds. The script selects the first available iPhone simulator. Set `CRUMBLE_SIMULATOR_ID` to use a specific device.
 Tests cover API decoding, event parsing, attachments, notifications, mentions, optimistic operations, and connection setup UI.
 The UI test uses an isolated launch without saved credentials.
 Tests do not require a server or provider account.
