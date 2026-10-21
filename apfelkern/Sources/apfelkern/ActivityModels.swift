@@ -45,11 +45,13 @@ public struct ActivityEvent: Codable, Hashable, Sendable {
   /// Set for a bot's answer in a group chat; open the group instead of the bot chat.
   public var groupId: String?
   public var groupName: String?
+  /// Set for a bot's answer to a job's report (origin `coding` or `desktop`): the job's name.
+  public var jobName: String?
 
   public init(eventId: String? = nil, serverId: String? = nil, createdAt: String? = nil,
               type: String, agentId: String, agentName: String, entryId: String? = nil,
               origin: String? = nil, preview: String? = nil, lastMessage: String? = nil,
-              groupId: String? = nil, groupName: String? = nil) {
+              groupId: String? = nil, groupName: String? = nil, jobName: String? = nil) {
     self.eventId = eventId
     self.serverId = serverId
     self.createdAt = createdAt
@@ -62,6 +64,7 @@ public struct ActivityEvent: Codable, Hashable, Sendable {
     self.lastMessage = lastMessage
     self.groupId = groupId
     self.groupName = groupName
+    self.jobName = jobName
   }
 
   public init(from decoder: Decoder) throws {
@@ -70,7 +73,7 @@ public struct ActivityEvent: Codable, Hashable, Sendable {
       self.init(eventId: wire.eventId, serverId: wire.serverId, createdAt: wire.createdAt,
                 type: wire._type.rawValue, agentId: wire.agentId, agentName: wire.agentName,
                 entryId: wire.entryId, origin: wire.origin, preview: wire.preview,
-                groupId: wire.groupId, groupName: wire.groupName)
+                groupId: wire.groupId, groupName: wire.groupName, jobName: wire.jobName)
     case .case2(let wire):
       self.init(type: wire._type.rawValue, agentId: wire.agentId, agentName: wire.agentName,
                 lastMessage: wire.lastMessage)
@@ -86,7 +89,7 @@ public struct ActivityEvent: Codable, Hashable, Sendable {
       }
       try Components.Schemas.EventActivity.case1(.init(
         agentId: agentId, agentName: agentName, createdAt: createdAt, entryId: entryId,
-        eventId: eventId, groupId: groupId, groupName: groupName, origin: origin, preview: preview,
+        eventId: eventId, groupId: groupId, groupName: groupName, jobName: jobName, origin: origin, preview: preview,
         serverId: serverId, _type: .reply
       )).encode(to: encoder)
     case "chat-preview":

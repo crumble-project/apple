@@ -120,3 +120,13 @@ private let controlJSON = #"{"holder":"owner","changes":3,"updatedAt":"2026-10-2
     #expect(link.expiresAt == "soon")
   }
 }
+
+@Test func aReplyToAJobReportKeepsItsJobName() throws {
+  let event = try JSONDecoder().decode(ActivityEvent.self, from: Data(#"""
+    {"type":"reply","eventId":"desktop-report:9","serverId":"s","agentId":"bot","agentName":"Desk",
+     "entryId":"bot:3","origin":"desktop","jobName":"github","preview":"Please log in.","createdAt":"now"}
+    """#.utf8))
+  #expect(event.origin == "desktop")
+  #expect(event.jobName == "github")
+  #expect(try JSONDecoder().decode(ActivityEvent.self, from: JSONEncoder().encode(event)) == event)
+}
