@@ -181,19 +181,44 @@ public struct Skill: Codable, Hashable, Sendable, Identifiable {
   }
 }
 
+/// Where a memory was saved: the owner's bot chat, the owner directly, a scheduled task, another bot, or a group chat.
+public struct MemorySource: Codable, Hashable, Sendable {
+  public var kind: String
+  /// The task, bot, or group chat, as named when the memory was saved.
+  public var name: String?
+  public var scheduleId: String?
+  public var agentId: String?
+  public var groupId: String?
+
+  public init(
+    kind: String, name: String? = nil, scheduleId: String? = nil, agentId: String? = nil,
+    groupId: String? = nil
+  ) {
+    self.kind = kind
+    self.name = name
+    self.scheduleId = scheduleId
+    self.agentId = agentId
+    self.groupId = groupId
+  }
+}
+
 public struct Memory: Codable, Identifiable, Hashable, Sendable {
   public var id: String
   public var content: String
   public var createdAt: String?
+  /// Nil for memories saved before sources were recorded.
+  public var source: MemorySource?
 
   public init(
     id: String,
     content: String,
-    createdAt: String? = nil
+    createdAt: String? = nil,
+    source: MemorySource? = nil
   ) {
     self.id = id
     self.content = content
     self.createdAt = createdAt
+    self.source = source
   }
 }
 

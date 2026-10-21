@@ -8,6 +8,8 @@ private struct StubResponse: Sendable {
   var contentType = "application/json"
   var body: Data
   var hold = false
+  /// Sends the body but keeps the connection open, as a live event stream does.
+  var open = false
 }
 
 private final class ContractURLProtocol: URLProtocol, @unchecked Sendable {
@@ -28,6 +30,7 @@ private final class ContractURLProtocol: URLProtocol, @unchecked Sendable {
         headerFields: ["Content-Type": stub.contentType]))
       client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
       client?.urlProtocol(self, didLoad: stub.body)
+      if stub.open { return }
       client?.urlProtocolDidFinishLoading(self)
     } catch {
       client?.urlProtocol(self, didFailWithError: error)
@@ -248,4 +251,118 @@ private func withClient(
   let event = try JSONDecoder().decode(ActivityEvent.self, from: Data(preview.utf8))
   #expect(event.lastMessage == "hello")
   #expect(try JSONDecoder().decode(ActivityEvent.self, from: JSONEncoder().encode(event)) == event)
+}
+
+private let groupSnapshot = #"""
+  {"groupChat":{"id":"trip","name":"Trip","memberIds":["ada","grace"],"createdAt":"now","updatedAt":"now"},
+   "activity":{"paused":true,"botTurns":8,"members":[
+     {"agentId":"ada","status":"running","error":null},{"agentId":"grace","status":"disabled","error":null}]},
+   "messages":[
+     {"id":"trip:1:0","entryId":"trip:1","role":"user","content":"Pack light","origin":{"kind":"owner"}},
+     {"id":"trip:2:0","entryId":"trip:2","role":"toolResult","content":"Reacted 👍","toolName":"react",
+      "toolDetails":{"emoji":"👍"},"replyTo":"trip:1","origin":{"kind":"bot","agentId":"ada","name":"Ada"}}],
+   "hasMore":false,"oldestEntryId":"trip:1","updatedAt":1}
+  """#
+
+@Test func groupMessagesCarryReplyAndAttachments() async throws {
+  try await withClient(handler: { request in
+    #expect(request.httpMethod == "POST")
+    #expect(request.url?.path == "/prefix/v1/group-chats/trip/messages")
+    #expect(request.timeoutInterval == 120)
+    let body = try requestJSON(request)
+    #expect(body["content"] == .string("Route attached"))
+    #expect(body["replyTo"] == .string("trip:3"))
+    #expect(body["attachments"] == .array([.object([
+      "name": .string("map.png"), "mimeType": .string("image/png"), "data": .string("AQI=")])]))
+    return StubResponse(status: 201, body: Data(#"{"requestId":"request","entryId":"trip:4"}"#.utf8))
+  }) { client in
+    try await client.sendGroupMessage(
+      "trip", content: "Route attached", requestID: "request", replyTo: "trip:3",
+      attachments: [.init(name: "map.png", mimeType: "image/png", data: "AQI=")])
+  }
+}
+
+@Test func groupSnapshotsDecodeActivityAndReactions() async throws {
+  try await withClient(handler: { request in
+    #expect(request.url?.path == "/prefix/v1/group-chats/trip/chat")
+    return StubResponse(body: Data(groupSnapshot.utf8))
+  }) { client in
+    let snapshot = try await client.groupChat("trip")
+    #expect(snapshot.groupChat.memberIds == ["ada", "grace"])
+    #expect(snapshot.activity.paused)
+    #expect(snapshot.activity.member("ada")?.status == .running)
+    #expect(snapshot.activity.member("grace")?.status == .disabled)
+    #expect(snapshot.messages.last?.toolName == "react")
+    #expect(Reaction.byReplyTarget(snapshot.messages) == ["trip:1:0": [Reaction.Mark(emoji: "👍", from: "Ada")]])
+  }
+}
+
+@Test func groupEventsDecodeGroupSnapshotsAndSkipHeartbeats() async throws {
+  let compact = try JSONEncoder().encode(JSONDecoder().decode(JSONValue.self, from: Data(groupSnapshot.utf8)))
+  let payload = try #require(String(bytes: compact, encoding: .utf8))
+  let stream = "event: heartbeat\ndata: {}\n\nevent: snapshot\ndata: " + payload + "\n\n"
+  let received = Mutex<[String]>([])
+  try await withClient(handler: { request in
+    #expect(request.url?.path == "/prefix/v1/group-chats/trip/events")
+    return StubResponse(contentType: "text/event-stream", body: Data(stream.utf8))
+  }) { client in
+    do {
+      try await client.groupChatEvents("trip") { payload in received.withLock { $0.append(payload) } }
+    } catch is SSEClosedError {
+      let events = received.withLock { $0 }
+      #expect(events.count == 1)
+      let snapshot = try JSONDecoder().decode(GroupChatSnapshot.self, from: Data(events[0].utf8))
+      #expect(snapshot.groupChat.name == "Trip")
+    }
+  }
+  var parser = SSEParser(snapshots: .group)
+  _ = try parser.feed("event: snapshot")
+  _ = try parser.feed(#"data: {"agentId":"bot","messages":[]}"#)
+  #expect(throws: SSEParser.InvalidPayload.self) { try parser.feed("") }
+}
+
+@Test func groupReplyEventsKeepTheirGroup() throws {
+  let reply = #"""
+    {"type":"reply","eventId":"e","serverId":"s","agentId":"ada","agentName":"Ada","entryId":"trip:5",
+     "origin":"group","preview":"Booked.","createdAt":"now","groupId":"trip","groupName":"Trip"}
+    """#
+  let event = try JSONDecoder().decode(ActivityEvent.self, from: Data(reply.utf8))
+  #expect(event.groupId == "trip")
+  #expect(event.groupName == "Trip")
+  #expect(try JSONDecoder().decode(ActivityEvent.self, from: JSONEncoder().encode(event)) == event)
+}
+
+@Test func memoriesReportTheirSource() async throws {
+  let memories = #"""
+    [{"id":"a","agentId":"ada","content":"older","source":null,"createdAt":"now","updatedAt":"now"},
+     {"id":"b","agentId":"ada","content":"Leaves Friday","createdAt":"now","updatedAt":"now",
+      "source":{"kind":"group","groupId":"trip","name":"Trip"}}]
+    """#
+  try await withClient(handler: { _ in StubResponse(body: Data(memories.utf8)) }) { client in
+    let result = try await client.memories("ada")
+    #expect(result.map(\.source) == [nil, MemorySource(kind: "group", name: "Trip", groupId: "trip")])
+  }
+}
+
+@Test func groupEventsArriveWhileTheStreamStaysOpen() async throws {
+  let compact = try JSONEncoder().encode(JSONDecoder().decode(JSONValue.self, from: Data(groupSnapshot.utf8)))
+  let payload = try #require(String(bytes: compact, encoding: .utf8))
+  let (events, continuation) = AsyncStream<String>.makeStream()
+  try await withClient(handler: { _ in
+    StubResponse(contentType: "text/event-stream", body: Data(("event: snapshot\ndata: " + payload + "\n\n").utf8),
+                 open: true)
+  }) { client in
+    let stream = Task { try await client.groupChatEvents("trip") { continuation.yield($0) } }
+    defer { stream.cancel() }
+    let first = Task {
+      var iterator = events.makeAsyncIterator()
+      return await iterator.next()
+    }
+    let timeout = Task {
+      try await Task.sleep(for: .seconds(2))
+      first.cancel()
+    }
+    #expect(await first.value == payload)
+    timeout.cancel()
+  }
 }

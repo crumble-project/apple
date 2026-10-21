@@ -1,14 +1,15 @@
 {
   "checksums": {
-    "CHANGELOG.md": "a0075a753628fc939e4599991ba3906f3ffaa403dda047266e096f923cb3ea3b",
-    "activity-event.schema.json": "1f225a65f4e80470da9e8230da3a355dc60cb711f9e61a186249ed3dd6e6e9f7",
+    "CHANGELOG.md": "f93fcbcb18da09c6ef819b7e5f46a5f39fe84441ff2f8e28519fc4f58f845dd6",
+    "activity-event.schema.json": "7f33bc798e18a3bbef1b4a84b22b1ea350688a9c035c342c4de4bfe5ff6efe76",
     "chat-snapshot.schema.json": "0af60b3c79a62a0b9780ef716e4db77b33701d1c5d8a0a372d77593adf2a936c",
+    "group-chat-snapshot.schema.json": "973532a83aa559554b429decf662b0d62b9a66c623af234be35c39ab01ef7c24",
     "heartbeat.schema.json": "e1fc21c5ca3e658bfbfbb5005a0d1dfec2be6e720b5a1ff86f699a13cc5db221",
-    "openapi.json": "1cb17d9cdc18c7c33e17f22491963f48e4a24c612ed150344ad258df6847ad1e",
-    "source-commit.txt": "ec0e70b63f6836d6bd251e14dc92b2b2b7455d35dc681c5cec14ba3f607e5189"
+    "openapi.json": "2908f9a835a70984d18b5a5ae29ea77b7aa32251f839c06867bcca8a02ad02b8",
+    "source-commit.txt": "31fd59a80a4dd56aedfe2ea908e98771b284c13473a905eeb9615372a38e9e04"
   },
   "kind": "release",
-  "sourceCommit": "f05fce5117cd8041e7ea8342eaf57f79d4990512",
-  "tag": "contract-v1.0.0",
-  "version": "1.0.0"
+  "sourceCommit": "5d4e377f33376c75b0df8454c627f4d55e9f0cc9",
+  "tag": "contract-v1.3.0",
+  "version": "1.3.0"
 }

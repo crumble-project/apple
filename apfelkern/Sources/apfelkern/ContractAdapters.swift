@@ -65,7 +65,12 @@ extension ChatHistoryResponse {
 
 extension Memory {
   init(wire: Components.Schemas.Memory) {
-    self.init(id: wire.id, content: wire.content, createdAt: wire.createdAt)
+    self.init(
+      id: wire.id, content: wire.content, createdAt: wire.createdAt,
+      source: wire.source.map {
+        MemorySource(kind: $0.kind.rawValue, name: $0.name, scheduleId: $0.scheduleId,
+                     agentId: $0.agentId, groupId: $0.groupId)
+      })
   }
 }
 

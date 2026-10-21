@@ -20,7 +20,7 @@ extension APIClient {
     try await events(body, parser: SSEParser(accepting: ["activity"]), onEvent: onEvent)
   }
 
-  private func events(_ body: HTTPBody, parser: SSEParser, onEvent: @Sendable (String) async -> Void)
+  func events(_ body: HTTPBody, parser: SSEParser, onEvent: @Sendable (String) async -> Void)
     async throws -> Never {
     var parser = parser
     var line = Data()
@@ -53,9 +53,16 @@ public struct SSEParser {
   private var data: [String] = []
   private var eventType = "message"
   private let accepting: Set<String>
+  private let snapshots: Snapshots
 
-  public init(accepting: Set<String> = ["snapshot", "message"]) {
+  /// Which snapshot schema a stream's `snapshot` events follow.
+  public enum Snapshots: Sendable {
+    case botChat, group
+  }
+
+  public init(accepting: Set<String> = ["snapshot", "message"], snapshots: Snapshots = .botChat) {
     self.accepting = accepting
+    self.snapshots = snapshots
   }
 
   public struct InvalidPayload: Error, LocalizedError {
@@ -93,6 +100,11 @@ public struct SSEParser {
         let type = try JSONDecoder().decode(JSONValue.self, from: bytes)["type"]?.stringValue
         guard type == "reply" || type == "chat-preview" else { return nil }
         _ = try JSONDecoder().decode(Components.Schemas.EventActivity.self, from: bytes)
+      } else if snapshots == .group {
+        let snapshot = try JSONDecoder().decode(Components.Schemas.EventGroupChatSnapshot.self, from: bytes)
+        guard !snapshot.groupChat.id.isEmpty else {
+          throw InvalidPayload(reason: "group snapshot event missing its group")
+        }
       } else {
         let snapshot = try JSONDecoder().decode(Components.Schemas.EventChatSnapshot.self, from: bytes)
         guard !snapshot.agentId.isEmpty else {

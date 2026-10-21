@@ -21,6 +21,7 @@ A sibling checkout is not required. Import the public API with `import apfelkern
 
 Commit and push package changes before updating either client's resolved revision. Uncommitted local changes are not included in remote dependencies.
 
+Group chats use the same models: `GroupChatSnapshot` carries the transcript as `Message` values with senders in `origin`, and `GroupActivity` says which members are answering, queued, or disabled and whether bots are paused. `BotChatDelivery` works for groups too when keyed by group ID.
 `BotChatDelivery` owns pending messages, retry payloads, and previews for both clients. HTTP acceptance retains pending messages until a transcript snapshot confirms them. The apps retain UI, observable application state, network tasks, connection and selection guards, composer restoration, notifications, Keychain storage, and image conversion.
 Activity and push operations share public adapters: `ActivityEvent`, `ActivityEntry`, `ActivityFeedResponse`, `PushDevice`, `PushStatus`, and `PushRegistration`. Activity details remain open JSON. Skill drafts retain their platform-specific fields.
 The transport preserves each platform's existing handling of invalid UTF-8.

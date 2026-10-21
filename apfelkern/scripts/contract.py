@@ -14,7 +14,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 TOOLS = json.loads((ROOT / "Generation" / "tools.json").read_text())
 VERSION = TOOLS["generator"]["version"]
 GENERATOR_COMMIT = TOOLS["generator"]["revision"]
-ASSETS = {"openapi.json", "chat-snapshot.schema.json", "activity-event.schema.json", "heartbeat.schema.json", "CHANGELOG.md", "source-commit.txt"}
+ASSETS = {"openapi.json", "chat-snapshot.schema.json", "group-chat-snapshot.schema.json", "activity-event.schema.json", "heartbeat.schema.json", "CHANGELOG.md", "source-commit.txt"}
 
 
 def run(*args, **kwargs):
@@ -72,7 +72,7 @@ def generate(directory):
     run("swift", "build", "--package-path", str(cache), "--force-resolved-versions", "-c", "release", "--product", "swift-openapi-generator")
     binary_dir = subprocess.check_output(["swift", "build", "--package-path", str(cache), "-c", "release", "--show-bin-path"], text=True).strip()
     document = json.loads((ROOT / "Contract" / "openapi.json").read_text())
-    for name, asset in [("EventChatSnapshot", "chat-snapshot.schema.json"), ("EventActivity", "activity-event.schema.json"), ("EventHeartbeat", "heartbeat.schema.json")]:
+    for name, asset in [("EventChatSnapshot", "chat-snapshot.schema.json"), ("EventGroupChatSnapshot", "group-chat-snapshot.schema.json"), ("EventActivity", "activity-event.schema.json"), ("EventHeartbeat", "heartbeat.schema.json")]:
         document["components"]["schemas"][name] = project(json.loads((ROOT / "Contract" / asset).read_text()))
     document = project(document, document["components"]["schemas"])
     source = directory / "openapi.json"

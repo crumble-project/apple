@@ -10168,6 +10168,69 @@ public enum Operations {
                         public var createdAt: Swift.String
                         /// - Remark: Generated from `#/paths/v1/agents/{id}/memories/{memoryId}/PATCH/responses/200/content/json/id`.
                         public var id: Swift.String
+                        /// Where the memory was saved: the owner's bot chat, the owner directly, a scheduled task, another bot's request, or a group chat.
+                        ///
+                        /// - Remark: Generated from `#/paths/v1/agents/{id}/memories/{memoryId}/PATCH/responses/200/content/json/source`.
+                        public struct SourcePayload: Codable, Hashable, Sendable {
+                            /// For `bot`.
+                            ///
+                            /// - Remark: Generated from `#/paths/v1/agents/{id}/memories/{memoryId}/PATCH/responses/200/content/json/source/agentId`.
+                            public var agentId: Swift.String?
+                            /// For `group`.
+                            ///
+                            /// - Remark: Generated from `#/paths/v1/agents/{id}/memories/{memoryId}/PATCH/responses/200/content/json/source/groupId`.
+                            public var groupId: Swift.String?
+                            /// - Remark: Generated from `#/paths/v1/agents/{id}/memories/{memoryId}/PATCH/responses/200/content/json/source/kind`.
+                            @frozen public enum KindPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                                case chat = "chat"
+                                case owner = "owner"
+                                case task = "task"
+                                case bot = "bot"
+                                case group = "group"
+                            }
+                            /// - Remark: Generated from `#/paths/v1/agents/{id}/memories/{memoryId}/PATCH/responses/200/content/json/source/kind`.
+                            public var kind: Operations.UpdateAgentMemory.Output.Ok.Body.JsonPayload.SourcePayload.KindPayload
+                            /// The task, bot, or group chat, as named when the memory was saved.
+                            ///
+                            /// - Remark: Generated from `#/paths/v1/agents/{id}/memories/{memoryId}/PATCH/responses/200/content/json/source/name`.
+                            public var name: Swift.String?
+                            /// For `task`.
+                            ///
+                            /// - Remark: Generated from `#/paths/v1/agents/{id}/memories/{memoryId}/PATCH/responses/200/content/json/source/scheduleId`.
+                            public var scheduleId: Swift.String?
+                            /// Creates a new `SourcePayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - agentId: For `bot`.
+                            ///   - groupId: For `group`.
+                            ///   - kind:
+                            ///   - name: The task, bot, or group chat, as named when the memory was saved.
+                            ///   - scheduleId: For `task`.
+                            public init(
+                                agentId: Swift.String? = nil,
+                                groupId: Swift.String? = nil,
+                                kind: Operations.UpdateAgentMemory.Output.Ok.Body.JsonPayload.SourcePayload.KindPayload,
+                                name: Swift.String? = nil,
+                                scheduleId: Swift.String? = nil
+                            ) {
+                                self.agentId = agentId
+                                self.groupId = groupId
+                                self.kind = kind
+                                self.name = name
+                                self.scheduleId = scheduleId
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case agentId
+                                case groupId
+                                case kind
+                                case name
+                                case scheduleId
+                            }
+                        }
+                        /// Where the memory was saved: the owner's bot chat, the owner directly, a scheduled task, another bot's request, or a group chat.
+                        ///
+                        /// - Remark: Generated from `#/paths/v1/agents/{id}/memories/{memoryId}/PATCH/responses/200/content/json/source`.
+                        public var source: Operations.UpdateAgentMemory.Output.Ok.Body.JsonPayload.SourcePayload?
                         /// - Remark: Generated from `#/paths/v1/agents/{id}/memories/{memoryId}/PATCH/responses/200/content/json/updatedAt`.
                         public var updatedAt: Swift.String
                         /// Creates a new `JsonPayload`.
@@ -10177,18 +10240,21 @@ public enum Operations {
                         ///   - content:
                         ///   - createdAt:
                         ///   - id:
+                        ///   - source: Where the memory was saved: the owner's bot chat, the owner directly, a scheduled task, another bot's request, or a group chat.
                         ///   - updatedAt:
                         public init(
                             agentId: Swift.String? = nil,
                             content: Swift.String,
                             createdAt: Swift.String,
                             id: Swift.String,
+                            source: Operations.UpdateAgentMemory.Output.Ok.Body.JsonPayload.SourcePayload? = nil,
                             updatedAt: Swift.String
                         ) {
                             self.agentId = agentId
                             self.content = content
                             self.createdAt = createdAt
                             self.id = id
+                            self.source = source
                             self.updatedAt = updatedAt
                         }
                         public enum CodingKeys: String, CodingKey {
@@ -10196,6 +10262,7 @@ public enum Operations {
                             case content
                             case createdAt
                             case id
+                            case source
                             case updatedAt
                         }
                     }
@@ -13387,6 +13454,6123 @@ public enum Operations {
             /// - Throws: An error if `self` is not `.serviceUnavailable`.
             /// - SeeAlso: `.serviceUnavailable`.
             public var serviceUnavailable: Operations.ListExecutions.Output.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case plainText
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "text/plain":
+                    self = .plainText
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .plainText:
+                    return "text/plain"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .plainText
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `GET /v1/group-chats`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/get(listGroupChats)`.
+    public enum ListGroupChats {
+        public static let id: Swift.String = "listGroupChats"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/group-chats/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.ListGroupChats.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.ListGroupChats.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.ListGroupChats.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.ListGroupChats.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/GET/responses/200/content/application\/json`.
+                    case json([Components.Schemas.GroupChat])
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: [Components.Schemas.GroupChat] {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ListGroupChats.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ListGroupChats.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Success
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/get(listGroupChats)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.ListGroupChats.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.ListGroupChats.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct BadRequest: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/GET/responses/400/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/GET/responses/400/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ListGroupChats.Output.BadRequest.Body
+                /// Creates a new `BadRequest`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ListGroupChats.Output.BadRequest.Body) {
+                    self.body = body
+                }
+            }
+            /// Invalid request or operation
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/get(listGroupChats)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Operations.ListGroupChats.Output.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Operations.ListGroupChats.Output.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Unauthorized: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/GET/responses/401/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/GET/responses/401/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ListGroupChats.Output.Unauthorized.Body
+                /// Creates a new `Unauthorized`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ListGroupChats.Output.Unauthorized.Body) {
+                    self.body = body
+                }
+            }
+            /// Missing or invalid bearer token
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/get(listGroupChats)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Operations.ListGroupChats.Output.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Operations.ListGroupChats.Output.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct NotFound: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/GET/responses/404/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/GET/responses/404/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ListGroupChats.Output.NotFound.Body
+                /// Creates a new `NotFound`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ListGroupChats.Output.NotFound.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/get(listGroupChats)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Operations.ListGroupChats.Output.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Operations.ListGroupChats.Output.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct MethodNotAllowed: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/GET/responses/405/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/GET/responses/405/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ListGroupChats.Output.MethodNotAllowed.Body
+                /// Creates a new `MethodNotAllowed`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ListGroupChats.Output.MethodNotAllowed.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource is read-only
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/get(listGroupChats)/responses/405`.
+            ///
+            /// HTTP response code: `405 methodNotAllowed`.
+            case methodNotAllowed(Operations.ListGroupChats.Output.MethodNotAllowed)
+            /// The associated value of the enum case if `self` is `.methodNotAllowed`.
+            ///
+            /// - Throws: An error if `self` is not `.methodNotAllowed`.
+            /// - SeeAlso: `.methodNotAllowed`.
+            public var methodNotAllowed: Operations.ListGroupChats.Output.MethodNotAllowed {
+                get throws {
+                    switch self {
+                    case let .methodNotAllowed(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "methodNotAllowed",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Conflict: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/GET/responses/409/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/GET/responses/409/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ListGroupChats.Output.Conflict.Body
+                /// Creates a new `Conflict`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ListGroupChats.Output.Conflict.Body) {
+                    self.body = body
+                }
+            }
+            /// Conflicting request
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/get(listGroupChats)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Operations.ListGroupChats.Output.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Operations.ListGroupChats.Output.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ContentTooLarge: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/GET/responses/413/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/GET/responses/413/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ListGroupChats.Output.ContentTooLarge.Body
+                /// Creates a new `ContentTooLarge`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ListGroupChats.Output.ContentTooLarge.Body) {
+                    self.body = body
+                }
+            }
+            /// Request body exceeds the size limit
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/get(listGroupChats)/responses/413`.
+            ///
+            /// HTTP response code: `413 contentTooLarge`.
+            case contentTooLarge(Operations.ListGroupChats.Output.ContentTooLarge)
+            /// The associated value of the enum case if `self` is `.contentTooLarge`.
+            ///
+            /// - Throws: An error if `self` is not `.contentTooLarge`.
+            /// - SeeAlso: `.contentTooLarge`.
+            public var contentTooLarge: Operations.ListGroupChats.Output.ContentTooLarge {
+                get throws {
+                    switch self {
+                    case let .contentTooLarge(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "contentTooLarge",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct InternalServerError: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/GET/responses/500/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/GET/responses/500/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ListGroupChats.Output.InternalServerError.Body
+                /// Creates a new `InternalServerError`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ListGroupChats.Output.InternalServerError.Body) {
+                    self.body = body
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/get(listGroupChats)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Operations.ListGroupChats.Output.InternalServerError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Operations.ListGroupChats.Output.InternalServerError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ServiceUnavailable: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/GET/responses/503/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/GET/responses/503/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ListGroupChats.Output.ServiceUnavailable.Body
+                /// Creates a new `ServiceUnavailable`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ListGroupChats.Output.ServiceUnavailable.Body) {
+                    self.body = body
+                }
+            }
+            /// Service unavailable
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/get(listGroupChats)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Operations.ListGroupChats.Output.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Operations.ListGroupChats.Output.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case plainText
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "text/plain":
+                    self = .plainText
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .plainText:
+                    return "text/plain"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .plainText
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `POST /v1/group-chats`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/post(createGroupChat)`.
+    public enum CreateGroupChat {
+        public static let id: Swift.String = "createGroupChat"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/group-chats/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.CreateGroupChat.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.CreateGroupChat.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.CreateGroupChat.Input.Headers
+            /// - Remark: Generated from `#/paths/v1/group-chats/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/POST/requestBody/json`.
+                public struct JsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/POST/requestBody/json/memberIds`.
+                    public var memberIds: [Swift.String]
+                    /// - Remark: Generated from `#/paths/v1/group-chats/POST/requestBody/json/name`.
+                    public var name: Swift.String
+                    /// Creates a new `JsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - memberIds:
+                    ///   - name:
+                    public init(
+                        memberIds: [Swift.String],
+                        name: Swift.String
+                    ) {
+                        self.memberIds = memberIds
+                        self.name = name
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case memberIds
+                        case name
+                    }
+                }
+                /// - Remark: Generated from `#/paths/v1/group-chats/POST/requestBody/content/application\/json`.
+                case json(Operations.CreateGroupChat.Input.Body.JsonPayload)
+            }
+            public var body: Operations.CreateGroupChat.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.CreateGroupChat.Input.Headers = .init(),
+                body: Operations.CreateGroupChat.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Created: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/POST/responses/201/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/POST/responses/201/content/application\/json`.
+                    case json(Components.Schemas.GroupChat)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.GroupChat {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.CreateGroupChat.Output.Created.Body
+                /// Creates a new `Created`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.CreateGroupChat.Output.Created.Body) {
+                    self.body = body
+                }
+            }
+            /// Success
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/post(createGroupChat)/responses/201`.
+            ///
+            /// HTTP response code: `201 created`.
+            case created(Operations.CreateGroupChat.Output.Created)
+            /// The associated value of the enum case if `self` is `.created`.
+            ///
+            /// - Throws: An error if `self` is not `.created`.
+            /// - SeeAlso: `.created`.
+            public var created: Operations.CreateGroupChat.Output.Created {
+                get throws {
+                    switch self {
+                    case let .created(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "created",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct BadRequest: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/POST/responses/400/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/POST/responses/400/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.CreateGroupChat.Output.BadRequest.Body
+                /// Creates a new `BadRequest`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.CreateGroupChat.Output.BadRequest.Body) {
+                    self.body = body
+                }
+            }
+            /// Invalid request or operation
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/post(createGroupChat)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Operations.CreateGroupChat.Output.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Operations.CreateGroupChat.Output.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Unauthorized: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/POST/responses/401/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/POST/responses/401/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.CreateGroupChat.Output.Unauthorized.Body
+                /// Creates a new `Unauthorized`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.CreateGroupChat.Output.Unauthorized.Body) {
+                    self.body = body
+                }
+            }
+            /// Missing or invalid bearer token
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/post(createGroupChat)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Operations.CreateGroupChat.Output.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Operations.CreateGroupChat.Output.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct NotFound: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/POST/responses/404/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/POST/responses/404/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.CreateGroupChat.Output.NotFound.Body
+                /// Creates a new `NotFound`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.CreateGroupChat.Output.NotFound.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/post(createGroupChat)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Operations.CreateGroupChat.Output.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Operations.CreateGroupChat.Output.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct MethodNotAllowed: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/POST/responses/405/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/POST/responses/405/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.CreateGroupChat.Output.MethodNotAllowed.Body
+                /// Creates a new `MethodNotAllowed`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.CreateGroupChat.Output.MethodNotAllowed.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource is read-only
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/post(createGroupChat)/responses/405`.
+            ///
+            /// HTTP response code: `405 methodNotAllowed`.
+            case methodNotAllowed(Operations.CreateGroupChat.Output.MethodNotAllowed)
+            /// The associated value of the enum case if `self` is `.methodNotAllowed`.
+            ///
+            /// - Throws: An error if `self` is not `.methodNotAllowed`.
+            /// - SeeAlso: `.methodNotAllowed`.
+            public var methodNotAllowed: Operations.CreateGroupChat.Output.MethodNotAllowed {
+                get throws {
+                    switch self {
+                    case let .methodNotAllowed(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "methodNotAllowed",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Conflict: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/POST/responses/409/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/POST/responses/409/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.CreateGroupChat.Output.Conflict.Body
+                /// Creates a new `Conflict`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.CreateGroupChat.Output.Conflict.Body) {
+                    self.body = body
+                }
+            }
+            /// Conflicting request
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/post(createGroupChat)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Operations.CreateGroupChat.Output.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Operations.CreateGroupChat.Output.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ContentTooLarge: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/POST/responses/413/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/POST/responses/413/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.CreateGroupChat.Output.ContentTooLarge.Body
+                /// Creates a new `ContentTooLarge`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.CreateGroupChat.Output.ContentTooLarge.Body) {
+                    self.body = body
+                }
+            }
+            /// Request body exceeds the size limit
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/post(createGroupChat)/responses/413`.
+            ///
+            /// HTTP response code: `413 contentTooLarge`.
+            case contentTooLarge(Operations.CreateGroupChat.Output.ContentTooLarge)
+            /// The associated value of the enum case if `self` is `.contentTooLarge`.
+            ///
+            /// - Throws: An error if `self` is not `.contentTooLarge`.
+            /// - SeeAlso: `.contentTooLarge`.
+            public var contentTooLarge: Operations.CreateGroupChat.Output.ContentTooLarge {
+                get throws {
+                    switch self {
+                    case let .contentTooLarge(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "contentTooLarge",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct InternalServerError: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/POST/responses/500/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/POST/responses/500/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.CreateGroupChat.Output.InternalServerError.Body
+                /// Creates a new `InternalServerError`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.CreateGroupChat.Output.InternalServerError.Body) {
+                    self.body = body
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/post(createGroupChat)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Operations.CreateGroupChat.Output.InternalServerError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Operations.CreateGroupChat.Output.InternalServerError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ServiceUnavailable: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/POST/responses/503/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/POST/responses/503/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.CreateGroupChat.Output.ServiceUnavailable.Body
+                /// Creates a new `ServiceUnavailable`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.CreateGroupChat.Output.ServiceUnavailable.Body) {
+                    self.body = body
+                }
+            }
+            /// Service unavailable
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/post(createGroupChat)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Operations.CreateGroupChat.Output.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Operations.CreateGroupChat.Output.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case plainText
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "text/plain":
+                    self = .plainText
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .plainText:
+                    return "text/plain"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .plainText
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `GET /v1/group-chats/{id}`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/get(getGroupChat)`.
+    public enum GetGroupChat {
+        public static let id: Swift.String = "getGroupChat"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/group-chats/{id}/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/GET/path/id`.
+                public var id: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                public init(id: Swift.String) {
+                    self.id = id
+                }
+            }
+            public var path: Operations.GetGroupChat.Input.Path
+            /// - Remark: Generated from `#/paths/v1/group-chats/{id}/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetGroupChat.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetGroupChat.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.GetGroupChat.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.GetGroupChat.Input.Path,
+                headers: Operations.GetGroupChat.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.GroupChat)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.GroupChat {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupChat.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupChat.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Success
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/get(getGroupChat)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.GetGroupChat.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.GetGroupChat.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct BadRequest: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/GET/responses/400/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/GET/responses/400/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupChat.Output.BadRequest.Body
+                /// Creates a new `BadRequest`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupChat.Output.BadRequest.Body) {
+                    self.body = body
+                }
+            }
+            /// Invalid request or operation
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/get(getGroupChat)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Operations.GetGroupChat.Output.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Operations.GetGroupChat.Output.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Unauthorized: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/GET/responses/401/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/GET/responses/401/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupChat.Output.Unauthorized.Body
+                /// Creates a new `Unauthorized`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupChat.Output.Unauthorized.Body) {
+                    self.body = body
+                }
+            }
+            /// Missing or invalid bearer token
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/get(getGroupChat)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Operations.GetGroupChat.Output.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Operations.GetGroupChat.Output.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct NotFound: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/GET/responses/404/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/GET/responses/404/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupChat.Output.NotFound.Body
+                /// Creates a new `NotFound`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupChat.Output.NotFound.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/get(getGroupChat)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Operations.GetGroupChat.Output.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Operations.GetGroupChat.Output.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct MethodNotAllowed: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/GET/responses/405/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/GET/responses/405/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupChat.Output.MethodNotAllowed.Body
+                /// Creates a new `MethodNotAllowed`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupChat.Output.MethodNotAllowed.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource is read-only
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/get(getGroupChat)/responses/405`.
+            ///
+            /// HTTP response code: `405 methodNotAllowed`.
+            case methodNotAllowed(Operations.GetGroupChat.Output.MethodNotAllowed)
+            /// The associated value of the enum case if `self` is `.methodNotAllowed`.
+            ///
+            /// - Throws: An error if `self` is not `.methodNotAllowed`.
+            /// - SeeAlso: `.methodNotAllowed`.
+            public var methodNotAllowed: Operations.GetGroupChat.Output.MethodNotAllowed {
+                get throws {
+                    switch self {
+                    case let .methodNotAllowed(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "methodNotAllowed",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Conflict: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/GET/responses/409/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/GET/responses/409/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupChat.Output.Conflict.Body
+                /// Creates a new `Conflict`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupChat.Output.Conflict.Body) {
+                    self.body = body
+                }
+            }
+            /// Conflicting request
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/get(getGroupChat)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Operations.GetGroupChat.Output.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Operations.GetGroupChat.Output.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ContentTooLarge: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/GET/responses/413/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/GET/responses/413/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupChat.Output.ContentTooLarge.Body
+                /// Creates a new `ContentTooLarge`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupChat.Output.ContentTooLarge.Body) {
+                    self.body = body
+                }
+            }
+            /// Request body exceeds the size limit
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/get(getGroupChat)/responses/413`.
+            ///
+            /// HTTP response code: `413 contentTooLarge`.
+            case contentTooLarge(Operations.GetGroupChat.Output.ContentTooLarge)
+            /// The associated value of the enum case if `self` is `.contentTooLarge`.
+            ///
+            /// - Throws: An error if `self` is not `.contentTooLarge`.
+            /// - SeeAlso: `.contentTooLarge`.
+            public var contentTooLarge: Operations.GetGroupChat.Output.ContentTooLarge {
+                get throws {
+                    switch self {
+                    case let .contentTooLarge(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "contentTooLarge",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct InternalServerError: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/GET/responses/500/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/GET/responses/500/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupChat.Output.InternalServerError.Body
+                /// Creates a new `InternalServerError`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupChat.Output.InternalServerError.Body) {
+                    self.body = body
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/get(getGroupChat)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Operations.GetGroupChat.Output.InternalServerError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Operations.GetGroupChat.Output.InternalServerError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ServiceUnavailable: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/GET/responses/503/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/GET/responses/503/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupChat.Output.ServiceUnavailable.Body
+                /// Creates a new `ServiceUnavailable`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupChat.Output.ServiceUnavailable.Body) {
+                    self.body = body
+                }
+            }
+            /// Service unavailable
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/get(getGroupChat)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Operations.GetGroupChat.Output.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Operations.GetGroupChat.Output.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case plainText
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "text/plain":
+                    self = .plainText
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .plainText:
+                    return "text/plain"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .plainText
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `PATCH /v1/group-chats/{id}`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/patch(updateGroupChat)`.
+    public enum UpdateGroupChat {
+        public static let id: Swift.String = "updateGroupChat"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/group-chats/{id}/PATCH/path`.
+            public struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/PATCH/path/id`.
+                public var id: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                public init(id: Swift.String) {
+                    self.id = id
+                }
+            }
+            public var path: Operations.UpdateGroupChat.Input.Path
+            /// - Remark: Generated from `#/paths/v1/group-chats/{id}/PATCH/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.UpdateGroupChat.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.UpdateGroupChat.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.UpdateGroupChat.Input.Headers
+            /// - Remark: Generated from `#/paths/v1/group-chats/{id}/PATCH/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/PATCH/requestBody/json`.
+                public struct JsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/PATCH/requestBody/json/memberIds`.
+                    public var memberIds: [Swift.String]?
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/PATCH/requestBody/json/name`.
+                    public var name: Swift.String?
+                    /// Creates a new `JsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - memberIds:
+                    ///   - name:
+                    public init(
+                        memberIds: [Swift.String]? = nil,
+                        name: Swift.String? = nil
+                    ) {
+                        self.memberIds = memberIds
+                        self.name = name
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case memberIds
+                        case name
+                    }
+                }
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/PATCH/requestBody/content/application\/json`.
+                case json(Operations.UpdateGroupChat.Input.Body.JsonPayload)
+            }
+            public var body: Operations.UpdateGroupChat.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            ///   - body:
+            public init(
+                path: Operations.UpdateGroupChat.Input.Path,
+                headers: Operations.UpdateGroupChat.Input.Headers = .init(),
+                body: Operations.UpdateGroupChat.Input.Body
+            ) {
+                self.path = path
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/PATCH/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/PATCH/responses/200/content/application\/json`.
+                    case json(Components.Schemas.GroupChat)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.GroupChat {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.UpdateGroupChat.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.UpdateGroupChat.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Success
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/patch(updateGroupChat)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.UpdateGroupChat.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.UpdateGroupChat.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct BadRequest: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/PATCH/responses/400/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/PATCH/responses/400/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.UpdateGroupChat.Output.BadRequest.Body
+                /// Creates a new `BadRequest`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.UpdateGroupChat.Output.BadRequest.Body) {
+                    self.body = body
+                }
+            }
+            /// Invalid request or operation
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/patch(updateGroupChat)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Operations.UpdateGroupChat.Output.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Operations.UpdateGroupChat.Output.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Unauthorized: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/PATCH/responses/401/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/PATCH/responses/401/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.UpdateGroupChat.Output.Unauthorized.Body
+                /// Creates a new `Unauthorized`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.UpdateGroupChat.Output.Unauthorized.Body) {
+                    self.body = body
+                }
+            }
+            /// Missing or invalid bearer token
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/patch(updateGroupChat)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Operations.UpdateGroupChat.Output.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Operations.UpdateGroupChat.Output.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct NotFound: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/PATCH/responses/404/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/PATCH/responses/404/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.UpdateGroupChat.Output.NotFound.Body
+                /// Creates a new `NotFound`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.UpdateGroupChat.Output.NotFound.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/patch(updateGroupChat)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Operations.UpdateGroupChat.Output.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Operations.UpdateGroupChat.Output.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct MethodNotAllowed: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/PATCH/responses/405/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/PATCH/responses/405/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.UpdateGroupChat.Output.MethodNotAllowed.Body
+                /// Creates a new `MethodNotAllowed`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.UpdateGroupChat.Output.MethodNotAllowed.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource is read-only
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/patch(updateGroupChat)/responses/405`.
+            ///
+            /// HTTP response code: `405 methodNotAllowed`.
+            case methodNotAllowed(Operations.UpdateGroupChat.Output.MethodNotAllowed)
+            /// The associated value of the enum case if `self` is `.methodNotAllowed`.
+            ///
+            /// - Throws: An error if `self` is not `.methodNotAllowed`.
+            /// - SeeAlso: `.methodNotAllowed`.
+            public var methodNotAllowed: Operations.UpdateGroupChat.Output.MethodNotAllowed {
+                get throws {
+                    switch self {
+                    case let .methodNotAllowed(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "methodNotAllowed",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Conflict: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/PATCH/responses/409/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/PATCH/responses/409/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.UpdateGroupChat.Output.Conflict.Body
+                /// Creates a new `Conflict`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.UpdateGroupChat.Output.Conflict.Body) {
+                    self.body = body
+                }
+            }
+            /// Conflicting request
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/patch(updateGroupChat)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Operations.UpdateGroupChat.Output.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Operations.UpdateGroupChat.Output.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ContentTooLarge: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/PATCH/responses/413/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/PATCH/responses/413/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.UpdateGroupChat.Output.ContentTooLarge.Body
+                /// Creates a new `ContentTooLarge`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.UpdateGroupChat.Output.ContentTooLarge.Body) {
+                    self.body = body
+                }
+            }
+            /// Request body exceeds the size limit
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/patch(updateGroupChat)/responses/413`.
+            ///
+            /// HTTP response code: `413 contentTooLarge`.
+            case contentTooLarge(Operations.UpdateGroupChat.Output.ContentTooLarge)
+            /// The associated value of the enum case if `self` is `.contentTooLarge`.
+            ///
+            /// - Throws: An error if `self` is not `.contentTooLarge`.
+            /// - SeeAlso: `.contentTooLarge`.
+            public var contentTooLarge: Operations.UpdateGroupChat.Output.ContentTooLarge {
+                get throws {
+                    switch self {
+                    case let .contentTooLarge(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "contentTooLarge",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct InternalServerError: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/PATCH/responses/500/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/PATCH/responses/500/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.UpdateGroupChat.Output.InternalServerError.Body
+                /// Creates a new `InternalServerError`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.UpdateGroupChat.Output.InternalServerError.Body) {
+                    self.body = body
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/patch(updateGroupChat)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Operations.UpdateGroupChat.Output.InternalServerError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Operations.UpdateGroupChat.Output.InternalServerError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ServiceUnavailable: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/PATCH/responses/503/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/PATCH/responses/503/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.UpdateGroupChat.Output.ServiceUnavailable.Body
+                /// Creates a new `ServiceUnavailable`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.UpdateGroupChat.Output.ServiceUnavailable.Body) {
+                    self.body = body
+                }
+            }
+            /// Service unavailable
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/patch(updateGroupChat)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Operations.UpdateGroupChat.Output.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Operations.UpdateGroupChat.Output.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case plainText
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "text/plain":
+                    self = .plainText
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .plainText:
+                    return "text/plain"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .plainText
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `DELETE /v1/group-chats/{id}`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/delete(deleteGroupChat)`.
+    public enum DeleteGroupChat {
+        public static let id: Swift.String = "deleteGroupChat"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/group-chats/{id}/DELETE/path`.
+            public struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/DELETE/path/id`.
+                public var id: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                public init(id: Swift.String) {
+                    self.id = id
+                }
+            }
+            public var path: Operations.DeleteGroupChat.Input.Path
+            /// - Remark: Generated from `#/paths/v1/group-chats/{id}/DELETE/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.DeleteGroupChat.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.DeleteGroupChat.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.DeleteGroupChat.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.DeleteGroupChat.Input.Path,
+                headers: Operations.DeleteGroupChat.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct NoContent: Sendable, Hashable {
+                /// Creates a new `NoContent`.
+                public init() {}
+            }
+            /// Success, no response body
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/delete(deleteGroupChat)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            case noContent(Operations.DeleteGroupChat.Output.NoContent)
+            /// Success, no response body
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/delete(deleteGroupChat)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            public static var noContent: Self {
+                .noContent(.init())
+            }
+            /// The associated value of the enum case if `self` is `.noContent`.
+            ///
+            /// - Throws: An error if `self` is not `.noContent`.
+            /// - SeeAlso: `.noContent`.
+            public var noContent: Operations.DeleteGroupChat.Output.NoContent {
+                get throws {
+                    switch self {
+                    case let .noContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "noContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct BadRequest: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/DELETE/responses/400/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/DELETE/responses/400/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.DeleteGroupChat.Output.BadRequest.Body
+                /// Creates a new `BadRequest`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.DeleteGroupChat.Output.BadRequest.Body) {
+                    self.body = body
+                }
+            }
+            /// Invalid request or operation
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/delete(deleteGroupChat)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Operations.DeleteGroupChat.Output.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Operations.DeleteGroupChat.Output.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Unauthorized: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/DELETE/responses/401/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/DELETE/responses/401/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.DeleteGroupChat.Output.Unauthorized.Body
+                /// Creates a new `Unauthorized`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.DeleteGroupChat.Output.Unauthorized.Body) {
+                    self.body = body
+                }
+            }
+            /// Missing or invalid bearer token
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/delete(deleteGroupChat)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Operations.DeleteGroupChat.Output.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Operations.DeleteGroupChat.Output.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct NotFound: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/DELETE/responses/404/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/DELETE/responses/404/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.DeleteGroupChat.Output.NotFound.Body
+                /// Creates a new `NotFound`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.DeleteGroupChat.Output.NotFound.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/delete(deleteGroupChat)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Operations.DeleteGroupChat.Output.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Operations.DeleteGroupChat.Output.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct MethodNotAllowed: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/DELETE/responses/405/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/DELETE/responses/405/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.DeleteGroupChat.Output.MethodNotAllowed.Body
+                /// Creates a new `MethodNotAllowed`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.DeleteGroupChat.Output.MethodNotAllowed.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource is read-only
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/delete(deleteGroupChat)/responses/405`.
+            ///
+            /// HTTP response code: `405 methodNotAllowed`.
+            case methodNotAllowed(Operations.DeleteGroupChat.Output.MethodNotAllowed)
+            /// The associated value of the enum case if `self` is `.methodNotAllowed`.
+            ///
+            /// - Throws: An error if `self` is not `.methodNotAllowed`.
+            /// - SeeAlso: `.methodNotAllowed`.
+            public var methodNotAllowed: Operations.DeleteGroupChat.Output.MethodNotAllowed {
+                get throws {
+                    switch self {
+                    case let .methodNotAllowed(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "methodNotAllowed",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Conflict: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/DELETE/responses/409/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/DELETE/responses/409/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.DeleteGroupChat.Output.Conflict.Body
+                /// Creates a new `Conflict`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.DeleteGroupChat.Output.Conflict.Body) {
+                    self.body = body
+                }
+            }
+            /// Conflicting request
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/delete(deleteGroupChat)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Operations.DeleteGroupChat.Output.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Operations.DeleteGroupChat.Output.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ContentTooLarge: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/DELETE/responses/413/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/DELETE/responses/413/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.DeleteGroupChat.Output.ContentTooLarge.Body
+                /// Creates a new `ContentTooLarge`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.DeleteGroupChat.Output.ContentTooLarge.Body) {
+                    self.body = body
+                }
+            }
+            /// Request body exceeds the size limit
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/delete(deleteGroupChat)/responses/413`.
+            ///
+            /// HTTP response code: `413 contentTooLarge`.
+            case contentTooLarge(Operations.DeleteGroupChat.Output.ContentTooLarge)
+            /// The associated value of the enum case if `self` is `.contentTooLarge`.
+            ///
+            /// - Throws: An error if `self` is not `.contentTooLarge`.
+            /// - SeeAlso: `.contentTooLarge`.
+            public var contentTooLarge: Operations.DeleteGroupChat.Output.ContentTooLarge {
+                get throws {
+                    switch self {
+                    case let .contentTooLarge(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "contentTooLarge",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct InternalServerError: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/DELETE/responses/500/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/DELETE/responses/500/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.DeleteGroupChat.Output.InternalServerError.Body
+                /// Creates a new `InternalServerError`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.DeleteGroupChat.Output.InternalServerError.Body) {
+                    self.body = body
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/delete(deleteGroupChat)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Operations.DeleteGroupChat.Output.InternalServerError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Operations.DeleteGroupChat.Output.InternalServerError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ServiceUnavailable: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/DELETE/responses/503/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/DELETE/responses/503/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.DeleteGroupChat.Output.ServiceUnavailable.Body
+                /// Creates a new `ServiceUnavailable`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.DeleteGroupChat.Output.ServiceUnavailable.Body) {
+                    self.body = body
+                }
+            }
+            /// Service unavailable
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/delete(deleteGroupChat)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Operations.DeleteGroupChat.Output.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Operations.DeleteGroupChat.Output.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case plainText
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "text/plain":
+                    self = .plainText
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .plainText:
+                    return "text/plain"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .plainText
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `GET /v1/group-chats/{id}/attachments/{entryId}/{index}`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/attachments/{entryId}/{index}/get(getGroupAttachment)`.
+    public enum GetGroupAttachment {
+        public static let id: Swift.String = "getGroupAttachment"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/group-chats/{id}/attachments/{entryId}/{index}/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/attachments/{entryId}/{index}/GET/path/id`.
+                public var id: Swift.String
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/attachments/{entryId}/{index}/GET/path/entryId`.
+                public var entryId: Swift.String
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/attachments/{entryId}/{index}/GET/path/index`.
+                public var index: Swift.Int
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                ///   - entryId:
+                ///   - index:
+                public init(
+                    id: Swift.String,
+                    entryId: Swift.String,
+                    index: Swift.Int
+                ) {
+                    self.id = id
+                    self.entryId = entryId
+                    self.index = index
+                }
+            }
+            public var path: Operations.GetGroupAttachment.Input.Path
+            /// - Remark: Generated from `#/paths/v1/group-chats/{id}/attachments/{entryId}/{index}/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetGroupAttachment.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetGroupAttachment.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.GetGroupAttachment.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.GetGroupAttachment.Input.Path,
+                headers: Operations.GetGroupAttachment.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/attachments/{entryId}/{index}/GET/responses/200/headers`.
+                public struct Headers: Sendable, Hashable {
+                    /// private, max-age=31536000, immutable
+                    ///
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/attachments/{entryId}/{index}/GET/responses/200/headers/Cache-Control`.
+                    public var cacheControl: Swift.String?
+                    /// Creates a new `Headers`.
+                    ///
+                    /// - Parameters:
+                    ///   - cacheControl: private, max-age=31536000, immutable
+                    public init(cacheControl: Swift.String? = nil) {
+                        self.cacheControl = cacheControl
+                    }
+                }
+                /// Received HTTP response headers
+                public var headers: Operations.GetGroupAttachment.Output.Ok.Headers
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/attachments/{entryId}/{index}/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/attachments/{entryId}/{index}/GET/responses/200/content/*\/*`.
+                    case any(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.any`.
+                    ///
+                    /// - Throws: An error if `self` is not `.any`.
+                    /// - SeeAlso: `.any`.
+                    public var any: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .any(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupAttachment.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - headers: Received HTTP response headers
+                ///   - body: Received HTTP response body
+                public init(
+                    headers: Operations.GetGroupAttachment.Output.Ok.Headers = .init(),
+                    body: Operations.GetGroupAttachment.Output.Ok.Body
+                ) {
+                    self.headers = headers
+                    self.body = body
+                }
+            }
+            /// Attachment bytes; Content-Type identifies the image or text format
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/attachments/{entryId}/{index}/get(getGroupAttachment)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.GetGroupAttachment.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.GetGroupAttachment.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct BadRequest: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/attachments/{entryId}/{index}/GET/responses/400/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/attachments/{entryId}/{index}/GET/responses/400/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupAttachment.Output.BadRequest.Body
+                /// Creates a new `BadRequest`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupAttachment.Output.BadRequest.Body) {
+                    self.body = body
+                }
+            }
+            /// Invalid request or operation
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/attachments/{entryId}/{index}/get(getGroupAttachment)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Operations.GetGroupAttachment.Output.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Operations.GetGroupAttachment.Output.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Unauthorized: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/attachments/{entryId}/{index}/GET/responses/401/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/attachments/{entryId}/{index}/GET/responses/401/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupAttachment.Output.Unauthorized.Body
+                /// Creates a new `Unauthorized`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupAttachment.Output.Unauthorized.Body) {
+                    self.body = body
+                }
+            }
+            /// Missing or invalid bearer token
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/attachments/{entryId}/{index}/get(getGroupAttachment)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Operations.GetGroupAttachment.Output.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Operations.GetGroupAttachment.Output.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct NotFound: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/attachments/{entryId}/{index}/GET/responses/404/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/attachments/{entryId}/{index}/GET/responses/404/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupAttachment.Output.NotFound.Body
+                /// Creates a new `NotFound`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupAttachment.Output.NotFound.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/attachments/{entryId}/{index}/get(getGroupAttachment)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Operations.GetGroupAttachment.Output.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Operations.GetGroupAttachment.Output.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct MethodNotAllowed: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/attachments/{entryId}/{index}/GET/responses/405/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/attachments/{entryId}/{index}/GET/responses/405/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupAttachment.Output.MethodNotAllowed.Body
+                /// Creates a new `MethodNotAllowed`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupAttachment.Output.MethodNotAllowed.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource is read-only
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/attachments/{entryId}/{index}/get(getGroupAttachment)/responses/405`.
+            ///
+            /// HTTP response code: `405 methodNotAllowed`.
+            case methodNotAllowed(Operations.GetGroupAttachment.Output.MethodNotAllowed)
+            /// The associated value of the enum case if `self` is `.methodNotAllowed`.
+            ///
+            /// - Throws: An error if `self` is not `.methodNotAllowed`.
+            /// - SeeAlso: `.methodNotAllowed`.
+            public var methodNotAllowed: Operations.GetGroupAttachment.Output.MethodNotAllowed {
+                get throws {
+                    switch self {
+                    case let .methodNotAllowed(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "methodNotAllowed",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Conflict: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/attachments/{entryId}/{index}/GET/responses/409/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/attachments/{entryId}/{index}/GET/responses/409/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupAttachment.Output.Conflict.Body
+                /// Creates a new `Conflict`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupAttachment.Output.Conflict.Body) {
+                    self.body = body
+                }
+            }
+            /// Conflicting request
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/attachments/{entryId}/{index}/get(getGroupAttachment)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Operations.GetGroupAttachment.Output.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Operations.GetGroupAttachment.Output.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ContentTooLarge: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/attachments/{entryId}/{index}/GET/responses/413/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/attachments/{entryId}/{index}/GET/responses/413/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupAttachment.Output.ContentTooLarge.Body
+                /// Creates a new `ContentTooLarge`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupAttachment.Output.ContentTooLarge.Body) {
+                    self.body = body
+                }
+            }
+            /// Request body exceeds the size limit
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/attachments/{entryId}/{index}/get(getGroupAttachment)/responses/413`.
+            ///
+            /// HTTP response code: `413 contentTooLarge`.
+            case contentTooLarge(Operations.GetGroupAttachment.Output.ContentTooLarge)
+            /// The associated value of the enum case if `self` is `.contentTooLarge`.
+            ///
+            /// - Throws: An error if `self` is not `.contentTooLarge`.
+            /// - SeeAlso: `.contentTooLarge`.
+            public var contentTooLarge: Operations.GetGroupAttachment.Output.ContentTooLarge {
+                get throws {
+                    switch self {
+                    case let .contentTooLarge(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "contentTooLarge",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct InternalServerError: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/attachments/{entryId}/{index}/GET/responses/500/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/attachments/{entryId}/{index}/GET/responses/500/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupAttachment.Output.InternalServerError.Body
+                /// Creates a new `InternalServerError`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupAttachment.Output.InternalServerError.Body) {
+                    self.body = body
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/attachments/{entryId}/{index}/get(getGroupAttachment)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Operations.GetGroupAttachment.Output.InternalServerError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Operations.GetGroupAttachment.Output.InternalServerError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ServiceUnavailable: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/attachments/{entryId}/{index}/GET/responses/503/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/attachments/{entryId}/{index}/GET/responses/503/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupAttachment.Output.ServiceUnavailable.Body
+                /// Creates a new `ServiceUnavailable`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupAttachment.Output.ServiceUnavailable.Body) {
+                    self.body = body
+                }
+            }
+            /// Service unavailable
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/attachments/{entryId}/{index}/get(getGroupAttachment)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Operations.GetGroupAttachment.Output.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Operations.GetGroupAttachment.Output.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case any
+            case json
+            case plainText
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "*/*":
+                    self = .any
+                case "application/json":
+                    self = .json
+                case "text/plain":
+                    self = .plainText
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .any:
+                    return "*/*"
+                case .json:
+                    return "application/json"
+                case .plainText:
+                    return "text/plain"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .any,
+                    .json,
+                    .plainText
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `GET /v1/group-chats/{id}/chat`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/chat/get(getGroupChatSnapshot)`.
+    public enum GetGroupChatSnapshot {
+        public static let id: Swift.String = "getGroupChatSnapshot"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/group-chats/{id}/chat/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/chat/GET/path/id`.
+                public var id: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                public init(id: Swift.String) {
+                    self.id = id
+                }
+            }
+            public var path: Operations.GetGroupChatSnapshot.Input.Path
+            /// - Remark: Generated from `#/paths/v1/group-chats/{id}/chat/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/chat/GET/query/limit`.
+                public var limit: Swift.Int?
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - limit:
+                public init(limit: Swift.Int? = nil) {
+                    self.limit = limit
+                }
+            }
+            public var query: Operations.GetGroupChatSnapshot.Input.Query
+            /// - Remark: Generated from `#/paths/v1/group-chats/{id}/chat/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetGroupChatSnapshot.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetGroupChatSnapshot.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.GetGroupChatSnapshot.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - query:
+            ///   - headers:
+            public init(
+                path: Operations.GetGroupChatSnapshot.Input.Path,
+                query: Operations.GetGroupChatSnapshot.Input.Query = .init(),
+                headers: Operations.GetGroupChatSnapshot.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/chat/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/chat/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.GroupChatSnapshot)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.GroupChatSnapshot {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupChatSnapshot.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupChatSnapshot.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Success
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/chat/get(getGroupChatSnapshot)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.GetGroupChatSnapshot.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.GetGroupChatSnapshot.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct BadRequest: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/chat/GET/responses/400/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/chat/GET/responses/400/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupChatSnapshot.Output.BadRequest.Body
+                /// Creates a new `BadRequest`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupChatSnapshot.Output.BadRequest.Body) {
+                    self.body = body
+                }
+            }
+            /// Invalid request or operation
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/chat/get(getGroupChatSnapshot)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Operations.GetGroupChatSnapshot.Output.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Operations.GetGroupChatSnapshot.Output.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Unauthorized: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/chat/GET/responses/401/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/chat/GET/responses/401/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupChatSnapshot.Output.Unauthorized.Body
+                /// Creates a new `Unauthorized`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupChatSnapshot.Output.Unauthorized.Body) {
+                    self.body = body
+                }
+            }
+            /// Missing or invalid bearer token
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/chat/get(getGroupChatSnapshot)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Operations.GetGroupChatSnapshot.Output.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Operations.GetGroupChatSnapshot.Output.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct NotFound: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/chat/GET/responses/404/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/chat/GET/responses/404/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupChatSnapshot.Output.NotFound.Body
+                /// Creates a new `NotFound`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupChatSnapshot.Output.NotFound.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/chat/get(getGroupChatSnapshot)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Operations.GetGroupChatSnapshot.Output.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Operations.GetGroupChatSnapshot.Output.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct MethodNotAllowed: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/chat/GET/responses/405/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/chat/GET/responses/405/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupChatSnapshot.Output.MethodNotAllowed.Body
+                /// Creates a new `MethodNotAllowed`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupChatSnapshot.Output.MethodNotAllowed.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource is read-only
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/chat/get(getGroupChatSnapshot)/responses/405`.
+            ///
+            /// HTTP response code: `405 methodNotAllowed`.
+            case methodNotAllowed(Operations.GetGroupChatSnapshot.Output.MethodNotAllowed)
+            /// The associated value of the enum case if `self` is `.methodNotAllowed`.
+            ///
+            /// - Throws: An error if `self` is not `.methodNotAllowed`.
+            /// - SeeAlso: `.methodNotAllowed`.
+            public var methodNotAllowed: Operations.GetGroupChatSnapshot.Output.MethodNotAllowed {
+                get throws {
+                    switch self {
+                    case let .methodNotAllowed(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "methodNotAllowed",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Conflict: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/chat/GET/responses/409/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/chat/GET/responses/409/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupChatSnapshot.Output.Conflict.Body
+                /// Creates a new `Conflict`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupChatSnapshot.Output.Conflict.Body) {
+                    self.body = body
+                }
+            }
+            /// Conflicting request
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/chat/get(getGroupChatSnapshot)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Operations.GetGroupChatSnapshot.Output.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Operations.GetGroupChatSnapshot.Output.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ContentTooLarge: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/chat/GET/responses/413/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/chat/GET/responses/413/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupChatSnapshot.Output.ContentTooLarge.Body
+                /// Creates a new `ContentTooLarge`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupChatSnapshot.Output.ContentTooLarge.Body) {
+                    self.body = body
+                }
+            }
+            /// Request body exceeds the size limit
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/chat/get(getGroupChatSnapshot)/responses/413`.
+            ///
+            /// HTTP response code: `413 contentTooLarge`.
+            case contentTooLarge(Operations.GetGroupChatSnapshot.Output.ContentTooLarge)
+            /// The associated value of the enum case if `self` is `.contentTooLarge`.
+            ///
+            /// - Throws: An error if `self` is not `.contentTooLarge`.
+            /// - SeeAlso: `.contentTooLarge`.
+            public var contentTooLarge: Operations.GetGroupChatSnapshot.Output.ContentTooLarge {
+                get throws {
+                    switch self {
+                    case let .contentTooLarge(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "contentTooLarge",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct InternalServerError: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/chat/GET/responses/500/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/chat/GET/responses/500/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupChatSnapshot.Output.InternalServerError.Body
+                /// Creates a new `InternalServerError`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupChatSnapshot.Output.InternalServerError.Body) {
+                    self.body = body
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/chat/get(getGroupChatSnapshot)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Operations.GetGroupChatSnapshot.Output.InternalServerError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Operations.GetGroupChatSnapshot.Output.InternalServerError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ServiceUnavailable: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/chat/GET/responses/503/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/chat/GET/responses/503/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupChatSnapshot.Output.ServiceUnavailable.Body
+                /// Creates a new `ServiceUnavailable`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupChatSnapshot.Output.ServiceUnavailable.Body) {
+                    self.body = body
+                }
+            }
+            /// Service unavailable
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/chat/get(getGroupChatSnapshot)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Operations.GetGroupChatSnapshot.Output.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Operations.GetGroupChatSnapshot.Output.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case plainText
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "text/plain":
+                    self = .plainText
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .plainText:
+                    return "text/plain"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .plainText
+                ]
+            }
+        }
+    }
+    /// Server-sent events. Each snapshot event carries a GroupChatSnapshot JSON object in data, sent on connection and after every change. Heartbeat events carry {} every 15 seconds. Authenticate with the Authorization header. Reconnect by fetching the current snapshot; there is no Last-Event-ID replay.
+    ///
+    /// - Remark: HTTP `GET /v1/group-chats/{id}/events`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/events/get(streamGroupChatEvents)`.
+    public enum StreamGroupChatEvents {
+        public static let id: Swift.String = "streamGroupChatEvents"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/group-chats/{id}/events/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/events/GET/path/id`.
+                public var id: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                public init(id: Swift.String) {
+                    self.id = id
+                }
+            }
+            public var path: Operations.StreamGroupChatEvents.Input.Path
+            /// - Remark: Generated from `#/paths/v1/group-chats/{id}/events/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/events/GET/query/limit`.
+                public var limit: Swift.Int?
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - limit:
+                public init(limit: Swift.Int? = nil) {
+                    self.limit = limit
+                }
+            }
+            public var query: Operations.StreamGroupChatEvents.Input.Query
+            /// - Remark: Generated from `#/paths/v1/group-chats/{id}/events/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.StreamGroupChatEvents.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.StreamGroupChatEvents.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.StreamGroupChatEvents.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - query:
+            ///   - headers:
+            public init(
+                path: Operations.StreamGroupChatEvents.Input.Path,
+                query: Operations.StreamGroupChatEvents.Input.Query = .init(),
+                headers: Operations.StreamGroupChatEvents.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/events/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/events/GET/responses/200/content/text\/event-stream`.
+                    case textEventStream(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.textEventStream`.
+                    ///
+                    /// - Throws: An error if `self` is not `.textEventStream`.
+                    /// - SeeAlso: `.textEventStream`.
+                    public var textEventStream: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .textEventStream(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.StreamGroupChatEvents.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.StreamGroupChatEvents.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// SSE stream, not a JSON array
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/events/get(streamGroupChatEvents)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.StreamGroupChatEvents.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.StreamGroupChatEvents.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct BadRequest: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/events/GET/responses/400/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/events/GET/responses/400/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.StreamGroupChatEvents.Output.BadRequest.Body
+                /// Creates a new `BadRequest`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.StreamGroupChatEvents.Output.BadRequest.Body) {
+                    self.body = body
+                }
+            }
+            /// Invalid request or operation
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/events/get(streamGroupChatEvents)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Operations.StreamGroupChatEvents.Output.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Operations.StreamGroupChatEvents.Output.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Unauthorized: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/events/GET/responses/401/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/events/GET/responses/401/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.StreamGroupChatEvents.Output.Unauthorized.Body
+                /// Creates a new `Unauthorized`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.StreamGroupChatEvents.Output.Unauthorized.Body) {
+                    self.body = body
+                }
+            }
+            /// Missing or invalid bearer token
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/events/get(streamGroupChatEvents)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Operations.StreamGroupChatEvents.Output.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Operations.StreamGroupChatEvents.Output.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct NotFound: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/events/GET/responses/404/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/events/GET/responses/404/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.StreamGroupChatEvents.Output.NotFound.Body
+                /// Creates a new `NotFound`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.StreamGroupChatEvents.Output.NotFound.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/events/get(streamGroupChatEvents)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Operations.StreamGroupChatEvents.Output.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Operations.StreamGroupChatEvents.Output.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct MethodNotAllowed: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/events/GET/responses/405/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/events/GET/responses/405/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.StreamGroupChatEvents.Output.MethodNotAllowed.Body
+                /// Creates a new `MethodNotAllowed`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.StreamGroupChatEvents.Output.MethodNotAllowed.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource is read-only
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/events/get(streamGroupChatEvents)/responses/405`.
+            ///
+            /// HTTP response code: `405 methodNotAllowed`.
+            case methodNotAllowed(Operations.StreamGroupChatEvents.Output.MethodNotAllowed)
+            /// The associated value of the enum case if `self` is `.methodNotAllowed`.
+            ///
+            /// - Throws: An error if `self` is not `.methodNotAllowed`.
+            /// - SeeAlso: `.methodNotAllowed`.
+            public var methodNotAllowed: Operations.StreamGroupChatEvents.Output.MethodNotAllowed {
+                get throws {
+                    switch self {
+                    case let .methodNotAllowed(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "methodNotAllowed",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Conflict: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/events/GET/responses/409/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/events/GET/responses/409/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.StreamGroupChatEvents.Output.Conflict.Body
+                /// Creates a new `Conflict`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.StreamGroupChatEvents.Output.Conflict.Body) {
+                    self.body = body
+                }
+            }
+            /// Conflicting request
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/events/get(streamGroupChatEvents)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Operations.StreamGroupChatEvents.Output.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Operations.StreamGroupChatEvents.Output.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ContentTooLarge: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/events/GET/responses/413/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/events/GET/responses/413/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.StreamGroupChatEvents.Output.ContentTooLarge.Body
+                /// Creates a new `ContentTooLarge`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.StreamGroupChatEvents.Output.ContentTooLarge.Body) {
+                    self.body = body
+                }
+            }
+            /// Request body exceeds the size limit
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/events/get(streamGroupChatEvents)/responses/413`.
+            ///
+            /// HTTP response code: `413 contentTooLarge`.
+            case contentTooLarge(Operations.StreamGroupChatEvents.Output.ContentTooLarge)
+            /// The associated value of the enum case if `self` is `.contentTooLarge`.
+            ///
+            /// - Throws: An error if `self` is not `.contentTooLarge`.
+            /// - SeeAlso: `.contentTooLarge`.
+            public var contentTooLarge: Operations.StreamGroupChatEvents.Output.ContentTooLarge {
+                get throws {
+                    switch self {
+                    case let .contentTooLarge(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "contentTooLarge",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct InternalServerError: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/events/GET/responses/500/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/events/GET/responses/500/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.StreamGroupChatEvents.Output.InternalServerError.Body
+                /// Creates a new `InternalServerError`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.StreamGroupChatEvents.Output.InternalServerError.Body) {
+                    self.body = body
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/events/get(streamGroupChatEvents)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Operations.StreamGroupChatEvents.Output.InternalServerError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Operations.StreamGroupChatEvents.Output.InternalServerError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ServiceUnavailable: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/events/GET/responses/503/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/events/GET/responses/503/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.StreamGroupChatEvents.Output.ServiceUnavailable.Body
+                /// Creates a new `ServiceUnavailable`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.StreamGroupChatEvents.Output.ServiceUnavailable.Body) {
+                    self.body = body
+                }
+            }
+            /// Service unavailable
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/events/get(streamGroupChatEvents)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Operations.StreamGroupChatEvents.Output.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Operations.StreamGroupChatEvents.Output.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case textEventStream
+            case json
+            case plainText
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "text/event-stream":
+                    self = .textEventStream
+                case "application/json":
+                    self = .json
+                case "text/plain":
+                    self = .plainText
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .textEventStream:
+                    return "text/event-stream"
+                case .json:
+                    return "application/json"
+                case .plainText:
+                    return "text/plain"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .textEventStream,
+                    .json,
+                    .plainText
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `GET /v1/group-chats/{id}/history`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/history/get(getGroupChatHistory)`.
+    public enum GetGroupChatHistory {
+        public static let id: Swift.String = "getGroupChatHistory"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/group-chats/{id}/history/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/history/GET/path/id`.
+                public var id: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                public init(id: Swift.String) {
+                    self.id = id
+                }
+            }
+            public var path: Operations.GetGroupChatHistory.Input.Path
+            /// - Remark: Generated from `#/paths/v1/group-chats/{id}/history/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/history/GET/query/limit`.
+                public var limit: Swift.Int?
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/history/GET/query/before`.
+                public var before: Swift.String?
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - limit:
+                ///   - before:
+                public init(
+                    limit: Swift.Int? = nil,
+                    before: Swift.String? = nil
+                ) {
+                    self.limit = limit
+                    self.before = before
+                }
+            }
+            public var query: Operations.GetGroupChatHistory.Input.Query
+            /// - Remark: Generated from `#/paths/v1/group-chats/{id}/history/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetGroupChatHistory.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetGroupChatHistory.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.GetGroupChatHistory.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - query:
+            ///   - headers:
+            public init(
+                path: Operations.GetGroupChatHistory.Input.Path,
+                query: Operations.GetGroupChatHistory.Input.Query = .init(),
+                headers: Operations.GetGroupChatHistory.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/history/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/history/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.TranscriptPage)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.TranscriptPage {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupChatHistory.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupChatHistory.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Success
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/history/get(getGroupChatHistory)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.GetGroupChatHistory.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.GetGroupChatHistory.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct BadRequest: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/history/GET/responses/400/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/history/GET/responses/400/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupChatHistory.Output.BadRequest.Body
+                /// Creates a new `BadRequest`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupChatHistory.Output.BadRequest.Body) {
+                    self.body = body
+                }
+            }
+            /// Invalid request or operation
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/history/get(getGroupChatHistory)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Operations.GetGroupChatHistory.Output.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Operations.GetGroupChatHistory.Output.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Unauthorized: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/history/GET/responses/401/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/history/GET/responses/401/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupChatHistory.Output.Unauthorized.Body
+                /// Creates a new `Unauthorized`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupChatHistory.Output.Unauthorized.Body) {
+                    self.body = body
+                }
+            }
+            /// Missing or invalid bearer token
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/history/get(getGroupChatHistory)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Operations.GetGroupChatHistory.Output.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Operations.GetGroupChatHistory.Output.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct NotFound: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/history/GET/responses/404/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/history/GET/responses/404/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupChatHistory.Output.NotFound.Body
+                /// Creates a new `NotFound`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupChatHistory.Output.NotFound.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/history/get(getGroupChatHistory)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Operations.GetGroupChatHistory.Output.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Operations.GetGroupChatHistory.Output.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct MethodNotAllowed: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/history/GET/responses/405/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/history/GET/responses/405/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupChatHistory.Output.MethodNotAllowed.Body
+                /// Creates a new `MethodNotAllowed`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupChatHistory.Output.MethodNotAllowed.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource is read-only
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/history/get(getGroupChatHistory)/responses/405`.
+            ///
+            /// HTTP response code: `405 methodNotAllowed`.
+            case methodNotAllowed(Operations.GetGroupChatHistory.Output.MethodNotAllowed)
+            /// The associated value of the enum case if `self` is `.methodNotAllowed`.
+            ///
+            /// - Throws: An error if `self` is not `.methodNotAllowed`.
+            /// - SeeAlso: `.methodNotAllowed`.
+            public var methodNotAllowed: Operations.GetGroupChatHistory.Output.MethodNotAllowed {
+                get throws {
+                    switch self {
+                    case let .methodNotAllowed(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "methodNotAllowed",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Conflict: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/history/GET/responses/409/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/history/GET/responses/409/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupChatHistory.Output.Conflict.Body
+                /// Creates a new `Conflict`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupChatHistory.Output.Conflict.Body) {
+                    self.body = body
+                }
+            }
+            /// Conflicting request
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/history/get(getGroupChatHistory)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Operations.GetGroupChatHistory.Output.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Operations.GetGroupChatHistory.Output.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ContentTooLarge: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/history/GET/responses/413/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/history/GET/responses/413/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupChatHistory.Output.ContentTooLarge.Body
+                /// Creates a new `ContentTooLarge`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupChatHistory.Output.ContentTooLarge.Body) {
+                    self.body = body
+                }
+            }
+            /// Request body exceeds the size limit
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/history/get(getGroupChatHistory)/responses/413`.
+            ///
+            /// HTTP response code: `413 contentTooLarge`.
+            case contentTooLarge(Operations.GetGroupChatHistory.Output.ContentTooLarge)
+            /// The associated value of the enum case if `self` is `.contentTooLarge`.
+            ///
+            /// - Throws: An error if `self` is not `.contentTooLarge`.
+            /// - SeeAlso: `.contentTooLarge`.
+            public var contentTooLarge: Operations.GetGroupChatHistory.Output.ContentTooLarge {
+                get throws {
+                    switch self {
+                    case let .contentTooLarge(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "contentTooLarge",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct InternalServerError: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/history/GET/responses/500/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/history/GET/responses/500/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupChatHistory.Output.InternalServerError.Body
+                /// Creates a new `InternalServerError`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupChatHistory.Output.InternalServerError.Body) {
+                    self.body = body
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/history/get(getGroupChatHistory)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Operations.GetGroupChatHistory.Output.InternalServerError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Operations.GetGroupChatHistory.Output.InternalServerError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ServiceUnavailable: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/history/GET/responses/503/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/history/GET/responses/503/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetGroupChatHistory.Output.ServiceUnavailable.Body
+                /// Creates a new `ServiceUnavailable`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetGroupChatHistory.Output.ServiceUnavailable.Body) {
+                    self.body = body
+                }
+            }
+            /// Service unavailable
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/history/get(getGroupChatHistory)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Operations.GetGroupChatHistory.Output.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Operations.GetGroupChatHistory.Output.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case plainText
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "text/plain":
+                    self = .plainText
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .plainText:
+                    return "text/plain"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .plainText
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `POST /v1/group-chats/{id}/messages`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/messages/post(sendGroupMessage)`.
+    public enum SendGroupMessage {
+        public static let id: Swift.String = "sendGroupMessage"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/path`.
+            public struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/path/id`.
+                public var id: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                public init(id: Swift.String) {
+                    self.id = id
+                }
+            }
+            public var path: Operations.SendGroupMessage.Input.Path
+            /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.SendGroupMessage.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.SendGroupMessage.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.SendGroupMessage.Input.Headers
+            /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/requestBody/json`.
+                public struct JsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/requestBody/json/AttachmentsPayload`.
+                    public struct AttachmentsPayloadPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/requestBody/json/AttachmentsPayload/data`.
+                        public var data: Swift.String
+                        /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/requestBody/json/AttachmentsPayload/mimeType`.
+                        public var mimeType: Swift.String
+                        /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/requestBody/json/AttachmentsPayload/name`.
+                        public var name: Swift.String
+                        /// Creates a new `AttachmentsPayloadPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - data:
+                        ///   - mimeType:
+                        ///   - name:
+                        public init(
+                            data: Swift.String,
+                            mimeType: Swift.String,
+                            name: Swift.String
+                        ) {
+                            self.data = data
+                            self.mimeType = mimeType
+                            self.name = name
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case data
+                            case mimeType
+                            case name
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/requestBody/json/attachments`.
+                    public typealias AttachmentsPayload = [Operations.SendGroupMessage.Input.Body.JsonPayload.AttachmentsPayloadPayload]
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/requestBody/json/attachments`.
+                    public var attachments: Operations.SendGroupMessage.Input.Body.JsonPayload.AttachmentsPayload?
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/requestBody/json/content`.
+                    public var content: Swift.String
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/requestBody/json/replyTo`.
+                    public var replyTo: Swift.String?
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/requestBody/json/requestId`.
+                    public var requestId: Swift.String
+                    /// Creates a new `JsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - attachments:
+                    ///   - content:
+                    ///   - replyTo:
+                    ///   - requestId:
+                    public init(
+                        attachments: Operations.SendGroupMessage.Input.Body.JsonPayload.AttachmentsPayload? = nil,
+                        content: Swift.String,
+                        replyTo: Swift.String? = nil,
+                        requestId: Swift.String
+                    ) {
+                        self.attachments = attachments
+                        self.content = content
+                        self.replyTo = replyTo
+                        self.requestId = requestId
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case attachments
+                        case content
+                        case replyTo
+                        case requestId
+                    }
+                }
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/requestBody/content/application\/json`.
+                case json(Operations.SendGroupMessage.Input.Body.JsonPayload)
+            }
+            public var body: Operations.SendGroupMessage.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            ///   - body:
+            public init(
+                path: Operations.SendGroupMessage.Input.Path,
+                headers: Operations.SendGroupMessage.Input.Headers = .init(),
+                body: Operations.SendGroupMessage.Input.Body
+            ) {
+                self.path = path
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Created: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/responses/201/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/responses/201/content/application\/json`.
+                    case json(Components.Schemas.GroupMessageReceipt)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.GroupMessageReceipt {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.SendGroupMessage.Output.Created.Body
+                /// Creates a new `Created`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.SendGroupMessage.Output.Created.Body) {
+                    self.body = body
+                }
+            }
+            /// Success
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/messages/post(sendGroupMessage)/responses/201`.
+            ///
+            /// HTTP response code: `201 created`.
+            case created(Operations.SendGroupMessage.Output.Created)
+            /// The associated value of the enum case if `self` is `.created`.
+            ///
+            /// - Throws: An error if `self` is not `.created`.
+            /// - SeeAlso: `.created`.
+            public var created: Operations.SendGroupMessage.Output.Created {
+                get throws {
+                    switch self {
+                    case let .created(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "created",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct BadRequest: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/responses/400/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/responses/400/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.SendGroupMessage.Output.BadRequest.Body
+                /// Creates a new `BadRequest`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.SendGroupMessage.Output.BadRequest.Body) {
+                    self.body = body
+                }
+            }
+            /// Invalid request or operation
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/messages/post(sendGroupMessage)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Operations.SendGroupMessage.Output.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Operations.SendGroupMessage.Output.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Unauthorized: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/responses/401/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/responses/401/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.SendGroupMessage.Output.Unauthorized.Body
+                /// Creates a new `Unauthorized`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.SendGroupMessage.Output.Unauthorized.Body) {
+                    self.body = body
+                }
+            }
+            /// Missing or invalid bearer token
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/messages/post(sendGroupMessage)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Operations.SendGroupMessage.Output.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Operations.SendGroupMessage.Output.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct NotFound: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/responses/404/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/responses/404/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.SendGroupMessage.Output.NotFound.Body
+                /// Creates a new `NotFound`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.SendGroupMessage.Output.NotFound.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/messages/post(sendGroupMessage)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Operations.SendGroupMessage.Output.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Operations.SendGroupMessage.Output.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct MethodNotAllowed: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/responses/405/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/responses/405/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.SendGroupMessage.Output.MethodNotAllowed.Body
+                /// Creates a new `MethodNotAllowed`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.SendGroupMessage.Output.MethodNotAllowed.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource is read-only
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/messages/post(sendGroupMessage)/responses/405`.
+            ///
+            /// HTTP response code: `405 methodNotAllowed`.
+            case methodNotAllowed(Operations.SendGroupMessage.Output.MethodNotAllowed)
+            /// The associated value of the enum case if `self` is `.methodNotAllowed`.
+            ///
+            /// - Throws: An error if `self` is not `.methodNotAllowed`.
+            /// - SeeAlso: `.methodNotAllowed`.
+            public var methodNotAllowed: Operations.SendGroupMessage.Output.MethodNotAllowed {
+                get throws {
+                    switch self {
+                    case let .methodNotAllowed(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "methodNotAllowed",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Conflict: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/responses/409/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/responses/409/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.SendGroupMessage.Output.Conflict.Body
+                /// Creates a new `Conflict`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.SendGroupMessage.Output.Conflict.Body) {
+                    self.body = body
+                }
+            }
+            /// Conflicting request
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/messages/post(sendGroupMessage)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Operations.SendGroupMessage.Output.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Operations.SendGroupMessage.Output.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ContentTooLarge: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/responses/413/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/responses/413/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.SendGroupMessage.Output.ContentTooLarge.Body
+                /// Creates a new `ContentTooLarge`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.SendGroupMessage.Output.ContentTooLarge.Body) {
+                    self.body = body
+                }
+            }
+            /// Request body exceeds the size limit
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/messages/post(sendGroupMessage)/responses/413`.
+            ///
+            /// HTTP response code: `413 contentTooLarge`.
+            case contentTooLarge(Operations.SendGroupMessage.Output.ContentTooLarge)
+            /// The associated value of the enum case if `self` is `.contentTooLarge`.
+            ///
+            /// - Throws: An error if `self` is not `.contentTooLarge`.
+            /// - SeeAlso: `.contentTooLarge`.
+            public var contentTooLarge: Operations.SendGroupMessage.Output.ContentTooLarge {
+                get throws {
+                    switch self {
+                    case let .contentTooLarge(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "contentTooLarge",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct InternalServerError: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/responses/500/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/responses/500/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.SendGroupMessage.Output.InternalServerError.Body
+                /// Creates a new `InternalServerError`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.SendGroupMessage.Output.InternalServerError.Body) {
+                    self.body = body
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/messages/post(sendGroupMessage)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Operations.SendGroupMessage.Output.InternalServerError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Operations.SendGroupMessage.Output.InternalServerError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ServiceUnavailable: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/responses/503/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/messages/POST/responses/503/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.SendGroupMessage.Output.ServiceUnavailable.Body
+                /// Creates a new `ServiceUnavailable`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.SendGroupMessage.Output.ServiceUnavailable.Body) {
+                    self.body = body
+                }
+            }
+            /// Service unavailable
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/messages/post(sendGroupMessage)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Operations.SendGroupMessage.Output.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Operations.SendGroupMessage.Output.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case plainText
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "text/plain":
+                    self = .plainText
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .plainText:
+                    return "text/plain"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .plainText
+                ]
+            }
+        }
+    }
+    /// Ends every running bot turn in the group and drops the queued ones. The group is not paused; the next message starts turns again.
+    ///
+    /// - Remark: HTTP `POST /v1/group-chats/{id}/stop`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/stop/post(stopGroupChat)`.
+    public enum StopGroupChat {
+        public static let id: Swift.String = "stopGroupChat"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/group-chats/{id}/stop/POST/path`.
+            public struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/stop/POST/path/id`.
+                public var id: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                public init(id: Swift.String) {
+                    self.id = id
+                }
+            }
+            public var path: Operations.StopGroupChat.Input.Path
+            /// - Remark: Generated from `#/paths/v1/group-chats/{id}/stop/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.StopGroupChat.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.StopGroupChat.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.StopGroupChat.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.StopGroupChat.Input.Path,
+                headers: Operations.StopGroupChat.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct NoContent: Sendable, Hashable {
+                /// Creates a new `NoContent`.
+                public init() {}
+            }
+            /// Success, no response body
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/stop/post(stopGroupChat)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            case noContent(Operations.StopGroupChat.Output.NoContent)
+            /// Success, no response body
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/stop/post(stopGroupChat)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            public static var noContent: Self {
+                .noContent(.init())
+            }
+            /// The associated value of the enum case if `self` is `.noContent`.
+            ///
+            /// - Throws: An error if `self` is not `.noContent`.
+            /// - SeeAlso: `.noContent`.
+            public var noContent: Operations.StopGroupChat.Output.NoContent {
+                get throws {
+                    switch self {
+                    case let .noContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "noContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct BadRequest: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/stop/POST/responses/400/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/stop/POST/responses/400/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.StopGroupChat.Output.BadRequest.Body
+                /// Creates a new `BadRequest`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.StopGroupChat.Output.BadRequest.Body) {
+                    self.body = body
+                }
+            }
+            /// Invalid request or operation
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/stop/post(stopGroupChat)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Operations.StopGroupChat.Output.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Operations.StopGroupChat.Output.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Unauthorized: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/stop/POST/responses/401/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/stop/POST/responses/401/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.StopGroupChat.Output.Unauthorized.Body
+                /// Creates a new `Unauthorized`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.StopGroupChat.Output.Unauthorized.Body) {
+                    self.body = body
+                }
+            }
+            /// Missing or invalid bearer token
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/stop/post(stopGroupChat)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Operations.StopGroupChat.Output.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Operations.StopGroupChat.Output.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct NotFound: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/stop/POST/responses/404/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/stop/POST/responses/404/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.StopGroupChat.Output.NotFound.Body
+                /// Creates a new `NotFound`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.StopGroupChat.Output.NotFound.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/stop/post(stopGroupChat)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Operations.StopGroupChat.Output.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Operations.StopGroupChat.Output.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct MethodNotAllowed: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/stop/POST/responses/405/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/stop/POST/responses/405/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.StopGroupChat.Output.MethodNotAllowed.Body
+                /// Creates a new `MethodNotAllowed`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.StopGroupChat.Output.MethodNotAllowed.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource is read-only
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/stop/post(stopGroupChat)/responses/405`.
+            ///
+            /// HTTP response code: `405 methodNotAllowed`.
+            case methodNotAllowed(Operations.StopGroupChat.Output.MethodNotAllowed)
+            /// The associated value of the enum case if `self` is `.methodNotAllowed`.
+            ///
+            /// - Throws: An error if `self` is not `.methodNotAllowed`.
+            /// - SeeAlso: `.methodNotAllowed`.
+            public var methodNotAllowed: Operations.StopGroupChat.Output.MethodNotAllowed {
+                get throws {
+                    switch self {
+                    case let .methodNotAllowed(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "methodNotAllowed",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Conflict: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/stop/POST/responses/409/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/stop/POST/responses/409/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.StopGroupChat.Output.Conflict.Body
+                /// Creates a new `Conflict`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.StopGroupChat.Output.Conflict.Body) {
+                    self.body = body
+                }
+            }
+            /// Conflicting request
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/stop/post(stopGroupChat)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Operations.StopGroupChat.Output.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Operations.StopGroupChat.Output.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ContentTooLarge: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/stop/POST/responses/413/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/stop/POST/responses/413/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.StopGroupChat.Output.ContentTooLarge.Body
+                /// Creates a new `ContentTooLarge`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.StopGroupChat.Output.ContentTooLarge.Body) {
+                    self.body = body
+                }
+            }
+            /// Request body exceeds the size limit
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/stop/post(stopGroupChat)/responses/413`.
+            ///
+            /// HTTP response code: `413 contentTooLarge`.
+            case contentTooLarge(Operations.StopGroupChat.Output.ContentTooLarge)
+            /// The associated value of the enum case if `self` is `.contentTooLarge`.
+            ///
+            /// - Throws: An error if `self` is not `.contentTooLarge`.
+            /// - SeeAlso: `.contentTooLarge`.
+            public var contentTooLarge: Operations.StopGroupChat.Output.ContentTooLarge {
+                get throws {
+                    switch self {
+                    case let .contentTooLarge(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "contentTooLarge",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct InternalServerError: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/stop/POST/responses/500/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/stop/POST/responses/500/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.StopGroupChat.Output.InternalServerError.Body
+                /// Creates a new `InternalServerError`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.StopGroupChat.Output.InternalServerError.Body) {
+                    self.body = body
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/stop/post(stopGroupChat)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Operations.StopGroupChat.Output.InternalServerError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Operations.StopGroupChat.Output.InternalServerError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ServiceUnavailable: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/group-chats/{id}/stop/POST/responses/503/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/group-chats/{id}/stop/POST/responses/503/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.StopGroupChat.Output.ServiceUnavailable.Body
+                /// Creates a new `ServiceUnavailable`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.StopGroupChat.Output.ServiceUnavailable.Body) {
+                    self.body = body
+                }
+            }
+            /// Service unavailable
+            ///
+            /// - Remark: Generated from `#/paths//v1/group-chats/{id}/stop/post(stopGroupChat)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Operations.StopGroupChat.Output.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Operations.StopGroupChat.Output.ServiceUnavailable {
                 get throws {
                     switch self {
                     case let .serviceUnavailable(response):
@@ -18514,6 +24698,69 @@ public enum Operations {
                         public var createdAt: Swift.String
                         /// - Remark: Generated from `#/paths/v1/memories/{id}/PATCH/responses/200/content/json/id`.
                         public var id: Swift.String
+                        /// Where the memory was saved: the owner's bot chat, the owner directly, a scheduled task, another bot's request, or a group chat.
+                        ///
+                        /// - Remark: Generated from `#/paths/v1/memories/{id}/PATCH/responses/200/content/json/source`.
+                        public struct SourcePayload: Codable, Hashable, Sendable {
+                            /// For `bot`.
+                            ///
+                            /// - Remark: Generated from `#/paths/v1/memories/{id}/PATCH/responses/200/content/json/source/agentId`.
+                            public var agentId: Swift.String?
+                            /// For `group`.
+                            ///
+                            /// - Remark: Generated from `#/paths/v1/memories/{id}/PATCH/responses/200/content/json/source/groupId`.
+                            public var groupId: Swift.String?
+                            /// - Remark: Generated from `#/paths/v1/memories/{id}/PATCH/responses/200/content/json/source/kind`.
+                            @frozen public enum KindPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                                case chat = "chat"
+                                case owner = "owner"
+                                case task = "task"
+                                case bot = "bot"
+                                case group = "group"
+                            }
+                            /// - Remark: Generated from `#/paths/v1/memories/{id}/PATCH/responses/200/content/json/source/kind`.
+                            public var kind: Operations.UpdateSharedMemory.Output.Ok.Body.JsonPayload.SourcePayload.KindPayload
+                            /// The task, bot, or group chat, as named when the memory was saved.
+                            ///
+                            /// - Remark: Generated from `#/paths/v1/memories/{id}/PATCH/responses/200/content/json/source/name`.
+                            public var name: Swift.String?
+                            /// For `task`.
+                            ///
+                            /// - Remark: Generated from `#/paths/v1/memories/{id}/PATCH/responses/200/content/json/source/scheduleId`.
+                            public var scheduleId: Swift.String?
+                            /// Creates a new `SourcePayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - agentId: For `bot`.
+                            ///   - groupId: For `group`.
+                            ///   - kind:
+                            ///   - name: The task, bot, or group chat, as named when the memory was saved.
+                            ///   - scheduleId: For `task`.
+                            public init(
+                                agentId: Swift.String? = nil,
+                                groupId: Swift.String? = nil,
+                                kind: Operations.UpdateSharedMemory.Output.Ok.Body.JsonPayload.SourcePayload.KindPayload,
+                                name: Swift.String? = nil,
+                                scheduleId: Swift.String? = nil
+                            ) {
+                                self.agentId = agentId
+                                self.groupId = groupId
+                                self.kind = kind
+                                self.name = name
+                                self.scheduleId = scheduleId
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case agentId
+                                case groupId
+                                case kind
+                                case name
+                                case scheduleId
+                            }
+                        }
+                        /// Where the memory was saved: the owner's bot chat, the owner directly, a scheduled task, another bot's request, or a group chat.
+                        ///
+                        /// - Remark: Generated from `#/paths/v1/memories/{id}/PATCH/responses/200/content/json/source`.
+                        public var source: Operations.UpdateSharedMemory.Output.Ok.Body.JsonPayload.SourcePayload?
                         /// - Remark: Generated from `#/paths/v1/memories/{id}/PATCH/responses/200/content/json/updatedAt`.
                         public var updatedAt: Swift.String
                         /// Creates a new `JsonPayload`.
@@ -18523,18 +24770,21 @@ public enum Operations {
                         ///   - content:
                         ///   - createdAt:
                         ///   - id:
+                        ///   - source: Where the memory was saved: the owner's bot chat, the owner directly, a scheduled task, another bot's request, or a group chat.
                         ///   - updatedAt:
                         public init(
                             agentId: Swift.String? = nil,
                             content: Swift.String,
                             createdAt: Swift.String,
                             id: Swift.String,
+                            source: Operations.UpdateSharedMemory.Output.Ok.Body.JsonPayload.SourcePayload? = nil,
                             updatedAt: Swift.String
                         ) {
                             self.agentId = agentId
                             self.content = content
                             self.createdAt = createdAt
                             self.id = id
+                            self.source = source
                             self.updatedAt = updatedAt
                         }
                         public enum CodingKeys: String, CodingKey {
@@ -18542,6 +24792,7 @@ public enum Operations {
                             case content
                             case createdAt
                             case id
+                            case source
                             case updatedAt
                         }
                     }

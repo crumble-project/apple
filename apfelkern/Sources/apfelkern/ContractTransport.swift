@@ -8,10 +8,15 @@ struct ContractTransport: ClientTransport {
   let timeout: TimeInterval
   let nullFields: Set<String>
 
+  /// Server-sent event operations, whose responses never finish; every other response is read whole.
+  static let streamingOperations: Set<String> = [
+    Operations.StreamChatEvents.id, Operations.StreamGroupChatEvents.id, Operations.StreamActivityEvents.id
+  ]
+
   func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String)
     async throws -> (HTTPResponse, HTTPBody?) {
     let urlRequest = try await urlRequest(request, body: body, baseURL: baseURL, operationID: operationID)
-    if operationID == Operations.StreamChatEvents.id || operationID == Operations.StreamActivityEvents.id {
+    if Self.streamingOperations.contains(operationID) {
       let (bytes, response) = try await session.bytes(for: urlRequest)
       let httpResponse = try responseModel(response)
       guard (200..<300).contains(httpResponse.status.code) else {

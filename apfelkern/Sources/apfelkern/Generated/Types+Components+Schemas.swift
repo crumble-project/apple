@@ -810,6 +810,10 @@ extension Components {
                 public var eventId: Swift.String
                 /// - Remark: Generated from `#/components/schemas/EventActivity/case1/executionId`.
                 public var executionId: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/EventActivity/case1/groupId`.
+                public var groupId: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/EventActivity/case1/groupName`.
+                public var groupName: Swift.String?
                 /// - Remark: Generated from `#/components/schemas/EventActivity/case1/origin`.
                 public var origin: Swift.String
                 /// - Remark: Generated from `#/components/schemas/EventActivity/case1/preview`.
@@ -833,6 +837,8 @@ extension Components {
                 ///   - entryId:
                 ///   - eventId:
                 ///   - executionId:
+                ///   - groupId:
+                ///   - groupName:
                 ///   - origin:
                 ///   - preview:
                 ///   - serverId:
@@ -845,6 +851,8 @@ extension Components {
                     entryId: Swift.String? = nil,
                     eventId: Swift.String,
                     executionId: Swift.String? = nil,
+                    groupId: Swift.String? = nil,
+                    groupName: Swift.String? = nil,
                     origin: Swift.String,
                     preview: Swift.String,
                     serverId: Swift.String,
@@ -857,6 +865,8 @@ extension Components {
                     self.entryId = entryId
                     self.eventId = eventId
                     self.executionId = executionId
+                    self.groupId = groupId
+                    self.groupName = groupName
                     self.origin = origin
                     self.preview = preview
                     self.serverId = serverId
@@ -870,6 +880,8 @@ extension Components {
                     case entryId
                     case eventId
                     case executionId
+                    case groupId
+                    case groupName
                     case origin
                     case preview
                     case serverId
@@ -901,6 +913,14 @@ extension Components {
                         Swift.String.self,
                         forKey: .executionId
                     )
+                    self.groupId = try container.decodeIfPresent(
+                        Swift.String.self,
+                        forKey: .groupId
+                    )
+                    self.groupName = try container.decodeIfPresent(
+                        Swift.String.self,
+                        forKey: .groupName
+                    )
                     self.origin = try container.decode(
                         Swift.String.self,
                         forKey: .origin
@@ -924,6 +944,8 @@ extension Components {
                         "entryId",
                         "eventId",
                         "executionId",
+                        "groupId",
+                        "groupName",
                         "origin",
                         "preview",
                         "serverId",
@@ -955,6 +977,14 @@ extension Components {
                     try container.encodeIfPresent(
                         self.executionId,
                         forKey: .executionId
+                    )
+                    try container.encodeIfPresent(
+                        self.groupId,
+                        forKey: .groupId
+                    )
+                    try container.encodeIfPresent(
+                        self.groupName,
+                        forKey: .groupName
                     )
                     try container.encode(
                         self.origin,
@@ -2004,6 +2034,951 @@ extension Components {
                 try encoder.encodeAdditionalProperties(additionalProperties)
             }
         }
+        /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot`.
+        public struct EventGroupChatSnapshot: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/activity`.
+            public struct ActivityPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/activity/botTurns`.
+                public var botTurns: Swift.Double
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/activity/MembersPayload`.
+                public struct MembersPayloadPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/activity/MembersPayload/agentId`.
+                    public var agentId: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/activity/MembersPayload/error`.
+                    public var error: Swift.String?
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/activity/MembersPayload/status`.
+                    @frozen public enum StatusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                        case idle = "idle"
+                        case queued = "queued"
+                        case running = "running"
+                        case disabled = "disabled"
+                    }
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/activity/MembersPayload/status`.
+                    public var status: Components.Schemas.EventGroupChatSnapshot.ActivityPayload.MembersPayloadPayload.StatusPayload
+                    /// A container of undocumented properties.
+                    public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
+                    /// Creates a new `MembersPayloadPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - agentId:
+                    ///   - error:
+                    ///   - status:
+                    ///   - additionalProperties: A container of undocumented properties.
+                    public init(
+                        agentId: Swift.String,
+                        error: Swift.String? = nil,
+                        status: Components.Schemas.EventGroupChatSnapshot.ActivityPayload.MembersPayloadPayload.StatusPayload,
+                        additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()
+                    ) {
+                        self.agentId = agentId
+                        self.error = error
+                        self.status = status
+                        self.additionalProperties = additionalProperties
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case agentId
+                        case error
+                        case status
+                    }
+                    public init(from decoder: any Swift.Decoder) throws {
+                        let container = try decoder.container(keyedBy: CodingKeys.self)
+                        self.agentId = try container.decode(
+                            Swift.String.self,
+                            forKey: .agentId
+                        )
+                        self.error = try container.decodeIfPresent(
+                            Swift.String.self,
+                            forKey: .error
+                        )
+                        self.status = try container.decode(
+                            Components.Schemas.EventGroupChatSnapshot.ActivityPayload.MembersPayloadPayload.StatusPayload.self,
+                            forKey: .status
+                        )
+                        additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
+                            "agentId",
+                            "error",
+                            "status"
+                        ])
+                    }
+                    public func encode(to encoder: any Swift.Encoder) throws {
+                        var container = encoder.container(keyedBy: CodingKeys.self)
+                        try container.encode(
+                            self.agentId,
+                            forKey: .agentId
+                        )
+                        try container.encodeIfPresent(
+                            self.error,
+                            forKey: .error
+                        )
+                        try container.encode(
+                            self.status,
+                            forKey: .status
+                        )
+                        try encoder.encodeAdditionalProperties(additionalProperties)
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/activity/members`.
+                public typealias MembersPayload = [Components.Schemas.EventGroupChatSnapshot.ActivityPayload.MembersPayloadPayload]
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/activity/members`.
+                public var members: Components.Schemas.EventGroupChatSnapshot.ActivityPayload.MembersPayload
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/activity/paused`.
+                public var paused: Swift.Bool
+                /// A container of undocumented properties.
+                public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
+                /// Creates a new `ActivityPayload`.
+                ///
+                /// - Parameters:
+                ///   - botTurns:
+                ///   - members:
+                ///   - paused:
+                ///   - additionalProperties: A container of undocumented properties.
+                public init(
+                    botTurns: Swift.Double,
+                    members: Components.Schemas.EventGroupChatSnapshot.ActivityPayload.MembersPayload,
+                    paused: Swift.Bool,
+                    additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()
+                ) {
+                    self.botTurns = botTurns
+                    self.members = members
+                    self.paused = paused
+                    self.additionalProperties = additionalProperties
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case botTurns
+                    case members
+                    case paused
+                }
+                public init(from decoder: any Swift.Decoder) throws {
+                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    self.botTurns = try container.decode(
+                        Swift.Double.self,
+                        forKey: .botTurns
+                    )
+                    self.members = try container.decode(
+                        Components.Schemas.EventGroupChatSnapshot.ActivityPayload.MembersPayload.self,
+                        forKey: .members
+                    )
+                    self.paused = try container.decode(
+                        Swift.Bool.self,
+                        forKey: .paused
+                    )
+                    additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
+                        "botTurns",
+                        "members",
+                        "paused"
+                    ])
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    var container = encoder.container(keyedBy: CodingKeys.self)
+                    try container.encode(
+                        self.botTurns,
+                        forKey: .botTurns
+                    )
+                    try container.encode(
+                        self.members,
+                        forKey: .members
+                    )
+                    try container.encode(
+                        self.paused,
+                        forKey: .paused
+                    )
+                    try encoder.encodeAdditionalProperties(additionalProperties)
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/activity`.
+            public var activity: Components.Schemas.EventGroupChatSnapshot.ActivityPayload
+            /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/groupChat`.
+            public struct GroupChatPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/groupChat/createdAt`.
+                public var createdAt: Swift.String
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/groupChat/id`.
+                public var id: Swift.String
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/groupChat/memberIds`.
+                public var memberIds: [Swift.String]
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/groupChat/name`.
+                public var name: Swift.String
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/groupChat/updatedAt`.
+                public var updatedAt: Swift.String
+                /// A container of undocumented properties.
+                public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
+                /// Creates a new `GroupChatPayload`.
+                ///
+                /// - Parameters:
+                ///   - createdAt:
+                ///   - id:
+                ///   - memberIds:
+                ///   - name:
+                ///   - updatedAt:
+                ///   - additionalProperties: A container of undocumented properties.
+                public init(
+                    createdAt: Swift.String,
+                    id: Swift.String,
+                    memberIds: [Swift.String],
+                    name: Swift.String,
+                    updatedAt: Swift.String,
+                    additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()
+                ) {
+                    self.createdAt = createdAt
+                    self.id = id
+                    self.memberIds = memberIds
+                    self.name = name
+                    self.updatedAt = updatedAt
+                    self.additionalProperties = additionalProperties
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case createdAt
+                    case id
+                    case memberIds
+                    case name
+                    case updatedAt
+                }
+                public init(from decoder: any Swift.Decoder) throws {
+                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    self.createdAt = try container.decode(
+                        Swift.String.self,
+                        forKey: .createdAt
+                    )
+                    self.id = try container.decode(
+                        Swift.String.self,
+                        forKey: .id
+                    )
+                    self.memberIds = try container.decode(
+                        [Swift.String].self,
+                        forKey: .memberIds
+                    )
+                    self.name = try container.decode(
+                        Swift.String.self,
+                        forKey: .name
+                    )
+                    self.updatedAt = try container.decode(
+                        Swift.String.self,
+                        forKey: .updatedAt
+                    )
+                    additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
+                        "createdAt",
+                        "id",
+                        "memberIds",
+                        "name",
+                        "updatedAt"
+                    ])
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    var container = encoder.container(keyedBy: CodingKeys.self)
+                    try container.encode(
+                        self.createdAt,
+                        forKey: .createdAt
+                    )
+                    try container.encode(
+                        self.id,
+                        forKey: .id
+                    )
+                    try container.encode(
+                        self.memberIds,
+                        forKey: .memberIds
+                    )
+                    try container.encode(
+                        self.name,
+                        forKey: .name
+                    )
+                    try container.encode(
+                        self.updatedAt,
+                        forKey: .updatedAt
+                    )
+                    try encoder.encodeAdditionalProperties(additionalProperties)
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/groupChat`.
+            public var groupChat: Components.Schemas.EventGroupChatSnapshot.GroupChatPayload
+            /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/hasMore`.
+            public var hasMore: Swift.Bool
+            /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload`.
+            public struct MessagesPayloadPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/AttachmentsPayload`.
+                public struct AttachmentsPayloadPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/AttachmentsPayload/kind`.
+                    @frozen public enum KindPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                        case image = "image"
+                        case text = "text"
+                    }
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/AttachmentsPayload/kind`.
+                    public var kind: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.AttachmentsPayloadPayload.KindPayload
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/AttachmentsPayload/mimeType`.
+                    public var mimeType: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/AttachmentsPayload/name`.
+                    public var name: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/AttachmentsPayload/size`.
+                    public var size: Swift.Double
+                    /// A container of undocumented properties.
+                    public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
+                    /// Creates a new `AttachmentsPayloadPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - kind:
+                    ///   - mimeType:
+                    ///   - name:
+                    ///   - size:
+                    ///   - additionalProperties: A container of undocumented properties.
+                    public init(
+                        kind: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.AttachmentsPayloadPayload.KindPayload,
+                        mimeType: Swift.String,
+                        name: Swift.String,
+                        size: Swift.Double,
+                        additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()
+                    ) {
+                        self.kind = kind
+                        self.mimeType = mimeType
+                        self.name = name
+                        self.size = size
+                        self.additionalProperties = additionalProperties
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case kind
+                        case mimeType
+                        case name
+                        case size
+                    }
+                    public init(from decoder: any Swift.Decoder) throws {
+                        let container = try decoder.container(keyedBy: CodingKeys.self)
+                        self.kind = try container.decode(
+                            Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.AttachmentsPayloadPayload.KindPayload.self,
+                            forKey: .kind
+                        )
+                        self.mimeType = try container.decode(
+                            Swift.String.self,
+                            forKey: .mimeType
+                        )
+                        self.name = try container.decode(
+                            Swift.String.self,
+                            forKey: .name
+                        )
+                        self.size = try container.decode(
+                            Swift.Double.self,
+                            forKey: .size
+                        )
+                        additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
+                            "kind",
+                            "mimeType",
+                            "name",
+                            "size"
+                        ])
+                    }
+                    public func encode(to encoder: any Swift.Encoder) throws {
+                        var container = encoder.container(keyedBy: CodingKeys.self)
+                        try container.encode(
+                            self.kind,
+                            forKey: .kind
+                        )
+                        try container.encode(
+                            self.mimeType,
+                            forKey: .mimeType
+                        )
+                        try container.encode(
+                            self.name,
+                            forKey: .name
+                        )
+                        try container.encode(
+                            self.size,
+                            forKey: .size
+                        )
+                        try encoder.encodeAdditionalProperties(additionalProperties)
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/attachments`.
+                public typealias AttachmentsPayload = [Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.AttachmentsPayloadPayload]
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/attachments`.
+                public var attachments: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.AttachmentsPayload?
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/blocks`.
+                public var blocks: OpenAPIRuntime.OpenAPIValueContainer?
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/communication`.
+                public struct CommunicationPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/communication/executionId`.
+                    public var executionId: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/communication/fromAgentId`.
+                    public var fromAgentId: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/communication/fromName`.
+                    public var fromName: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/communication/status`.
+                    @frozen public enum StatusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                        case sent = "sent"
+                        case done = "done"
+                        case failed = "failed"
+                        case cancelled = "cancelled"
+                    }
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/communication/status`.
+                    public var status: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.CommunicationPayload.StatusPayload
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/communication/toAgentId`.
+                    public var toAgentId: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/communication/toName`.
+                    public var toName: Swift.String
+                    /// A container of undocumented properties.
+                    public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
+                    /// Creates a new `CommunicationPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - executionId:
+                    ///   - fromAgentId:
+                    ///   - fromName:
+                    ///   - status:
+                    ///   - toAgentId:
+                    ///   - toName:
+                    ///   - additionalProperties: A container of undocumented properties.
+                    public init(
+                        executionId: Swift.String,
+                        fromAgentId: Swift.String,
+                        fromName: Swift.String,
+                        status: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.CommunicationPayload.StatusPayload,
+                        toAgentId: Swift.String,
+                        toName: Swift.String,
+                        additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()
+                    ) {
+                        self.executionId = executionId
+                        self.fromAgentId = fromAgentId
+                        self.fromName = fromName
+                        self.status = status
+                        self.toAgentId = toAgentId
+                        self.toName = toName
+                        self.additionalProperties = additionalProperties
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case executionId
+                        case fromAgentId
+                        case fromName
+                        case status
+                        case toAgentId
+                        case toName
+                    }
+                    public init(from decoder: any Swift.Decoder) throws {
+                        let container = try decoder.container(keyedBy: CodingKeys.self)
+                        self.executionId = try container.decode(
+                            Swift.String.self,
+                            forKey: .executionId
+                        )
+                        self.fromAgentId = try container.decode(
+                            Swift.String.self,
+                            forKey: .fromAgentId
+                        )
+                        self.fromName = try container.decode(
+                            Swift.String.self,
+                            forKey: .fromName
+                        )
+                        self.status = try container.decode(
+                            Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.CommunicationPayload.StatusPayload.self,
+                            forKey: .status
+                        )
+                        self.toAgentId = try container.decode(
+                            Swift.String.self,
+                            forKey: .toAgentId
+                        )
+                        self.toName = try container.decode(
+                            Swift.String.self,
+                            forKey: .toName
+                        )
+                        additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
+                            "executionId",
+                            "fromAgentId",
+                            "fromName",
+                            "status",
+                            "toAgentId",
+                            "toName"
+                        ])
+                    }
+                    public func encode(to encoder: any Swift.Encoder) throws {
+                        var container = encoder.container(keyedBy: CodingKeys.self)
+                        try container.encode(
+                            self.executionId,
+                            forKey: .executionId
+                        )
+                        try container.encode(
+                            self.fromAgentId,
+                            forKey: .fromAgentId
+                        )
+                        try container.encode(
+                            self.fromName,
+                            forKey: .fromName
+                        )
+                        try container.encode(
+                            self.status,
+                            forKey: .status
+                        )
+                        try container.encode(
+                            self.toAgentId,
+                            forKey: .toAgentId
+                        )
+                        try container.encode(
+                            self.toName,
+                            forKey: .toName
+                        )
+                        try encoder.encodeAdditionalProperties(additionalProperties)
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/communication`.
+                public var communication: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.CommunicationPayload?
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/content`.
+                public var content: Swift.String
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/entryId`.
+                public var entryId: Swift.String
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/id`.
+                public var id: Swift.String
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/isError`.
+                public var isError: Swift.Bool?
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/kind`.
+                public var kind: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/origin`.
+                public struct OriginPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/origin/agentId`.
+                    public var agentId: Swift.String?
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/origin/kind`.
+                    public var kind: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/origin/name`.
+                    public var name: Swift.String?
+                    /// A container of undocumented properties.
+                    public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
+                    /// Creates a new `OriginPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - agentId:
+                    ///   - kind:
+                    ///   - name:
+                    ///   - additionalProperties: A container of undocumented properties.
+                    public init(
+                        agentId: Swift.String? = nil,
+                        kind: Swift.String,
+                        name: Swift.String? = nil,
+                        additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()
+                    ) {
+                        self.agentId = agentId
+                        self.kind = kind
+                        self.name = name
+                        self.additionalProperties = additionalProperties
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case agentId
+                        case kind
+                        case name
+                    }
+                    public init(from decoder: any Swift.Decoder) throws {
+                        let container = try decoder.container(keyedBy: CodingKeys.self)
+                        self.agentId = try container.decodeIfPresent(
+                            Swift.String.self,
+                            forKey: .agentId
+                        )
+                        self.kind = try container.decode(
+                            Swift.String.self,
+                            forKey: .kind
+                        )
+                        self.name = try container.decodeIfPresent(
+                            Swift.String.self,
+                            forKey: .name
+                        )
+                        additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
+                            "agentId",
+                            "kind",
+                            "name"
+                        ])
+                    }
+                    public func encode(to encoder: any Swift.Encoder) throws {
+                        var container = encoder.container(keyedBy: CodingKeys.self)
+                        try container.encodeIfPresent(
+                            self.agentId,
+                            forKey: .agentId
+                        )
+                        try container.encode(
+                            self.kind,
+                            forKey: .kind
+                        )
+                        try container.encodeIfPresent(
+                            self.name,
+                            forKey: .name
+                        )
+                        try encoder.encodeAdditionalProperties(additionalProperties)
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/origin`.
+                public var origin: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.OriginPayload?
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/replyPreview`.
+                public var replyPreview: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/replyTo`.
+                public var replyTo: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/requestId`.
+                public var requestId: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/role`.
+                public var role: Swift.String
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/stopReason`.
+                public var stopReason: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/timestamp`.
+                public var timestamp: Swift.Double?
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/toolCallId`.
+                public var toolCallId: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/toolDetails`.
+                public var toolDetails: OpenAPIRuntime.OpenAPIValueContainer?
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/toolName`.
+                public var toolName: Swift.String?
+                /// A container of undocumented properties.
+                public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
+                /// Creates a new `MessagesPayloadPayload`.
+                ///
+                /// - Parameters:
+                ///   - attachments:
+                ///   - blocks:
+                ///   - communication:
+                ///   - content:
+                ///   - entryId:
+                ///   - id:
+                ///   - isError:
+                ///   - kind:
+                ///   - origin:
+                ///   - replyPreview:
+                ///   - replyTo:
+                ///   - requestId:
+                ///   - role:
+                ///   - stopReason:
+                ///   - timestamp:
+                ///   - toolCallId:
+                ///   - toolDetails:
+                ///   - toolName:
+                ///   - additionalProperties: A container of undocumented properties.
+                public init(
+                    attachments: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.AttachmentsPayload? = nil,
+                    blocks: OpenAPIRuntime.OpenAPIValueContainer? = nil,
+                    communication: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.CommunicationPayload? = nil,
+                    content: Swift.String,
+                    entryId: Swift.String,
+                    id: Swift.String,
+                    isError: Swift.Bool? = nil,
+                    kind: Swift.String? = nil,
+                    origin: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.OriginPayload? = nil,
+                    replyPreview: Swift.String? = nil,
+                    replyTo: Swift.String? = nil,
+                    requestId: Swift.String? = nil,
+                    role: Swift.String,
+                    stopReason: Swift.String? = nil,
+                    timestamp: Swift.Double? = nil,
+                    toolCallId: Swift.String? = nil,
+                    toolDetails: OpenAPIRuntime.OpenAPIValueContainer? = nil,
+                    toolName: Swift.String? = nil,
+                    additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()
+                ) {
+                    self.attachments = attachments
+                    self.blocks = blocks
+                    self.communication = communication
+                    self.content = content
+                    self.entryId = entryId
+                    self.id = id
+                    self.isError = isError
+                    self.kind = kind
+                    self.origin = origin
+                    self.replyPreview = replyPreview
+                    self.replyTo = replyTo
+                    self.requestId = requestId
+                    self.role = role
+                    self.stopReason = stopReason
+                    self.timestamp = timestamp
+                    self.toolCallId = toolCallId
+                    self.toolDetails = toolDetails
+                    self.toolName = toolName
+                    self.additionalProperties = additionalProperties
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case attachments
+                    case blocks
+                    case communication
+                    case content
+                    case entryId
+                    case id
+                    case isError
+                    case kind
+                    case origin
+                    case replyPreview
+                    case replyTo
+                    case requestId
+                    case role
+                    case stopReason
+                    case timestamp
+                    case toolCallId
+                    case toolDetails
+                    case toolName
+                }
+                public init(from decoder: any Swift.Decoder) throws {
+                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    self.attachments = try container.decodeIfPresent(
+                        Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.AttachmentsPayload.self,
+                        forKey: .attachments
+                    )
+                    self.blocks = try container.decodeIfPresent(
+                        OpenAPIRuntime.OpenAPIValueContainer.self,
+                        forKey: .blocks
+                    )
+                    self.communication = try container.decodeIfPresent(
+                        Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.CommunicationPayload.self,
+                        forKey: .communication
+                    )
+                    self.content = try container.decode(
+                        Swift.String.self,
+                        forKey: .content
+                    )
+                    self.entryId = try container.decode(
+                        Swift.String.self,
+                        forKey: .entryId
+                    )
+                    self.id = try container.decode(
+                        Swift.String.self,
+                        forKey: .id
+                    )
+                    self.isError = try container.decodeIfPresent(
+                        Swift.Bool.self,
+                        forKey: .isError
+                    )
+                    self.kind = try container.decodeIfPresent(
+                        Swift.String.self,
+                        forKey: .kind
+                    )
+                    self.origin = try container.decodeIfPresent(
+                        Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.OriginPayload.self,
+                        forKey: .origin
+                    )
+                    self.replyPreview = try container.decodeIfPresent(
+                        Swift.String.self,
+                        forKey: .replyPreview
+                    )
+                    self.replyTo = try container.decodeIfPresent(
+                        Swift.String.self,
+                        forKey: .replyTo
+                    )
+                    self.requestId = try container.decodeIfPresent(
+                        Swift.String.self,
+                        forKey: .requestId
+                    )
+                    self.role = try container.decode(
+                        Swift.String.self,
+                        forKey: .role
+                    )
+                    self.stopReason = try container.decodeIfPresent(
+                        Swift.String.self,
+                        forKey: .stopReason
+                    )
+                    self.timestamp = try container.decodeIfPresent(
+                        Swift.Double.self,
+                        forKey: .timestamp
+                    )
+                    self.toolCallId = try container.decodeIfPresent(
+                        Swift.String.self,
+                        forKey: .toolCallId
+                    )
+                    self.toolDetails = try container.decodeIfPresent(
+                        OpenAPIRuntime.OpenAPIValueContainer.self,
+                        forKey: .toolDetails
+                    )
+                    self.toolName = try container.decodeIfPresent(
+                        Swift.String.self,
+                        forKey: .toolName
+                    )
+                    additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
+                        "attachments",
+                        "blocks",
+                        "communication",
+                        "content",
+                        "entryId",
+                        "id",
+                        "isError",
+                        "kind",
+                        "origin",
+                        "replyPreview",
+                        "replyTo",
+                        "requestId",
+                        "role",
+                        "stopReason",
+                        "timestamp",
+                        "toolCallId",
+                        "toolDetails",
+                        "toolName"
+                    ])
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    var container = encoder.container(keyedBy: CodingKeys.self)
+                    try container.encodeIfPresent(
+                        self.attachments,
+                        forKey: .attachments
+                    )
+                    try container.encodeIfPresent(
+                        self.blocks,
+                        forKey: .blocks
+                    )
+                    try container.encodeIfPresent(
+                        self.communication,
+                        forKey: .communication
+                    )
+                    try container.encode(
+                        self.content,
+                        forKey: .content
+                    )
+                    try container.encode(
+                        self.entryId,
+                        forKey: .entryId
+                    )
+                    try container.encode(
+                        self.id,
+                        forKey: .id
+                    )
+                    try container.encodeIfPresent(
+                        self.isError,
+                        forKey: .isError
+                    )
+                    try container.encodeIfPresent(
+                        self.kind,
+                        forKey: .kind
+                    )
+                    try container.encodeIfPresent(
+                        self.origin,
+                        forKey: .origin
+                    )
+                    try container.encodeIfPresent(
+                        self.replyPreview,
+                        forKey: .replyPreview
+                    )
+                    try container.encodeIfPresent(
+                        self.replyTo,
+                        forKey: .replyTo
+                    )
+                    try container.encodeIfPresent(
+                        self.requestId,
+                        forKey: .requestId
+                    )
+                    try container.encode(
+                        self.role,
+                        forKey: .role
+                    )
+                    try container.encodeIfPresent(
+                        self.stopReason,
+                        forKey: .stopReason
+                    )
+                    try container.encodeIfPresent(
+                        self.timestamp,
+                        forKey: .timestamp
+                    )
+                    try container.encodeIfPresent(
+                        self.toolCallId,
+                        forKey: .toolCallId
+                    )
+                    try container.encodeIfPresent(
+                        self.toolDetails,
+                        forKey: .toolDetails
+                    )
+                    try container.encodeIfPresent(
+                        self.toolName,
+                        forKey: .toolName
+                    )
+                    try encoder.encodeAdditionalProperties(additionalProperties)
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/messages`.
+            public typealias MessagesPayload = [Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload]
+            /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/messages`.
+            public var messages: Components.Schemas.EventGroupChatSnapshot.MessagesPayload
+            /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/oldestEntryId`.
+            public var oldestEntryId: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/updatedAt`.
+            public var updatedAt: Swift.Double
+            /// A container of undocumented properties.
+            public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
+            /// Creates a new `EventGroupChatSnapshot`.
+            ///
+            /// - Parameters:
+            ///   - activity:
+            ///   - groupChat:
+            ///   - hasMore:
+            ///   - messages:
+            ///   - oldestEntryId:
+            ///   - updatedAt:
+            ///   - additionalProperties: A container of undocumented properties.
+            public init(
+                activity: Components.Schemas.EventGroupChatSnapshot.ActivityPayload,
+                groupChat: Components.Schemas.EventGroupChatSnapshot.GroupChatPayload,
+                hasMore: Swift.Bool,
+                messages: Components.Schemas.EventGroupChatSnapshot.MessagesPayload,
+                oldestEntryId: Swift.String? = nil,
+                updatedAt: Swift.Double,
+                additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()
+            ) {
+                self.activity = activity
+                self.groupChat = groupChat
+                self.hasMore = hasMore
+                self.messages = messages
+                self.oldestEntryId = oldestEntryId
+                self.updatedAt = updatedAt
+                self.additionalProperties = additionalProperties
+            }
+            public enum CodingKeys: String, CodingKey {
+                case activity
+                case groupChat
+                case hasMore
+                case messages
+                case oldestEntryId
+                case updatedAt
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.activity = try container.decode(
+                    Components.Schemas.EventGroupChatSnapshot.ActivityPayload.self,
+                    forKey: .activity
+                )
+                self.groupChat = try container.decode(
+                    Components.Schemas.EventGroupChatSnapshot.GroupChatPayload.self,
+                    forKey: .groupChat
+                )
+                self.hasMore = try container.decode(
+                    Swift.Bool.self,
+                    forKey: .hasMore
+                )
+                self.messages = try container.decode(
+                    Components.Schemas.EventGroupChatSnapshot.MessagesPayload.self,
+                    forKey: .messages
+                )
+                self.oldestEntryId = try container.decodeIfPresent(
+                    Swift.String.self,
+                    forKey: .oldestEntryId
+                )
+                self.updatedAt = try container.decode(
+                    Swift.Double.self,
+                    forKey: .updatedAt
+                )
+                additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
+                    "activity",
+                    "groupChat",
+                    "hasMore",
+                    "messages",
+                    "oldestEntryId",
+                    "updatedAt"
+                ])
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                var container = encoder.container(keyedBy: CodingKeys.self)
+                try container.encode(
+                    self.activity,
+                    forKey: .activity
+                )
+                try container.encode(
+                    self.groupChat,
+                    forKey: .groupChat
+                )
+                try container.encode(
+                    self.hasMore,
+                    forKey: .hasMore
+                )
+                try container.encode(
+                    self.messages,
+                    forKey: .messages
+                )
+                try container.encodeIfPresent(
+                    self.oldestEntryId,
+                    forKey: .oldestEntryId
+                )
+                try container.encode(
+                    self.updatedAt,
+                    forKey: .updatedAt
+                )
+                try encoder.encodeAdditionalProperties(additionalProperties)
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/EventHeartbeat`.
         public struct EventHeartbeat: Codable, Hashable, Sendable {
             /// A container of undocumented properties.
@@ -2117,6 +3092,199 @@ extension Components {
                 case status
                 case submissionId
                 case updatedAt
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/GroupActivity`.
+        public struct GroupActivity: Codable, Hashable, Sendable {
+            /// Bot-started turns since the owner's last message.
+            ///
+            /// - Remark: Generated from `#/components/schemas/GroupActivity/botTurns`.
+            public var botTurns: Swift.Double
+            /// - Remark: Generated from `#/components/schemas/GroupActivity/members`.
+            public var members: [Components.Schemas.GroupMemberActivity]
+            /// Bot-started turns used up the turn budget; the owner's next message resumes the group.
+            ///
+            /// - Remark: Generated from `#/components/schemas/GroupActivity/paused`.
+            public var paused: Swift.Bool
+            /// Creates a new `GroupActivity`.
+            ///
+            /// - Parameters:
+            ///   - botTurns: Bot-started turns since the owner's last message.
+            ///   - members:
+            ///   - paused: Bot-started turns used up the turn budget; the owner's next message resumes the group.
+            public init(
+                botTurns: Swift.Double,
+                members: [Components.Schemas.GroupMemberActivity],
+                paused: Swift.Bool
+            ) {
+                self.botTurns = botTurns
+                self.members = members
+                self.paused = paused
+            }
+            public enum CodingKeys: String, CodingKey {
+                case botTurns
+                case members
+                case paused
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/GroupChat`.
+        public struct GroupChat: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/GroupChat/createdAt`.
+            public var createdAt: Swift.String
+            /// - Remark: Generated from `#/components/schemas/GroupChat/id`.
+            public var id: Swift.String
+            /// Member bots in the order they joined.
+            ///
+            /// - Remark: Generated from `#/components/schemas/GroupChat/memberIds`.
+            public var memberIds: [Swift.String]
+            /// - Remark: Generated from `#/components/schemas/GroupChat/name`.
+            public var name: Swift.String
+            /// - Remark: Generated from `#/components/schemas/GroupChat/updatedAt`.
+            public var updatedAt: Swift.String
+            /// Creates a new `GroupChat`.
+            ///
+            /// - Parameters:
+            ///   - createdAt:
+            ///   - id:
+            ///   - memberIds: Member bots in the order they joined.
+            ///   - name:
+            ///   - updatedAt:
+            public init(
+                createdAt: Swift.String,
+                id: Swift.String,
+                memberIds: [Swift.String],
+                name: Swift.String,
+                updatedAt: Swift.String
+            ) {
+                self.createdAt = createdAt
+                self.id = id
+                self.memberIds = memberIds
+                self.name = name
+                self.updatedAt = updatedAt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case createdAt
+                case id
+                case memberIds
+                case name
+                case updatedAt
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/GroupChatSnapshot`.
+        public struct GroupChatSnapshot: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/GroupChatSnapshot/value1`.
+            public var value1: Components.Schemas.TranscriptPage
+            /// - Remark: Generated from `#/components/schemas/GroupChatSnapshot/value2`.
+            public struct Value2Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/GroupChatSnapshot/value2/activity`.
+                public var activity: Components.Schemas.GroupActivity
+                /// - Remark: Generated from `#/components/schemas/GroupChatSnapshot/value2/groupChat`.
+                public var groupChat: Components.Schemas.GroupChat
+                /// - Remark: Generated from `#/components/schemas/GroupChatSnapshot/value2/updatedAt`.
+                public var updatedAt: Swift.Double
+                /// Creates a new `Value2Payload`.
+                ///
+                /// - Parameters:
+                ///   - activity:
+                ///   - groupChat:
+                ///   - updatedAt:
+                public init(
+                    activity: Components.Schemas.GroupActivity,
+                    groupChat: Components.Schemas.GroupChat,
+                    updatedAt: Swift.Double
+                ) {
+                    self.activity = activity
+                    self.groupChat = groupChat
+                    self.updatedAt = updatedAt
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case activity
+                    case groupChat
+                    case updatedAt
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/GroupChatSnapshot/value2`.
+            public var value2: Components.Schemas.GroupChatSnapshot.Value2Payload
+            /// Creates a new `GroupChatSnapshot`.
+            ///
+            /// - Parameters:
+            ///   - value1:
+            ///   - value2:
+            public init(
+                value1: Components.Schemas.TranscriptPage,
+                value2: Components.Schemas.GroupChatSnapshot.Value2Payload
+            ) {
+                self.value1 = value1
+                self.value2 = value2
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                self.value1 = try .init(from: decoder)
+                self.value2 = try .init(from: decoder)
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                try self.value1.encode(to: encoder)
+                try self.value2.encode(to: encoder)
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/GroupMemberActivity`.
+        public struct GroupMemberActivity: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/GroupMemberActivity/agentId`.
+            public var agentId: Swift.String
+            /// Why the member's latest turn failed.
+            ///
+            /// - Remark: Generated from `#/components/schemas/GroupMemberActivity/error`.
+            public var error: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/GroupMemberActivity/status`.
+            @frozen public enum StatusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case idle = "idle"
+                case queued = "queued"
+                case running = "running"
+                case disabled = "disabled"
+            }
+            /// - Remark: Generated from `#/components/schemas/GroupMemberActivity/status`.
+            public var status: Components.Schemas.GroupMemberActivity.StatusPayload
+            /// Creates a new `GroupMemberActivity`.
+            ///
+            /// - Parameters:
+            ///   - agentId:
+            ///   - error: Why the member's latest turn failed.
+            ///   - status:
+            public init(
+                agentId: Swift.String,
+                error: Swift.String? = nil,
+                status: Components.Schemas.GroupMemberActivity.StatusPayload
+            ) {
+                self.agentId = agentId
+                self.error = error
+                self.status = status
+            }
+            public enum CodingKeys: String, CodingKey {
+                case agentId
+                case error
+                case status
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/GroupMessageReceipt`.
+        public struct GroupMessageReceipt: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/GroupMessageReceipt/entryId`.
+            public var entryId: Swift.String
+            /// - Remark: Generated from `#/components/schemas/GroupMessageReceipt/requestId`.
+            public var requestId: Swift.String
+            /// Creates a new `GroupMessageReceipt`.
+            ///
+            /// - Parameters:
+            ///   - entryId:
+            ///   - requestId:
+            public init(
+                entryId: Swift.String,
+                requestId: Swift.String
+            ) {
+                self.entryId = entryId
+                self.requestId = requestId
+            }
+            public enum CodingKeys: String, CodingKey {
+                case entryId
+                case requestId
             }
         }
         /// - Remark: Generated from `#/components/schemas/Health`.
@@ -2462,6 +3630,69 @@ extension Components {
             public var createdAt: Swift.String
             /// - Remark: Generated from `#/components/schemas/Memory/id`.
             public var id: Swift.String
+            /// Where the memory was saved: the owner's bot chat, the owner directly, a scheduled task, another bot's request, or a group chat.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Memory/source`.
+            public struct SourcePayload: Codable, Hashable, Sendable {
+                /// For `bot`.
+                ///
+                /// - Remark: Generated from `#/components/schemas/Memory/source/agentId`.
+                public var agentId: Swift.String?
+                /// For `group`.
+                ///
+                /// - Remark: Generated from `#/components/schemas/Memory/source/groupId`.
+                public var groupId: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/Memory/source/kind`.
+                @frozen public enum KindPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case chat = "chat"
+                    case owner = "owner"
+                    case task = "task"
+                    case bot = "bot"
+                    case group = "group"
+                }
+                /// - Remark: Generated from `#/components/schemas/Memory/source/kind`.
+                public var kind: Components.Schemas.Memory.SourcePayload.KindPayload
+                /// The task, bot, or group chat, as named when the memory was saved.
+                ///
+                /// - Remark: Generated from `#/components/schemas/Memory/source/name`.
+                public var name: Swift.String?
+                /// For `task`.
+                ///
+                /// - Remark: Generated from `#/components/schemas/Memory/source/scheduleId`.
+                public var scheduleId: Swift.String?
+                /// Creates a new `SourcePayload`.
+                ///
+                /// - Parameters:
+                ///   - agentId: For `bot`.
+                ///   - groupId: For `group`.
+                ///   - kind:
+                ///   - name: The task, bot, or group chat, as named when the memory was saved.
+                ///   - scheduleId: For `task`.
+                public init(
+                    agentId: Swift.String? = nil,
+                    groupId: Swift.String? = nil,
+                    kind: Components.Schemas.Memory.SourcePayload.KindPayload,
+                    name: Swift.String? = nil,
+                    scheduleId: Swift.String? = nil
+                ) {
+                    self.agentId = agentId
+                    self.groupId = groupId
+                    self.kind = kind
+                    self.name = name
+                    self.scheduleId = scheduleId
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case agentId
+                    case groupId
+                    case kind
+                    case name
+                    case scheduleId
+                }
+            }
+            /// Where the memory was saved: the owner's bot chat, the owner directly, a scheduled task, another bot's request, or a group chat.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Memory/source`.
+            public var source: Components.Schemas.Memory.SourcePayload?
             /// - Remark: Generated from `#/components/schemas/Memory/updatedAt`.
             public var updatedAt: Swift.String
             /// Creates a new `Memory`.
@@ -2471,18 +3702,21 @@ extension Components {
             ///   - content:
             ///   - createdAt:
             ///   - id:
+            ///   - source: Where the memory was saved: the owner's bot chat, the owner directly, a scheduled task, another bot's request, or a group chat.
             ///   - updatedAt:
             public init(
                 agentId: Swift.String? = nil,
                 content: Swift.String,
                 createdAt: Swift.String,
                 id: Swift.String,
+                source: Components.Schemas.Memory.SourcePayload? = nil,
                 updatedAt: Swift.String
             ) {
                 self.agentId = agentId
                 self.content = content
                 self.createdAt = createdAt
                 self.id = id
+                self.source = source
                 self.updatedAt = updatedAt
             }
             public enum CodingKeys: String, CodingKey {
@@ -2490,7 +3724,67 @@ extension Components {
                 case content
                 case createdAt
                 case id
+                case source
                 case updatedAt
+            }
+        }
+        /// Where the memory was saved: the owner's bot chat, the owner directly, a scheduled task, another bot's request, or a group chat.
+        ///
+        /// - Remark: Generated from `#/components/schemas/MemorySource`.
+        public struct MemorySource: Codable, Hashable, Sendable {
+            /// For `bot`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/MemorySource/agentId`.
+            public var agentId: Swift.String?
+            /// For `group`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/MemorySource/groupId`.
+            public var groupId: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/MemorySource/kind`.
+            @frozen public enum KindPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case chat = "chat"
+                case owner = "owner"
+                case task = "task"
+                case bot = "bot"
+                case group = "group"
+            }
+            /// - Remark: Generated from `#/components/schemas/MemorySource/kind`.
+            public var kind: Components.Schemas.MemorySource.KindPayload
+            /// The task, bot, or group chat, as named when the memory was saved.
+            ///
+            /// - Remark: Generated from `#/components/schemas/MemorySource/name`.
+            public var name: Swift.String?
+            /// For `task`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/MemorySource/scheduleId`.
+            public var scheduleId: Swift.String?
+            /// Creates a new `MemorySource`.
+            ///
+            /// - Parameters:
+            ///   - agentId: For `bot`.
+            ///   - groupId: For `group`.
+            ///   - kind:
+            ///   - name: The task, bot, or group chat, as named when the memory was saved.
+            ///   - scheduleId: For `task`.
+            public init(
+                agentId: Swift.String? = nil,
+                groupId: Swift.String? = nil,
+                kind: Components.Schemas.MemorySource.KindPayload,
+                name: Swift.String? = nil,
+                scheduleId: Swift.String? = nil
+            ) {
+                self.agentId = agentId
+                self.groupId = groupId
+                self.kind = kind
+                self.name = name
+                self.scheduleId = scheduleId
+            }
+            public enum CodingKeys: String, CodingKey {
+                case agentId
+                case groupId
+                case kind
+                case name
+                case scheduleId
             }
         }
         /// - Remark: Generated from `#/components/schemas/MessageOrigin`.
@@ -2776,6 +4070,12 @@ extension Components {
             public var eventId: Swift.String
             /// - Remark: Generated from `#/components/schemas/ReplyEvent/executionId`.
             public var executionId: Swift.String?
+            /// Set when a bot answered in a group chat; open the group rather than the bot chat.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ReplyEvent/groupId`.
+            public var groupId: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/ReplyEvent/groupName`.
+            public var groupName: Swift.String?
             /// - Remark: Generated from `#/components/schemas/ReplyEvent/origin`.
             public var origin: Swift.String
             /// - Remark: Generated from `#/components/schemas/ReplyEvent/preview`.
@@ -2797,6 +4097,8 @@ extension Components {
             ///   - entryId:
             ///   - eventId:
             ///   - executionId:
+            ///   - groupId: Set when a bot answered in a group chat; open the group rather than the bot chat.
+            ///   - groupName:
             ///   - origin:
             ///   - preview:
             ///   - serverId:
@@ -2808,6 +4110,8 @@ extension Components {
                 entryId: Swift.String? = nil,
                 eventId: Swift.String,
                 executionId: Swift.String? = nil,
+                groupId: Swift.String? = nil,
+                groupName: Swift.String? = nil,
                 origin: Swift.String,
                 preview: Swift.String,
                 serverId: Swift.String,
@@ -2819,6 +4123,8 @@ extension Components {
                 self.entryId = entryId
                 self.eventId = eventId
                 self.executionId = executionId
+                self.groupId = groupId
+                self.groupName = groupName
                 self.origin = origin
                 self.preview = preview
                 self.serverId = serverId
@@ -2831,6 +4137,8 @@ extension Components {
                 case entryId
                 case eventId
                 case executionId
+                case groupId
+                case groupName
                 case origin
                 case preview
                 case serverId

@@ -2,11 +2,13 @@ import Foundation
 
 public enum Route: Hashable {
   case agent(String)
+  case group(String)
   case memory, skills, tasks, activity, integrations
 
   public var title: String {
     switch self {
     case .agent: "Chat"
+    case .group: "Group Chat"
     case .memory: "Memory"
     case .skills: "Skills"
     case .tasks: "Tasks"

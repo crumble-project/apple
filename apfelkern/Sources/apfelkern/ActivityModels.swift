@@ -42,10 +42,14 @@ public struct ActivityEvent: Codable, Hashable, Sendable {
   public var origin: String?
   public var preview: String?
   public var lastMessage: String?
+  /// Set for a bot's answer in a group chat; open the group instead of the bot chat.
+  public var groupId: String?
+  public var groupName: String?
 
   public init(eventId: String? = nil, serverId: String? = nil, createdAt: String? = nil,
               type: String, agentId: String, agentName: String, entryId: String? = nil,
-              origin: String? = nil, preview: String? = nil, lastMessage: String? = nil) {
+              origin: String? = nil, preview: String? = nil, lastMessage: String? = nil,
+              groupId: String? = nil, groupName: String? = nil) {
     self.eventId = eventId
     self.serverId = serverId
     self.createdAt = createdAt
@@ -56,6 +60,8 @@ public struct ActivityEvent: Codable, Hashable, Sendable {
     self.origin = origin
     self.preview = preview
     self.lastMessage = lastMessage
+    self.groupId = groupId
+    self.groupName = groupName
   }
 
   public init(from decoder: Decoder) throws {
@@ -63,7 +69,8 @@ public struct ActivityEvent: Codable, Hashable, Sendable {
     case .case1(let wire):
       self.init(eventId: wire.eventId, serverId: wire.serverId, createdAt: wire.createdAt,
                 type: wire._type.rawValue, agentId: wire.agentId, agentName: wire.agentName,
-                entryId: wire.entryId, origin: wire.origin, preview: wire.preview)
+                entryId: wire.entryId, origin: wire.origin, preview: wire.preview,
+                groupId: wire.groupId, groupName: wire.groupName)
     case .case2(let wire):
       self.init(type: wire._type.rawValue, agentId: wire.agentId, agentName: wire.agentName,
                 lastMessage: wire.lastMessage)
@@ -79,7 +86,8 @@ public struct ActivityEvent: Codable, Hashable, Sendable {
       }
       try Components.Schemas.EventActivity.case1(.init(
         agentId: agentId, agentName: agentName, createdAt: createdAt, entryId: entryId,
-        eventId: eventId, origin: origin, preview: preview, serverId: serverId, _type: .reply
+        eventId: eventId, groupId: groupId, groupName: groupName, origin: origin, preview: preview,
+        serverId: serverId, _type: .reply
       )).encode(to: encoder)
     case "chat-preview":
       guard let lastMessage else {

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Pin the published bot contract `contract-v1.3.0`. The contract now carries `group-chat-snapshot.schema.json`, which the update script requires and generates as `EventGroupChatSnapshot`.
+- Add group chats: `GroupChat`, `GroupActivity`, `GroupMemberActivity`, and `GroupChatSnapshot`, with `APIClient` operations to list, create, update, and delete groups, read snapshots and history, send messages with replies and attachments, stop a group, fetch attachments, and stream group snapshots. `SSEParser(snapshots: .group)` validates group snapshot events.
+- Add `Route.group` for a selected group chat.
+- Add `Reaction.byReplyTarget`, which keys group chat reactions by the message they answer and names who reacted.
+- Add `groupId` and `groupName` to `ActivityEvent` for bot answers in group chats, and `MemorySource` to `Memory`.
 - Replace the local glossary with a link to the canonical glossary in the spec repository.
 - Time out SSE requests after 45 seconds without data instead of 24 hours. Servers send heartbeats every 15 seconds, so a connection that died silently, such as across sleep or a network change, now fails and the caller can reconnect.
 - Pin bot contract `1.0.0` as a checksum-verified local export from source commit `40d7b6a`; adopt the published release before merging the integration.

@@ -81,6 +81,43 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v1/executions`.
     /// - Remark: Generated from `#/paths//v1/executions/get(listExecutions)`.
     func listExecutions(_ input: Operations.ListExecutions.Input) async throws -> Operations.ListExecutions.Output
+    /// - Remark: HTTP `GET /v1/group-chats`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/get(listGroupChats)`.
+    func listGroupChats(_ input: Operations.ListGroupChats.Input) async throws -> Operations.ListGroupChats.Output
+    /// - Remark: HTTP `POST /v1/group-chats`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/post(createGroupChat)`.
+    func createGroupChat(_ input: Operations.CreateGroupChat.Input) async throws -> Operations.CreateGroupChat.Output
+    /// - Remark: HTTP `GET /v1/group-chats/{id}`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/get(getGroupChat)`.
+    func getGroupChat(_ input: Operations.GetGroupChat.Input) async throws -> Operations.GetGroupChat.Output
+    /// - Remark: HTTP `PATCH /v1/group-chats/{id}`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/patch(updateGroupChat)`.
+    func updateGroupChat(_ input: Operations.UpdateGroupChat.Input) async throws -> Operations.UpdateGroupChat.Output
+    /// - Remark: HTTP `DELETE /v1/group-chats/{id}`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/delete(deleteGroupChat)`.
+    func deleteGroupChat(_ input: Operations.DeleteGroupChat.Input) async throws -> Operations.DeleteGroupChat.Output
+    /// - Remark: HTTP `GET /v1/group-chats/{id}/attachments/{entryId}/{index}`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/attachments/{entryId}/{index}/get(getGroupAttachment)`.
+    func getGroupAttachment(_ input: Operations.GetGroupAttachment.Input) async throws -> Operations.GetGroupAttachment.Output
+    /// - Remark: HTTP `GET /v1/group-chats/{id}/chat`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/chat/get(getGroupChatSnapshot)`.
+    func getGroupChatSnapshot(_ input: Operations.GetGroupChatSnapshot.Input) async throws -> Operations.GetGroupChatSnapshot.Output
+    /// Server-sent events. Each snapshot event carries a GroupChatSnapshot JSON object in data, sent on connection and after every change. Heartbeat events carry {} every 15 seconds. Authenticate with the Authorization header. Reconnect by fetching the current snapshot; there is no Last-Event-ID replay.
+    ///
+    /// - Remark: HTTP `GET /v1/group-chats/{id}/events`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/events/get(streamGroupChatEvents)`.
+    func streamGroupChatEvents(_ input: Operations.StreamGroupChatEvents.Input) async throws -> Operations.StreamGroupChatEvents.Output
+    /// - Remark: HTTP `GET /v1/group-chats/{id}/history`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/history/get(getGroupChatHistory)`.
+    func getGroupChatHistory(_ input: Operations.GetGroupChatHistory.Input) async throws -> Operations.GetGroupChatHistory.Output
+    /// - Remark: HTTP `POST /v1/group-chats/{id}/messages`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/messages/post(sendGroupMessage)`.
+    func sendGroupMessage(_ input: Operations.SendGroupMessage.Input) async throws -> Operations.SendGroupMessage.Output
+    /// Ends every running bot turn in the group and drops the queued ones. The group is not paused; the next message starts turns again.
+    ///
+    /// - Remark: HTTP `POST /v1/group-chats/{id}/stop`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/stop/post(stopGroupChat)`.
+    func stopGroupChat(_ input: Operations.StopGroupChat.Input) async throws -> Operations.StopGroupChat.Output
     /// - Remark: HTTP `GET /v1/mcp-servers`.
     /// - Remark: Generated from `#/paths//v1/mcp-servers/get(listMcpServers)`.
     func listMcpServers(_ input: Operations.ListMcpServers.Input) async throws -> Operations.ListMcpServers.Output
@@ -426,6 +463,135 @@ extension APIProtocol {
     ) async throws -> Operations.ListExecutions.Output {
         try await listExecutions(Operations.ListExecutions.Input(
             query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/group-chats`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/get(listGroupChats)`.
+    public func listGroupChats(headers: Operations.ListGroupChats.Input.Headers = .init()) async throws -> Operations.ListGroupChats.Output {
+        try await listGroupChats(Operations.ListGroupChats.Input(headers: headers))
+    }
+    /// - Remark: HTTP `POST /v1/group-chats`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/post(createGroupChat)`.
+    public func createGroupChat(
+        headers: Operations.CreateGroupChat.Input.Headers = .init(),
+        body: Operations.CreateGroupChat.Input.Body
+    ) async throws -> Operations.CreateGroupChat.Output {
+        try await createGroupChat(Operations.CreateGroupChat.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/group-chats/{id}`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/get(getGroupChat)`.
+    public func getGroupChat(
+        path: Operations.GetGroupChat.Input.Path,
+        headers: Operations.GetGroupChat.Input.Headers = .init()
+    ) async throws -> Operations.GetGroupChat.Output {
+        try await getGroupChat(Operations.GetGroupChat.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `PATCH /v1/group-chats/{id}`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/patch(updateGroupChat)`.
+    public func updateGroupChat(
+        path: Operations.UpdateGroupChat.Input.Path,
+        headers: Operations.UpdateGroupChat.Input.Headers = .init(),
+        body: Operations.UpdateGroupChat.Input.Body
+    ) async throws -> Operations.UpdateGroupChat.Output {
+        try await updateGroupChat(Operations.UpdateGroupChat.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `DELETE /v1/group-chats/{id}`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/delete(deleteGroupChat)`.
+    public func deleteGroupChat(
+        path: Operations.DeleteGroupChat.Input.Path,
+        headers: Operations.DeleteGroupChat.Input.Headers = .init()
+    ) async throws -> Operations.DeleteGroupChat.Output {
+        try await deleteGroupChat(Operations.DeleteGroupChat.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/group-chats/{id}/attachments/{entryId}/{index}`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/attachments/{entryId}/{index}/get(getGroupAttachment)`.
+    public func getGroupAttachment(
+        path: Operations.GetGroupAttachment.Input.Path,
+        headers: Operations.GetGroupAttachment.Input.Headers = .init()
+    ) async throws -> Operations.GetGroupAttachment.Output {
+        try await getGroupAttachment(Operations.GetGroupAttachment.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/group-chats/{id}/chat`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/chat/get(getGroupChatSnapshot)`.
+    public func getGroupChatSnapshot(
+        path: Operations.GetGroupChatSnapshot.Input.Path,
+        query: Operations.GetGroupChatSnapshot.Input.Query = .init(),
+        headers: Operations.GetGroupChatSnapshot.Input.Headers = .init()
+    ) async throws -> Operations.GetGroupChatSnapshot.Output {
+        try await getGroupChatSnapshot(Operations.GetGroupChatSnapshot.Input(
+            path: path,
+            query: query,
+            headers: headers
+        ))
+    }
+    /// Server-sent events. Each snapshot event carries a GroupChatSnapshot JSON object in data, sent on connection and after every change. Heartbeat events carry {} every 15 seconds. Authenticate with the Authorization header. Reconnect by fetching the current snapshot; there is no Last-Event-ID replay.
+    ///
+    /// - Remark: HTTP `GET /v1/group-chats/{id}/events`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/events/get(streamGroupChatEvents)`.
+    public func streamGroupChatEvents(
+        path: Operations.StreamGroupChatEvents.Input.Path,
+        query: Operations.StreamGroupChatEvents.Input.Query = .init(),
+        headers: Operations.StreamGroupChatEvents.Input.Headers = .init()
+    ) async throws -> Operations.StreamGroupChatEvents.Output {
+        try await streamGroupChatEvents(Operations.StreamGroupChatEvents.Input(
+            path: path,
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/group-chats/{id}/history`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/history/get(getGroupChatHistory)`.
+    public func getGroupChatHistory(
+        path: Operations.GetGroupChatHistory.Input.Path,
+        query: Operations.GetGroupChatHistory.Input.Query = .init(),
+        headers: Operations.GetGroupChatHistory.Input.Headers = .init()
+    ) async throws -> Operations.GetGroupChatHistory.Output {
+        try await getGroupChatHistory(Operations.GetGroupChatHistory.Input(
+            path: path,
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `POST /v1/group-chats/{id}/messages`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/messages/post(sendGroupMessage)`.
+    public func sendGroupMessage(
+        path: Operations.SendGroupMessage.Input.Path,
+        headers: Operations.SendGroupMessage.Input.Headers = .init(),
+        body: Operations.SendGroupMessage.Input.Body
+    ) async throws -> Operations.SendGroupMessage.Output {
+        try await sendGroupMessage(Operations.SendGroupMessage.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Ends every running bot turn in the group and drops the queued ones. The group is not paused; the next message starts turns again.
+    ///
+    /// - Remark: HTTP `POST /v1/group-chats/{id}/stop`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/stop/post(stopGroupChat)`.
+    public func stopGroupChat(
+        path: Operations.StopGroupChat.Input.Path,
+        headers: Operations.StopGroupChat.Input.Headers = .init()
+    ) async throws -> Operations.StopGroupChat.Output {
+        try await stopGroupChat(Operations.StopGroupChat.Input(
+            path: path,
             headers: headers
         ))
     }
