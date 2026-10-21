@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Move into the `crumble-project/apple` repository, where the macOS and iOS apps depend on this package by path instead of a pinned revision.
 - Add `ActivityEvent.jobName`: a reply to a coding or desktop job's report (origin `coding` or `desktop`) names its job, so notifications can say which job and open the bot desktop.
 - Add desktop jobs from bot contract 1.6.0. `ServerCapabilities.desktop` says whether bots can get a bot desktop. `Agent.desktopModel` (a `DesktopModel`) is the model for a bot's desktop jobs, and `updateAgent` clears it with `["desktopModel": .null]`; `AgentDraft` gains `toolsDesktop`, `desktopProvider`, and `desktopModel`. `DesktopJob`, `APIClient.desktopJobs`, and `desktopJobHistory` mirror coding jobs, and `messageLabel` names desktop job reports.
 - Add `JobUsage`, the tokens and cost a job's own model requests spent, summed over its models, on `DesktopJob.usage` and `CodingJob.usage`.

@@ -212,7 +212,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			packageReferences = (
-				C00000000000000000000005 /* XCRemoteSwiftPackageReference "apfelkern" */,
+				C00000000000000000000005 /* XCLocalSwiftPackageReference "../apfelkern" */,
 			);
 			targets = (
 				A00000000000000000000010 /* Crumble */,
@@ -283,36 +283,32 @@
 		};
 /* End PBXTargetDependency section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		C00000000000000000000005 /* XCRemoteSwiftPackageReference "apfelkern" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/crumble-project/apfelkern.git";
-			requirement = {
-				kind = revision;
-				revision = 2057310722426aff34a0dd68a444c245c1659125;
-			};
+/* Begin XCLocalSwiftPackageReference section */
+		C00000000000000000000005 /* XCLocalSwiftPackageReference "../apfelkern" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../apfelkern;
 		};
-/* End XCRemoteSwiftPackageReference section */
+/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		C00000000000000000000002 /* apfelkern */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = C00000000000000000000005 /* XCRemoteSwiftPackageReference "apfelkern" */;
+			package = C00000000000000000000005 /* XCLocalSwiftPackageReference "../apfelkern" */;
 			productName = apfelkern;
 		};
 		C00000000000000000000004 /* apfelkern */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = C00000000000000000000005 /* XCRemoteSwiftPackageReference "apfelkern" */;
+			package = C00000000000000000000005 /* XCLocalSwiftPackageReference "../apfelkern" */;
 			productName = apfelkern;
 		};
 		C00000000000000000000007 /* BotAvatar */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = C00000000000000000000005 /* XCRemoteSwiftPackageReference "apfelkern" */;
+			package = C00000000000000000000005 /* XCLocalSwiftPackageReference "../apfelkern" */;
 			productName = BotAvatar;
 		};
 		C00000000000000000000009 /* BotAvatar */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = C00000000000000000000005 /* XCRemoteSwiftPackageReference "apfelkern" */;
+			package = C00000000000000000000005 /* XCLocalSwiftPackageReference "../apfelkern" */;
 			productName = BotAvatar;
 		};
 /* End XCSwiftPackageProductDependency section */

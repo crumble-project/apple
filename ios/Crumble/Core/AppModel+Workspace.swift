@@ -31,7 +31,7 @@ extension AppModel {
       }
     case .integrations:
       loadIntegrationOverview()
-    case .agent:
+    case .agent, .group:
       break
     }
   }

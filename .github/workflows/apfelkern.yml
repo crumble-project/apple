@@ -1,9 +1,18 @@
-name: Check
+name: apfelkern
 on:
   push:
+    paths:
+      - apfelkern/**
+      - .github/workflows/apfelkern.yml
   pull_request:
+    paths:
+      - apfelkern/**
+      - .github/workflows/apfelkern.yml
 permissions:
   contents: read
+defaults:
+  run:
+    working-directory: apfelkern
 jobs:
   check:
     runs-on: macos-26
@@ -13,8 +22,8 @@ jobs:
           persist-credentials: false
       - uses: actions/cache@v4
         with:
-          path: .build/openapi-generator-1.14.2
-          key: generator-${{ runner.os }}-${{ hashFiles('Generation/tools.json', 'Generation/generator-Package.resolved') }}
+          path: apfelkern/.build/openapi-generator-1.14.2
+          key: generator-${{ runner.os }}-${{ hashFiles('apfelkern/Generation/tools.json', 'apfelkern/Generation/generator-Package.resolved') }}
       - run: python3 scripts/contract.py --check
       - run: swift build
       - run: swift test

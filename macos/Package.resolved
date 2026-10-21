@@ -2,14 +2,6 @@
   "originHash" : "9817dd1264d5cc87c78700adf05ed21d3b90a1048597a96760bca9b53e1db9ea",
   "pins" : [
     {
-      "identity" : "apfelkern",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/crumble-project/apfelkern.git",
-      "state" : {
-        "revision" : "cc2024820d1251ef45dd2f613d8b8b77f7b0357c"
-      }
-    },
-    {
       "identity" : "swift-http-types",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-http-types",

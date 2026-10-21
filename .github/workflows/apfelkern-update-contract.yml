@@ -5,6 +5,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+defaults:
+  run:
+    working-directory: apfelkern
 concurrency:
   group: update-contract
   cancel-in-progress: false
@@ -18,8 +21,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/cache@v4
         with:
-          path: .build/openapi-generator-1.14.2
-          key: generator-${{ runner.os }}-${{ hashFiles('Generation/tools.json', 'Generation/generator-Package.resolved') }}
+          path: apfelkern/.build/openapi-generator-1.14.2
+          key: generator-${{ runner.os }}-${{ hashFiles('apfelkern/Generation/tools.json', 'apfelkern/Generation/generator-Package.resolved') }}
       - id: release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -47,8 +50,8 @@ jobs:
           branch: automation/update-contract
           commit-message: 'build(api): update pinned bot contract'
           title: 'build(api): update to ${{ steps.release.outputs.tag }}'
-          body-path: Generation/update-pr.md
+          body-path: apfelkern/Generation/update-pr.md
           add-paths: |
-            Contract
-            Sources/apfelkern/Generated
-            Package.resolved
+            apfelkern/Contract
+            apfelkern/Sources/apfelkern/Generated
+            apfelkern/Package.resolved

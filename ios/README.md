@@ -12,17 +12,16 @@ It uses the same authenticated API as the macOS and Android apps through apfelke
 
 ## Shared Swift package
 
-The app and unit tests fetch `https://github.com/crumble-project/apfelkern.git` at the exact commit recorded in the Xcode project and `Package.resolved`.
-A sibling checkout and SSH credentials are not required.
-The package provides generated operations and event decoding, common domain models, API transport, drafts, and pure helpers. See the [package documentation](https://github.com/crumble-project/apfelkern).
+The Xcode project references `../apfelkern` as a local package, so the app and unit tests always use the apfelkern in the same commit.
+The package provides generated operations and event decoding, common domain models, API transport, drafts, and pure helpers. See the [package documentation](../apfelkern/README.md).
 
 ## Update the API client
 
-Update apfelkern first, then update its exact commit in `Crumble.xcodeproj/project.pbxproj` and resolve packages to refresh `Package.resolved`. Run the build, lint, and test commands in this README. API and event generation happen only in apfelkern; do not add a generator or duplicate wire models here.
+Update the contract and generated client in apfelkern, then adapt the app in the same pull request. Run the build, lint, and test commands in this README. API and event generation happen only in apfelkern; do not add a generator or duplicate wire models here.
 
-Apfelkern initially consumes a checksum-verified local contract export. After bot's first release, its pin must switch to `contract-v1.0.0` before final app adoption. Merge bot, then apfelkern, then this app. The app keeps its connection settings, task cancellation, error presentation, optimistic delivery, and streaming lifetime.
+The app keeps its connection settings, task cancellation, error presentation, optimistic delivery, and streaming lifetime.
 
-`.github/workflows/ci.yml` builds the unsigned app and its tests on public GitHub-hosted macOS runners for every push and pull request, without a signing account, server, or custom secret. CI runs nothing that needs a simulator, so run the tests locally before you push.
+[`.github/workflows/ios.yml`](../.github/workflows/ios.yml) builds the unsigned app and its tests on public GitHub-hosted macOS runners for every pull request and push to `main` that changes `ios` or `apfelkern`, without a signing account, server, or custom secret. CI runs nothing that needs a simulator, so run the tests locally before you push.
 
 ## Chat delivery ownership
 

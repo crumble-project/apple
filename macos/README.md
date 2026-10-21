@@ -8,31 +8,22 @@ Crumble for macOS is a native SwiftUI client for a running Crumble server. It pr
 - Xcode 26 or later, for Swift 6.2 and the macOS 26 SDK.
 - A running Crumble server. Start the server from the sibling `bot` repository.
 
-API dependencies are provided by the shared `apfelkern` package and pinned in `Package.resolved`.
+API dependencies are provided by the shared `apfelkern` package in this repository.
 
 ## Shared Swift package
 
-The app and unit tests fetch `https://github.com/crumble-project/apfelkern.git` at the exact reviewed commit in `Package.swift` and `Package.resolved`. A sibling checkout is not required.
-The package provides generated API operations and event decoding, common domain models, API transport, drafts, and pure helpers. See the [package documentation](https://github.com/crumble-project/apfelkern).
+The app and unit tests build against `../apfelkern` by path, so they always use the apfelkern in the same commit.
+The package provides generated API operations and event decoding, common domain models, API transport, drafts, and pure helpers. See the [package documentation](../apfelkern/README.md).
 
 Bot chat delivery uses `BotChatDelivery` from `apfelkern`. It coordinates pending messages, retry payloads, and previews. HTTP acceptance retains pending messages until a transcript snapshot confirms them. `AppModel` retains transport tasks, connection and selection guards, and composer behavior. Delivery behavior tests live in `apfelkern`; controlled transport tests remain in the app.
 
 ## Update the API client
 
-Update the contract and generated client in apfelkern first. Update the exact package revision in `Package.swift`, resolve packages, and commit `Package.resolved` together. Run `swift test`. Do not add an app-local generator or duplicate wire models.
+Update the contract and generated client in apfelkern, then adapt the app in the same pull request. Run `swift test`. Do not add an app-local generator or duplicate wire models.
 
-To build against a sibling `../apfelkern` checkout, including unmerged shared changes, set `APFELKERN_LOCAL=1`:
+Connection settings, cancellation, errors, optimistic delivery, and streaming lifetime remain app-owned.
 
-```bash
-APFELKERN_LOCAL=1 swift run Crumble
-APFELKERN_LOCAL=1 swift test
-```
-
-Local mode removes apfelkern from `Package.resolved`. Run `swift package resolve` without the variable to restore the pin before committing. CI and nightly builds don't set the variable, so they always use the pin.
-
-Apfelkern initially uses a checksum-verified local bot contract. Its pin must switch to `contract-v1.0.0` after bot's first release. Merge bot, then apfelkern, then this app, and refresh the app pin if apfelkern's merge changes the commit. Connection settings, cancellation, errors, optimistic delivery, and streaming lifetime remain app-owned.
-
-PR CI runs unsigned `swift test` on a public GitHub-hosted macOS runner without signing credentials. The signed nightly workflow remains separate.
+PR CI runs unsigned `swift test` on a public GitHub-hosted macOS runner without signing credentials.
 
 ## Run the app
 
@@ -111,20 +102,6 @@ To install the app, copy `build/Crumble.app` to `/Applications`. For a developme
 ```bash
 CRUMBLE_VARIANT=dev ./scripts/build-app.sh
 ```
-
-## Nightly builds
-
-[`.github/workflows/nightly.yml`](.github/workflows/nightly.yml) runs daily at 03:00 UTC when `main` has changed, and on demand from the Actions tab. It runs the tests, builds `Crumble.app`, signs it with Developer ID, notarizes and staples it, then replaces the `nightly` pre-release with `Crumble-nightly.zip`. The version is `0.1.0` with a `YYYYMMDD.run` build number.
-
-The workflow reads these repository secrets:
-
-| Secret | Value |
-| --- | --- |
-| `MACOS_CERTIFICATE_P12` | Base64 of the Developer ID Application certificate and private key, exported as `.p12` |
-| `MACOS_CERTIFICATE_PASSWORD` | The `.p12` export password |
-| `NOTARY_KEY_P8` | Base64 of an App Store Connect Team API key (`.p8`) with the Developer role |
-| `NOTARY_KEY_ID` | That key's ID |
-| `NOTARY_ISSUER_ID` | The App Store Connect issuer ID |
 
 ## Connect to a server
 

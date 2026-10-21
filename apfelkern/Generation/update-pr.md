@@ -12,4 +12,4 @@ Review the workflow run and the contract changelog in `Contract/CHANGELOG.md` be
 
 **Reversibility:** Reversible. Revert the pin and generated output together.
 
-**Blast Radius:** Shared HTTP operations and event payloads consumed by the Apple apps. Review generated type changes and app compatibility before adopting the new apfelkern revision.
+**Blast Radius:** Shared HTTP operations and event payloads consumed by the Apple apps. Both apps build against this apfelkern by path, so run the macOS tests and the iOS build and unit tests before merging.

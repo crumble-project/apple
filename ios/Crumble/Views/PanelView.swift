@@ -41,7 +41,7 @@ struct PanelView: View {
     case .tasks: TasksPanel()
     case .activity: ActivityPanel()
     case .integrations: IntegrationsPanel()
-    case .agent: EmptyView()
+    case .agent, .group: EmptyView()
     }
   }
 }

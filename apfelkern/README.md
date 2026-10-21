@@ -16,10 +16,7 @@ The separate `BotAvatar` library draws the bot avatars with SwiftUI. Live avatar
 
 ## Use the package
 
-Both clients consume a reviewed apfelkern revision. Public consumers can resolve `https://github.com/crumble-project/apfelkern.git` without private package access.
-A sibling checkout is not required. Import the public API with `import apfelkern`.
-
-Commit and push package changes before updating either client's resolved revision. Uncommitted local changes are not included in remote dependencies.
+Both clients in this repository, `../macos` and `../ios`, depend on this package by path, so they always build against the apfelkern in the same commit. Import the public API with `import apfelkern`.
 
 Group chats use the same models: `GroupChatSnapshot` carries the transcript as `Message` values with senders in `origin`, and `GroupActivity` says which members are answering, queued, or disabled and whether bots are paused. `BotChatDelivery` works for groups too when keyed by group ID.
 `BotChatDelivery` owns pending messages, retry payloads, and previews for both clients. HTTP acceptance retains pending messages until a transcript snapshot confirms them. The apps retain UI, observable application state, network tasks, connection and selection guards, composer restoration, notifications, Keychain storage, and image conversion.
@@ -113,5 +110,5 @@ xcodebuild -scheme BotAvatar -destination 'generic/platform=iOS Simulator' build
 ```
 
 The `apfelkernTests` target covers bot chat delivery transitions; `BotAvatarTests` covers avatar motion. Client suites retain controlled transport tests for acknowledgement ordering, late failures, and connection or bot changes.
-Run `swift test` in `../desktop` and the unit tests in the `../ios` Xcode project after changing shared behavior.
+Run `swift test` in `../macos` and the unit tests in the `../ios` Xcode project after changing shared behavior, and adapt both apps in the same pull request.
 The iOS test script also runs UI tests; see the [iOS build and test instructions](../ios/README.md#build-and-test).
