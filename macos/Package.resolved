@@ -1,0 +1,32 @@
+{
+  "originHash" : "9817dd1264d5cc87c78700adf05ed21d3b90a1048597a96760bca9b53e1db9ea",
+  "pins" : [
+    {
+      "identity" : "apfelkern",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/crumble-project/apfelkern.git",
+      "state" : {
+        "revision" : "cc2024820d1251ef45dd2f613d8b8b77f7b0357c"
+      }
+    },
+    {
+      "identity" : "swift-http-types",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-http-types",
+      "state" : {
+        "revision" : "6c8ca8297332ea2780c45e1bce9d7fd2a8b51e1d",
+        "version" : "1.7.0"
+      }
+    },
+    {
+      "identity" : "swift-openapi-runtime",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-openapi-runtime",
+      "state" : {
+        "revision" : "478bf6ce34f71734bc88b79b37b842118312d133",
+        "version" : "1.13.2"
+      }
+    }
+  ],
+  "version" : 3
+}
