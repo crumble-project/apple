@@ -1,0 +1,54 @@
+included:
+  - Sources
+  - Tests
+  - Package.swift
+
+excluded:
+  - Sources/apfelkern/Generated
+
+opt_in_rules:
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+  - closure_body_length
+  - discouraged_object_literal
+  - empty_count
+  - empty_string
+  - fatal_error_message
+  - first_where
+  - identical_operands
+  - modifier_order
+  - overridden_super_call
+  - private_action
+  - private_outlet
+  - redundant_nil_coalescing
+  - unneeded_parentheses_in_closure_argument
+  - vertical_whitespace_closing_braces
+
+cyclomatic_complexity:
+  warning: 10
+  error: 20
+
+function_body_length:
+  warning: 40
+  error: 80
+
+type_body_length:
+  warning: 250
+  error: 400
+
+file_length:
+  warning: 400
+  error: 800
+
+# Chart coordinates mirror the server's wire format keys.
+identifier_name:
+  excluded:
+    - id
+    - URL
+    - GlobalAPIKey
+    - x
+    - y
+    - x1
+    - y1
+    - x2
+    - y2

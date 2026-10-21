@@ -1,0 +1,16 @@
+{
+  "checksums": {
+    "CHANGELOG.md": "b4cc86e1bc48d53a0c23155dd27d89b1ca66097f2c29b386eac981cfe2c15e44",
+    "activity-event.schema.json": "943f22e8219b2e8415b921f73133e7a2896d60548126f7b8e3aaee0717f49857",
+    "chat-snapshot.schema.json": "0af60b3c79a62a0b9780ef716e4db77b33701d1c5d8a0a372d77593adf2a936c",
+    "desktop-control.schema.json": "d056a6914bb219d64634eeb701d8e9bae19bbd7bce3dc88bafe538429642070f",
+    "group-chat-snapshot.schema.json": "973532a83aa559554b429decf662b0d62b9a66c623af234be35c39ab01ef7c24",
+    "heartbeat.schema.json": "e1fc21c5ca3e658bfbfbb5005a0d1dfec2be6e720b5a1ff86f699a13cc5db221",
+    "openapi.json": "526166d91392264ea99e6f2f5bd0661ab3307312351c5c8cd8b0fd29457ff76c",
+    "source-commit.txt": "12f67dab23eafff62a4fd3903b4acb0157026c3e80b47d3475ceabfe82c3c9ef"
+  },
+  "kind": "release",
+  "sourceCommit": "8c4d52077941f382d54afc828a73ef6717c3e6b5",
+  "tag": "contract-v1.6.0",
+  "version": "1.6.0"
+}

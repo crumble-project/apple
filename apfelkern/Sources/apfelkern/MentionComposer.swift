@@ -1,0 +1,47 @@
+import Foundation
+
+/// Find an unfinished @name at the caret, including names containing spaces, but never emails.
+public func mentionQuery(in text: String, selection: NSRange) -> (range: NSRange, query: String)? {
+  let source = text as NSString
+  guard selection.length == 0, selection.location <= source.length else { return nil }
+  let prefix = source.substring(to: selection.location) as NSString
+  let mention = prefix.range(of: "@", options: .backwards)
+  guard mention.location != NSNotFound else { return nil }
+  if mention.location > 0 {
+    let previous = prefix.substring(with: NSRange(location: mention.location - 1, length: 1))
+    guard
+      previous.rangeOfCharacter(from: .whitespacesAndNewlines.union(.punctuationCharacters)) != nil
+    else { return nil }
+  }
+  let query = prefix.substring(from: mention.location + 1)
+  guard !query.contains("\n"), !query.contains("\u{fffc}") else { return nil }
+  return (NSRange(location: mention.location, length: selection.location - mention.location), query)
+}
+
+/// Inline completion stays separate from the editable draft.
+public struct MentionCompletion {
+  public let range: NSRange
+  public let query: String
+  public let bots: [Agent]
+
+  public static func find(in text: String, selection: NSRange, bots: [Agent]) -> MentionCompletion? {
+    guard selection.location == (text as NSString).length,
+      let match = mentionQuery(in: text, selection: selection),
+      match.query.last?.isWhitespace != true
+    else { return nil }
+    let matches = bots.filter { $0.name.lowercased().hasPrefix(match.query.lowercased()) }
+      .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+    guard !matches.isEmpty else { return nil }
+    return MentionCompletion(range: match.range, query: match.query, bots: matches)
+  }
+
+  public init(
+    range: NSRange,
+    query: String,
+    bots: [Agent]
+  ) {
+    self.range = range
+    self.query = query
+    self.bots = bots
+  }
+}

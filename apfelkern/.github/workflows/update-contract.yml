@@ -1,0 +1,54 @@
+name: Update contract
+on:
+  schedule:
+    - cron: '31 7 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: update-contract
+  cancel-in-progress: false
+jobs:
+  update:
+    runs-on: macos-26
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: .build/openapi-generator-1.14.2
+          key: generator-${{ runner.os }}-${{ hashFiles('Generation/tools.json', 'Generation/generator-Package.resolved') }}
+      - id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/latest-contract.py
+      - if: steps.release.outputs.tag != ''
+        env:
+          CONTRACT_TAG: ${{ steps.release.outputs.tag }}
+        run: python3 scripts/contract.py --update "$CONTRACT_TAG"
+      - if: steps.release.outputs.tag != ''
+        run: python3 scripts/contract.py --check
+      - if: steps.release.outputs.tag != ''
+        run: swift build
+      - if: steps.release.outputs.tag != ''
+        run: swift test
+      - if: steps.release.outputs.tag != ''
+        run: brew install swiftlint
+      - if: steps.release.outputs.tag != ''
+        run: swiftlint lint
+      - if: steps.release.outputs.tag != ''
+        run: xcodebuild -scheme BotAvatar -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+      - if: steps.release.outputs.tag != ''
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ github.token }}
+          branch: automation/update-contract
+          commit-message: 'build(api): update pinned bot contract'
+          title: 'build(api): update to ${{ steps.release.outputs.tag }}'
+          body-path: Generation/update-pr.md
+          add-paths: |
+            Contract
+            Sources/apfelkern/Generated
+            Package.resolved
