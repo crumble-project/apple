@@ -76,10 +76,15 @@ struct MemoryPanel: View {
 
     private func row(_ memory: Memory, agentID: String?) -> some View {
         HStack {
-            Text(memory.content)
-                .fixedSize(horizontal: false, vertical: true)
-                .textSelection(.enabled)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(memory.content)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
+                if let source = memorySourceLabel(memory.source) {
+                    Text(source).font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
             Menu {
                 rowActions(memory, agentID: agentID)
             } label: {
@@ -98,5 +103,19 @@ struct MemoryPanel: View {
     @ViewBuilder private func rowActions(_ memory: Memory, agentID: String?) -> some View {
         Button("Edit…") { model.openMemoryForm(memory.id, agentID: agentID) }
         Button("Delete", role: .destructive) { model.deleteMemory(memory.id, agentID: agentID) }
+    }
+}
+
+/// Where a memory was saved, for the line under it; nil for memories saved before sources were recorded.
+func memorySourceLabel(_ source: MemorySource?) -> String? {
+    guard let source else { return nil }
+    let name = source.name?.nilIfEmpty
+    switch source.kind {
+    case "chat": return "From the bot chat"
+    case "owner": return "Added by you"
+    case "task": return name.map { "From the task \($0)" } ?? "From a scheduled task"
+    case "bot": return name.map { "From a request by \($0)" } ?? "From another bot"
+    case "group": return name.map { "From the group chat \($0)" } ?? "From a group chat"
+    default: return nil
     }
 }

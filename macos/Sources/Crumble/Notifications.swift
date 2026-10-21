@@ -12,13 +12,18 @@ struct NotificationContext {
 }
 
 /// A finished reply notifies unless its chat is on screen, and delegated work stays quiet because
-/// the delegating bot reports back itself.
+/// the delegating bot reports back itself. A group answer names its group and notifies unless that
+/// group is on screen.
 func notification(for event: ActivityEvent, in context: NotificationContext) -> (title: String, body: String)? {
     switch event.type {
     case "reply":
         guard event.origin != "bot" else { return nil }
-        if context.windowOnScreen, context.route == .agent(event.agentId) { return nil }
         let text = preview(event.preview ?? "")
+        if let group = event.groupId {
+            if context.windowOnScreen, context.route == .group(group) { return nil }
+            return ("\(event.agentName) in \(event.groupName ?? "a group chat")", text.isEmpty ? "Replied" : text)
+        }
+        if context.windowOnScreen, context.route == .agent(event.agentId) { return nil }
         return (event.agentName, text.isEmpty ? "Replied" : text)
     default:
         return nil
@@ -45,10 +50,13 @@ struct NotificationLedger {
     }
 }
 
-/// The bot chat a notification opens.
+/// The bot chat or group chat a notification opens.
 struct NotificationTarget: Equatable {
     var serverURL: String
     var agentId: String
+    var groupId: String?
+
+    var route: Route { groupId.map(Route.group) ?? .agent(agentId) }
 }
 
 /// Posts local notifications for the activity stream and routes a click back into the window.
@@ -149,16 +157,18 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
         content.title = title
         content.body = body
         content.sound = .default
-        content.userInfo = ["agentId": event.agentId, "serverURL": serverURL]
-        // Replies from one bot replace each other, so a busy bot leaves one notification.
-        let id = "reply-\(serverURL)-\(event.agentId)"
+        var info = ["agentId": event.agentId, "serverURL": serverURL]
+        if let group = event.groupId { info["groupId"] = group }
+        content.userInfo = info
+        // Replies from one bot, or in one group, replace each other, so a busy chat leaves one notification.
+        let id = event.groupId.map { "reply-\(serverURL)-group-\($0)" } ?? "reply-\(serverURL)-\(event.agentId)"
         deliver(UNNotificationRequest(identifier: id, content: content, trigger: nil))
     }
 
     /// The stream decided to post while the owner may have opened the chat since.
     func shouldPresent(_ target: NotificationTarget) -> Bool {
         guard enabled, let model, model.client?.baseURL == target.serverURL else { return false }
-        return !(windowOnScreen() && model.route == .agent(target.agentId))
+        return !(windowOnScreen() && model.route == target.route)
     }
 
     func open(_ target: NotificationTarget) {
@@ -175,14 +185,18 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
             model.errorText = "This notification is from \(target.serverURL). Connect to that server to open it."
             return
         }
-        model.openNotificationChat(target.agentId)
+        if let group = target.groupId {
+            model.openNotificationGroup(group)
+        } else {
+            model.openNotificationChat(target.agentId)
+        }
     }
 
     nonisolated private static func target(_ info: [AnyHashable: Any]) -> NotificationTarget? {
         guard let serverURL = info["serverURL"] as? String, let agentId = info["agentId"] as? String else {
             return nil
         }
-        return NotificationTarget(serverURL: serverURL, agentId: agentId)
+        return NotificationTarget(serverURL: serverURL, agentId: agentId, groupId: info["groupId"] as? String)
     }
 
     nonisolated func userNotificationCenter(

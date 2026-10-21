@@ -2,11 +2,41 @@ import apfelkern
 import AppKit
 import SwiftUI
 
+/// What the composer writes to: a bot chat or a group chat.
+struct ComposerTarget {
+    var placeholder: String
+    var enabled: Bool
+    /// Bots that `@` completes.
+    var mentionable: [Agent]
+    var running: Bool
+    var stopHelp: String
+    var send: @MainActor () -> Void
+    var stop: @MainActor () -> Void
+}
+
+extension ComposerTarget {
+    /// A bot chat: mentions complete to the bots the bot may message.
+    @MainActor static func chat(_ agent: Agent, model: AppModel) -> ComposerTarget {
+        ComposerTarget(
+            placeholder: agent.enabled
+                ? "Message \(agent.name)" : "\(agent.name) is paused. Enable it in its profile.",
+            enabled: agent.enabled,
+            mentionable: model.agents.filter {
+                $0.enabled && $0.id != agent.id && (agent.delegates ?? []).contains($0.id)
+                    && (agent.tools ?? []).contains("delegate")
+            },
+            running: model.snapshot?.isRunning == true,
+            stopHelp: "Stop the current run",
+            send: { model.sendMessage() },
+            stop: { model.abortChat() })
+    }
+}
+
 struct Composer: View {
     /// The height of the message field and the attach button beside it.
     static let height: CGFloat = 32
     @Environment(AppModel.self) private var model
-    let agent: Agent
+    let target: ComposerTarget
     @FocusState private var focused: Bool
     @State private var selection: TextSelection?
     @State private var selectedMention = 0
@@ -30,7 +60,7 @@ struct Composer: View {
             if case .success(let urls) = result { model.addAttachments(urls) }
         }
         .dropDestination(for: URL.self) { urls, _ in
-            guard agent.enabled else { return false }
+            guard target.enabled else { return false }
             model.addAttachments(urls)
             return true
         }
@@ -59,23 +89,23 @@ struct Composer: View {
         HStack(alignment: .bottom, spacing: 8) {
             attachButton
             messageField
-            if model.snapshot?.isRunning == true {
+            if target.running {
                 stopButton
             }
-            if model.snapshot?.isRunning != true || canSend {
+            if !target.running || canSend {
                 sendButton
             }
         }
     }
 
     private var canSend: Bool {
-        agent.enabled
+        target.enabled
             && (!model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !model.attachments.isEmpty)
     }
 
     private var sendButton: some View {
         Button {
-            model.sendMessage()
+            target.send()
         } label: {
             Image(systemName: "arrow.up")
                 .font(.system(size: 15, weight: .semibold))
@@ -102,7 +132,7 @@ struct Composer: View {
         }
         .buttonStyle(.plain)
         .composerGlass(.regular.interactive(), in: .circle)
-        .disabled(!agent.enabled)
+        .disabled(!target.enabled)
         .accessibilityLabel("Attach Files")
         .help("Attach images or text files")
     }
@@ -135,14 +165,14 @@ struct Composer: View {
     private var messageInput: some View {
         @Bindable var model = model
         return TextField(
-            agent.enabled ? "Message \(agent.name)" : "\(agent.name) is paused. Enable it in its profile.",
+            target.placeholder,
             text: $model.draft, selection: $selection, axis: .vertical
         )
         .textFieldStyle(.plain)
         .font(Palette.messageFont)
         .lineLimit(1...8)
         .focused($focused)
-        .disabled(!agent.enabled)
+        .disabled(!target.enabled)
         .overlay(alignment: .topLeading) {
             if let completion, !dismissedMention {
                 let bot = completion.bots[min(selectedMention, completion.bots.count - 1)]
@@ -175,7 +205,7 @@ struct Composer: View {
                 model.draft = text
                 selection = TextSelection(insertionPoint: caret)
             } else if !acceptMention() {
-                model.sendMessage()
+                target.send()
             }
             return .handled
         }
@@ -183,7 +213,7 @@ struct Composer: View {
 
     private var stopButton: some View {
         Button {
-            model.abortChat()
+            target.stop()
         } label: {
             Image(systemName: "stop.fill")
                 .font(.system(size: 16, weight: .medium))
@@ -193,7 +223,7 @@ struct Composer: View {
         .buttonStyle(.plain)
         .composerGlass(.regular.interactive(), in: .circle)
         .accessibilityLabel("Stop")
-        .help("Stop the current run")
+        .help(target.stopHelp)
     }
 
     private var completion: MentionCompletion? {
@@ -203,11 +233,7 @@ struct Composer: View {
             range.lowerBound >= text.startIndex, range.upperBound <= text.endIndex {
             caret = NSRange(range, in: text)
         }
-        let bots = model.agents.filter {
-            $0.enabled && $0.id != agent.id && (agent.delegates ?? []).contains($0.id)
-                && (agent.tools ?? []).contains("delegate")
-        }
-        return MentionCompletion.find(in: text, selection: caret, bots: bots)
+        return MentionCompletion.find(in: text, selection: caret, bots: target.mentionable)
     }
 
     private func acceptMention() -> Bool {

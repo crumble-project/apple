@@ -26,6 +26,7 @@ struct CrumbleApp: App {
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("New Agent") { model.createAgent() }.keyboardShortcut("n")
+                Button("New Group Chat") { model.createGroup() }.keyboardShortcut("n", modifiers: [.command, .shift])
             }
             CommandGroup(replacing: .appSettings) { SettingsButton().keyboardShortcut(",") }
         }
@@ -59,10 +60,13 @@ struct ContentView: View {
         }
         .sheet(item: $model.agentDraft) { AgentEditorView(draft: sheetBinding($model.agentDraft, for: $0)) }
         .sheet(item: $model.codingJobHistory) { CodingJobSheet(job: $0) }
+        .sheet(item: $model.groupDraft) { GroupEditorView(draft: sheetBinding($model.groupDraft, for: $0)) }
     }
 
     @ViewBuilder private var detail: some View {
-        if let agent = model.selectedAgent {
+        if let group = model.selectedGroup {
+            GroupChatView(group: group)
+        } else if let agent = model.selectedAgent {
             ChatView(agent: agent)
         } else {
             WelcomeView()
@@ -85,6 +89,11 @@ struct SidebarView: View {
     @Environment(AppModel.self) private var model
     @State private var search = ""
 
+    private var filteredGroups: [GroupChat] {
+        guard !search.isEmpty else { return model.groupChats }
+        return model.groupChats.filter { $0.name.localizedStandardContains(search) }
+    }
+
     private var filteredAgents: [Agent] {
         guard !search.isEmpty else { return model.agents }
         return model.agents.filter {
@@ -94,10 +103,29 @@ struct SidebarView: View {
 
     var body: some View {
         List(selection: Binding(get: { model.route }, set: { model.navigate(to: $0) })) {
-            ForEach(filteredAgents) { agent in
-                AgentRow(agent: agent)
-                    .tag(Route.agent(agent.id))
-                    .disabled(model.pendingMutations.contains("agent:\(agent.id)"))
+            Section("Bots") {
+                ForEach(filteredAgents) { agent in
+                    AgentRow(agent: agent)
+                        .tag(Route.agent(agent.id))
+                        .disabled(model.pendingMutations.contains("agent:\(agent.id)"))
+                }
+            }
+            Section {
+                ForEach(filteredGroups) { group in
+                    GroupRow(group: group)
+                        .tag(Route.group(group.id))
+                        .disabled(model.pendingMutations.contains("group:\(group.id)") || group.id.hasPrefix("local:"))
+                }
+            } header: {
+                HStack {
+                    Text("Group Chats")
+                    Spacer()
+                    Button("New Group Chat", systemImage: "plus") { model.createGroup() }
+                        .labelStyle(.iconOnly)
+                        .buttonStyle(.borderless)
+                        .disabled(model.agents.count < GroupDraft.memberRange.lowerBound)
+                        .help("New Group Chat (⇧⌘N)")
+                }
             }
         }
         .listStyle(.sidebar)

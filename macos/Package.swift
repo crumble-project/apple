@@ -5,7 +5,7 @@ import PackageDescription
 let apfelkern: Package.Dependency =
     Context.environment["APFELKERN_LOCAL"] == nil
     ? .package(
-        url: "https://github.com/crumble-project/apfelkern.git", revision: "c5f394ce988be7ff7733b0505dbceeec581b1166")
+        url: "https://github.com/crumble-project/apfelkern.git", revision: "06eb6dae52930c804e796c93370357f708c576d7")
     : .package(path: "../apfelkern")
 
 let package = Package(

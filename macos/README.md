@@ -1,6 +1,6 @@
 # Crumble for macOS
 
-Crumble for macOS is a native SwiftUI client for a running Crumble server. It provides agent management, one continuous chat per agent with streaming replies and file attachments, memory, schedules, integrations, and settings.
+Crumble for macOS is a native SwiftUI client for a running Crumble server. It provides agent management, one continuous chat per agent with streaming replies and file attachments, group chats with several bots, memory, schedules, integrations, and settings.
 
 ## Requirements
 

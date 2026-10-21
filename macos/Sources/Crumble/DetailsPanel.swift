@@ -92,7 +92,12 @@ struct DetailsPanel: View {
                     Text("Nothing remembered yet").foregroundStyle(.secondary)
                 }
                 ForEach(items) { memory in
-                    Text(memory.content).lineLimit(4).textSelection(.enabled)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(memory.content).lineLimit(4).textSelection(.enabled)
+                        if let source = memorySourceLabel(memory.source) {
+                            Text(source).font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
                 }
             } else {
                 ProgressView().controlSize(.small).frame(maxWidth: .infinity)

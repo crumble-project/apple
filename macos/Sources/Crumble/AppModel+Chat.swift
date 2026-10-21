@@ -13,6 +13,9 @@ extension AppModel {
                 guard mutationRevision == revision, pendingMutations.isEmpty else { return }
                 self.agents = agents
                 loadCapabilities()
+                loadGroupChats()
+                // An open group chat stays open; the bot list only refreshes.
+                guard selectedGroupID.isEmpty else { return }
                 var chosen = selectedAgentID
                 if !agents.contains(where: { $0.id == chosen }) { chosen = agents.first?.id ?? "" }
                 if chosen.isEmpty {
@@ -32,6 +35,8 @@ extension AppModel {
         switch route {
         case .agent(let id):
             if id != selectedAgentID || self.route != route { selectAgent(id) }
+        case .group(let id):
+            if id != selectedGroupID || self.route != route { selectGroup(id) }
         default:
             openPanel(route)
         }
@@ -39,6 +44,7 @@ extension AppModel {
 
     /// Opens the bot's one continuous chat and follows its event stream.
     func selectAgent(_ id: String) {
+        leaveGroup()
         cancelStream()
         stopFollowingBackgroundChat(id)
         selectionVersion += 1
@@ -206,6 +212,7 @@ extension AppModel {
         guard let client else { return }
         activityNeedsReconcile = true
         followActivity()
+        reconnectGroupStream()
         if streamTask != nil, !selectedAgentID.isEmpty {
             streamTask?.cancel()
             let id = selectedAgentID
@@ -232,10 +239,12 @@ extension AppModel {
                 return
             }
             self.agents = agents
+            loadGroupChats()
         }
     }
 
     func loadOlder() {
+        guard selectedGroupID.isEmpty else { return loadOlderGroupMessages() }
         guard !loadingOlder, hasMore, !oldestEntryID.isEmpty else { return }
         let id = selectedAgentID
         let before = oldestEntryID
@@ -293,8 +302,9 @@ extension AppModel {
 
     func attachmentImage(message: Message, index: Int) -> NSImage? {
         if let entryID = message.entryId { return attachmentImage(entryID: entryID, index: index) }
+        let key = selectedGroupID.isEmpty ? selectedAgentID : Self.groupKey(selectedGroupID)
         guard let requestID = message.requestId,
-            let data = delivery.imageData(botID: selectedAgentID, requestID: requestID, index: index)
+            let data = delivery.imageData(botID: key, requestID: requestID, index: index)
         else { return nil }
         return NSImage(data: data)
     }
@@ -304,7 +314,11 @@ extension AppModel {
         guard attachmentImages[key] == nil, let client else { return }
         guard !entryID.hasPrefix("local:") else { return }
         let agent = selectedAgentID
-        guard let data = try? await client.attachment(agent, entryID: entryID, index: index),
+        let group = selectedGroupID
+        let data = group.isEmpty
+            ? try? await client.attachment(agent, entryID: entryID, index: index)
+            : try? await client.groupAttachment(group, entryID: entryID, index: index)
+        guard let data,
             let image = NSImage(data: data)
         else { return }
         attachmentImages[key] = image

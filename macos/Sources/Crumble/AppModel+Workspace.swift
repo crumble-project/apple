@@ -16,7 +16,7 @@ extension AppModel {
         case .tasks: loadTasksPanel()
         case .activity: loadActivityPanel()
         case .integrations: loadIntegrationsPanel()
-        case .agent:
+        case .agent, .group:
             break
         }
     }

@@ -110,7 +110,7 @@ struct ChatView: View {
             DitherGlow(color: agent.color).frame(height: 150).ignoresSafeArea(edges: .top)
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            if model.snapshot != nil { Composer(agent: agent) }
+            if model.snapshot != nil { Composer(target: .chat(agent, model: model)) }
         }
         .navigationTitle(agent.name)
         .toolbar(removing: .title)

@@ -20,6 +20,13 @@ final class AppModel {
     var selectionVersion = 0
 
     var snapshot: ChatSnapshot?
+    var groupChats: [GroupChat] = []
+    /// The open group chat; empty while a bot chat or nothing is open.
+    var selectedGroupID = ""
+    /// The open group's chat and members' activity, without its messages, which live in `messages`.
+    var groupSnapshot: GroupChatSnapshot?
+    var groupDraft: GroupDraft?
+    var groupStreamTask: Task<Void, Never>?
     var runningAgentIDs: Set<String> = []
     @ObservationIgnored var backgroundChats: [String: (id: UUID, task: Task<Void, Never>)] = [:]
     var messages: [Message] = []
@@ -102,6 +109,7 @@ final class AppModel {
     }
 
     var selectedAgent: Agent? { agents.first { $0.id == selectedAgentID } }
+    var selectedGroup: GroupChat? { groupChats.first { $0.id == selectedGroupID } }
 
     /// Runs once per launch; reopening the main window must not reload the chat or restart streams.
     func start() {
@@ -251,6 +259,9 @@ extension AppModel {
         mcpDraft = nil
         skillDraft = nil
         snapshot = nil
+        leaveGroup()
+        groupChats = []
+        groupDraft = nil
         messages = []
         client = candidate
         activeRequests = 0

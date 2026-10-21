@@ -50,6 +50,7 @@ extension AppModel {
 
     /// Re-sends a failed optimistic row with its original idempotency key and attachments.
     func retryMessage(_ message: Message) {
+        guard selectedGroupID.isEmpty else { return retryGroupMessage(message) }
         guard message.deliveryState == .failed, let requestID = message.requestId, let client,
             let record = delivery.beginRetry(botID: selectedAgentID, requestID: requestID)
         else { return }
