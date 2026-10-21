@@ -35,9 +35,9 @@ struct MessageView: View {
                     DisplayView(component: component)
                     Spacer(minLength: 56)
                 }
-            } else if let job = CodingJob(message: message) {
+            } else if let job = Job(message: message) {
                 HStack {
-                    CodingJobCard(job: model.codingJob(job))
+                    JobCard(job: model.job(job))
                     Spacer(minLength: 56)
                 }
             }

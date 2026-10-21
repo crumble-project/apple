@@ -154,6 +154,10 @@ struct AgentEditorView: View {
             if model.offersCoding(for: draft) {
                 Toggle("Coding", isOn: $draft.toolsCoding)
             }
+            if model.offersDesktop(for: draft) {
+                Toggle("Bot desktop", isOn: $draft.toolsDesktop)
+                if draft.toolsDesktop { desktopModelFields.padding(.leading, 16) }
+            }
         } header: {
             Text("Capabilities")
         } footer: {
@@ -173,6 +177,29 @@ struct AgentEditorView: View {
                 Text("Coding lets the agent start coding jobs that read, write, and run code in its workspace.")
                     .foregroundStyle(.secondary)
             }
+            if model.offersDesktop(for: draft) {
+                Text(
+                    """
+                    Bot desktop gives the agent its own desktop with a browser, operated by desktop jobs. You can \
+                    watch it and take control. Desktop jobs run on the model below, or on the agent’s own model.
+                    """
+                )
+                .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    @ViewBuilder private var desktopModelFields: some View {
+        if model.providerChoices.isEmpty {
+            TextField("Desktop job provider", text: $draft.desktopProvider, prompt: Text("Same as the agent"))
+        } else {
+            Picker("Desktop job provider", selection: $draft.desktopProvider) {
+                Text("Same as the agent").tag("")
+                ForEach(model.providerChoices, id: \.self) { Text($0).tag($0) }
+            }
+        }
+        if !draft.desktopProvider.isEmpty {
+            TextField("Desktop job model", text: $draft.desktopModel, prompt: Text("Model ID"))
         }
     }
 

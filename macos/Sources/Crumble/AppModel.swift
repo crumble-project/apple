@@ -37,9 +37,10 @@ final class AppModel {
     /// Nil until the server answers; the editor offers only what the server can run.
     var capabilities: ServerCapabilities?
     /// The selected bot's coding jobs by name, refreshed when the chat shows job activity.
-    var codingJobs: [String: CodingJob] = [:]
-    var codingActivity = 0
-    var codingJobHistory: CodingJobHistory?
+    /// Jobs of the selected bot, by `Job.id`.
+    var jobs: [String: Job] = [:]
+    var jobActivity = 0
+    var jobHistory: JobHistory?
 
     var draft = ""
     var attachments: [PendingAttachment] = []
@@ -249,9 +250,9 @@ extension AppModel {
         providers = []
         models = []
         capabilities = nil
-        codingJobs = [:]
-        codingActivity = 0
-        codingJobHistory = nil
+        jobs = [:]
+        jobActivity = 0
+        jobHistory = nil
         signingIn = nil
         agentDraft = nil
         memoryDraft = nil

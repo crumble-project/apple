@@ -38,6 +38,13 @@ struct CrumbleApp: App {
         }
         .windowResizability(.contentMinSize)
         .defaultSize(width: 800, height: 680)
+
+        WindowGroup("Bot Desktop", id: BotDesktopView.windowID, for: String.self) { $agentID in
+            if let agentID {
+                BotDesktopView(agentID: agentID).environment(model)
+            }
+        }
+        .defaultSize(width: 1280, height: 860)
     }
 }
 
@@ -56,10 +63,11 @@ struct ContentView: View {
                 .overlay(alignment: .bottom) { NoticeToast() }
         }
         .onAppear {
+            model.notifier.openBotDesktop = { openWindow(id: BotDesktopView.windowID, value: $0) }
             model.notifier.openMainWindow = { openWindow(id: "main") }
         }
         .sheet(item: $model.agentDraft) { AgentEditorView(draft: sheetBinding($model.agentDraft, for: $0)) }
-        .sheet(item: $model.codingJobHistory) { CodingJobSheet(job: $0) }
+        .sheet(item: $model.jobHistory) { JobSheet(job: $0) }
         .sheet(item: $model.groupDraft) { GroupEditorView(draft: sheetBinding($model.groupDraft, for: $0)) }
     }
 

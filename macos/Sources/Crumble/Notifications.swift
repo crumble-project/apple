@@ -13,7 +13,7 @@ struct NotificationContext {
 
 /// A finished reply notifies unless its chat is on screen, and delegated work stays quiet because
 /// the delegating bot reports back itself. A group answer names its group and notifies unless that
-/// group is on screen.
+/// group is on screen. A bot's answer to a job's report names the job.
 func notification(for event: ActivityEvent, in context: NotificationContext) -> (title: String, body: String)? {
     switch event.type {
     case "reply":
@@ -24,7 +24,11 @@ func notification(for event: ActivityEvent, in context: NotificationContext) -> 
             return ("\(event.agentName) in \(event.groupName ?? "a group chat")", text.isEmpty ? "Replied" : text)
         }
         if context.windowOnScreen, context.route == .agent(event.agentId) { return nil }
-        return (event.agentName, text.isEmpty ? "Replied" : text)
+        guard let kind = JobKind.allCases.first(where: { $0.originKind == event.origin }) else {
+            return (event.agentName, text.isEmpty ? "Replied" : text)
+        }
+        let job = [kind.noun, event.jobName].compactMap(\.self).joined(separator: " ")
+        return ("\(event.agentName) · \(job)", text.isEmpty ? "Replied" : text)
     default:
         return nil
     }
@@ -55,6 +59,8 @@ struct NotificationTarget: Equatable {
     var serverURL: String
     var agentId: String
     var groupId: String?
+    /// An answer to a desktop job's report, which likely needs the owner on the bot desktop.
+    var desktop = false
 
     var route: Route { groupId.map(Route.group) ?? .agent(agentId) }
 }
@@ -78,6 +84,8 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
 
     @ObservationIgnored weak var model: AppModel?
     @ObservationIgnored var openMainWindow: (() -> Void)? { didSet { routePendingTap() } }
+    /// Set before `openMainWindow`, which routes a tap that launched the app.
+    @ObservationIgnored var openBotDesktop: ((String) -> Void)?
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let canDeliver: Bool
     @ObservationIgnored private let usesSystemCenter: Bool
@@ -157,8 +165,9 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
         content.title = title
         content.body = body
         content.sound = .default
-        var info = ["agentId": event.agentId, "serverURL": serverURL]
+        var info: [String: Any] = ["agentId": event.agentId, "serverURL": serverURL]
         if let group = event.groupId { info["groupId"] = group }
+        if event.origin == DesktopJob.originKind { info["desktop"] = true }
         content.userInfo = info
         // Replies from one bot, or in one group, replace each other, so a busy chat leaves one notification.
         let id = event.groupId.map { "reply-\(serverURL)-group-\($0)" } ?? "reply-\(serverURL)-\(event.agentId)"
@@ -189,14 +198,17 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
             model.openNotificationGroup(group)
         } else {
             model.openNotificationChat(target.agentId)
+            if target.desktop { openBotDesktop?(target.agentId) }
         }
     }
 
-    nonisolated private static func target(_ info: [AnyHashable: Any]) -> NotificationTarget? {
+    nonisolated static func target(_ info: [AnyHashable: Any]) -> NotificationTarget? {
         guard let serverURL = info["serverURL"] as? String, let agentId = info["agentId"] as? String else {
             return nil
         }
-        return NotificationTarget(serverURL: serverURL, agentId: agentId, groupId: info["groupId"] as? String)
+        return NotificationTarget(
+            serverURL: serverURL, agentId: agentId, groupId: info["groupId"] as? String,
+            desktop: info["desktop"] as? Bool ?? false)
     }
 
     nonisolated func userNotificationCenter(

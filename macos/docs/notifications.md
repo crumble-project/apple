@@ -11,6 +11,9 @@ app must be running to receive notifications.
 - A finished reply notifies unless you are looking at that bot's chat. That
   means Crumble is active and its main window is on screen, not closed,
   hidden, or minimized.
+- When a coding job or desktop job reports to its bot, the bot's answer
+  notifies like any reply, titled with the job, such as
+  "Desk · desktop job github".
 - Replies that a bot delegated to another bot stay quiet, because the
   delegating bot reports back itself.
 - Each reply notifies at most once. Crumble remembers the most recent 512
@@ -60,6 +63,8 @@ connection in Settings.
 ## Clicking a notification
 
 A click activates Crumble, reopens the main window, and opens the bot's chat.
+A desktop job's notification also opens the bot desktop, since the job may be
+waiting for you to log in or confirm something there.
 
 - A notification from a server other than the connected one shows an error
   naming that server instead of opening a chat.
@@ -99,3 +104,5 @@ Check these against a running server with the built app:
    an error naming that server.
 7. Delete a bot from another client, then click its notification; expect an
    error.
+8. Let a desktop job report, then click its notification; expect the chat and
+   the bot desktop window to open.

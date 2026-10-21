@@ -47,10 +47,11 @@ enum ChatRow: Identifiable {
     static func shownInChat(_ message: Message) -> Bool {
         switch message.role {
         case "toolResult":
-            return DisplayComponent(message: message) != nil || CodingJob(message: message) != nil
+            return DisplayComponent(message: message) != nil || Job(message: message) != nil
         case "user":
-            // A coding job's report is behind its card; the bot relays what matters.
-            guard message.origin?.kind != CodingJob.originKind else { return false }
+            // A job's report is behind its card; the bot relays what matters.
+            let jobReport = JobKind.allCases.contains { $0.originKind == message.origin?.kind }
+            guard !jobReport else { return false }
             return !message.text.isEmpty || !(message.attachments ?? []).isEmpty
         case "event":
             return !message.text.isEmpty
@@ -83,6 +84,7 @@ extension ChatRow {
 
 struct ChatView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.openWindow) private var openWindow
     @AppStorage("showsDetails") private var showsDetails = true
     let agent: Agent
 
@@ -118,6 +120,16 @@ struct ChatView: View {
         .toolbar {
             // With the title removed nothing pushes the button to the trailing edge.
             ToolbarSpacer(.flexible)
+            if agent.tools?.contains(DesktopJob.toolName) == true {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        openWindow(id: BotDesktopView.windowID, value: agent.id)
+                    } label: {
+                        Label("Bot Desktop", systemImage: JobKind.desktop.icon)
+                    }
+                    .help("Open Bot Desktop")
+                }
+            }
             ToolbarItem(placement: .primaryAction) {
                 Button {
                     showsDetails.toggle()

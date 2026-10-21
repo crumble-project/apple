@@ -211,4 +211,41 @@ struct NotificationTests {
         let firstAgents = try #require(paths.firstIndex(of: "/v1/agents"))
         #expect(paths.prefix(firstAgents).filter { $0 == "/v1/events" }.count >= 2)
     }
+
+    @Test func jobAnswersNameTheirJob() {
+        let away = NotificationContext(windowOnScreen: false, route: nil)
+        var answer = ActivityEvent(
+            type: "reply", agentId: "a1", agentName: "Desk", origin: "desktop", preview: "Logged in?",
+            jobName: "github")
+        #expect(notification(for: answer, in: away)?.title == "Desk · desktop job github")
+        answer.jobName = nil
+        #expect(notification(for: answer, in: away)?.title == "Desk · desktop job")
+        answer.origin = "coding"
+        answer.jobName = "fix-ci"
+        #expect(notification(for: answer, in: away)?.title == "Desk · coding job fix-ci")
+    }
+
+    @Test func aDesktopJobNotificationOpensTheChatAndItsBotDesktop() throws {
+        let posted = Posted()
+        let client = NotificationStubProtocol.client { request in
+            request.url?.path == "/v1/agents/a1/chat" ? (200, chatFixture("a1")) : (404, "")
+        }
+        let model = AppModel(client: client)
+        model.agents = [Agent(id: "a1", name: "Desk")]
+        let notifier = try notifier(posted)
+        var desktops: [String] = []
+        notifier.openBotDesktop = { desktops.append($0) }
+        notifier.start(model: model)
+
+        notifier.post(reply("e1", origin: "desktop"), title: "Desk", body: "Done", serverURL: "http://notify.test")
+        notifier.post(reply("e2", origin: "coding"), title: "Desk", body: "Done", serverURL: "http://notify.test")
+        let targets = posted.requests.compactMap { Notifier.target($0.content.userInfo) }
+        #expect(targets.map(\.desktop) == [true, false])
+
+        notifier.open(targets[1])
+        #expect(desktops.isEmpty)
+        notifier.open(targets[0])
+        #expect(model.selectedAgentID == "a1")
+        #expect(desktops == ["a1"])
+    }
 }

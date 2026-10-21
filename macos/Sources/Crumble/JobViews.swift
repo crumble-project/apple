@@ -1,17 +1,17 @@
 import apfelkern
 import SwiftUI
 
-/// A coding job a bot started, in the chat: its name and whether it is still working.
-struct CodingJobCard: View {
+/// A job a bot started, in the chat: its kind, name, and whether it is still working.
+struct JobCard: View {
     @Environment(AppModel.self) private var model
-    let job: CodingJob
+    let job: Job
 
     var body: some View {
         Button {
-            model.openCodingJob(job.name)
+            model.openJob(job.kind, job.name)
         } label: {
             HStack(spacing: 10) {
-                Image(systemName: "hammer.fill")
+                Image(systemName: job.kind.icon)
                     .font(.system(size: 13))
                     .foregroundStyle(.secondary)
                 VStack(alignment: .leading, spacing: 2) {
@@ -31,19 +31,22 @@ struct CodingJobCard: View {
             .contentShape(.rect(cornerRadius: 14))
         }
         .buttonStyle(.plain)
-        .help("Open coding job")
-        .accessibilityLabel("Coding job \(job.name), \(job.isWorking ? "working" : "idle")")
+        .help("Open \(job.kind.noun)")
+        .accessibilityLabel(
+            "\(job.kind.noun.capitalized(with: nil)) \(job.name), \(job.isWorking ? "working" : "idle")")
         .accessibilityHint("Opens the job")
     }
 }
 
-/// A read-only view of one coding job: its task, what the bot said, and the work it did.
-struct CodingJobSheet: View {
+/// A read-only view of one job: its task, what the bot said, the work it did, and what it spent.
+struct JobSheet: View {
     @Environment(AppModel.self) private var model
-    let job: CodingJobHistory
+    @Environment(\.openWindow) private var openWindow
+    let job: JobHistory
 
     private var items: [CodingJobItem] { CodingJobItem.items(from: job.messages) }
-    private var working: Bool { model.codingJobs[job.name]?.isWorking ?? false }
+    private var current: Job? { model.jobs[Job.id(job.kind, job.name)] }
+    private var working: Bool { current?.isWorking ?? false }
 
     var body: some View {
         ScrollView { entries }
@@ -51,17 +54,28 @@ struct CodingJobSheet: View {
         .overlay { placeholder }
         .frame(width: 600, height: 560)
         .navigationTitle(job.name)
+        .navigationSubtitle(current?.usage.map { usageLine($0) } ?? "")
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
-                Button("Done") { model.closeCodingJob() }.keyboardShortcut(.cancelAction)
+                Button("Done") { model.closeJob() }.keyboardShortcut(.cancelAction)
             }
             ToolbarItem(placement: .primaryAction) {
                 Button {
-                    model.loadCodingJobHistory()
+                    model.loadJobHistory()
                 } label: {
                     Label("Refresh", systemImage: "arrow.clockwise")
                 }
                 .help("Refresh")
+            }
+            if job.kind == .desktop {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        openWindow(id: BotDesktopView.windowID, value: job.agentID)
+                    } label: {
+                        Label("Open Bot Desktop", systemImage: JobKind.desktop.icon)
+                    }
+                    .help("Open Bot Desktop")
+                }
             }
         }
     }
@@ -72,7 +86,7 @@ struct CodingJobSheet: View {
                 if job.loadingOlder {
                     ProgressView().controlSize(.small).frame(maxWidth: .infinity)
                 } else {
-                    Button("Load Earlier Activity") { model.loadOlderCodingJobHistory() }
+                    Button("Load Earlier Activity") { model.loadOlderJobHistory() }
                         .buttonStyle(.plain)
                         .font(.system(size: 12.5))
                         .foregroundStyle(.secondary)
@@ -103,9 +117,9 @@ struct CodingJobSheet: View {
     @ViewBuilder private var placeholder: some View {
         if !job.error.isEmpty && items.isEmpty {
             VStack(spacing: 8) {
-                Text("Couldn’t load this coding job").font(.system(size: 14, weight: .medium))
+                Text("Couldn’t load this \(job.kind.noun)").font(.system(size: 14, weight: .medium))
                 Text(job.error).font(.system(size: 12)).foregroundStyle(.secondary).textSelection(.enabled)
-                Button("Try Again") { model.loadCodingJobHistory() }
+                Button("Try Again") { model.loadJobHistory() }
             }
             .padding(24)
         } else if !job.loaded {
@@ -155,6 +169,7 @@ private struct CodingToolStep: View {
         case "read": "doc.text"
         case "write": "square.and.pencil"
         case "edit": "pencil"
+        case "computer_use": JobKind.desktop.icon
         default: "wrench.and.screwdriver"
         }
     }
@@ -165,6 +180,7 @@ private struct CodingToolStep: View {
         case "read": "Read"
         case "write": "Wrote"
         case "edit": "Edited"
+        case "computer_use": "Used the bot desktop"
         default: tool.name.capitalized
         }
     }

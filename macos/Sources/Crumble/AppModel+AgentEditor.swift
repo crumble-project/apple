@@ -32,6 +32,9 @@ extension AppModel {
         draft.toolsSchedule = tools.contains("schedule")
         draft.toolsCodemode = tools.contains("codemode")
         draft.toolsCoding = tools.contains("coding")
+        draft.toolsDesktop = tools.contains("desktop")
+        draft.desktopProvider = agent.desktopModel?.provider ?? ""
+        draft.desktopModel = agent.desktopModel?.model ?? ""
         draft.skills = agent.skills ?? []
         draft.sharedSkills = Set(agent.sharedSkills ?? [])
         draft.sharedMemory = agent.sharedMemory ?? false
@@ -116,8 +119,9 @@ extension AppModel {
         if draft.toolsSchedule { tools.append("schedule") }
         if draft.toolsCodemode { tools.append("codemode") }
         if draft.toolsCoding { tools.append("coding") }
+        if draft.toolsDesktop { tools.append("desktop") }
         // Capabilities without a toggle here were set elsewhere; saving must not drop them.
-        let toggled: Set = ["memory", "delegate", "schedule", "codemode", "coding"]
+        let toggled: Set = ["memory", "delegate", "schedule", "codemode", "coding", "desktop"]
         let stored = agents.first { $0.id == draft.agentID }?.tools ?? []
         tools += stored.filter { !toggled.contains($0) }
         if draft.skills.contains(where: {
@@ -136,7 +140,8 @@ extension AppModel {
             avatar: draft.avatar, enabled: draft.enabled, provider: draft.provider.nilIfEmpty,
             model: draft.model.nilIfEmpty,
             tools: tools, delegates: delegates, skills: draft.skills,
-            sharedSkills: shared, sharedMemory: draft.sharedMemory, mcpServers: servers, inference: inference)
+            sharedSkills: shared, sharedMemory: draft.sharedMemory, mcpServers: servers, inference: inference,
+            desktopModel: desktopModel(for: draft))
     }
 
     private func persistAgentEditor(_ draft: AgentDraft, input: Agent) {
@@ -204,8 +209,17 @@ extension AppModel {
             "sharedMemory": .bool(draft.sharedMemory),
             "mcpServers": .array((input.mcpServers ?? []).map(JSONValue.string)),
             "delegates": .array((input.delegates ?? []).map(JSONValue.string)),
-            "inference": try JSONValue(encoding: input.inference)
+            "inference": try JSONValue(encoding: input.inference),
+            // Null clears an override, so the bot's desktop jobs use its own model again.
+            "desktopModel": try input.desktopModel.map { try JSONValue(encoding: $0) } ?? .null
         ]
+    }
+
+    /// Both fields set picks a model for desktop jobs; both empty means the bot's own model.
+    private func desktopModel(for draft: AgentDraft) -> DesktopModel? {
+        let provider = draft.desktopProvider.trimmingCharacters(in: .whitespaces)
+        let model = draft.desktopModel.trimmingCharacters(in: .whitespaces)
+        return provider.isEmpty || model.isEmpty ? nil : DesktopModel(provider: provider, model: model)
     }
 
     private func editorInference(for draft: AgentDraft) -> Inference? {

@@ -57,9 +57,9 @@ extension AppModel {
         oldestEntryID = ""
         loadingOlder = false
         replyTo = nil
-        codingJobs = [:]
-        codingActivity = 0
-        codingJobHistory = nil
+        jobs = [:]
+        jobActivity = 0
+        jobHistory = nil
         draft = ""
         attachments = []
         failedDraft = ""
@@ -118,7 +118,7 @@ extension AppModel {
         let local = delivery.messages(botID: selectedAgentID)
         messages = mergeMessages(messages.filter { $0.deliveryState == .confirmed }, incomingMessages)
         messages.append(contentsOf: local)
-        refreshCodingJobsIfChanged()
+        refreshJobsIfChanged()
         var snapshot = incoming
         snapshot.messages = nil
         self.snapshot = snapshot
