@@ -16,16 +16,6 @@ if [[ -z "$simulator_id" ]]; then
   print -u2 'Install an iOS simulator runtime in Xcode Settings > Components, then retry.'
   exit 1
 fi
-# Booting takes minutes on a fresh CI runner, so it runs while the app builds.
-xcrun simctl boot "$simulator_id" 2>/dev/null &
-boot=$!
-common=(-project Crumble.xcodeproj -scheme Crumble
-  -destination "platform=iOS Simulator,id=$simulator_id"
-  -derivedDataPath build CODE_SIGNING_ALLOWED=NO)
-if [[ -n "${CRUMBLE_PACKAGES_DIR:-}" ]]; then
-  common+=(-clonedSourcePackagesDirPath "$CRUMBLE_PACKAGES_DIR")
-fi
-xcodebuild "${common[@]}" "${only[@]}" build-for-testing
-wait "$boot" || true
-xcrun simctl bootstatus "$simulator_id" -b
-exec xcodebuild "${common[@]}" "${only[@]}" -parallel-testing-enabled NO test-without-building
+exec xcodebuild -project Crumble.xcodeproj -scheme Crumble \
+  -destination "platform=iOS Simulator,id=$simulator_id" \
+  -derivedDataPath build "${only[@]}" -parallel-testing-enabled NO test CODE_SIGNING_ALLOWED=NO

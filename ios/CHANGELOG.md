@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Run only unit tests in CI on push and pull requests, caching Swift packages and booting the simulator during the build; UI tests run nightly and on demand. `scripts/test.sh` accepts `unit`, `ui`, or `all`.
+- CI only builds the app and its tests with cached Swift packages and build products; tests need a simulator and run locally. `scripts/build.sh` runs the CI build, and `scripts/test.sh` accepts `unit`, `ui`, or `all`.
 - Replace the local glossary with a link to the canonical glossary in the spec repository.
 - Remove references to the obsolete agent folder field, as required by the current shared package and server contract.
 - Adopt apfelkern's generated API operations, shared activity and push models, and event decoding without an app-local generator.
