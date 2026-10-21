@@ -76,6 +76,35 @@ extension Components {
             public var delegates: [Swift.String]
             /// - Remark: Generated from `#/components/schemas/Agent/description`.
             public var description: Swift.String
+            /// The model for this bot's desktop jobs; unset, they use the bot's own model.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Agent/desktopModel`.
+            public struct DesktopModelPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/Agent/desktopModel/model`.
+                public var model: Swift.String
+                /// - Remark: Generated from `#/components/schemas/Agent/desktopModel/provider`.
+                public var provider: Swift.String
+                /// Creates a new `DesktopModelPayload`.
+                ///
+                /// - Parameters:
+                ///   - model:
+                ///   - provider:
+                public init(
+                    model: Swift.String,
+                    provider: Swift.String
+                ) {
+                    self.model = model
+                    self.provider = provider
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case model
+                    case provider
+                }
+            }
+            /// The model for this bot's desktop jobs; unset, they use the bot's own model.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Agent/desktopModel`.
+            public var desktopModel: Components.Schemas.Agent.DesktopModelPayload?
             /// - Remark: Generated from `#/components/schemas/Agent/enabled`.
             public var enabled: Swift.Bool
             /// - Remark: Generated from `#/components/schemas/Agent/id`.
@@ -173,6 +202,7 @@ extension Components {
             ///   - createdAt:
             ///   - delegates:
             ///   - description:
+            ///   - desktopModel: The model for this bot's desktop jobs; unset, they use the bot's own model.
             ///   - enabled:
             ///   - id:
             ///   - inference:
@@ -191,6 +221,7 @@ extension Components {
                 createdAt: Swift.String,
                 delegates: [Swift.String],
                 description: Swift.String,
+                desktopModel: Components.Schemas.Agent.DesktopModelPayload? = nil,
                 enabled: Swift.Bool,
                 id: Swift.String,
                 inference: Components.Schemas.Agent.InferencePayload? = nil,
@@ -209,6 +240,7 @@ extension Components {
                 self.createdAt = createdAt
                 self.delegates = delegates
                 self.description = description
+                self.desktopModel = desktopModel
                 self.enabled = enabled
                 self.id = id
                 self.inference = inference
@@ -228,6 +260,7 @@ extension Components {
                 case createdAt
                 case delegates
                 case description
+                case desktopModel
                 case enabled
                 case id
                 case inference
@@ -385,15 +418,25 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/Capabilities/coding`.
             public var coding: Swift.Bool
+            /// Whether bots can be given the desktop tool, and with it a bot desktop, on this server.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Capabilities/desktop`.
+            public var desktop: Swift.Bool
             /// Creates a new `Capabilities`.
             ///
             /// - Parameters:
             ///   - coding: Whether bots can be given the coding tool on this server.
-            public init(coding: Swift.Bool) {
+            ///   - desktop: Whether bots can be given the desktop tool, and with it a bot desktop, on this server.
+            public init(
+                coding: Swift.Bool,
+                desktop: Swift.Bool
+            ) {
                 self.coding = coding
+                self.desktop = desktop
             }
             public enum CodingKeys: String, CodingKey {
                 case coding
+                case desktop
             }
         }
         /// - Remark: Generated from `#/components/schemas/ChatPreviewEvent`.
@@ -550,25 +593,33 @@ extension Components {
             }
             /// - Remark: Generated from `#/components/schemas/CodingJob/status`.
             public var status: Components.Schemas.CodingJob.StatusPayload
+            /// Pi Durable usage document of the job's own conversation: tokens and cost per model and tool. Absent before its first request.
+            ///
+            /// - Remark: Generated from `#/components/schemas/CodingJob/usage`.
+            public var usage: OpenAPIRuntime.OpenAPIValueContainer?
             /// Creates a new `CodingJob`.
             ///
             /// - Parameters:
             ///   - conversationId:
             ///   - name:
             ///   - status:
+            ///   - usage: Pi Durable usage document of the job's own conversation: tokens and cost per model and tool. Absent before its first request.
             public init(
                 conversationId: Swift.String,
                 name: Swift.String,
-                status: Components.Schemas.CodingJob.StatusPayload
+                status: Components.Schemas.CodingJob.StatusPayload,
+                usage: OpenAPIRuntime.OpenAPIValueContainer? = nil
             ) {
                 self.conversationId = conversationId
                 self.name = name
                 self.status = status
+                self.usage = usage
             }
             public enum CodingKeys: String, CodingKey {
                 case conversationId
                 case name
                 case status
+                case usage
             }
         }
         /// - Remark: Generated from `#/components/schemas/CodingJobs`.
@@ -648,6 +699,130 @@ extension Components {
                 case id
                 case title
                 case updatedAt
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/DesktopControl`.
+        public struct DesktopControl: Codable, Hashable, Sendable {
+            /// How often control changed hands. A desktop job refuses actions it planned before a change.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DesktopControl/changes`.
+            public var changes: Swift.Int
+            /// Who operates the bot desktop. While the owner holds control, the bot's desktop job pauses and only the owner's viewer input reaches the bot desktop.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DesktopControl/holder`.
+            @frozen public enum HolderPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case bot = "bot"
+                case owner = "owner"
+            }
+            /// Who operates the bot desktop. While the owner holds control, the bot's desktop job pauses and only the owner's viewer input reaches the bot desktop.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DesktopControl/holder`.
+            public var holder: Components.Schemas.DesktopControl.HolderPayload
+            /// - Remark: Generated from `#/components/schemas/DesktopControl/updatedAt`.
+            public var updatedAt: Swift.String
+            /// Creates a new `DesktopControl`.
+            ///
+            /// - Parameters:
+            ///   - changes: How often control changed hands. A desktop job refuses actions it planned before a change.
+            ///   - holder: Who operates the bot desktop. While the owner holds control, the bot's desktop job pauses and only the owner's viewer input reaches the bot desktop.
+            ///   - updatedAt:
+            public init(
+                changes: Swift.Int,
+                holder: Components.Schemas.DesktopControl.HolderPayload,
+                updatedAt: Swift.String
+            ) {
+                self.changes = changes
+                self.holder = holder
+                self.updatedAt = updatedAt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case changes
+                case holder
+                case updatedAt
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/DesktopJob`.
+        public struct DesktopJob: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/DesktopJob/conversationId`.
+            public var conversationId: Swift.String
+            /// - Remark: Generated from `#/components/schemas/DesktopJob/name`.
+            public var name: Swift.String
+            /// - Remark: Generated from `#/components/schemas/DesktopJob/status`.
+            @frozen public enum StatusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case working = "working"
+                case idle = "idle"
+            }
+            /// - Remark: Generated from `#/components/schemas/DesktopJob/status`.
+            public var status: Components.Schemas.DesktopJob.StatusPayload
+            /// Pi Durable usage document of the job's own conversation: tokens and cost per model and tool. Absent before its first request.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DesktopJob/usage`.
+            public var usage: OpenAPIRuntime.OpenAPIValueContainer?
+            /// Creates a new `DesktopJob`.
+            ///
+            /// - Parameters:
+            ///   - conversationId:
+            ///   - name:
+            ///   - status:
+            ///   - usage: Pi Durable usage document of the job's own conversation: tokens and cost per model and tool. Absent before its first request.
+            public init(
+                conversationId: Swift.String,
+                name: Swift.String,
+                status: Components.Schemas.DesktopJob.StatusPayload,
+                usage: OpenAPIRuntime.OpenAPIValueContainer? = nil
+            ) {
+                self.conversationId = conversationId
+                self.name = name
+                self.status = status
+                self.usage = usage
+            }
+            public enum CodingKeys: String, CodingKey {
+                case conversationId
+                case name
+                case status
+                case usage
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/DesktopJobs`.
+        public struct DesktopJobs: Codable, Hashable, Sendable {
+            /// Oldest job first.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DesktopJobs/jobs`.
+            public var jobs: [Components.Schemas.DesktopJob]
+            /// Creates a new `DesktopJobs`.
+            ///
+            /// - Parameters:
+            ///   - jobs: Oldest job first.
+            public init(jobs: [Components.Schemas.DesktopJob]) {
+                self.jobs = jobs
+            }
+            public enum CodingKeys: String, CodingKey {
+                case jobs
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/DesktopViewer`.
+        public struct DesktopViewer: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/DesktopViewer/expiresAt`.
+            public var expiresAt: Swift.String
+            /// Server-relative URL of the viewer page, a noVNC client of the bot desktop. Load it in a web view; it works once and expires at expiresAt unless its connection has started by then.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DesktopViewer/path`.
+            public var path: Swift.String
+            /// Creates a new `DesktopViewer`.
+            ///
+            /// - Parameters:
+            ///   - expiresAt:
+            ///   - path: Server-relative URL of the viewer page, a noVNC client of the bot desktop. Load it in a web view; it works once and expires at expiresAt unless its connection has started by then.
+            public init(
+                expiresAt: Swift.String,
+                path: Swift.String
+            ) {
+                self.expiresAt = expiresAt
+                self.path = path
+            }
+            public enum CodingKeys: String, CodingKey {
+                case expiresAt
+                case path
             }
         }
         /// - Remark: Generated from `#/components/schemas/Error`.
@@ -814,6 +989,8 @@ extension Components {
                 public var groupId: Swift.String?
                 /// - Remark: Generated from `#/components/schemas/EventActivity/case1/groupName`.
                 public var groupName: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/EventActivity/case1/jobName`.
+                public var jobName: Swift.String?
                 /// - Remark: Generated from `#/components/schemas/EventActivity/case1/origin`.
                 public var origin: Swift.String
                 /// - Remark: Generated from `#/components/schemas/EventActivity/case1/preview`.
@@ -839,6 +1016,7 @@ extension Components {
                 ///   - executionId:
                 ///   - groupId:
                 ///   - groupName:
+                ///   - jobName:
                 ///   - origin:
                 ///   - preview:
                 ///   - serverId:
@@ -853,6 +1031,7 @@ extension Components {
                     executionId: Swift.String? = nil,
                     groupId: Swift.String? = nil,
                     groupName: Swift.String? = nil,
+                    jobName: Swift.String? = nil,
                     origin: Swift.String,
                     preview: Swift.String,
                     serverId: Swift.String,
@@ -867,6 +1046,7 @@ extension Components {
                     self.executionId = executionId
                     self.groupId = groupId
                     self.groupName = groupName
+                    self.jobName = jobName
                     self.origin = origin
                     self.preview = preview
                     self.serverId = serverId
@@ -882,6 +1062,7 @@ extension Components {
                     case executionId
                     case groupId
                     case groupName
+                    case jobName
                     case origin
                     case preview
                     case serverId
@@ -921,6 +1102,10 @@ extension Components {
                         Swift.String.self,
                         forKey: .groupName
                     )
+                    self.jobName = try container.decodeIfPresent(
+                        Swift.String.self,
+                        forKey: .jobName
+                    )
                     self.origin = try container.decode(
                         Swift.String.self,
                         forKey: .origin
@@ -946,6 +1131,7 @@ extension Components {
                         "executionId",
                         "groupId",
                         "groupName",
+                        "jobName",
                         "origin",
                         "preview",
                         "serverId",
@@ -985,6 +1171,10 @@ extension Components {
                     try container.encodeIfPresent(
                         self.groupName,
                         forKey: .groupName
+                    )
+                    try container.encodeIfPresent(
+                        self.jobName,
+                        forKey: .jobName
                     )
                     try container.encode(
                         self.origin,
@@ -2030,6 +2220,81 @@ extension Components {
                 try container.encodeIfPresent(
                     self.usage,
                     forKey: .usage
+                )
+                try encoder.encodeAdditionalProperties(additionalProperties)
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/EventDesktopControl`.
+        public struct EventDesktopControl: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/EventDesktopControl/changes`.
+            public var changes: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/EventDesktopControl/holder`.
+            @frozen public enum HolderPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case bot = "bot"
+                case owner = "owner"
+            }
+            /// - Remark: Generated from `#/components/schemas/EventDesktopControl/holder`.
+            public var holder: Components.Schemas.EventDesktopControl.HolderPayload
+            /// - Remark: Generated from `#/components/schemas/EventDesktopControl/updatedAt`.
+            public var updatedAt: Swift.String
+            /// A container of undocumented properties.
+            public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
+            /// Creates a new `EventDesktopControl`.
+            ///
+            /// - Parameters:
+            ///   - changes:
+            ///   - holder:
+            ///   - updatedAt:
+            ///   - additionalProperties: A container of undocumented properties.
+            public init(
+                changes: Swift.Int,
+                holder: Components.Schemas.EventDesktopControl.HolderPayload,
+                updatedAt: Swift.String,
+                additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()
+            ) {
+                self.changes = changes
+                self.holder = holder
+                self.updatedAt = updatedAt
+                self.additionalProperties = additionalProperties
+            }
+            public enum CodingKeys: String, CodingKey {
+                case changes
+                case holder
+                case updatedAt
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.changes = try container.decode(
+                    Swift.Int.self,
+                    forKey: .changes
+                )
+                self.holder = try container.decode(
+                    Components.Schemas.EventDesktopControl.HolderPayload.self,
+                    forKey: .holder
+                )
+                self.updatedAt = try container.decode(
+                    Swift.String.self,
+                    forKey: .updatedAt
+                )
+                additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
+                    "changes",
+                    "holder",
+                    "updatedAt"
+                ])
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                var container = encoder.container(keyedBy: CodingKeys.self)
+                try container.encode(
+                    self.changes,
+                    forKey: .changes
+                )
+                try container.encode(
+                    self.holder,
+                    forKey: .holder
+                )
+                try container.encode(
+                    self.updatedAt,
+                    forKey: .updatedAt
                 )
                 try encoder.encodeAdditionalProperties(additionalProperties)
             }
@@ -4076,6 +4341,12 @@ extension Components {
             public var groupId: Swift.String?
             /// - Remark: Generated from `#/components/schemas/ReplyEvent/groupName`.
             public var groupName: Swift.String?
+            /// The job whose report the bot answered, for origin coding or desktop. A desktop job's report often asks for the owner; clients may open the bot desktop.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ReplyEvent/jobName`.
+            public var jobName: Swift.String?
+            /// What the bot answered: owner (a message from the owner), task (a scheduled task), bot (another bot's request), group (a group chat turn), or coding or desktop (a job's report; jobName names the job). Clients may receive other values later.
+            ///
             /// - Remark: Generated from `#/components/schemas/ReplyEvent/origin`.
             public var origin: Swift.String
             /// - Remark: Generated from `#/components/schemas/ReplyEvent/preview`.
@@ -4099,7 +4370,8 @@ extension Components {
             ///   - executionId:
             ///   - groupId: Set when a bot answered in a group chat; open the group rather than the bot chat.
             ///   - groupName:
-            ///   - origin:
+            ///   - jobName: The job whose report the bot answered, for origin coding or desktop. A desktop job's report often asks for the owner; clients may open the bot desktop.
+            ///   - origin: What the bot answered: owner (a message from the owner), task (a scheduled task), bot (another bot's request), group (a group chat turn), or coding or desktop (a job's report; jobName names the job). Clients may receive other values later.
             ///   - preview:
             ///   - serverId:
             ///   - _type:
@@ -4112,6 +4384,7 @@ extension Components {
                 executionId: Swift.String? = nil,
                 groupId: Swift.String? = nil,
                 groupName: Swift.String? = nil,
+                jobName: Swift.String? = nil,
                 origin: Swift.String,
                 preview: Swift.String,
                 serverId: Swift.String,
@@ -4125,6 +4398,7 @@ extension Components {
                 self.executionId = executionId
                 self.groupId = groupId
                 self.groupName = groupName
+                self.jobName = jobName
                 self.origin = origin
                 self.preview = preview
                 self.serverId = serverId
@@ -4139,6 +4413,7 @@ extension Components {
                 case executionId
                 case groupId
                 case groupName
+                case jobName
                 case origin
                 case preview
                 case serverId

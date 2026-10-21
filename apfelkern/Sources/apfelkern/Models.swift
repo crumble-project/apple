@@ -47,6 +47,11 @@ public enum JSONValue: Codable, Hashable, Sendable {
     return nil
   }
 
+  public var numberValue: Double? {
+    if case .number(let value) = self { return value }
+    return nil
+  }
+
   public subscript(key: String) -> JSONValue? {
     if case .object(let object) = self { return object[key] }
     return nil
@@ -75,6 +80,8 @@ public struct Agent: Codable, Identifiable, Hashable, Sendable {
   public var sharedMemory: Bool?
   public var mcpServers: [String]?
   public var inference: Inference?
+  /// The model for this bot's desktop jobs; nil, they use the bot's own model.
+  public var desktopModel: DesktopModel?
   public var lastMessage: String?
 
   public init(
@@ -83,7 +90,8 @@ public struct Agent: Codable, Identifiable, Hashable, Sendable {
     enabled: Bool = true, provider: String? = nil, model: String? = nil, tools: [String]? = nil,
     delegates: [String]? = nil, skills: [Skill]? = nil, sharedSkills: [String]? = nil,
     sharedMemory: Bool? = nil,
-    mcpServers: [String]? = nil, inference: Inference? = nil, lastMessage: String? = nil
+    mcpServers: [String]? = nil, inference: Inference? = nil, desktopModel: DesktopModel? = nil,
+    lastMessage: String? = nil
   ) {
     self.id = id
     self.name = name
@@ -100,6 +108,7 @@ public struct Agent: Codable, Identifiable, Hashable, Sendable {
     self.sharedMemory = sharedMemory
     self.mcpServers = mcpServers
     self.inference = inference
+    self.desktopModel = desktopModel
     self.lastMessage = lastMessage
   }
 
@@ -120,7 +129,19 @@ public struct Agent: Codable, Identifiable, Hashable, Sendable {
     sharedMemory = try container.decodeIfPresent(Bool.self, forKey: .sharedMemory)
     mcpServers = try container.decodeIfPresent([String].self, forKey: .mcpServers)
     inference = try container.decodeIfPresent(Inference.self, forKey: .inference)
+    desktopModel = try container.decodeIfPresent(DesktopModel.self, forKey: .desktopModel)
     lastMessage = try container.decodeIfPresent(String.self, forKey: .lastMessage)
+  }
+}
+
+/// A provider's model, chosen for a bot's desktop jobs.
+public struct DesktopModel: Codable, Hashable, Sendable {
+  public var provider: String
+  public var model: String
+
+  public init(provider: String, model: String) {
+    self.provider = provider
+    self.model = model
   }
 }
 

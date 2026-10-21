@@ -38,6 +38,10 @@ public struct AgentDraft: Identifiable, Sendable {
   public var toolsSchedule = false
   public var toolsCodemode = false
   public var toolsCoding = false
+  public var toolsDesktop = false
+  /// The desktop job model's provider and model; both empty means the bot's own model.
+  public var desktopProvider = ""
+  public var desktopModel = ""
   public var sharedMemory = false
   public var delegates: Set<String> = []
   public var mcpServers: Set<String> = []
@@ -69,6 +73,9 @@ public struct AgentDraft: Identifiable, Sendable {
     toolsSchedule: Bool = false,
     toolsCodemode: Bool = false,
     toolsCoding: Bool = false,
+    toolsDesktop: Bool = false,
+    desktopProvider: String = "",
+    desktopModel: String = "",
     sharedMemory: Bool = false,
     delegates: Set<String> = [],
     mcpServers: Set<String> = [],
@@ -93,6 +100,9 @@ public struct AgentDraft: Identifiable, Sendable {
     self.toolsSchedule = toolsSchedule
     self.toolsCodemode = toolsCodemode
     self.toolsCoding = toolsCoding
+    self.toolsDesktop = toolsDesktop
+    self.desktopProvider = desktopProvider
+    self.desktopModel = desktopModel
     self.sharedMemory = sharedMemory
     self.delegates = delegates
     self.mcpServers = mcpServers

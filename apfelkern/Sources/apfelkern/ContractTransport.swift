@@ -10,7 +10,8 @@ struct ContractTransport: ClientTransport {
 
   /// Server-sent event operations, whose responses never finish; every other response is read whole.
   static let streamingOperations: Set<String> = [
-    Operations.StreamChatEvents.id, Operations.StreamGroupChatEvents.id, Operations.StreamActivityEvents.id
+    Operations.StreamChatEvents.id, Operations.StreamGroupChatEvents.id, Operations.StreamActivityEvents.id,
+    Operations.StreamDesktopEvents.id
   ]
 
   func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String)
@@ -62,6 +63,7 @@ struct ContractTransport: ClientTransport {
     case Operations.UpdateSchedule.id, Operations.CreateSchedule.id: allowed = ["cron", "runAt"]
     case Operations.PutPushPresence.id: allowed = ["agentId"]
     case Operations.CreateMcpServer.id: allowed = ["agentId"]
+    case Operations.UpdateAgent.id: allowed = ["desktopModel"]
     default: allowed = []
     }
     guard nullFields.isSubset(of: allowed), let body = request.httpBody,

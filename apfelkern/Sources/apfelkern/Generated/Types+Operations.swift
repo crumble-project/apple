@@ -1209,6 +1209,31 @@ public enum Operations {
                     public var delegates: [Swift.String]?
                     /// - Remark: Generated from `#/paths/v1/agents/POST/requestBody/json/description`.
                     public var description: Swift.String?
+                    /// - Remark: Generated from `#/paths/v1/agents/POST/requestBody/json/desktopModel`.
+                    public struct DesktopModelPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/v1/agents/POST/requestBody/json/desktopModel/model`.
+                        public var model: Swift.String
+                        /// - Remark: Generated from `#/paths/v1/agents/POST/requestBody/json/desktopModel/provider`.
+                        public var provider: Swift.String
+                        /// Creates a new `DesktopModelPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - model:
+                        ///   - provider:
+                        public init(
+                            model: Swift.String,
+                            provider: Swift.String
+                        ) {
+                            self.model = model
+                            self.provider = provider
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case model
+                            case provider
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/v1/agents/POST/requestBody/json/desktopModel`.
+                    public var desktopModel: Operations.CreateAgent.Input.Body.JsonPayload.DesktopModelPayload?
                     /// - Remark: Generated from `#/paths/v1/agents/POST/requestBody/json/enabled`.
                     public var enabled: Swift.Bool?
                     /// - Remark: Generated from `#/paths/v1/agents/POST/requestBody/json/inference`.
@@ -1301,6 +1326,7 @@ public enum Operations {
                     ///   - avatar:
                     ///   - delegates:
                     ///   - description:
+                    ///   - desktopModel:
                     ///   - enabled:
                     ///   - inference:
                     ///   - instructions:
@@ -1316,6 +1342,7 @@ public enum Operations {
                         avatar: Swift.String? = nil,
                         delegates: [Swift.String]? = nil,
                         description: Swift.String? = nil,
+                        desktopModel: Operations.CreateAgent.Input.Body.JsonPayload.DesktopModelPayload? = nil,
                         enabled: Swift.Bool? = nil,
                         inference: Operations.CreateAgent.Input.Body.JsonPayload.InferencePayload? = nil,
                         instructions: Swift.String? = nil,
@@ -1331,6 +1358,7 @@ public enum Operations {
                         self.avatar = avatar
                         self.delegates = delegates
                         self.description = description
+                        self.desktopModel = desktopModel
                         self.enabled = enabled
                         self.inference = inference
                         self.instructions = instructions
@@ -1347,6 +1375,7 @@ public enum Operations {
                         case avatar
                         case delegates
                         case description
+                        case desktopModel
                         case enabled
                         case inference
                         case instructions
@@ -2454,6 +2483,31 @@ public enum Operations {
                     public var delegates: [Swift.String]?
                     /// - Remark: Generated from `#/paths/v1/agents/{id}/PATCH/requestBody/json/description`.
                     public var description: Swift.String?
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/PATCH/requestBody/json/desktopModel`.
+                    public struct DesktopModelPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/paths/v1/agents/{id}/PATCH/requestBody/json/desktopModel/model`.
+                        public var model: Swift.String
+                        /// - Remark: Generated from `#/paths/v1/agents/{id}/PATCH/requestBody/json/desktopModel/provider`.
+                        public var provider: Swift.String
+                        /// Creates a new `DesktopModelPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - model:
+                        ///   - provider:
+                        public init(
+                            model: Swift.String,
+                            provider: Swift.String
+                        ) {
+                            self.model = model
+                            self.provider = provider
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case model
+                            case provider
+                        }
+                    }
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/PATCH/requestBody/json/desktopModel`.
+                    public var desktopModel: Operations.UpdateAgent.Input.Body.JsonPayload.DesktopModelPayload?
                     /// - Remark: Generated from `#/paths/v1/agents/{id}/PATCH/requestBody/json/enabled`.
                     public var enabled: Swift.Bool?
                     /// - Remark: Generated from `#/paths/v1/agents/{id}/PATCH/requestBody/json/inference`.
@@ -2546,6 +2600,7 @@ public enum Operations {
                     ///   - avatar:
                     ///   - delegates:
                     ///   - description:
+                    ///   - desktopModel:
                     ///   - enabled:
                     ///   - inference:
                     ///   - instructions:
@@ -2561,6 +2616,7 @@ public enum Operations {
                         avatar: Swift.String? = nil,
                         delegates: [Swift.String]? = nil,
                         description: Swift.String? = nil,
+                        desktopModel: Operations.UpdateAgent.Input.Body.JsonPayload.DesktopModelPayload? = nil,
                         enabled: Swift.Bool? = nil,
                         inference: Operations.UpdateAgent.Input.Body.JsonPayload.InferencePayload? = nil,
                         instructions: Swift.String? = nil,
@@ -2576,6 +2632,7 @@ public enum Operations {
                         self.avatar = avatar
                         self.delegates = delegates
                         self.description = description
+                        self.desktopModel = desktopModel
                         self.enabled = enabled
                         self.inference = inference
                         self.instructions = instructions
@@ -2592,6 +2649,7 @@ public enum Operations {
                         case avatar
                         case delegates
                         case description
+                        case desktopModel
                         case enabled
                         case inference
                         case instructions
@@ -2639,6 +2697,35 @@ public enum Operations {
                         public var delegates: [Swift.String]
                         /// - Remark: Generated from `#/paths/v1/agents/{id}/PATCH/responses/200/content/json/description`.
                         public var description: Swift.String
+                        /// The model for this bot's desktop jobs; unset, they use the bot's own model.
+                        ///
+                        /// - Remark: Generated from `#/paths/v1/agents/{id}/PATCH/responses/200/content/json/desktopModel`.
+                        public struct DesktopModelPayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/v1/agents/{id}/PATCH/responses/200/content/json/desktopModel/model`.
+                            public var model: Swift.String
+                            /// - Remark: Generated from `#/paths/v1/agents/{id}/PATCH/responses/200/content/json/desktopModel/provider`.
+                            public var provider: Swift.String
+                            /// Creates a new `DesktopModelPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - model:
+                            ///   - provider:
+                            public init(
+                                model: Swift.String,
+                                provider: Swift.String
+                            ) {
+                                self.model = model
+                                self.provider = provider
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case model
+                                case provider
+                            }
+                        }
+                        /// The model for this bot's desktop jobs; unset, they use the bot's own model.
+                        ///
+                        /// - Remark: Generated from `#/paths/v1/agents/{id}/PATCH/responses/200/content/json/desktopModel`.
+                        public var desktopModel: Operations.UpdateAgent.Output.Ok.Body.JsonPayload.DesktopModelPayload?
                         /// - Remark: Generated from `#/paths/v1/agents/{id}/PATCH/responses/200/content/json/enabled`.
                         public var enabled: Swift.Bool
                         /// - Remark: Generated from `#/paths/v1/agents/{id}/PATCH/responses/200/content/json/id`.
@@ -2736,6 +2823,7 @@ public enum Operations {
                         ///   - createdAt:
                         ///   - delegates:
                         ///   - description:
+                        ///   - desktopModel: The model for this bot's desktop jobs; unset, they use the bot's own model.
                         ///   - enabled:
                         ///   - id:
                         ///   - inference:
@@ -2754,6 +2842,7 @@ public enum Operations {
                             createdAt: Swift.String,
                             delegates: [Swift.String],
                             description: Swift.String,
+                            desktopModel: Operations.UpdateAgent.Output.Ok.Body.JsonPayload.DesktopModelPayload? = nil,
                             enabled: Swift.Bool,
                             id: Swift.String,
                             inference: Operations.UpdateAgent.Output.Ok.Body.JsonPayload.InferencePayload? = nil,
@@ -2772,6 +2861,7 @@ public enum Operations {
                             self.createdAt = createdAt
                             self.delegates = delegates
                             self.description = description
+                            self.desktopModel = desktopModel
                             self.enabled = enabled
                             self.id = id
                             self.inference = inference
@@ -2791,6 +2881,7 @@ public enum Operations {
                             case createdAt
                             case delegates
                             case description
+                            case desktopModel
                             case enabled
                             case id
                             case inference
@@ -7695,6 +7786,3317 @@ public enum Operations {
             }
         }
     }
+    /// - Remark: HTTP `GET /v1/agents/{id}/desktop-jobs`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop-jobs/get(listDesktopJobs)`.
+    public enum ListDesktopJobs {
+        public static let id: Swift.String = "listDesktopJobs"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/GET/path/id`.
+                public var id: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                public init(id: Swift.String) {
+                    self.id = id
+                }
+            }
+            public var path: Operations.ListDesktopJobs.Input.Path
+            /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.ListDesktopJobs.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.ListDesktopJobs.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.ListDesktopJobs.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.ListDesktopJobs.Input.Path,
+                headers: Operations.ListDesktopJobs.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.DesktopJobs)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.DesktopJobs {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ListDesktopJobs.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ListDesktopJobs.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Success
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop-jobs/get(listDesktopJobs)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.ListDesktopJobs.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.ListDesktopJobs.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct BadRequest: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/GET/responses/400/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/GET/responses/400/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ListDesktopJobs.Output.BadRequest.Body
+                /// Creates a new `BadRequest`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ListDesktopJobs.Output.BadRequest.Body) {
+                    self.body = body
+                }
+            }
+            /// Invalid request or operation
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop-jobs/get(listDesktopJobs)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Operations.ListDesktopJobs.Output.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Operations.ListDesktopJobs.Output.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Unauthorized: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/GET/responses/401/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/GET/responses/401/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ListDesktopJobs.Output.Unauthorized.Body
+                /// Creates a new `Unauthorized`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ListDesktopJobs.Output.Unauthorized.Body) {
+                    self.body = body
+                }
+            }
+            /// Missing or invalid bearer token
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop-jobs/get(listDesktopJobs)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Operations.ListDesktopJobs.Output.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Operations.ListDesktopJobs.Output.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct NotFound: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/GET/responses/404/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/GET/responses/404/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ListDesktopJobs.Output.NotFound.Body
+                /// Creates a new `NotFound`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ListDesktopJobs.Output.NotFound.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop-jobs/get(listDesktopJobs)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Operations.ListDesktopJobs.Output.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Operations.ListDesktopJobs.Output.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct MethodNotAllowed: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/GET/responses/405/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/GET/responses/405/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ListDesktopJobs.Output.MethodNotAllowed.Body
+                /// Creates a new `MethodNotAllowed`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ListDesktopJobs.Output.MethodNotAllowed.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource is read-only
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop-jobs/get(listDesktopJobs)/responses/405`.
+            ///
+            /// HTTP response code: `405 methodNotAllowed`.
+            case methodNotAllowed(Operations.ListDesktopJobs.Output.MethodNotAllowed)
+            /// The associated value of the enum case if `self` is `.methodNotAllowed`.
+            ///
+            /// - Throws: An error if `self` is not `.methodNotAllowed`.
+            /// - SeeAlso: `.methodNotAllowed`.
+            public var methodNotAllowed: Operations.ListDesktopJobs.Output.MethodNotAllowed {
+                get throws {
+                    switch self {
+                    case let .methodNotAllowed(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "methodNotAllowed",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Conflict: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/GET/responses/409/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/GET/responses/409/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ListDesktopJobs.Output.Conflict.Body
+                /// Creates a new `Conflict`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ListDesktopJobs.Output.Conflict.Body) {
+                    self.body = body
+                }
+            }
+            /// Conflicting request
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop-jobs/get(listDesktopJobs)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Operations.ListDesktopJobs.Output.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Operations.ListDesktopJobs.Output.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ContentTooLarge: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/GET/responses/413/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/GET/responses/413/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ListDesktopJobs.Output.ContentTooLarge.Body
+                /// Creates a new `ContentTooLarge`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ListDesktopJobs.Output.ContentTooLarge.Body) {
+                    self.body = body
+                }
+            }
+            /// Request body exceeds the size limit
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop-jobs/get(listDesktopJobs)/responses/413`.
+            ///
+            /// HTTP response code: `413 contentTooLarge`.
+            case contentTooLarge(Operations.ListDesktopJobs.Output.ContentTooLarge)
+            /// The associated value of the enum case if `self` is `.contentTooLarge`.
+            ///
+            /// - Throws: An error if `self` is not `.contentTooLarge`.
+            /// - SeeAlso: `.contentTooLarge`.
+            public var contentTooLarge: Operations.ListDesktopJobs.Output.ContentTooLarge {
+                get throws {
+                    switch self {
+                    case let .contentTooLarge(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "contentTooLarge",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct InternalServerError: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/GET/responses/500/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/GET/responses/500/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ListDesktopJobs.Output.InternalServerError.Body
+                /// Creates a new `InternalServerError`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ListDesktopJobs.Output.InternalServerError.Body) {
+                    self.body = body
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop-jobs/get(listDesktopJobs)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Operations.ListDesktopJobs.Output.InternalServerError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Operations.ListDesktopJobs.Output.InternalServerError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ServiceUnavailable: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/GET/responses/503/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/GET/responses/503/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ListDesktopJobs.Output.ServiceUnavailable.Body
+                /// Creates a new `ServiceUnavailable`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ListDesktopJobs.Output.ServiceUnavailable.Body) {
+                    self.body = body
+                }
+            }
+            /// Service unavailable
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop-jobs/get(listDesktopJobs)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Operations.ListDesktopJobs.Output.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Operations.ListDesktopJobs.Output.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case plainText
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "text/plain":
+                    self = .plainText
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .plainText:
+                    return "text/plain"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .plainText
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `GET /v1/agents/{id}/desktop-jobs/{name}/history`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop-jobs/{name}/history/get(getDesktopJobHistory)`.
+    public enum GetDesktopJobHistory {
+        public static let id: Swift.String = "getDesktopJobHistory"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/{name}/history/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/{name}/history/GET/path/id`.
+                public var id: Swift.String
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/{name}/history/GET/path/name`.
+                public var name: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                ///   - name:
+                public init(
+                    id: Swift.String,
+                    name: Swift.String
+                ) {
+                    self.id = id
+                    self.name = name
+                }
+            }
+            public var path: Operations.GetDesktopJobHistory.Input.Path
+            /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/{name}/history/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/{name}/history/GET/query/limit`.
+                public var limit: Swift.Int?
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/{name}/history/GET/query/before`.
+                public var before: Swift.String?
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - limit:
+                ///   - before:
+                public init(
+                    limit: Swift.Int? = nil,
+                    before: Swift.String? = nil
+                ) {
+                    self.limit = limit
+                    self.before = before
+                }
+            }
+            public var query: Operations.GetDesktopJobHistory.Input.Query
+            /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/{name}/history/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetDesktopJobHistory.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetDesktopJobHistory.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.GetDesktopJobHistory.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - query:
+            ///   - headers:
+            public init(
+                path: Operations.GetDesktopJobHistory.Input.Path,
+                query: Operations.GetDesktopJobHistory.Input.Query = .init(),
+                headers: Operations.GetDesktopJobHistory.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/{name}/history/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/{name}/history/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.TranscriptPage)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.TranscriptPage {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetDesktopJobHistory.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetDesktopJobHistory.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Success
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop-jobs/{name}/history/get(getDesktopJobHistory)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.GetDesktopJobHistory.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.GetDesktopJobHistory.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct BadRequest: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/{name}/history/GET/responses/400/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/{name}/history/GET/responses/400/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetDesktopJobHistory.Output.BadRequest.Body
+                /// Creates a new `BadRequest`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetDesktopJobHistory.Output.BadRequest.Body) {
+                    self.body = body
+                }
+            }
+            /// Invalid request or operation
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop-jobs/{name}/history/get(getDesktopJobHistory)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Operations.GetDesktopJobHistory.Output.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Operations.GetDesktopJobHistory.Output.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Unauthorized: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/{name}/history/GET/responses/401/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/{name}/history/GET/responses/401/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetDesktopJobHistory.Output.Unauthorized.Body
+                /// Creates a new `Unauthorized`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetDesktopJobHistory.Output.Unauthorized.Body) {
+                    self.body = body
+                }
+            }
+            /// Missing or invalid bearer token
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop-jobs/{name}/history/get(getDesktopJobHistory)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Operations.GetDesktopJobHistory.Output.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Operations.GetDesktopJobHistory.Output.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct NotFound: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/{name}/history/GET/responses/404/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/{name}/history/GET/responses/404/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetDesktopJobHistory.Output.NotFound.Body
+                /// Creates a new `NotFound`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetDesktopJobHistory.Output.NotFound.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop-jobs/{name}/history/get(getDesktopJobHistory)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Operations.GetDesktopJobHistory.Output.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Operations.GetDesktopJobHistory.Output.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct MethodNotAllowed: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/{name}/history/GET/responses/405/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/{name}/history/GET/responses/405/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetDesktopJobHistory.Output.MethodNotAllowed.Body
+                /// Creates a new `MethodNotAllowed`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetDesktopJobHistory.Output.MethodNotAllowed.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource is read-only
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop-jobs/{name}/history/get(getDesktopJobHistory)/responses/405`.
+            ///
+            /// HTTP response code: `405 methodNotAllowed`.
+            case methodNotAllowed(Operations.GetDesktopJobHistory.Output.MethodNotAllowed)
+            /// The associated value of the enum case if `self` is `.methodNotAllowed`.
+            ///
+            /// - Throws: An error if `self` is not `.methodNotAllowed`.
+            /// - SeeAlso: `.methodNotAllowed`.
+            public var methodNotAllowed: Operations.GetDesktopJobHistory.Output.MethodNotAllowed {
+                get throws {
+                    switch self {
+                    case let .methodNotAllowed(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "methodNotAllowed",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Conflict: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/{name}/history/GET/responses/409/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/{name}/history/GET/responses/409/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetDesktopJobHistory.Output.Conflict.Body
+                /// Creates a new `Conflict`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetDesktopJobHistory.Output.Conflict.Body) {
+                    self.body = body
+                }
+            }
+            /// Conflicting request
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop-jobs/{name}/history/get(getDesktopJobHistory)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Operations.GetDesktopJobHistory.Output.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Operations.GetDesktopJobHistory.Output.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ContentTooLarge: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/{name}/history/GET/responses/413/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/{name}/history/GET/responses/413/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetDesktopJobHistory.Output.ContentTooLarge.Body
+                /// Creates a new `ContentTooLarge`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetDesktopJobHistory.Output.ContentTooLarge.Body) {
+                    self.body = body
+                }
+            }
+            /// Request body exceeds the size limit
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop-jobs/{name}/history/get(getDesktopJobHistory)/responses/413`.
+            ///
+            /// HTTP response code: `413 contentTooLarge`.
+            case contentTooLarge(Operations.GetDesktopJobHistory.Output.ContentTooLarge)
+            /// The associated value of the enum case if `self` is `.contentTooLarge`.
+            ///
+            /// - Throws: An error if `self` is not `.contentTooLarge`.
+            /// - SeeAlso: `.contentTooLarge`.
+            public var contentTooLarge: Operations.GetDesktopJobHistory.Output.ContentTooLarge {
+                get throws {
+                    switch self {
+                    case let .contentTooLarge(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "contentTooLarge",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct InternalServerError: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/{name}/history/GET/responses/500/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/{name}/history/GET/responses/500/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetDesktopJobHistory.Output.InternalServerError.Body
+                /// Creates a new `InternalServerError`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetDesktopJobHistory.Output.InternalServerError.Body) {
+                    self.body = body
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop-jobs/{name}/history/get(getDesktopJobHistory)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Operations.GetDesktopJobHistory.Output.InternalServerError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Operations.GetDesktopJobHistory.Output.InternalServerError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ServiceUnavailable: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/{name}/history/GET/responses/503/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/{name}/history/GET/responses/503/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetDesktopJobHistory.Output.ServiceUnavailable.Body
+                /// Creates a new `ServiceUnavailable`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetDesktopJobHistory.Output.ServiceUnavailable.Body) {
+                    self.body = body
+                }
+            }
+            /// Service unavailable
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop-jobs/{name}/history/get(getDesktopJobHistory)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Operations.GetDesktopJobHistory.Output.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Operations.GetDesktopJobHistory.Output.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case plainText
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "text/plain":
+                    self = .plainText
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .plainText:
+                    return "text/plain"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .plainText
+                ]
+            }
+        }
+    }
+    /// - Remark: HTTP `GET /v1/agents/{id}/desktop/control`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/control/get(getDesktopControl)`.
+    public enum GetDesktopControl {
+        public static let id: Swift.String = "getDesktopControl"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/GET/path/id`.
+                public var id: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                public init(id: Swift.String) {
+                    self.id = id
+                }
+            }
+            public var path: Operations.GetDesktopControl.Input.Path
+            /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetDesktopControl.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetDesktopControl.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.GetDesktopControl.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.GetDesktopControl.Input.Path,
+                headers: Operations.GetDesktopControl.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.DesktopControl)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.DesktopControl {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetDesktopControl.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetDesktopControl.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Success
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/control/get(getDesktopControl)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.GetDesktopControl.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.GetDesktopControl.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct BadRequest: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/GET/responses/400/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/GET/responses/400/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetDesktopControl.Output.BadRequest.Body
+                /// Creates a new `BadRequest`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetDesktopControl.Output.BadRequest.Body) {
+                    self.body = body
+                }
+            }
+            /// Invalid request or operation
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/control/get(getDesktopControl)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Operations.GetDesktopControl.Output.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Operations.GetDesktopControl.Output.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Unauthorized: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/GET/responses/401/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/GET/responses/401/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetDesktopControl.Output.Unauthorized.Body
+                /// Creates a new `Unauthorized`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetDesktopControl.Output.Unauthorized.Body) {
+                    self.body = body
+                }
+            }
+            /// Missing or invalid bearer token
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/control/get(getDesktopControl)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Operations.GetDesktopControl.Output.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Operations.GetDesktopControl.Output.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct NotFound: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/GET/responses/404/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/GET/responses/404/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetDesktopControl.Output.NotFound.Body
+                /// Creates a new `NotFound`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetDesktopControl.Output.NotFound.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/control/get(getDesktopControl)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Operations.GetDesktopControl.Output.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Operations.GetDesktopControl.Output.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct MethodNotAllowed: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/GET/responses/405/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/GET/responses/405/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetDesktopControl.Output.MethodNotAllowed.Body
+                /// Creates a new `MethodNotAllowed`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetDesktopControl.Output.MethodNotAllowed.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource is read-only
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/control/get(getDesktopControl)/responses/405`.
+            ///
+            /// HTTP response code: `405 methodNotAllowed`.
+            case methodNotAllowed(Operations.GetDesktopControl.Output.MethodNotAllowed)
+            /// The associated value of the enum case if `self` is `.methodNotAllowed`.
+            ///
+            /// - Throws: An error if `self` is not `.methodNotAllowed`.
+            /// - SeeAlso: `.methodNotAllowed`.
+            public var methodNotAllowed: Operations.GetDesktopControl.Output.MethodNotAllowed {
+                get throws {
+                    switch self {
+                    case let .methodNotAllowed(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "methodNotAllowed",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Conflict: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/GET/responses/409/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/GET/responses/409/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetDesktopControl.Output.Conflict.Body
+                /// Creates a new `Conflict`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetDesktopControl.Output.Conflict.Body) {
+                    self.body = body
+                }
+            }
+            /// Conflicting request
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/control/get(getDesktopControl)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Operations.GetDesktopControl.Output.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Operations.GetDesktopControl.Output.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ContentTooLarge: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/GET/responses/413/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/GET/responses/413/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetDesktopControl.Output.ContentTooLarge.Body
+                /// Creates a new `ContentTooLarge`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetDesktopControl.Output.ContentTooLarge.Body) {
+                    self.body = body
+                }
+            }
+            /// Request body exceeds the size limit
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/control/get(getDesktopControl)/responses/413`.
+            ///
+            /// HTTP response code: `413 contentTooLarge`.
+            case contentTooLarge(Operations.GetDesktopControl.Output.ContentTooLarge)
+            /// The associated value of the enum case if `self` is `.contentTooLarge`.
+            ///
+            /// - Throws: An error if `self` is not `.contentTooLarge`.
+            /// - SeeAlso: `.contentTooLarge`.
+            public var contentTooLarge: Operations.GetDesktopControl.Output.ContentTooLarge {
+                get throws {
+                    switch self {
+                    case let .contentTooLarge(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "contentTooLarge",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct InternalServerError: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/GET/responses/500/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/GET/responses/500/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetDesktopControl.Output.InternalServerError.Body
+                /// Creates a new `InternalServerError`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetDesktopControl.Output.InternalServerError.Body) {
+                    self.body = body
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/control/get(getDesktopControl)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Operations.GetDesktopControl.Output.InternalServerError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Operations.GetDesktopControl.Output.InternalServerError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ServiceUnavailable: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/GET/responses/503/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/GET/responses/503/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetDesktopControl.Output.ServiceUnavailable.Body
+                /// Creates a new `ServiceUnavailable`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetDesktopControl.Output.ServiceUnavailable.Body) {
+                    self.body = body
+                }
+            }
+            /// Service unavailable
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/control/get(getDesktopControl)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Operations.GetDesktopControl.Output.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Operations.GetDesktopControl.Output.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case plainText
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "text/plain":
+                    self = .plainText
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .plainText:
+                    return "text/plain"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .plainText
+                ]
+            }
+        }
+    }
+    /// Take control of the bot desktop (holder owner) or hand it back (holder bot). 409 when the bot has no bot desktop.
+    ///
+    /// - Remark: HTTP `PUT /v1/agents/{id}/desktop/control`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/control/put(putDesktopControl)`.
+    public enum PutDesktopControl {
+        public static let id: Swift.String = "putDesktopControl"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/PUT/path`.
+            public struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/PUT/path/id`.
+                public var id: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                public init(id: Swift.String) {
+                    self.id = id
+                }
+            }
+            public var path: Operations.PutDesktopControl.Input.Path
+            /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/PUT/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.PutDesktopControl.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.PutDesktopControl.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.PutDesktopControl.Input.Headers
+            /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/PUT/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/PUT/requestBody/json`.
+                public struct JsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/PUT/requestBody/json/holder`.
+                    @frozen public enum HolderPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                        case bot = "bot"
+                        case owner = "owner"
+                    }
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/PUT/requestBody/json/holder`.
+                    public var holder: Operations.PutDesktopControl.Input.Body.JsonPayload.HolderPayload
+                    /// Creates a new `JsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - holder:
+                    public init(holder: Operations.PutDesktopControl.Input.Body.JsonPayload.HolderPayload) {
+                        self.holder = holder
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case holder
+                    }
+                }
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/PUT/requestBody/content/application\/json`.
+                case json(Operations.PutDesktopControl.Input.Body.JsonPayload)
+            }
+            public var body: Operations.PutDesktopControl.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            ///   - body:
+            public init(
+                path: Operations.PutDesktopControl.Input.Path,
+                headers: Operations.PutDesktopControl.Input.Headers = .init(),
+                body: Operations.PutDesktopControl.Input.Body
+            ) {
+                self.path = path
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/PUT/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/PUT/responses/200/content/application\/json`.
+                    case json(Components.Schemas.DesktopControl)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.DesktopControl {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.PutDesktopControl.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.PutDesktopControl.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Success
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/control/put(putDesktopControl)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.PutDesktopControl.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.PutDesktopControl.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct BadRequest: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/PUT/responses/400/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/PUT/responses/400/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.PutDesktopControl.Output.BadRequest.Body
+                /// Creates a new `BadRequest`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.PutDesktopControl.Output.BadRequest.Body) {
+                    self.body = body
+                }
+            }
+            /// Invalid request or operation
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/control/put(putDesktopControl)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Operations.PutDesktopControl.Output.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Operations.PutDesktopControl.Output.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Unauthorized: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/PUT/responses/401/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/PUT/responses/401/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.PutDesktopControl.Output.Unauthorized.Body
+                /// Creates a new `Unauthorized`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.PutDesktopControl.Output.Unauthorized.Body) {
+                    self.body = body
+                }
+            }
+            /// Missing or invalid bearer token
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/control/put(putDesktopControl)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Operations.PutDesktopControl.Output.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Operations.PutDesktopControl.Output.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct NotFound: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/PUT/responses/404/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/PUT/responses/404/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.PutDesktopControl.Output.NotFound.Body
+                /// Creates a new `NotFound`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.PutDesktopControl.Output.NotFound.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/control/put(putDesktopControl)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Operations.PutDesktopControl.Output.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Operations.PutDesktopControl.Output.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct MethodNotAllowed: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/PUT/responses/405/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/PUT/responses/405/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.PutDesktopControl.Output.MethodNotAllowed.Body
+                /// Creates a new `MethodNotAllowed`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.PutDesktopControl.Output.MethodNotAllowed.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource is read-only
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/control/put(putDesktopControl)/responses/405`.
+            ///
+            /// HTTP response code: `405 methodNotAllowed`.
+            case methodNotAllowed(Operations.PutDesktopControl.Output.MethodNotAllowed)
+            /// The associated value of the enum case if `self` is `.methodNotAllowed`.
+            ///
+            /// - Throws: An error if `self` is not `.methodNotAllowed`.
+            /// - SeeAlso: `.methodNotAllowed`.
+            public var methodNotAllowed: Operations.PutDesktopControl.Output.MethodNotAllowed {
+                get throws {
+                    switch self {
+                    case let .methodNotAllowed(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "methodNotAllowed",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Conflict: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/PUT/responses/409/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/PUT/responses/409/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.PutDesktopControl.Output.Conflict.Body
+                /// Creates a new `Conflict`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.PutDesktopControl.Output.Conflict.Body) {
+                    self.body = body
+                }
+            }
+            /// Conflicting request
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/control/put(putDesktopControl)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Operations.PutDesktopControl.Output.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Operations.PutDesktopControl.Output.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ContentTooLarge: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/PUT/responses/413/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/PUT/responses/413/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.PutDesktopControl.Output.ContentTooLarge.Body
+                /// Creates a new `ContentTooLarge`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.PutDesktopControl.Output.ContentTooLarge.Body) {
+                    self.body = body
+                }
+            }
+            /// Request body exceeds the size limit
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/control/put(putDesktopControl)/responses/413`.
+            ///
+            /// HTTP response code: `413 contentTooLarge`.
+            case contentTooLarge(Operations.PutDesktopControl.Output.ContentTooLarge)
+            /// The associated value of the enum case if `self` is `.contentTooLarge`.
+            ///
+            /// - Throws: An error if `self` is not `.contentTooLarge`.
+            /// - SeeAlso: `.contentTooLarge`.
+            public var contentTooLarge: Operations.PutDesktopControl.Output.ContentTooLarge {
+                get throws {
+                    switch self {
+                    case let .contentTooLarge(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "contentTooLarge",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct InternalServerError: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/PUT/responses/500/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/PUT/responses/500/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.PutDesktopControl.Output.InternalServerError.Body
+                /// Creates a new `InternalServerError`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.PutDesktopControl.Output.InternalServerError.Body) {
+                    self.body = body
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/control/put(putDesktopControl)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Operations.PutDesktopControl.Output.InternalServerError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Operations.PutDesktopControl.Output.InternalServerError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ServiceUnavailable: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/PUT/responses/503/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/control/PUT/responses/503/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.PutDesktopControl.Output.ServiceUnavailable.Body
+                /// Creates a new `ServiceUnavailable`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.PutDesktopControl.Output.ServiceUnavailable.Body) {
+                    self.body = body
+                }
+            }
+            /// Service unavailable
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/control/put(putDesktopControl)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Operations.PutDesktopControl.Output.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Operations.PutDesktopControl.Output.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case plainText
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "text/plain":
+                    self = .plainText
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .plainText:
+                    return "text/plain"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .plainText
+                ]
+            }
+        }
+    }
+    /// Server-sent events. A control event carries the DesktopControl JSON object in data, once on connect and on every change. Heartbeat events carry {} every 15 seconds. Authenticate with the Authorization header.
+    ///
+    /// - Remark: HTTP `GET /v1/agents/{id}/desktop/events`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/events/get(streamDesktopEvents)`.
+    public enum StreamDesktopEvents {
+        public static let id: Swift.String = "streamDesktopEvents"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/events/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/events/GET/path/id`.
+                public var id: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                public init(id: Swift.String) {
+                    self.id = id
+                }
+            }
+            public var path: Operations.StreamDesktopEvents.Input.Path
+            /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/events/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.StreamDesktopEvents.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.StreamDesktopEvents.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.StreamDesktopEvents.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.StreamDesktopEvents.Input.Path,
+                headers: Operations.StreamDesktopEvents.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/events/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/events/GET/responses/200/content/text\/event-stream`.
+                    case textEventStream(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.textEventStream`.
+                    ///
+                    /// - Throws: An error if `self` is not `.textEventStream`.
+                    /// - SeeAlso: `.textEventStream`.
+                    public var textEventStream: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .textEventStream(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.StreamDesktopEvents.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.StreamDesktopEvents.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// SSE stream, not a JSON array
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/events/get(streamDesktopEvents)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.StreamDesktopEvents.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.StreamDesktopEvents.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct BadRequest: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/events/GET/responses/400/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/events/GET/responses/400/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.StreamDesktopEvents.Output.BadRequest.Body
+                /// Creates a new `BadRequest`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.StreamDesktopEvents.Output.BadRequest.Body) {
+                    self.body = body
+                }
+            }
+            /// Invalid request or operation
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/events/get(streamDesktopEvents)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Operations.StreamDesktopEvents.Output.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Operations.StreamDesktopEvents.Output.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Unauthorized: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/events/GET/responses/401/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/events/GET/responses/401/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.StreamDesktopEvents.Output.Unauthorized.Body
+                /// Creates a new `Unauthorized`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.StreamDesktopEvents.Output.Unauthorized.Body) {
+                    self.body = body
+                }
+            }
+            /// Missing or invalid bearer token
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/events/get(streamDesktopEvents)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Operations.StreamDesktopEvents.Output.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Operations.StreamDesktopEvents.Output.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct NotFound: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/events/GET/responses/404/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/events/GET/responses/404/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.StreamDesktopEvents.Output.NotFound.Body
+                /// Creates a new `NotFound`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.StreamDesktopEvents.Output.NotFound.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/events/get(streamDesktopEvents)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Operations.StreamDesktopEvents.Output.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Operations.StreamDesktopEvents.Output.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct MethodNotAllowed: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/events/GET/responses/405/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/events/GET/responses/405/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.StreamDesktopEvents.Output.MethodNotAllowed.Body
+                /// Creates a new `MethodNotAllowed`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.StreamDesktopEvents.Output.MethodNotAllowed.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource is read-only
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/events/get(streamDesktopEvents)/responses/405`.
+            ///
+            /// HTTP response code: `405 methodNotAllowed`.
+            case methodNotAllowed(Operations.StreamDesktopEvents.Output.MethodNotAllowed)
+            /// The associated value of the enum case if `self` is `.methodNotAllowed`.
+            ///
+            /// - Throws: An error if `self` is not `.methodNotAllowed`.
+            /// - SeeAlso: `.methodNotAllowed`.
+            public var methodNotAllowed: Operations.StreamDesktopEvents.Output.MethodNotAllowed {
+                get throws {
+                    switch self {
+                    case let .methodNotAllowed(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "methodNotAllowed",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Conflict: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/events/GET/responses/409/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/events/GET/responses/409/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.StreamDesktopEvents.Output.Conflict.Body
+                /// Creates a new `Conflict`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.StreamDesktopEvents.Output.Conflict.Body) {
+                    self.body = body
+                }
+            }
+            /// Conflicting request
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/events/get(streamDesktopEvents)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Operations.StreamDesktopEvents.Output.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Operations.StreamDesktopEvents.Output.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ContentTooLarge: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/events/GET/responses/413/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/events/GET/responses/413/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.StreamDesktopEvents.Output.ContentTooLarge.Body
+                /// Creates a new `ContentTooLarge`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.StreamDesktopEvents.Output.ContentTooLarge.Body) {
+                    self.body = body
+                }
+            }
+            /// Request body exceeds the size limit
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/events/get(streamDesktopEvents)/responses/413`.
+            ///
+            /// HTTP response code: `413 contentTooLarge`.
+            case contentTooLarge(Operations.StreamDesktopEvents.Output.ContentTooLarge)
+            /// The associated value of the enum case if `self` is `.contentTooLarge`.
+            ///
+            /// - Throws: An error if `self` is not `.contentTooLarge`.
+            /// - SeeAlso: `.contentTooLarge`.
+            public var contentTooLarge: Operations.StreamDesktopEvents.Output.ContentTooLarge {
+                get throws {
+                    switch self {
+                    case let .contentTooLarge(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "contentTooLarge",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct InternalServerError: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/events/GET/responses/500/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/events/GET/responses/500/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.StreamDesktopEvents.Output.InternalServerError.Body
+                /// Creates a new `InternalServerError`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.StreamDesktopEvents.Output.InternalServerError.Body) {
+                    self.body = body
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/events/get(streamDesktopEvents)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Operations.StreamDesktopEvents.Output.InternalServerError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Operations.StreamDesktopEvents.Output.InternalServerError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ServiceUnavailable: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/events/GET/responses/503/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/events/GET/responses/503/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.StreamDesktopEvents.Output.ServiceUnavailable.Body
+                /// Creates a new `ServiceUnavailable`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.StreamDesktopEvents.Output.ServiceUnavailable.Body) {
+                    self.body = body
+                }
+            }
+            /// Service unavailable
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/events/get(streamDesktopEvents)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Operations.StreamDesktopEvents.Output.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Operations.StreamDesktopEvents.Output.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case textEventStream
+            case json
+            case plainText
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "text/event-stream":
+                    self = .textEventStream
+                case "application/json":
+                    self = .json
+                case "text/plain":
+                    self = .plainText
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .textEventStream:
+                    return "text/event-stream"
+                case .json:
+                    return "application/json"
+                case .plainText:
+                    return "text/plain"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .textEventStream,
+                    .json,
+                    .plainText
+                ]
+            }
+        }
+    }
+    /// Issue a single-use viewer link for the bot desktop. The page and its WebSocket live outside /v1 and need no Authorization header: the link is the credential. 409 when the bot has no bot desktop.
+    ///
+    /// - Remark: HTTP `POST /v1/agents/{id}/desktop/viewer`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/viewer/post(createDesktopViewer)`.
+    public enum CreateDesktopViewer {
+        public static let id: Swift.String = "createDesktopViewer"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/viewer/POST/path`.
+            public struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/viewer/POST/path/id`.
+                public var id: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                public init(id: Swift.String) {
+                    self.id = id
+                }
+            }
+            public var path: Operations.CreateDesktopViewer.Input.Path
+            /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/viewer/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.CreateDesktopViewer.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.CreateDesktopViewer.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.CreateDesktopViewer.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.CreateDesktopViewer.Input.Path,
+                headers: Operations.CreateDesktopViewer.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Created: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/viewer/POST/responses/201/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/viewer/POST/responses/201/content/application\/json`.
+                    case json(Components.Schemas.DesktopViewer)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.DesktopViewer {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.CreateDesktopViewer.Output.Created.Body
+                /// Creates a new `Created`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.CreateDesktopViewer.Output.Created.Body) {
+                    self.body = body
+                }
+            }
+            /// Success
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/viewer/post(createDesktopViewer)/responses/201`.
+            ///
+            /// HTTP response code: `201 created`.
+            case created(Operations.CreateDesktopViewer.Output.Created)
+            /// The associated value of the enum case if `self` is `.created`.
+            ///
+            /// - Throws: An error if `self` is not `.created`.
+            /// - SeeAlso: `.created`.
+            public var created: Operations.CreateDesktopViewer.Output.Created {
+                get throws {
+                    switch self {
+                    case let .created(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "created",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct BadRequest: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/viewer/POST/responses/400/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/viewer/POST/responses/400/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.CreateDesktopViewer.Output.BadRequest.Body
+                /// Creates a new `BadRequest`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.CreateDesktopViewer.Output.BadRequest.Body) {
+                    self.body = body
+                }
+            }
+            /// Invalid request or operation
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/viewer/post(createDesktopViewer)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Operations.CreateDesktopViewer.Output.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Operations.CreateDesktopViewer.Output.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Unauthorized: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/viewer/POST/responses/401/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/viewer/POST/responses/401/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.CreateDesktopViewer.Output.Unauthorized.Body
+                /// Creates a new `Unauthorized`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.CreateDesktopViewer.Output.Unauthorized.Body) {
+                    self.body = body
+                }
+            }
+            /// Missing or invalid bearer token
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/viewer/post(createDesktopViewer)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Operations.CreateDesktopViewer.Output.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Operations.CreateDesktopViewer.Output.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct NotFound: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/viewer/POST/responses/404/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/viewer/POST/responses/404/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.CreateDesktopViewer.Output.NotFound.Body
+                /// Creates a new `NotFound`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.CreateDesktopViewer.Output.NotFound.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/viewer/post(createDesktopViewer)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Operations.CreateDesktopViewer.Output.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Operations.CreateDesktopViewer.Output.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct MethodNotAllowed: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/viewer/POST/responses/405/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/viewer/POST/responses/405/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.CreateDesktopViewer.Output.MethodNotAllowed.Body
+                /// Creates a new `MethodNotAllowed`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.CreateDesktopViewer.Output.MethodNotAllowed.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource is read-only
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/viewer/post(createDesktopViewer)/responses/405`.
+            ///
+            /// HTTP response code: `405 methodNotAllowed`.
+            case methodNotAllowed(Operations.CreateDesktopViewer.Output.MethodNotAllowed)
+            /// The associated value of the enum case if `self` is `.methodNotAllowed`.
+            ///
+            /// - Throws: An error if `self` is not `.methodNotAllowed`.
+            /// - SeeAlso: `.methodNotAllowed`.
+            public var methodNotAllowed: Operations.CreateDesktopViewer.Output.MethodNotAllowed {
+                get throws {
+                    switch self {
+                    case let .methodNotAllowed(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "methodNotAllowed",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Conflict: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/viewer/POST/responses/409/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/viewer/POST/responses/409/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.CreateDesktopViewer.Output.Conflict.Body
+                /// Creates a new `Conflict`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.CreateDesktopViewer.Output.Conflict.Body) {
+                    self.body = body
+                }
+            }
+            /// Conflicting request
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/viewer/post(createDesktopViewer)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Operations.CreateDesktopViewer.Output.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Operations.CreateDesktopViewer.Output.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ContentTooLarge: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/viewer/POST/responses/413/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/viewer/POST/responses/413/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.CreateDesktopViewer.Output.ContentTooLarge.Body
+                /// Creates a new `ContentTooLarge`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.CreateDesktopViewer.Output.ContentTooLarge.Body) {
+                    self.body = body
+                }
+            }
+            /// Request body exceeds the size limit
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/viewer/post(createDesktopViewer)/responses/413`.
+            ///
+            /// HTTP response code: `413 contentTooLarge`.
+            case contentTooLarge(Operations.CreateDesktopViewer.Output.ContentTooLarge)
+            /// The associated value of the enum case if `self` is `.contentTooLarge`.
+            ///
+            /// - Throws: An error if `self` is not `.contentTooLarge`.
+            /// - SeeAlso: `.contentTooLarge`.
+            public var contentTooLarge: Operations.CreateDesktopViewer.Output.ContentTooLarge {
+                get throws {
+                    switch self {
+                    case let .contentTooLarge(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "contentTooLarge",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct InternalServerError: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/viewer/POST/responses/500/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/viewer/POST/responses/500/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.CreateDesktopViewer.Output.InternalServerError.Body
+                /// Creates a new `InternalServerError`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.CreateDesktopViewer.Output.InternalServerError.Body) {
+                    self.body = body
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/viewer/post(createDesktopViewer)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Operations.CreateDesktopViewer.Output.InternalServerError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Operations.CreateDesktopViewer.Output.InternalServerError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ServiceUnavailable: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/viewer/POST/responses/503/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop/viewer/POST/responses/503/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.CreateDesktopViewer.Output.ServiceUnavailable.Body
+                /// Creates a new `ServiceUnavailable`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.CreateDesktopViewer.Output.ServiceUnavailable.Body) {
+                    self.body = body
+                }
+            }
+            /// Service unavailable
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/viewer/post(createDesktopViewer)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Operations.CreateDesktopViewer.Output.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Operations.CreateDesktopViewer.Output.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case plainText
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "text/plain":
+                    self = .plainText
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .plainText:
+                    return "text/plain"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .plainText
+                ]
+            }
+        }
+    }
     /// - Remark: HTTP `POST /v1/agents/{id}/duplicate`.
     /// - Remark: Generated from `#/paths//v1/agents/{id}/duplicate/post(duplicateAgent)`.
     public enum DuplicateAgent {
@@ -7752,6 +11154,35 @@ public enum Operations {
                         public var delegates: [Swift.String]
                         /// - Remark: Generated from `#/paths/v1/agents/{id}/duplicate/POST/responses/201/content/json/description`.
                         public var description: Swift.String
+                        /// The model for this bot's desktop jobs; unset, they use the bot's own model.
+                        ///
+                        /// - Remark: Generated from `#/paths/v1/agents/{id}/duplicate/POST/responses/201/content/json/desktopModel`.
+                        public struct DesktopModelPayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/paths/v1/agents/{id}/duplicate/POST/responses/201/content/json/desktopModel/model`.
+                            public var model: Swift.String
+                            /// - Remark: Generated from `#/paths/v1/agents/{id}/duplicate/POST/responses/201/content/json/desktopModel/provider`.
+                            public var provider: Swift.String
+                            /// Creates a new `DesktopModelPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - model:
+                            ///   - provider:
+                            public init(
+                                model: Swift.String,
+                                provider: Swift.String
+                            ) {
+                                self.model = model
+                                self.provider = provider
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case model
+                                case provider
+                            }
+                        }
+                        /// The model for this bot's desktop jobs; unset, they use the bot's own model.
+                        ///
+                        /// - Remark: Generated from `#/paths/v1/agents/{id}/duplicate/POST/responses/201/content/json/desktopModel`.
+                        public var desktopModel: Operations.DuplicateAgent.Output.Created.Body.JsonPayload.DesktopModelPayload?
                         /// - Remark: Generated from `#/paths/v1/agents/{id}/duplicate/POST/responses/201/content/json/enabled`.
                         public var enabled: Swift.Bool
                         /// - Remark: Generated from `#/paths/v1/agents/{id}/duplicate/POST/responses/201/content/json/id`.
@@ -7849,6 +11280,7 @@ public enum Operations {
                         ///   - createdAt:
                         ///   - delegates:
                         ///   - description:
+                        ///   - desktopModel: The model for this bot's desktop jobs; unset, they use the bot's own model.
                         ///   - enabled:
                         ///   - id:
                         ///   - inference:
@@ -7867,6 +11299,7 @@ public enum Operations {
                             createdAt: Swift.String,
                             delegates: [Swift.String],
                             description: Swift.String,
+                            desktopModel: Operations.DuplicateAgent.Output.Created.Body.JsonPayload.DesktopModelPayload? = nil,
                             enabled: Swift.Bool,
                             id: Swift.String,
                             inference: Operations.DuplicateAgent.Output.Created.Body.JsonPayload.InferencePayload? = nil,
@@ -7885,6 +11318,7 @@ public enum Operations {
                             self.createdAt = createdAt
                             self.delegates = delegates
                             self.description = description
+                            self.desktopModel = desktopModel
                             self.enabled = enabled
                             self.id = id
                             self.inference = inference
@@ -7904,6 +11338,7 @@ public enum Operations {
                             case createdAt
                             case delegates
                             case description
+                            case desktopModel
                             case enabled
                             case id
                             case inference

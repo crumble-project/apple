@@ -47,6 +47,30 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /v1/agents/{id}/compact`.
     /// - Remark: Generated from `#/paths//v1/agents/{id}/compact/post(compactChat)`.
     func compactChat(_ input: Operations.CompactChat.Input) async throws -> Operations.CompactChat.Output
+    /// - Remark: HTTP `GET /v1/agents/{id}/desktop-jobs`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop-jobs/get(listDesktopJobs)`.
+    func listDesktopJobs(_ input: Operations.ListDesktopJobs.Input) async throws -> Operations.ListDesktopJobs.Output
+    /// - Remark: HTTP `GET /v1/agents/{id}/desktop-jobs/{name}/history`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop-jobs/{name}/history/get(getDesktopJobHistory)`.
+    func getDesktopJobHistory(_ input: Operations.GetDesktopJobHistory.Input) async throws -> Operations.GetDesktopJobHistory.Output
+    /// - Remark: HTTP `GET /v1/agents/{id}/desktop/control`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/control/get(getDesktopControl)`.
+    func getDesktopControl(_ input: Operations.GetDesktopControl.Input) async throws -> Operations.GetDesktopControl.Output
+    /// Take control of the bot desktop (holder owner) or hand it back (holder bot). 409 when the bot has no bot desktop.
+    ///
+    /// - Remark: HTTP `PUT /v1/agents/{id}/desktop/control`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/control/put(putDesktopControl)`.
+    func putDesktopControl(_ input: Operations.PutDesktopControl.Input) async throws -> Operations.PutDesktopControl.Output
+    /// Server-sent events. A control event carries the DesktopControl JSON object in data, once on connect and on every change. Heartbeat events carry {} every 15 seconds. Authenticate with the Authorization header.
+    ///
+    /// - Remark: HTTP `GET /v1/agents/{id}/desktop/events`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/events/get(streamDesktopEvents)`.
+    func streamDesktopEvents(_ input: Operations.StreamDesktopEvents.Input) async throws -> Operations.StreamDesktopEvents.Output
+    /// Issue a single-use viewer link for the bot desktop. The page and its WebSocket live outside /v1 and need no Authorization header: the link is the credential. 409 when the bot has no bot desktop.
+    ///
+    /// - Remark: HTTP `POST /v1/agents/{id}/desktop/viewer`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/viewer/post(createDesktopViewer)`.
+    func createDesktopViewer(_ input: Operations.CreateDesktopViewer.Input) async throws -> Operations.CreateDesktopViewer.Output
     /// - Remark: HTTP `POST /v1/agents/{id}/duplicate`.
     /// - Remark: Generated from `#/paths//v1/agents/{id}/duplicate/post(duplicateAgent)`.
     func duplicateAgent(_ input: Operations.DuplicateAgent.Input) async throws -> Operations.DuplicateAgent.Output
@@ -352,6 +376,82 @@ extension APIProtocol {
         headers: Operations.CompactChat.Input.Headers = .init()
     ) async throws -> Operations.CompactChat.Output {
         try await compactChat(Operations.CompactChat.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/agents/{id}/desktop-jobs`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop-jobs/get(listDesktopJobs)`.
+    public func listDesktopJobs(
+        path: Operations.ListDesktopJobs.Input.Path,
+        headers: Operations.ListDesktopJobs.Input.Headers = .init()
+    ) async throws -> Operations.ListDesktopJobs.Output {
+        try await listDesktopJobs(Operations.ListDesktopJobs.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/agents/{id}/desktop-jobs/{name}/history`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop-jobs/{name}/history/get(getDesktopJobHistory)`.
+    public func getDesktopJobHistory(
+        path: Operations.GetDesktopJobHistory.Input.Path,
+        query: Operations.GetDesktopJobHistory.Input.Query = .init(),
+        headers: Operations.GetDesktopJobHistory.Input.Headers = .init()
+    ) async throws -> Operations.GetDesktopJobHistory.Output {
+        try await getDesktopJobHistory(Operations.GetDesktopJobHistory.Input(
+            path: path,
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/agents/{id}/desktop/control`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/control/get(getDesktopControl)`.
+    public func getDesktopControl(
+        path: Operations.GetDesktopControl.Input.Path,
+        headers: Operations.GetDesktopControl.Input.Headers = .init()
+    ) async throws -> Operations.GetDesktopControl.Output {
+        try await getDesktopControl(Operations.GetDesktopControl.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Take control of the bot desktop (holder owner) or hand it back (holder bot). 409 when the bot has no bot desktop.
+    ///
+    /// - Remark: HTTP `PUT /v1/agents/{id}/desktop/control`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/control/put(putDesktopControl)`.
+    public func putDesktopControl(
+        path: Operations.PutDesktopControl.Input.Path,
+        headers: Operations.PutDesktopControl.Input.Headers = .init(),
+        body: Operations.PutDesktopControl.Input.Body
+    ) async throws -> Operations.PutDesktopControl.Output {
+        try await putDesktopControl(Operations.PutDesktopControl.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Server-sent events. A control event carries the DesktopControl JSON object in data, once on connect and on every change. Heartbeat events carry {} every 15 seconds. Authenticate with the Authorization header.
+    ///
+    /// - Remark: HTTP `GET /v1/agents/{id}/desktop/events`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/events/get(streamDesktopEvents)`.
+    public func streamDesktopEvents(
+        path: Operations.StreamDesktopEvents.Input.Path,
+        headers: Operations.StreamDesktopEvents.Input.Headers = .init()
+    ) async throws -> Operations.StreamDesktopEvents.Output {
+        try await streamDesktopEvents(Operations.StreamDesktopEvents.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Issue a single-use viewer link for the bot desktop. The page and its WebSocket live outside /v1 and need no Authorization header: the link is the credential. 409 when the bot has no bot desktop.
+    ///
+    /// - Remark: HTTP `POST /v1/agents/{id}/desktop/viewer`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/viewer/post(createDesktopViewer)`.
+    public func createDesktopViewer(
+        path: Operations.CreateDesktopViewer.Input.Path,
+        headers: Operations.CreateDesktopViewer.Input.Headers = .init()
+    ) async throws -> Operations.CreateDesktopViewer.Output {
+        try await createDesktopViewer(Operations.CreateDesktopViewer.Input(
             path: path,
             headers: headers
         ))

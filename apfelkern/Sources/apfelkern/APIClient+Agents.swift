@@ -12,9 +12,10 @@ extension APIClient {
     }
   }
 
+  /// A `null` value clears a nullable field, such as `desktopModel`.
   public func updateAgent(_ id: String, patch: [String: JSONValue]) async throws -> Agent {
     let body: Operations.UpdateAgent.Input.Body.JsonPayload = try requestModel(patch)
-    return try await invoke {
+    return try await invoke(nullFields: Set(patch.filter { $0.value == .null }.keys)) {
       Agent(wire: try requestModel(required(try await $0.updateAgent(
         .init(path: .init(id: id), body: .json(body))).ok.body.json)) as Components.Schemas.Agent)
     }
@@ -44,13 +45,18 @@ extension APIClient {
   }
 
   public func capabilities() async throws -> ServerCapabilities {
-    try await invoke { try ServerCapabilities(coding: await $0.getCapabilities(.init()).ok.body.json.coding) }
+    try await invoke {
+      let capabilities = try await $0.getCapabilities(.init()).ok.body.json
+      return ServerCapabilities(coding: capabilities.coding, desktop: capabilities.desktop)
+    }
   }
 
   public func codingJobs(_ agentID: String) async throws -> [CodingJob] {
     try await invoke {
       try await $0.listCodingJobs(.init(path: .init(id: agentID))).ok.body.json.jobs.map {
-        CodingJob(name: $0.name, conversationId: $0.conversationId, status: $0.status.rawValue)
+        CodingJob(
+          name: $0.name, conversationId: $0.conversationId, status: $0.status.rawValue,
+          usage: JobUsage(document: $0.usage))
       }
     }
   }

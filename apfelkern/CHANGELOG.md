@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Add desktop jobs from bot contract 1.6.0. `ServerCapabilities.desktop` says whether bots can get a bot desktop. `Agent.desktopModel` (a `DesktopModel`) is the model for a bot's desktop jobs, and `updateAgent` clears it with `["desktopModel": .null]`; `AgentDraft` gains `toolsDesktop`, `desktopProvider`, and `desktopModel`. `DesktopJob`, `APIClient.desktopJobs`, and `desktopJobHistory` mirror coding jobs, and `messageLabel` names desktop job reports.
+- Add `JobUsage`, the tokens and cost a job's own model requests spent, summed over its models, on `DesktopJob.usage` and `CodingJob.usage`.
+- Add taking control of a bot desktop: `DesktopControl`, `APIClient.desktopControl`, `setDesktopControl`, and the `desktopEvents` stream of control changes, validated as `EventDesktopControl`.
+- Add `APIClient.desktopViewer`, a single-use `DesktopViewerLink` to the bot desktop's viewer page, resolved under the API's base URL, for a web view; it needs no token.
+- Add `JSONValue.numberValue`.
+- Pin the published contract-v1.6.0 release. `scripts/contract.py` now also fetches `desktop-control.schema.json` and generates it as `EventDesktopControl`.
 - Pin the published bot contract `contract-v1.3.0`. The contract now carries `group-chat-snapshot.schema.json`, which the update script requires and generates as `EventGroupChatSnapshot`.
 - Add group chats: `GroupChat`, `GroupActivity`, `GroupMemberActivity`, and `GroupChatSnapshot`, with `APIClient` operations to list, create, update, and delete groups, read snapshots and history, send messages with replies and attachments, stop a group, fetch attachments, and stream group snapshots. `SSEParser(snapshots: .group)` validates group snapshot events.
 - Add `Route.group` for a selected group chat.

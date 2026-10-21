@@ -96,7 +96,9 @@ public struct SSEParser {
     }
     guard accepting.contains(eventType) else { return nil }
     do {
-      if eventType == "activity" {
+      if eventType == "control" {
+        _ = try JSONDecoder().decode(Components.Schemas.EventDesktopControl.self, from: bytes)
+      } else if eventType == "activity" {
         let type = try JSONDecoder().decode(JSONValue.self, from: bytes)["type"]?.stringValue
         guard type == "reply" || type == "chat-preview" else { return nil }
         _ = try JSONDecoder().decode(Components.Schemas.EventActivity.self, from: bytes)

@@ -12,7 +12,8 @@ extension Agent {
       inference: wire.inference.map {
         Inference(thinkingLevel: $0.thinkingLevel?.rawValue ?? "off", temperature: $0.temperature,
                   maxOutputTokens: $0.maxOutputTokens.flatMap(Int.init(exactly:)))
-      })
+      },
+      desktopModel: wire.desktopModel.map { DesktopModel(provider: $0.provider, model: $0.model) })
   }
 
   init(wire: Components.Schemas.AgentPreview) {

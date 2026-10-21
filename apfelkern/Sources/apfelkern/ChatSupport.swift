@@ -18,6 +18,7 @@ public func messageLabel(_ message: Message) -> String {
   if message.origin?.kind == "task" { return "Task · " + (message.origin?.name ?? "") }
   if message.origin?.kind == "bot" { return "From " + (message.origin?.name ?? "") }
   if message.origin?.kind == "coding" { return "Coding job · " + (message.origin?.name ?? "") }
+  if message.origin?.kind == "desktop" { return "Desktop job · " + (message.origin?.name ?? "") }
   return "You"
 }
 

@@ -3,14 +3,18 @@ import Foundation
 /// What the server can do beyond the basics, so clients show only controls that work.
 public struct ServerCapabilities: Codable, Hashable, Sendable {
   public var coding: Bool
+  /// Whether bots can get a bot desktop and run desktop jobs.
+  public var desktop: Bool
 
-  public init(coding: Bool = false) {
+  public init(coding: Bool = false, desktop: Bool = false) {
     self.coding = coding
+    self.desktop = desktop
   }
 
   public init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     coding = try container.decodeIfPresent(Bool.self, forKey: .coding) ?? false
+    desktop = try container.decodeIfPresent(Bool.self, forKey: .desktop) ?? false
   }
 }
 
@@ -22,14 +26,16 @@ public struct CodingJob: Codable, Identifiable, Hashable, Sendable {
   public var name: String
   public var conversationId: String
   public var status: String
+  public var usage: JobUsage?
 
   public var id: String { name }
   public var isWorking: Bool { status == "working" }
 
-  public init(name: String, conversationId: String, status: String) {
+  public init(name: String, conversationId: String, status: String, usage: JobUsage? = nil) {
     self.name = name
     self.conversationId = conversationId
     self.status = status
+    self.usage = usage
   }
 
   /// The job a successful `coding` tool result names; nil for status listings and other messages.
