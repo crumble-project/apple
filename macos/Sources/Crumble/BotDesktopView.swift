@@ -54,6 +54,7 @@ private struct BotDesktopContent: View {
                 Text(session.holder == .owner ? "You have control" : "The bot has control")
                     .foregroundStyle(.secondary)
             }
+            .sharedBackgroundVisibility(.hidden)
             ToolbarItem(placement: .primaryAction) {
                 Button("Reconnect", systemImage: "arrow.clockwise") { session.reconnect() }
                     .help("Reconnect")
