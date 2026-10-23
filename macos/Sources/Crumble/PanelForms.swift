@@ -160,18 +160,7 @@ struct SkillFormView: View {
         Form {
             SheetError()
             Section {
-                if draft.personal {
-                    if draft.skillID.isEmpty {
-                        Picker("Bot", selection: Binding(get: { draft.agentID ?? "" }, set: { draft.agentID = $0 })) {
-                            Text("Choose a bot").tag("")
-                            ForEach(model.agents) { agent in
-                                Text(agent.name).tag(agent.id)
-                            }
-                        }
-                    } else if let agent = model.agents.first(where: { $0.id == draft.agentID }) {
-                        LabeledContent("Bot", value: agent.name)
-                    }
-                }
+                scopeField
                 TextField("Name", text: $draft.name, prompt: Text("Required"))
                 TextEditor(text: $draft.instructions).frame(minHeight: 120)
             } header: {
@@ -192,6 +181,27 @@ struct SkillFormView: View {
                     model.errorText = ""
                     model.skillDraft = nil
                 }, onSave: model.saveSkill, saveDisabled: model.loading)
+        }
+    }
+
+    @ViewBuilder private var scopeField: some View {
+        if draft.skillID.isEmpty {
+            Picker(
+                "Available to",
+                selection: Binding(
+                    get: { draft.agentID },
+                    set: {
+                        draft.agentID = $0
+                        draft.personal = $0 != nil
+                    })
+            ) {
+                Text("Every bot (shared)").tag(String?.none)
+                ForEach(model.agents) { agent in
+                    Text(agent.name).tag(Optional(agent.id))
+                }
+            }
+        } else if draft.personal, let agent = model.agents.first(where: { $0.id == draft.agentID }) {
+            LabeledContent("Bot", value: agent.name)
         }
     }
 }

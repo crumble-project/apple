@@ -137,11 +137,11 @@ Notifications are local: the app receives replies over its connection to your se
 
 ## Shared and personal items
 
-**Memory**, **Skills**, and **Integrations** show **Shared** followed by a named section for every bot. All bots’ personal entries are visible together. Optional shared skills list the bots that use them.
+**Memory** shows **Shared** followed by a named section for every bot. **Skills** and **Integrations** show one list; each item says whether it is shared or which bot it belongs to.
 
 - Add a memory from a bot’s section to assign it to that bot, or use **New Shared Memory**. A bot recalls shared memories only when **Use shared memory** is on in its profile.
-- **Skills** includes bundled defaults and optional library skills together under **Shared**. Defaults are marked **Default · Every bot** and edited in the server's sibling `skills` directory; restart the server to load changes. Library skills are editable in the app and turned on per bot in its profile. Expand a skill to read its instructions. A bot's own skills are edited in its profile.
-- Add an MCP server from a bot’s section to assign it to that bot, or use **Add Shared MCP Server**. A bot's own server has its own sign-in, so two bots can use the same service with different accounts. Tools from enabled, permitted integrations run directly without per-action confirmation.
+- **Skills** lists bundled defaults, optional shared skills, and each bot's own skills. Defaults are marked **Default · Every bot** and edited in the server's sibling `skills` directory; restart the server to load changes. Expand a shared skill to read its instructions and choose which bots use it. **New Skill** asks whether the skill is shared or belongs to one bot.
+- **Add MCP Server** asks whether the server is shared or belongs to one bot. A bot's own server has its own sign-in, so two bots can use the same service with different accounts. Tools from enabled, permitted integrations run directly without per-action confirmation.
 
 ## Providers
 

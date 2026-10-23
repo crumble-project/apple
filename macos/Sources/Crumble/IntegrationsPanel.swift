@@ -9,34 +9,23 @@ struct IntegrationsPanel: View {
     var body: some View {
         Form {
             Section {
-                let shared = model.mcpServers.filter { $0.agentId == nil }
-                if shared.isEmpty {
-                    Text("No shared MCP servers yet.").foregroundStyle(.secondary)
+                if model.mcpServers.isEmpty {
+                    Text("No MCP servers yet.").foregroundStyle(.secondary)
                 }
-                ForEach(shared) { server in
+                ForEach(model.mcpServers.filter { $0.agentId == nil }) { server in
                     row(server)
                 }
-                Button("Add Shared MCP Server", systemImage: "plus") { model.openMCPForm("", agentID: nil) }
-            } header: {
-                Text("Shared")
-            } footer: {
-                Text("Every bot can use these. Turn one on for a bot in its profile.").foregroundStyle(.secondary)
-            }
-            ForEach(model.agents) { agent in
-                Section {
-                    let own = model.mcpServers.filter { $0.agentId == agent.id }
-                    if own.isEmpty {
-                        Text("No MCP servers of its own.").foregroundStyle(.secondary)
-                    }
-                    ForEach(own) { server in
+                ForEach(model.agents) { agent in
+                    ForEach(model.mcpServers.filter { $0.agentId == agent.id }) { server in
                         row(server)
                     }
-                    Button("Add MCP Server", systemImage: "plus") { model.openMCPForm("", agentID: agent.id) }
-                } header: {
-                    Text(agent.name)
-                } footer: {
-                    Text("Only \(agent.name) can use these, with their own sign-in.").foregroundStyle(.secondary)
                 }
+                Button("Add MCP Server", systemImage: "plus") { model.openMCPForm("", agentID: nil) }
+            } footer: {
+                Text("""
+                    Turn a server on for a bot in its profile. A server for one bot has its own sign-in, so two bots \
+                    can use the same service with different accounts.
+                    """).foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
@@ -47,7 +36,7 @@ struct IntegrationsPanel: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(server.name).fontWeight(.semibold)
                 Text(server.url).font(.callout).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
-                Text(signInStatus(server)).font(.caption).foregroundStyle(.secondary)
+                Text(scope(server) + " · " + signInStatus(server)).font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
             if !server.enabled {
@@ -67,6 +56,11 @@ struct IntegrationsPanel: View {
             Button("Edit") { model.openMCPForm(server.id) }.disabled(server.id.hasPrefix("pending-"))
             Button("Delete") { model.deleteMCP(server.id) }.disabled(server.id.hasPrefix("pending-"))
         }
+    }
+
+    private func scope(_ server: MCPServer) -> String {
+        guard let agentID = server.agentId else { return "Shared" }
+        return "Only " + (model.agents.first { $0.id == agentID }?.name ?? "one bot")
     }
 
     private func signInStatus(_ server: MCPServer) -> String {

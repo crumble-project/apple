@@ -6,6 +6,7 @@ extension AppModel {
 
     func createAgent() {
         var draft = AgentDraft(isNew: true, agentID: "")
+        draft.delegates = Set(agents.map(\.id))
         draft.shuffleAvatars()
         agentDraft = draft
         loadEditorData(provider: draft.provider)

@@ -31,3 +31,10 @@ jobs:
             !ios/build/Index.noindex
           key: build-${{ runner.os }}-${{ hashFiles('ios/Crumble.xcodeproj/project.pbxproj', 'ios/Crumble.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
       - run: ./scripts/build.sh
+  lint:
+    runs-on: macos-26
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - run: brew install swiftlint
+      - run: swiftlint lint

@@ -4,7 +4,9 @@ import Foundation
 private let fixtureDate = "2026-10-19T12:00:00Z"
 
 private func fixtureJSON(_ source: String, defaults: [String: JSONValue]) -> String {
-    let value = try! JSONDecoder().decode(JSONValue.self, from: Data(source.utf8))
+    guard let value = try? JSONDecoder().decode(JSONValue.self, from: Data(source.utf8)) else {
+        preconditionFailure("Expected valid fixture JSON")
+    }
     func complete(_ value: JSONValue) -> JSONValue {
         guard case .object(let fields) = value else { preconditionFailure("Expected fixture object") }
         return .object(defaults.merging(fields) { _, supplied in supplied })

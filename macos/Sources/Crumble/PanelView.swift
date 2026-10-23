@@ -16,12 +16,12 @@ struct PanelView: View {
                     case .memory:
                         Button("New Memory", systemImage: "plus") { model.openMemoryForm("", agentID: nil) }
                     case .skills:
-                        Button("New Shared Skill", systemImage: "plus") { model.openSkillForm("") }
+                        Button("New Skill", systemImage: "plus") { model.openSkillForm("") }
                     case .tasks:
                         Button("New Task", systemImage: "plus") { model.openTaskForm("") }.disabled(
                             model.agents.isEmpty)
                     case .integrations:
-                        Button("Add Shared MCP Server", systemImage: "plus") { model.openMCPForm("", agentID: nil) }
+                        Button("Add MCP Server", systemImage: "plus") { model.openMCPForm("", agentID: nil) }
                     default:
                         EmptyView()
                     }

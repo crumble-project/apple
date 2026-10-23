@@ -6,28 +6,26 @@ struct SkillsPanel: View {
 
     var body: some View {
         Form {
-            sharedSection
-            personalSections
+            Section {
+                if model.sharedSkills.isEmpty && !model.agents.contains(where: { $0.skills?.isEmpty == false }) {
+                    Text("No skills yet.").foregroundStyle(.secondary)
+                }
+                ForEach(model.sharedSkills) { skill in
+                    sharedRow(skill)
+                }
+                ForEach(model.agents) { agent in
+                    ForEach(agent.skills ?? []) { skill in
+                        personalRow(skill, agent: agent)
+                    }
+                }
+            } footer: {
+                Text("""
+                    Default skills apply to every bot; edit their files on the server and restart it to load \
+                    changes. Expand a shared skill to choose which bots use it.
+                    """).foregroundStyle(.secondary)
+            }
         }
         .formStyle(.grouped)
-    }
-
-    private var sharedSection: some View {
-        Section {
-            if model.sharedSkills.isEmpty {
-                Text("No shared skills yet.").foregroundStyle(.secondary)
-            }
-            ForEach(model.sharedSkills) { skill in
-                sharedRow(skill)
-            }
-        } header: {
-            Text("Shared")
-        } footer: {
-            Text("""
-                Defaults apply to every bot. Assign optional shared skills to bots here. \
-                Edit default files on the server and restart it to load changes.
-                """).foregroundStyle(.secondary)
-        }
     }
 
     private func sharedRow(_ skill: SharedSkill) -> some View {
@@ -65,7 +63,8 @@ struct SkillsPanel: View {
                     Text("Default · Every bot").font(.caption).foregroundStyle(.secondary)
                 } else {
                     let enabled = model.agents.filter { $0.sharedSkills?.contains(skill.id) == true }.map(\.name)
-                    Text(enabled.isEmpty ? "No bots enabled" : "Enabled for: " + enabled.joined(separator: ", "))
+                    let usage = enabled.isEmpty ? "No bots enabled" : "Enabled for: " + enabled.joined(separator: ", ")
+                    Text("Shared · " + usage)
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
@@ -77,29 +76,6 @@ struct SkillsPanel: View {
         }
     }
 
-    private var personalSections: some View {
-        ForEach(model.agents) { agent in
-            Section {
-                let skills = agent.skills ?? []
-                if skills.isEmpty {
-                    Text("No skills of its own.").foregroundStyle(.secondary)
-                }
-                ForEach(skills) { skill in
-                    personalRow(skill, agent: agent)
-                }
-                Button("Add Skill…") { model.openPersonalSkillForm(agentID: agent.id) }
-                    .disabled(model.pendingMutations.contains("agent-skills:\(agent.id)"))
-            } header: {
-                Text(agent.name)
-            } footer: {
-                Text("""
-                    Instructions only \(agent.name) follows. Manage these skills here; \
-                    shared skills are assigned above.
-                    """).foregroundStyle(.secondary)
-            }
-        }
-    }
-
     private func personalRow(_ skill: Skill, agent: Agent) -> some View {
         DisclosureGroup {
             Text(skill.instructions)
@@ -107,7 +83,10 @@ struct SkillsPanel: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         } label: {
             HStack {
-                Text(skill.name).fontWeight(.semibold)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(skill.name).fontWeight(.semibold)
+                    Text("Only \(agent.name)").font(.caption).foregroundStyle(.secondary)
+                }
                 Spacer()
                 Button("Edit") {
                     model.openPersonalSkillForm(agentID: agent.id, skillID: skill.id.uuidString)

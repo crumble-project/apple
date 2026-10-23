@@ -34,9 +34,9 @@ public struct AgentDraft: Identifiable, Sendable {
   public var temperature = ""
   public var maxOutput = ""
   public var toolsMemory = true
-  public var toolsDelegate = false
-  public var toolsSchedule = false
-  public var toolsCodemode = false
+  public var toolsDelegate = true
+  public var toolsSchedule = true
+  public var toolsCodemode = true
   public var toolsCoding = false
   public var toolsDesktop = false
   /// The desktop job model's provider and model; both empty means the bot's own model.
@@ -69,9 +69,9 @@ public struct AgentDraft: Identifiable, Sendable {
     temperature: String = "",
     maxOutput: String = "",
     toolsMemory: Bool = true,
-    toolsDelegate: Bool = false,
-    toolsSchedule: Bool = false,
-    toolsCodemode: Bool = false,
+    toolsDelegate: Bool = true,
+    toolsSchedule: Bool = true,
+    toolsCodemode: Bool = true,
     toolsCoding: Bool = false,
     toolsDesktop: Bool = false,
     desktopProvider: String = "",

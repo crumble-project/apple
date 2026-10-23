@@ -173,7 +173,10 @@ struct LogicTests {
         _ = try parser.feed("data: {}")
         #expect(try parser.feed("") == nil)
         _ = try parser.feed("event: activity")
-        _ = try parser.feed(#"data: {"type":"reply","eventId":"e1","serverId":"server","createdAt":"2026-10-19T12:00:00Z","agentId":"a1","agentName":"Atlas","entryId":null,"origin":"owner","preview":"Done"}"#)
+        _ = try parser.feed(
+            #"data: {"type":"reply","eventId":"e1","serverId":"server","createdAt":"2026-10-19T12:00:00Z","# +
+            #""agentId":"a1","agentName":"Atlas","entryId":null,"origin":"owner","preview":"Done"}"#
+        )
         #expect(try parser.feed("") != nil)
     }
 

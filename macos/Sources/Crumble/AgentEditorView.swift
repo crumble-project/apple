@@ -138,54 +138,52 @@ struct AgentEditorView: View {
     }
 
     private var capabilitiesSection: some View {
-        Section {
-            Toggle("Memory", isOn: $draft.toolsMemory)
-            if draft.toolsMemory {
-                Toggle("Use shared memory", isOn: $draft.sharedMemory).padding(.leading, 16)
+        Section("Capabilities") {
+            Toggle(isOn: $draft.toolsMemory) {
+                Text("Memory")
+                Text("Keeps notes between chats.")
             }
-            Toggle("Schedule tasks", isOn: $draft.toolsSchedule)
-            Toggle("Message other bots", isOn: $draft.toolsDelegate)
+            if draft.toolsMemory {
+                Toggle(isOn: $draft.sharedMemory) {
+                    Text("Use shared memory")
+                    Text("Also recalls and keeps notes every bot using shared memory sees.")
+                }
+                .padding(.leading, 16)
+            }
+            Toggle(isOn: $draft.toolsSchedule) {
+                Text("Schedule tasks")
+                Text("Saves one-time and recurring tasks for itself or a bot it can message.")
+            }
+            Toggle(isOn: $draft.toolsDelegate) {
+                Text("Message other bots")
+                Text("Asks the bots you allow and relays their answers.")
+            }
             if draft.toolsDelegate {
                 ForEach(model.agents.filter { $0.id != draft.agentID }) { agent in
                     Toggle(agent.name, isOn: membership(\.delegates, agent.id)).padding(.leading, 16)
                 }
             }
-            Toggle("Code mode", isOn: $draft.toolsCodemode)
-            if model.offersCoding(for: draft) {
-                Toggle("Coding", isOn: $draft.toolsCoding)
+            Toggle(isOn: $draft.toolsCodemode) {
+                Text("Code mode")
+                Text("Writes a short script that calls its tools, so many tool calls take one step.")
             }
-            if model.offersDesktop(for: draft) {
-                Toggle("Bot desktop", isOn: $draft.toolsDesktop)
-                if draft.toolsDesktop { desktopModelFields.padding(.leading, 16) }
+            workspaceToggles
+        }
+    }
+
+    @ViewBuilder private var workspaceToggles: some View {
+        if model.offersCoding(for: draft) {
+            Toggle(isOn: $draft.toolsCoding) {
+                Text("Coding")
+                Text("Starts coding jobs that read, write, and run code in its workspace.")
             }
-        } header: {
-            Text("Capabilities")
-        } footer: {
-            Text(
-                """
-                Memory lets the agent keep notes between chats; with shared memory it also recalls and keeps notes \
-                every bot using shared memory sees. Schedule tasks lets it save one-time and recurring tasks for \
-                itself, or for a bot it is allowed to message. Each task runs in that bot’s chat. When Message other \
-                bots is enabled, it can ask the permitted bots you select and relay their answers; bounded task \
-                delegation remains supported. Code mode has the agent write a short script that calls its tools, \
-                so many tool calls take one step. Enabled tools run directly using the integrations permitted in \
-                this profile.
-                """
-            )
-            .foregroundStyle(.secondary)
-            if model.offersCoding(for: draft) {
-                Text("Coding lets the agent start coding jobs that read, write, and run code in its workspace.")
-                    .foregroundStyle(.secondary)
+        }
+        if model.offersDesktop(for: draft) {
+            Toggle(isOn: $draft.toolsDesktop) {
+                Text("Bot desktop")
+                Text("Its own desktop with a browser, operated by desktop jobs. You can watch and take control.")
             }
-            if model.offersDesktop(for: draft) {
-                Text(
-                    """
-                    Bot desktop gives the agent its own desktop with a browser, operated by desktop jobs. You can \
-                    watch it and take control. Desktop jobs run on the model below, or on the agent’s own model.
-                    """
-                )
-                .foregroundStyle(.secondary)
-            }
+            if draft.toolsDesktop { desktopModelFields.padding(.leading, 16) }
         }
     }
 

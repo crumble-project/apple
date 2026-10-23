@@ -126,7 +126,7 @@ brew install swiftlint
 Run lint checks:
 
 ```sh
-./scripts/lint.sh
+swiftlint lint
 ```
 
 The `.swiftlint.yml` configuration covers the app, unit tests, and UI tests, excluding generated build files.
