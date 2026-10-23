@@ -65,7 +65,10 @@ extension AppModel {
     func loadProviders() {
         request { client in
             let providers = try await client.providers()
-            return { [self] in self.providers = providers }
+            return { [self] in
+                self.providers = providers
+                resumeProviderLogins()
+            }
         }
     }
 

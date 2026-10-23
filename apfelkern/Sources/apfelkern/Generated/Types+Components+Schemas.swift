@@ -4202,8 +4202,20 @@ extension Components {
         }
         /// - Remark: Generated from `#/components/schemas/Provider`.
         public struct Provider: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/Provider/activeLoginId`.
+            public var activeLoginId: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/Provider/authMethods`.
+            public var authMethods: [Components.Schemas.ProviderLoginMethod]
             /// - Remark: Generated from `#/components/schemas/Provider/configured`.
             public var configured: Swift.Bool
+            /// - Remark: Generated from `#/components/schemas/Provider/credentialType`.
+            @frozen public enum CredentialTypePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case apiKey = "api_key"
+                case oauth = "oauth"
+                case _empty_ = ""
+            }
+            /// - Remark: Generated from `#/components/schemas/Provider/credentialType`.
+            public var credentialType: Components.Schemas.Provider.CredentialTypePayload?
             /// - Remark: Generated from `#/components/schemas/Provider/name`.
             public var name: Swift.String
             /// - Remark: Generated from `#/components/schemas/Provider/provider`.
@@ -4211,20 +4223,32 @@ extension Components {
             /// Creates a new `Provider`.
             ///
             /// - Parameters:
+            ///   - activeLoginId:
+            ///   - authMethods:
             ///   - configured:
+            ///   - credentialType:
             ///   - name:
             ///   - provider:
             public init(
+                activeLoginId: Swift.String? = nil,
+                authMethods: [Components.Schemas.ProviderLoginMethod],
                 configured: Swift.Bool,
+                credentialType: Components.Schemas.Provider.CredentialTypePayload? = nil,
                 name: Swift.String,
                 provider: Swift.String
             ) {
+                self.activeLoginId = activeLoginId
+                self.authMethods = authMethods
                 self.configured = configured
+                self.credentialType = credentialType
                 self.name = name
                 self.provider = provider
             }
             public enum CodingKeys: String, CodingKey {
+                case activeLoginId
+                case authMethods
                 case configured
+                case credentialType
                 case name
                 case provider
             }
@@ -4250,6 +4274,444 @@ extension Components {
             public enum CodingKeys: String, CodingKey {
                 case configured
                 case provider
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/ProviderLoginEvent`.
+        @frozen public enum ProviderLoginEvent: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ProviderLoginEvent/case1`.
+            public struct Case1Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/ProviderLoginEvent/case1/LinksPayload`.
+                public struct LinksPayloadPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/ProviderLoginEvent/case1/LinksPayload/label`.
+                    public var label: Swift.String?
+                    /// - Remark: Generated from `#/components/schemas/ProviderLoginEvent/case1/LinksPayload/url`.
+                    public var url: Swift.String
+                    /// Creates a new `LinksPayloadPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - label:
+                    ///   - url:
+                    public init(
+                        label: Swift.String? = nil,
+                        url: Swift.String
+                    ) {
+                        self.label = label
+                        self.url = url
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case label
+                        case url
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/ProviderLoginEvent/case1/links`.
+                public typealias LinksPayload = [Components.Schemas.ProviderLoginEvent.Case1Payload.LinksPayloadPayload]
+                /// - Remark: Generated from `#/components/schemas/ProviderLoginEvent/case1/links`.
+                public var links: Components.Schemas.ProviderLoginEvent.Case1Payload.LinksPayload?
+                /// - Remark: Generated from `#/components/schemas/ProviderLoginEvent/case1/message`.
+                public var message: Swift.String
+                /// - Remark: Generated from `#/components/schemas/ProviderLoginEvent/case1/type`.
+                @frozen public enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case info = "info"
+                }
+                /// - Remark: Generated from `#/components/schemas/ProviderLoginEvent/case1/type`.
+                public var _type: Components.Schemas.ProviderLoginEvent.Case1Payload._TypePayload
+                /// Creates a new `Case1Payload`.
+                ///
+                /// - Parameters:
+                ///   - links:
+                ///   - message:
+                ///   - _type:
+                public init(
+                    links: Components.Schemas.ProviderLoginEvent.Case1Payload.LinksPayload? = nil,
+                    message: Swift.String,
+                    _type: Components.Schemas.ProviderLoginEvent.Case1Payload._TypePayload
+                ) {
+                    self.links = links
+                    self.message = message
+                    self._type = _type
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case links
+                    case message
+                    case _type = "type"
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/ProviderLoginEvent/case1`.
+            case case1(Components.Schemas.ProviderLoginEvent.Case1Payload)
+            /// - Remark: Generated from `#/components/schemas/ProviderLoginEvent/case2`.
+            public struct Case2Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/ProviderLoginEvent/case2/instructions`.
+                public var instructions: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/ProviderLoginEvent/case2/type`.
+                @frozen public enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case authUrl = "auth_url"
+                }
+                /// - Remark: Generated from `#/components/schemas/ProviderLoginEvent/case2/type`.
+                public var _type: Components.Schemas.ProviderLoginEvent.Case2Payload._TypePayload
+                /// - Remark: Generated from `#/components/schemas/ProviderLoginEvent/case2/url`.
+                public var url: Swift.String
+                /// Creates a new `Case2Payload`.
+                ///
+                /// - Parameters:
+                ///   - instructions:
+                ///   - _type:
+                ///   - url:
+                public init(
+                    instructions: Swift.String? = nil,
+                    _type: Components.Schemas.ProviderLoginEvent.Case2Payload._TypePayload,
+                    url: Swift.String
+                ) {
+                    self.instructions = instructions
+                    self._type = _type
+                    self.url = url
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case instructions
+                    case _type = "type"
+                    case url
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/ProviderLoginEvent/case2`.
+            case case2(Components.Schemas.ProviderLoginEvent.Case2Payload)
+            /// - Remark: Generated from `#/components/schemas/ProviderLoginEvent/case3`.
+            public struct Case3Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/ProviderLoginEvent/case3/expiresInSeconds`.
+                public var expiresInSeconds: Swift.Double?
+                /// - Remark: Generated from `#/components/schemas/ProviderLoginEvent/case3/intervalSeconds`.
+                public var intervalSeconds: Swift.Double?
+                /// - Remark: Generated from `#/components/schemas/ProviderLoginEvent/case3/type`.
+                @frozen public enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case deviceCode = "device_code"
+                }
+                /// - Remark: Generated from `#/components/schemas/ProviderLoginEvent/case3/type`.
+                public var _type: Components.Schemas.ProviderLoginEvent.Case3Payload._TypePayload
+                /// - Remark: Generated from `#/components/schemas/ProviderLoginEvent/case3/userCode`.
+                public var userCode: Swift.String
+                /// - Remark: Generated from `#/components/schemas/ProviderLoginEvent/case3/verificationUri`.
+                public var verificationUri: Swift.String
+                /// Creates a new `Case3Payload`.
+                ///
+                /// - Parameters:
+                ///   - expiresInSeconds:
+                ///   - intervalSeconds:
+                ///   - _type:
+                ///   - userCode:
+                ///   - verificationUri:
+                public init(
+                    expiresInSeconds: Swift.Double? = nil,
+                    intervalSeconds: Swift.Double? = nil,
+                    _type: Components.Schemas.ProviderLoginEvent.Case3Payload._TypePayload,
+                    userCode: Swift.String,
+                    verificationUri: Swift.String
+                ) {
+                    self.expiresInSeconds = expiresInSeconds
+                    self.intervalSeconds = intervalSeconds
+                    self._type = _type
+                    self.userCode = userCode
+                    self.verificationUri = verificationUri
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case expiresInSeconds
+                    case intervalSeconds
+                    case _type = "type"
+                    case userCode
+                    case verificationUri
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/ProviderLoginEvent/case3`.
+            case case3(Components.Schemas.ProviderLoginEvent.Case3Payload)
+            /// - Remark: Generated from `#/components/schemas/ProviderLoginEvent/case4`.
+            public struct Case4Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/ProviderLoginEvent/case4/message`.
+                public var message: Swift.String
+                /// - Remark: Generated from `#/components/schemas/ProviderLoginEvent/case4/type`.
+                @frozen public enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case progress = "progress"
+                }
+                /// - Remark: Generated from `#/components/schemas/ProviderLoginEvent/case4/type`.
+                public var _type: Components.Schemas.ProviderLoginEvent.Case4Payload._TypePayload
+                /// Creates a new `Case4Payload`.
+                ///
+                /// - Parameters:
+                ///   - message:
+                ///   - _type:
+                public init(
+                    message: Swift.String,
+                    _type: Components.Schemas.ProviderLoginEvent.Case4Payload._TypePayload
+                ) {
+                    self.message = message
+                    self._type = _type
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case message
+                    case _type = "type"
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/ProviderLoginEvent/case4`.
+            case case4(Components.Schemas.ProviderLoginEvent.Case4Payload)
+            public init(from decoder: any Swift.Decoder) throws {
+                var errors: [any Swift.Error] = []
+                do {
+                    self = .case1(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .case2(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .case3(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .case4(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                    type: Self.self,
+                    codingPath: decoder.codingPath,
+                    errors: errors
+                )
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                switch self {
+                case let .case1(value):
+                    try value.encode(to: encoder)
+                case let .case2(value):
+                    try value.encode(to: encoder)
+                case let .case3(value):
+                    try value.encode(to: encoder)
+                case let .case4(value):
+                    try value.encode(to: encoder)
+                }
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/ProviderLoginMethod`.
+        public struct ProviderLoginMethod: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ProviderLoginMethod/label`.
+            public var label: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ProviderLoginMethod/subscription`.
+            public var subscription: Swift.Bool
+            /// - Remark: Generated from `#/components/schemas/ProviderLoginMethod/type`.
+            @frozen public enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case apiKey = "api_key"
+                case oauth = "oauth"
+            }
+            /// - Remark: Generated from `#/components/schemas/ProviderLoginMethod/type`.
+            public var _type: Components.Schemas.ProviderLoginMethod._TypePayload
+            /// Creates a new `ProviderLoginMethod`.
+            ///
+            /// - Parameters:
+            ///   - label:
+            ///   - subscription:
+            ///   - _type:
+            public init(
+                label: Swift.String,
+                subscription: Swift.Bool,
+                _type: Components.Schemas.ProviderLoginMethod._TypePayload
+            ) {
+                self.label = label
+                self.subscription = subscription
+                self._type = _type
+            }
+            public enum CodingKeys: String, CodingKey {
+                case label
+                case subscription
+                case _type = "type"
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/ProviderLoginSession`.
+        public struct ProviderLoginSession: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ProviderLoginSession/createdAt`.
+            public var createdAt: Swift.Double
+            /// - Remark: Generated from `#/components/schemas/ProviderLoginSession/events`.
+            public var events: [Components.Schemas.ProviderLoginEvent]
+            /// - Remark: Generated from `#/components/schemas/ProviderLoginSession/expiresAt`.
+            public var expiresAt: Swift.Double
+            /// - Remark: Generated from `#/components/schemas/ProviderLoginSession/failure`.
+            public struct FailurePayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/ProviderLoginSession/failure/code`.
+                @frozen public enum CodePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case providerFailure = "provider_failure"
+                    case callbackUnavailable = "callback_unavailable"
+                    case storageFailure = "storage_failure"
+                }
+                /// - Remark: Generated from `#/components/schemas/ProviderLoginSession/failure/code`.
+                public var code: Components.Schemas.ProviderLoginSession.FailurePayload.CodePayload
+                /// - Remark: Generated from `#/components/schemas/ProviderLoginSession/failure/message`.
+                public var message: Swift.String
+                /// Creates a new `FailurePayload`.
+                ///
+                /// - Parameters:
+                ///   - code:
+                ///   - message:
+                public init(
+                    code: Components.Schemas.ProviderLoginSession.FailurePayload.CodePayload,
+                    message: Swift.String
+                ) {
+                    self.code = code
+                    self.message = message
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case code
+                    case message
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/ProviderLoginSession/failure`.
+            public var failure: Components.Schemas.ProviderLoginSession.FailurePayload?
+            /// - Remark: Generated from `#/components/schemas/ProviderLoginSession/id`.
+            public var id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ProviderLoginSession/method`.
+            @frozen public enum MethodPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case apiKey = "api_key"
+                case oauth = "oauth"
+            }
+            /// - Remark: Generated from `#/components/schemas/ProviderLoginSession/method`.
+            public var method: Components.Schemas.ProviderLoginSession.MethodPayload
+            /// - Remark: Generated from `#/components/schemas/ProviderLoginSession/prompt`.
+            public struct PromptPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/ProviderLoginSession/prompt/id`.
+                public var id: Swift.String
+                /// - Remark: Generated from `#/components/schemas/ProviderLoginSession/prompt/message`.
+                public var message: Swift.String
+                /// - Remark: Generated from `#/components/schemas/ProviderLoginSession/prompt/OptionsPayload`.
+                public struct OptionsPayloadPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/ProviderLoginSession/prompt/OptionsPayload/description`.
+                    public var description: Swift.String?
+                    /// - Remark: Generated from `#/components/schemas/ProviderLoginSession/prompt/OptionsPayload/id`.
+                    public var id: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/ProviderLoginSession/prompt/OptionsPayload/label`.
+                    public var label: Swift.String
+                    /// Creates a new `OptionsPayloadPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - description:
+                    ///   - id:
+                    ///   - label:
+                    public init(
+                        description: Swift.String? = nil,
+                        id: Swift.String,
+                        label: Swift.String
+                    ) {
+                        self.description = description
+                        self.id = id
+                        self.label = label
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case description
+                        case id
+                        case label
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/ProviderLoginSession/prompt/options`.
+                public typealias OptionsPayload = [Components.Schemas.ProviderLoginSession.PromptPayload.OptionsPayloadPayload]
+                /// - Remark: Generated from `#/components/schemas/ProviderLoginSession/prompt/options`.
+                public var options: Components.Schemas.ProviderLoginSession.PromptPayload.OptionsPayload?
+                /// - Remark: Generated from `#/components/schemas/ProviderLoginSession/prompt/placeholder`.
+                public var placeholder: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/ProviderLoginSession/prompt/type`.
+                @frozen public enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case text = "text"
+                    case secret = "secret"
+                    case select = "select"
+                    case manualCode = "manual_code"
+                }
+                /// - Remark: Generated from `#/components/schemas/ProviderLoginSession/prompt/type`.
+                public var _type: Components.Schemas.ProviderLoginSession.PromptPayload._TypePayload
+                /// Creates a new `PromptPayload`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                ///   - message:
+                ///   - options:
+                ///   - placeholder:
+                ///   - _type:
+                public init(
+                    id: Swift.String,
+                    message: Swift.String,
+                    options: Components.Schemas.ProviderLoginSession.PromptPayload.OptionsPayload? = nil,
+                    placeholder: Swift.String? = nil,
+                    _type: Components.Schemas.ProviderLoginSession.PromptPayload._TypePayload
+                ) {
+                    self.id = id
+                    self.message = message
+                    self.options = options
+                    self.placeholder = placeholder
+                    self._type = _type
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case id
+                    case message
+                    case options
+                    case placeholder
+                    case _type = "type"
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/ProviderLoginSession/prompt`.
+            public var prompt: Components.Schemas.ProviderLoginSession.PromptPayload?
+            /// - Remark: Generated from `#/components/schemas/ProviderLoginSession/provider`.
+            public var provider: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ProviderLoginSession/status`.
+            @frozen public enum StatusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case pending = "pending"
+                case succeeded = "succeeded"
+                case failed = "failed"
+                case cancelled = "cancelled"
+                case expired = "expired"
+            }
+            /// - Remark: Generated from `#/components/schemas/ProviderLoginSession/status`.
+            public var status: Components.Schemas.ProviderLoginSession.StatusPayload
+            /// Creates a new `ProviderLoginSession`.
+            ///
+            /// - Parameters:
+            ///   - createdAt:
+            ///   - events:
+            ///   - expiresAt:
+            ///   - failure:
+            ///   - id:
+            ///   - method:
+            ///   - prompt:
+            ///   - provider:
+            ///   - status:
+            public init(
+                createdAt: Swift.Double,
+                events: [Components.Schemas.ProviderLoginEvent],
+                expiresAt: Swift.Double,
+                failure: Components.Schemas.ProviderLoginSession.FailurePayload? = nil,
+                id: Swift.String,
+                method: Components.Schemas.ProviderLoginSession.MethodPayload,
+                prompt: Components.Schemas.ProviderLoginSession.PromptPayload? = nil,
+                provider: Swift.String,
+                status: Components.Schemas.ProviderLoginSession.StatusPayload
+            ) {
+                self.createdAt = createdAt
+                self.events = events
+                self.expiresAt = expiresAt
+                self.failure = failure
+                self.id = id
+                self.method = method
+                self.prompt = prompt
+                self.provider = provider
+                self.status = status
+            }
+            public enum CodingKeys: String, CodingKey {
+                case createdAt
+                case events
+                case expiresAt
+                case failure
+                case id
+                case method
+                case prompt
+                case provider
+                case status
             }
         }
         /// - Remark: Generated from `#/components/schemas/PushDeviceRegistration`.

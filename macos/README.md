@@ -143,6 +143,12 @@ Notifications are local: the app receives replies over its connection to your se
 - **Skills** includes bundled defaults and optional library skills together under **Shared**. Defaults are marked **Default · Every bot** and edited in the server's sibling `skills` directory; restart the server to load changes. Library skills are editable in the app and turned on per bot in its profile. Expand a skill to read its instructions. A bot's own skills are edited in its profile.
 - Add an MCP server from a bot’s section to assign it to that bot, or use **Add Shared MCP Server**. A bot's own server has its own sign-in, so two bots can use the same service with different accounts. Tools from enabled, permitted integrations run directly without per-action confirmation.
 
+## Providers
+
+Under **Providers** in Settings, save an API key or sign in with a provider account where the server offers it. The server runs the sign-in and keeps the credential, shared by every bot using that provider. Choose the sign-in, then follow its steps: open the sign-in page in your browser, or enter the device code shown. When the browser ends on a page that doesn't load, such as `http://127.0.0.1:1455/…`, copy its full address and paste it into Settings. A sign-in keeps running on the server while the app reconnects, and ends after 10 minutes without an answer.
+
+Sign-in sends authorization codes and the server token to the server; across an untrusted network, use HTTPS or an encrypted private network.
+
 ## Integrations
 
 Add MCP servers under **Integrations**. For a server that uses a token, enter it in the server's form. For a server that uses OAuth, leave the token empty, save, and choose **Sign In…** in the list; the app shows the provider's sign-in page, and the Crumble server keeps the tokens.

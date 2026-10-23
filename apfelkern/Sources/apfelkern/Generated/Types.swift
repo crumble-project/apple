@@ -178,6 +178,15 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v1/models`.
     /// - Remark: Generated from `#/paths//v1/models/get(listModels)`.
     func listModels(_ input: Operations.ListModels.Input) async throws -> Operations.ListModels.Output
+    /// - Remark: HTTP `GET /v1/provider-logins/{id}`.
+    /// - Remark: Generated from `#/paths//v1/provider-logins/{id}/get(getProviderLogin)`.
+    func getProviderLogin(_ input: Operations.GetProviderLogin.Input) async throws -> Operations.GetProviderLogin.Output
+    /// - Remark: HTTP `DELETE /v1/provider-logins/{id}`.
+    /// - Remark: Generated from `#/paths//v1/provider-logins/{id}/delete(cancelProviderLogin)`.
+    func cancelProviderLogin(_ input: Operations.CancelProviderLogin.Input) async throws -> Operations.CancelProviderLogin.Output
+    /// - Remark: HTTP `POST /v1/provider-logins/{id}/responses`.
+    /// - Remark: Generated from `#/paths//v1/provider-logins/{id}/responses/post(answerProviderLogin)`.
+    func answerProviderLogin(_ input: Operations.AnswerProviderLogin.Input) async throws -> Operations.AnswerProviderLogin.Output
     /// - Remark: HTTP `GET /v1/providers`.
     /// - Remark: Generated from `#/paths//v1/providers/get(listProviders)`.
     func listProviders(_ input: Operations.ListProviders.Input) async throws -> Operations.ListProviders.Output
@@ -187,6 +196,9 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `DELETE /v1/providers/{provider}`.
     /// - Remark: Generated from `#/paths//v1/providers/{provider}/delete(deleteProviderKey)`.
     func deleteProviderKey(_ input: Operations.DeleteProviderKey.Input) async throws -> Operations.DeleteProviderKey.Output
+    /// - Remark: HTTP `POST /v1/providers/{provider}/login`.
+    /// - Remark: Generated from `#/paths//v1/providers/{provider}/login/post(startProviderLogin)`.
+    func startProviderLogin(_ input: Operations.StartProviderLogin.Input) async throws -> Operations.StartProviderLogin.Output
     /// - Remark: HTTP `GET /v1/push`.
     /// - Remark: Generated from `#/paths//v1/push/get(getPushStatus)`.
     func getPushStatus(_ input: Operations.GetPushStatus.Input) async throws -> Operations.GetPushStatus.Output
@@ -823,6 +835,41 @@ extension APIProtocol {
             headers: headers
         ))
     }
+    /// - Remark: HTTP `GET /v1/provider-logins/{id}`.
+    /// - Remark: Generated from `#/paths//v1/provider-logins/{id}/get(getProviderLogin)`.
+    public func getProviderLogin(
+        path: Operations.GetProviderLogin.Input.Path,
+        headers: Operations.GetProviderLogin.Input.Headers = .init()
+    ) async throws -> Operations.GetProviderLogin.Output {
+        try await getProviderLogin(Operations.GetProviderLogin.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `DELETE /v1/provider-logins/{id}`.
+    /// - Remark: Generated from `#/paths//v1/provider-logins/{id}/delete(cancelProviderLogin)`.
+    public func cancelProviderLogin(
+        path: Operations.CancelProviderLogin.Input.Path,
+        headers: Operations.CancelProviderLogin.Input.Headers = .init()
+    ) async throws -> Operations.CancelProviderLogin.Output {
+        try await cancelProviderLogin(Operations.CancelProviderLogin.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `POST /v1/provider-logins/{id}/responses`.
+    /// - Remark: Generated from `#/paths//v1/provider-logins/{id}/responses/post(answerProviderLogin)`.
+    public func answerProviderLogin(
+        path: Operations.AnswerProviderLogin.Input.Path,
+        headers: Operations.AnswerProviderLogin.Input.Headers = .init(),
+        body: Operations.AnswerProviderLogin.Input.Body
+    ) async throws -> Operations.AnswerProviderLogin.Output {
+        try await answerProviderLogin(Operations.AnswerProviderLogin.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
     /// - Remark: HTTP `GET /v1/providers`.
     /// - Remark: Generated from `#/paths//v1/providers/get(listProviders)`.
     public func listProviders(headers: Operations.ListProviders.Input.Headers = .init()) async throws -> Operations.ListProviders.Output {
@@ -850,6 +897,19 @@ extension APIProtocol {
         try await deleteProviderKey(Operations.DeleteProviderKey.Input(
             path: path,
             headers: headers
+        ))
+    }
+    /// - Remark: HTTP `POST /v1/providers/{provider}/login`.
+    /// - Remark: Generated from `#/paths//v1/providers/{provider}/login/post(startProviderLogin)`.
+    public func startProviderLogin(
+        path: Operations.StartProviderLogin.Input.Path,
+        headers: Operations.StartProviderLogin.Input.Headers = .init(),
+        body: Operations.StartProviderLogin.Input.Body
+    ) async throws -> Operations.StartProviderLogin.Output {
+        try await startProviderLogin(Operations.StartProviderLogin.Input(
+            path: path,
+            headers: headers,
+            body: body
         ))
     }
     /// - Remark: HTTP `GET /v1/push`.

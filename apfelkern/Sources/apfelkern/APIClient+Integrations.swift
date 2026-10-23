@@ -4,7 +4,14 @@ extension APIClient {
   public func providers() async throws -> [ProviderStatus] {
     try await invoke {
       try await $0.listProviders(.init()).ok.body.json.map {
-        ProviderStatus(provider: $0.provider, name: $0.name, configured: $0.configured)
+        ProviderStatus(
+          provider: $0.provider, name: $0.name, configured: $0.configured,
+          authMethods: $0.authMethods.map {
+            ProviderLoginMethod(
+              type: $0._type == .oauth ? .oauth : .apiKey, label: $0.label, subscription: $0.subscription)
+          },
+          credentialType: $0.credentialType.flatMap { ProviderAuthType(rawValue: $0.rawValue) },
+          activeLoginId: $0.activeLoginId)
       }
     }
   }
