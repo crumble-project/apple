@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Add provider sign-in from bot contract 1.7.0. `ProviderStatus` gains `authMethods`, `credentialType`, and `activeLoginId`. `ProviderLogin` carries a server sign-in's status, its link, device-code, info, and progress events, and the prompt it waits on; `APIClient` starts, reads, answers, and cancels it. The pin is a local export of contract 1.7.0 until bot publishes `contract-v1.7.0`. `ProviderStatus` now lives in `ProviderLogin.swift`.
+- Add provider sign-in from bot contract 1.7.0. `ProviderStatus` gains `authMethods`, `credentialType`, and `activeLoginId`. `ProviderLogin` carries a server sign-in's status, its link, device-code, info, and progress events, and the prompt it waits on; `APIClient` starts, reads, answers, and cancels it. Pin bot contract `contract-v1.7.0`. `ProviderStatus` now lives in `ProviderLogin.swift`.
 - Move into the `crumble-project/apple` repository, where the macOS and iOS apps depend on this package by path instead of a pinned revision.
 - Add `ActivityEvent.jobName`: a reply to a coding or desktop job's report (origin `coding` or `desktop`) names its job, so notifications can say which job and open the bot desktop.
 - Add desktop jobs from bot contract 1.6.0. `ServerCapabilities.desktop` says whether bots can get a bot desktop. `Agent.desktopModel` (a `DesktopModel`) is the model for a bot's desktop jobs, and `updateAgent` clears it with `["desktopModel": .null]`; `AgentDraft` gains `toolsDesktop`, `desktopProvider`, and `desktopModel`. `DesktopJob`, `APIClient.desktopJobs`, and `desktopJobHistory` mirror coding jobs, and `messageLabel` names desktop job reports.
