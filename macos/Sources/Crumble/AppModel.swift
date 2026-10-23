@@ -92,6 +92,13 @@ final class AppModel {
 
     var provider = "melious"
     var providerKey = ""
+    /// Provider sign-ins running on the server, by provider.
+    var providerLogins: [String: ProviderLogin] = [:]
+    /// Providers waiting for the server to start, answer, or cancel their sign-in.
+    var providerLoginRequests: Set<String> = []
+    /// Why a provider's last sign-in ended without signing in.
+    var providerLoginOutcomes: [String: String] = [:]
+    @ObservationIgnored var providerLoginPolls: [String: Task<Void, Never>] = [:]
 
     init(environment: [String: String] = ProcessInfo.processInfo.environment, loadKeychain: Bool = true) {
         if loadKeychain {
@@ -249,6 +256,7 @@ extension AppModel {
         mcpServers = []
         providers = []
         models = []
+        resetProviderLogins()
         capabilities = nil
         jobs = [:]
         jobActivity = 0
