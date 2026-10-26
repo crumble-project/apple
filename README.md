@@ -26,4 +26,4 @@ Workflows in `.github/workflows` run only when their directory or `apfelkern` ch
 - `ios.yml`: builds the unsigned iOS app and test targets and runs `swiftlint` (simulator tests run locally).
 - `apfelkern-update-contract.yml`: checks weekly for a new `bot` contract release and opens a verified pull request.
 
-Canonical glossary and feature specifications live in [`crumble-project/spec`](https://github.com/crumble-project/spec).
+The canonical glossary is [`bot/GLOSSARY.md`](https://github.com/crumble-project/bot/blob/main/GLOSSARY.md).
