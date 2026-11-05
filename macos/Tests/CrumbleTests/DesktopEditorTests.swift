@@ -15,7 +15,7 @@ extension APIClientTests {
 
     @MainActor @Test func theBotDesktopToggleFollowsCapabilitiesButKeepsAnExistingDesktop() async {
         let model = AppModel(client: StubProtocol.client { request in
-            request.url?.path == "/v1/capabilities" ? (200, #"{"coding":false,"desktop":true}"#) : (404, "")
+            request.url?.path == "/v1/capabilities" ? (200, #"{"coding":false,"desktop":true,"jobKinds":["desktop"]}"#) : (404, "")
         })
         let plain = AgentDraft(isNew: false, agentID: "a1")
         let desk = AgentDraft(isNew: false, agentID: "a1", toolsDesktop: true)

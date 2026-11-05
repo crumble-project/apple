@@ -15,9 +15,18 @@ private func fixtureJSON(_ source: String, defaults: [String: JSONValue]) -> Str
     return complete(value).prettyPrinted
 }
 
+private let avatarFixture = JSONValue.object([
+    "definition": .object([
+        "version": .number(1), "id": .string("bot"), "name": .string("Bot"),
+        "body": .object(["path": .string("M0 0")]),
+        "eyes": .object(["x": .number(0), "y": .number(0), "spacing": .number(1), "scale": .number(1)])
+    ]),
+    "color": .string("#000000"), "eyeColor": .string("#ffffff")
+])
+
 func agentFixture(_ source: String) -> String {
     fixtureJSON(source, defaults: [
-        "id": .string("a1"), "name": .string("Atlas"), "avatar": .string("bot:atlas"),
+        "id": .string("a1"), "name": .string("Atlas"), "avatar": avatarFixture,
         "description": .string(""), "instructions": .string(""), "provider": .string("example"),
         "model": .string("example"), "enabled": .bool(true), "tools": .array([]),
         "skills": .array([]), "mcpServers": .array([]), "delegates": .array([]),
@@ -55,7 +64,8 @@ func executionFixture() -> String {
 
 func scheduleFixture(_ source: String) -> String {
     fixtureJSON(source, defaults: [
-        "cron": .null, "runAt": .null, "nextRunAt": .null, "createdByAgentId": .null,
+        "kind": .string("prompt"), "command": .null, "timeoutSeconds": .number(60), "notify": .bool(true),
+        "eventSourceId": .null, "cron": .null, "runAt": .null, "nextRunAt": .null, "createdByAgentId": .null,
         "createdAt": .string(fixtureDate)
     ])
 }

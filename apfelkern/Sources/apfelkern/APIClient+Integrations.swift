@@ -28,7 +28,7 @@ extension APIClient {
   public func setProviderKey(_ provider: String, apiKey: String) async throws {
     try await invoke {
       _ = try await $0.putProviderKey(.init(
-        path: .init(provider: provider), body: .json(.init(apiKey: apiKey)))).ok
+        path: .init(provider: provider), body: .json(.init(value: apiKey)))).ok
     }
   }
 

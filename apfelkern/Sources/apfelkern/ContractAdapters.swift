@@ -5,7 +5,7 @@ extension Agent {
   init(wire: Components.Schemas.Agent) {
     self.init(
       id: wire.id, name: wire.name, description: wire.description, instructions: wire.instructions,
-      avatar: wire.avatar, enabled: wire.enabled, provider: wire.provider, model: wire.model,
+      avatar: nil, enabled: wire.enabled, provider: wire.provider, model: wire.model,
       tools: wire.tools, delegates: wire.delegates,
       skills: wire.skills.map { Skill(name: $0.name, instructions: $0.instructions) },
       sharedSkills: wire.sharedSkills, sharedMemory: wire.sharedMemory, mcpServers: wire.mcpServers,

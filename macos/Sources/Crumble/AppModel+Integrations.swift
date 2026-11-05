@@ -29,7 +29,7 @@ extension AppModel {
         var payload: [String: JSONValue] = [
             "name": .string(name), "url": .string(rawURL), "enabled": .bool(form.enabled)
         ]
-        if !form.token.isEmpty { payload["token"] = .string(form.token) }
+        if !form.token.isEmpty { payload["token"] = .object(["value": .string(form.token)]) }
         let isNew = form.serverID.isEmpty
         let provisionalID = isNew ? "pending-mcp-" + newRequestID() : form.serverID
         let old = mcpServers.first { $0.id == form.serverID }

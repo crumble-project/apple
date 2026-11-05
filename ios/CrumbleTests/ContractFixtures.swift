@@ -20,10 +20,17 @@ enum ContractFixtures {
     }
   }
 
+  static let avatar = Components.Schemas.BotAvatarDefinition(
+    color: "#000000",
+    definition: .init(
+      body: .init(path: "M0 0"), eyes: .init(scale: 1, spacing: 1, x: 0, y: 0),
+      id: "bot", name: "Bot", version: 1),
+    eyeColor: "#ffffff")
+
   static func agent(_ id: String, name: String = "Atlas", lastMessage: String? = nil)
     -> Components.Schemas.AgentPreview {
     .init(value1: .init(
-      avatar: "", createdAt: timestamp, delegates: [], description: "", enabled: true,
+      avatar: avatar, createdAt: timestamp, delegates: [], description: "", enabled: true,
       id: id, instructions: "", mcpServers: [], model: "test-model", name: name,
       provider: "test-provider", skills: [], tools: [], updatedAt: timestamp),
       value2: .init(lastMessage: lastMessage))

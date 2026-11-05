@@ -9,7 +9,7 @@ import Testing
     #expect(request.url?.path == "/prefix/v1/capabilities")
     #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer test-token")
     #expect(request.timeoutInterval == 20)
-    return StubResponse(body: Data(#"{"coding":true,"desktop":false,"future":1}"#.utf8))
+    return StubResponse(body: Data(#"{"coding":true,"desktop":false,"jobKinds":["coding"],"future":1}"#.utf8))
   }) { client in
     let capabilities = try await client.capabilities()
     #expect(capabilities.coding)
@@ -100,7 +100,8 @@ import Testing
 
 @Test func generatedSchedulePatchPreservesExplicitNullAndDate() async throws {
   let schedule = #"""
-    {"id":"task","agentId":"bot","name":"Task","prompt":"hello","cron":null,"timezone":"UTC",
+    {"id":"task","agentId":"bot","name":"Task","prompt":"hello","kind":"prompt","command":null,
+     "timeoutSeconds":60,"notify":true,"eventSourceId":null,"cron":null,"timezone":"UTC",
      "runAt":"2026-07-01T09:00:00.123Z","enabled":true,"nextRunAt":null,"createdAt":"now","createdByAgentId":null}
     """#
   try await withClient(handler: { request in

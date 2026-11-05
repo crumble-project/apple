@@ -160,7 +160,9 @@ struct APIClientTests {
         (
           200,
           ContractFixtures.json(Components.Schemas.McpServerStatus(
-            value1: .init(enabled: true, id: "s1", name: "Linear", url: "https://mcp.linear.app/mcp"),
+            value1: .init(
+              enabled: true, id: "s1", name: "Linear", oauthClientSecret: .init(configured: false),
+              token: .init(configured: false), url: "https://mcp.linear.app/mcp"),
             value2: .init(auth: .oauth, authenticated: true)))
         )
       default: (404, "")

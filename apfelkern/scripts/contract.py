@@ -36,6 +36,10 @@ def verify(directory):
     return checksums
 
 
+def is_nullable_union(node):
+    return isinstance(node, dict) and {"type": "null"} in node.get("anyOf", []) and len(node["anyOf"]) > 2
+
+
 def project(node, schemas=None):
     if isinstance(node, list):
         return [project(item, schemas) for item in node]
@@ -44,9 +48,12 @@ def project(node, schemas=None):
     if schemas is not None and "anyOf" in node:
         branches = node["anyOf"]
         if any(branch == {"type": "null"} for branch in branches):
-            if len(branches) != 2 or set(node) != {"anyOf"}:
+            if set(node) != {"anyOf"}:
                 raise ValueError("Unsupported nullable union shape")
-            reference = next(branch for branch in branches if branch != {"type": "null"})
+            references = [branch for branch in branches if branch != {"type": "null"}]
+            if len(references) > 1:
+                return {"anyOf": project(references, schemas)}
+            reference = references[0]
             if set(reference) != {"$ref"} or not reference["$ref"].startswith("#/components/schemas/"):
                 raise ValueError("Expected a nullable named object reference")
             target = schemas[reference["$ref"].removeprefix("#/components/schemas/")]
@@ -54,6 +61,9 @@ def project(node, schemas=None):
                 raise ValueError("Nullable reference must resolve to a plain object")
             return project(dict(target, type=["object", "null"]), schemas)
     result = {key: project(value, schemas) for key, value in node.items() if key != "$schema"}
+    if schemas is not None and "required" in result and isinstance(node.get("properties"), dict):
+        # The generator has no nullable multi-branch union, so null decodes as an absent property.
+        result["required"] = [key for key in result["required"] if not is_nullable_union(node["properties"].get(key))]
     if "const" in result:
         result["enum"] = [result.pop("const")]
     return result

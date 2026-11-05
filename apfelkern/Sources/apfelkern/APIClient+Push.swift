@@ -35,7 +35,7 @@ extension APIClient {
   public func activityFeed() async throws -> ActivityFeedResponse {
     try await invoke {
       let wire = try await $0.getActivityFeed(.init()).ok.body.json
-      return ActivityFeedResponse(activities: try wire.activities.map {
+      return ActivityFeedResponse(activities: try wire.activities.compactMap(\.value1).map {
         ActivityEntry(id: $0.id, agentId: $0.agentId, agentName: $0.agentName, entryId: $0.entryId,
                       timestamp: $0.timestamp.flatMap(Int64.init(exactly:)), kind: $0.kind.rawValue,
                       details: try $0.details.additionalProperties.mapValues { try JSONValue(wire: $0) })

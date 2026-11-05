@@ -45,33 +45,134 @@ extension Components {
         }
         /// - Remark: Generated from `#/components/schemas/ActivityFeed`.
         public struct ActivityFeed: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ActivityFeed/ActivitiesPayload`.
+            public struct ActivitiesPayloadPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/ActivityFeed/ActivitiesPayload/value1`.
+                public var value1: Components.Schemas.OperationalActivity?
+                /// - Remark: Generated from `#/components/schemas/ActivityFeed/ActivitiesPayload/value2`.
+                public var value2: Components.Schemas.ChangeActivity?
+                /// Creates a new `ActivitiesPayloadPayload`.
+                ///
+                /// - Parameters:
+                ///   - value1:
+                ///   - value2:
+                public init(
+                    value1: Components.Schemas.OperationalActivity? = nil,
+                    value2: Components.Schemas.ChangeActivity? = nil
+                ) {
+                    self.value1 = value1
+                    self.value2 = value2
+                }
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self.value1 = try .init(from: decoder)
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self.value2 = try .init(from: decoder)
+                    } catch {
+                        errors.append(error)
+                    }
+                    try Swift.DecodingError.verifyAtLeastOneSchemaIsNotNil(
+                        [
+                            self.value1,
+                            self.value2
+                        ],
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    try self.value1?.encode(to: encoder)
+                    try self.value2?.encode(to: encoder)
+                }
+            }
             /// - Remark: Generated from `#/components/schemas/ActivityFeed/activities`.
-            public var activities: [Components.Schemas.OperationalActivity]
+            public typealias ActivitiesPayload = [Components.Schemas.ActivityFeed.ActivitiesPayloadPayload]
+            /// - Remark: Generated from `#/components/schemas/ActivityFeed/activities`.
+            public var activities: Components.Schemas.ActivityFeed.ActivitiesPayload
             /// - Remark: Generated from `#/components/schemas/ActivityFeed/hasMore`.
             public var hasMore: Swift.Bool
+            /// - Remark: Generated from `#/components/schemas/ActivityFeed/nextCursor`.
+            public var nextCursor: Swift.String?
             /// Creates a new `ActivityFeed`.
             ///
             /// - Parameters:
             ///   - activities:
             ///   - hasMore:
+            ///   - nextCursor:
             public init(
-                activities: [Components.Schemas.OperationalActivity],
-                hasMore: Swift.Bool
+                activities: Components.Schemas.ActivityFeed.ActivitiesPayload,
+                hasMore: Swift.Bool,
+                nextCursor: Swift.String? = nil
             ) {
                 self.activities = activities
                 self.hasMore = hasMore
+                self.nextCursor = nextCursor
             }
             public enum CodingKeys: String, CodingKey {
                 case activities
                 case hasMore
+                case nextCursor
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/AdminUser`.
+        public struct AdminUser: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/AdminUser/createdAt`.
+            public var createdAt: Swift.String
+            /// - Remark: Generated from `#/components/schemas/AdminUser/email`.
+            public var email: Swift.String
+            /// - Remark: Generated from `#/components/schemas/AdminUser/id`.
+            public var id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/AdminUser/name`.
+            public var name: Swift.String
+            /// - Remark: Generated from `#/components/schemas/AdminUser/role`.
+            @frozen public enum RolePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case admin = "admin"
+                case user = "user"
+            }
+            /// - Remark: Generated from `#/components/schemas/AdminUser/role`.
+            public var role: Components.Schemas.AdminUser.RolePayload
+            /// Creates a new `AdminUser`.
+            ///
+            /// - Parameters:
+            ///   - createdAt:
+            ///   - email:
+            ///   - id:
+            ///   - name:
+            ///   - role:
+            public init(
+                createdAt: Swift.String,
+                email: Swift.String,
+                id: Swift.String,
+                name: Swift.String,
+                role: Components.Schemas.AdminUser.RolePayload
+            ) {
+                self.createdAt = createdAt
+                self.email = email
+                self.id = id
+                self.name = name
+                self.role = role
+            }
+            public enum CodingKeys: String, CodingKey {
+                case createdAt
+                case email
+                case id
+                case name
+                case role
             }
         }
         /// - Remark: Generated from `#/components/schemas/Agent`.
         public struct Agent: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/Agent/avatar`.
-            public var avatar: Swift.String
+            public var avatar: Components.Schemas.BotAvatarDefinition
             /// - Remark: Generated from `#/components/schemas/Agent/createdAt`.
             public var createdAt: Swift.String
+            /// Every other bot; with `delegate` in `tools` this bot may message any of them. The server ignores it in input.
+            ///
             /// - Remark: Generated from `#/components/schemas/Agent/delegates`.
             public var delegates: [Swift.String]
             /// - Remark: Generated from `#/components/schemas/Agent/description`.
@@ -160,6 +261,78 @@ extension Components {
             public var name: Swift.String
             /// - Remark: Generated from `#/components/schemas/Agent/provider`.
             public var provider: Swift.String
+            /// How the bot reviews its turns to learn: whether at all, after how many tool-activity rounds for skills and memory, and how much of a turn a review reads. Unset means enabled with thresholds of 10.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Agent/review`.
+            public struct ReviewPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/Agent/review/enabled`.
+                public var enabled: Swift.Bool
+                /// - Remark: Generated from `#/components/schemas/Agent/review/maxInputTokens`.
+                public var maxInputTokens: Swift.Int?
+                /// - Remark: Generated from `#/components/schemas/Agent/review/memoryThreshold`.
+                public var memoryThreshold: Swift.Int
+                /// - Remark: Generated from `#/components/schemas/Agent/review/skillThreshold`.
+                public var skillThreshold: Swift.Int
+                /// Creates a new `ReviewPayload`.
+                ///
+                /// - Parameters:
+                ///   - enabled:
+                ///   - maxInputTokens:
+                ///   - memoryThreshold:
+                ///   - skillThreshold:
+                public init(
+                    enabled: Swift.Bool,
+                    maxInputTokens: Swift.Int? = nil,
+                    memoryThreshold: Swift.Int,
+                    skillThreshold: Swift.Int
+                ) {
+                    self.enabled = enabled
+                    self.maxInputTokens = maxInputTokens
+                    self.memoryThreshold = memoryThreshold
+                    self.skillThreshold = skillThreshold
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case enabled
+                    case maxInputTokens
+                    case memoryThreshold
+                    case skillThreshold
+                }
+            }
+            /// How the bot reviews its turns to learn: whether at all, after how many tool-activity rounds for skills and memory, and how much of a turn a review reads. Unset means enabled with thresholds of 10.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Agent/review`.
+            public var review: Components.Schemas.Agent.ReviewPayload?
+            /// The model that runs this bot's reviews; unset, they use the bot's own model.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Agent/reviewModel`.
+            public struct ReviewModelPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/Agent/reviewModel/model`.
+                public var model: Swift.String
+                /// - Remark: Generated from `#/components/schemas/Agent/reviewModel/provider`.
+                public var provider: Swift.String
+                /// Creates a new `ReviewModelPayload`.
+                ///
+                /// - Parameters:
+                ///   - model:
+                ///   - provider:
+                public init(
+                    model: Swift.String,
+                    provider: Swift.String
+                ) {
+                    self.model = model
+                    self.provider = provider
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case model
+                    case provider
+                }
+            }
+            /// The model that runs this bot's reviews; unset, they use the bot's own model.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Agent/reviewModel`.
+            public var reviewModel: Components.Schemas.Agent.ReviewModelPayload?
+            /// True whenever `tools` includes `memory`; the server ignores it in input.
+            ///
             /// - Remark: Generated from `#/components/schemas/Agent/sharedMemory`.
             public var sharedMemory: Swift.Bool?
             /// - Remark: Generated from `#/components/schemas/Agent/sharedSkills`.
@@ -191,16 +364,26 @@ extension Components {
             public typealias SkillsPayload = [Components.Schemas.Agent.SkillsPayloadPayload]
             /// - Remark: Generated from `#/components/schemas/Agent/skills`.
             public var skills: Components.Schemas.Agent.SkillsPayload
+            /// The bot's tools; always includes `schedule` and `codemode`.
+            ///
             /// - Remark: Generated from `#/components/schemas/Agent/tools`.
             public var tools: [Swift.String]
             /// - Remark: Generated from `#/components/schemas/Agent/updatedAt`.
             public var updatedAt: Swift.String
+            /// - Remark: Generated from `#/components/schemas/Agent/webSearchProvider`.
+            @frozen public enum WebSearchProviderPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case mixed = "mixed"
+                case exa = "exa"
+                case _empty_ = ""
+            }
+            /// - Remark: Generated from `#/components/schemas/Agent/webSearchProvider`.
+            public var webSearchProvider: Components.Schemas.Agent.WebSearchProviderPayload?
             /// Creates a new `Agent`.
             ///
             /// - Parameters:
             ///   - avatar:
             ///   - createdAt:
-            ///   - delegates:
+            ///   - delegates: Every other bot; with `delegate` in `tools` this bot may message any of them. The server ignores it in input.
             ///   - description:
             ///   - desktopModel: The model for this bot's desktop jobs; unset, they use the bot's own model.
             ///   - enabled:
@@ -211,13 +394,16 @@ extension Components {
             ///   - model:
             ///   - name:
             ///   - provider:
-            ///   - sharedMemory:
+            ///   - review: How the bot reviews its turns to learn: whether at all, after how many tool-activity rounds for skills and memory, and how much of a turn a review reads. Unset means enabled with thresholds of 10.
+            ///   - reviewModel: The model that runs this bot's reviews; unset, they use the bot's own model.
+            ///   - sharedMemory: True whenever `tools` includes `memory`; the server ignores it in input.
             ///   - sharedSkills:
             ///   - skills:
-            ///   - tools:
+            ///   - tools: The bot's tools; always includes `schedule` and `codemode`.
             ///   - updatedAt:
+            ///   - webSearchProvider:
             public init(
-                avatar: Swift.String,
+                avatar: Components.Schemas.BotAvatarDefinition,
                 createdAt: Swift.String,
                 delegates: [Swift.String],
                 description: Swift.String,
@@ -230,11 +416,14 @@ extension Components {
                 model: Swift.String,
                 name: Swift.String,
                 provider: Swift.String,
+                review: Components.Schemas.Agent.ReviewPayload? = nil,
+                reviewModel: Components.Schemas.Agent.ReviewModelPayload? = nil,
                 sharedMemory: Swift.Bool? = nil,
                 sharedSkills: [Swift.String]? = nil,
                 skills: Components.Schemas.Agent.SkillsPayload,
                 tools: [Swift.String],
-                updatedAt: Swift.String
+                updatedAt: Swift.String,
+                webSearchProvider: Components.Schemas.Agent.WebSearchProviderPayload? = nil
             ) {
                 self.avatar = avatar
                 self.createdAt = createdAt
@@ -249,11 +438,14 @@ extension Components {
                 self.model = model
                 self.name = name
                 self.provider = provider
+                self.review = review
+                self.reviewModel = reviewModel
                 self.sharedMemory = sharedMemory
                 self.sharedSkills = sharedSkills
                 self.skills = skills
                 self.tools = tools
                 self.updatedAt = updatedAt
+                self.webSearchProvider = webSearchProvider
             }
             public enum CodingKeys: String, CodingKey {
                 case avatar
@@ -269,11 +461,14 @@ extension Components {
                 case model
                 case name
                 case provider
+                case review
+                case reviewModel
                 case sharedMemory
                 case sharedSkills
                 case skills
                 case tools
                 case updatedAt
+                case webSearchProvider
             }
         }
         /// - Remark: Generated from `#/components/schemas/AgentPreview`.
@@ -358,6 +553,193 @@ extension Components {
                 case size
             }
         }
+        /// Open Bot Avatar v1 geometry in a 0 0 100 100 viewBox, body color and eye color.
+        ///
+        /// - Remark: Generated from `#/components/schemas/BotAvatarDefinition`.
+        public struct BotAvatarDefinition: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/BotAvatarDefinition/color`.
+            public var color: Swift.String
+            /// - Remark: Generated from `#/components/schemas/BotAvatarDefinition/definition`.
+            public struct DefinitionPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BotAvatarDefinition/definition/body`.
+                public struct BodyPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/BotAvatarDefinition/definition/body/path`.
+                    public var path: Swift.String
+                    /// Creates a new `BodyPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - path:
+                    public init(path: Swift.String) {
+                        self.path = path
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case path
+                    }
+                    public init(from decoder: any Swift.Decoder) throws {
+                        let container = try decoder.container(keyedBy: CodingKeys.self)
+                        self.path = try container.decode(
+                            Swift.String.self,
+                            forKey: .path
+                        )
+                        try decoder.ensureNoAdditionalProperties(knownKeys: [
+                            "path"
+                        ])
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/BotAvatarDefinition/definition/body`.
+                public var body: Components.Schemas.BotAvatarDefinition.DefinitionPayload.BodyPayload
+                /// - Remark: Generated from `#/components/schemas/BotAvatarDefinition/definition/eyes`.
+                public struct EyesPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/BotAvatarDefinition/definition/eyes/scale`.
+                    public var scale: Swift.Double
+                    /// - Remark: Generated from `#/components/schemas/BotAvatarDefinition/definition/eyes/spacing`.
+                    public var spacing: Swift.Double
+                    /// - Remark: Generated from `#/components/schemas/BotAvatarDefinition/definition/eyes/x`.
+                    public var x: Swift.Double
+                    /// - Remark: Generated from `#/components/schemas/BotAvatarDefinition/definition/eyes/y`.
+                    public var y: Swift.Double
+                    /// Creates a new `EyesPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - scale:
+                    ///   - spacing:
+                    ///   - x:
+                    ///   - y:
+                    public init(
+                        scale: Swift.Double,
+                        spacing: Swift.Double,
+                        x: Swift.Double,
+                        y: Swift.Double
+                    ) {
+                        self.scale = scale
+                        self.spacing = spacing
+                        self.x = x
+                        self.y = y
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case scale
+                        case spacing
+                        case x
+                        case y
+                    }
+                    public init(from decoder: any Swift.Decoder) throws {
+                        let container = try decoder.container(keyedBy: CodingKeys.self)
+                        self.scale = try container.decode(
+                            Swift.Double.self,
+                            forKey: .scale
+                        )
+                        self.spacing = try container.decode(
+                            Swift.Double.self,
+                            forKey: .spacing
+                        )
+                        self.x = try container.decode(
+                            Swift.Double.self,
+                            forKey: .x
+                        )
+                        self.y = try container.decode(
+                            Swift.Double.self,
+                            forKey: .y
+                        )
+                        try decoder.ensureNoAdditionalProperties(knownKeys: [
+                            "scale",
+                            "spacing",
+                            "x",
+                            "y"
+                        ])
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/BotAvatarDefinition/definition/eyes`.
+                public var eyes: Components.Schemas.BotAvatarDefinition.DefinitionPayload.EyesPayload
+                /// - Remark: Generated from `#/components/schemas/BotAvatarDefinition/definition/id`.
+                public var id: Swift.String
+                /// - Remark: Generated from `#/components/schemas/BotAvatarDefinition/definition/name`.
+                public var name: Swift.String
+                /// - Remark: Generated from `#/components/schemas/BotAvatarDefinition/definition/version`.
+                public var version: Swift.Double
+                /// Creates a new `DefinitionPayload`.
+                ///
+                /// - Parameters:
+                ///   - body:
+                ///   - eyes:
+                ///   - id:
+                ///   - name:
+                ///   - version:
+                public init(
+                    body: Components.Schemas.BotAvatarDefinition.DefinitionPayload.BodyPayload,
+                    eyes: Components.Schemas.BotAvatarDefinition.DefinitionPayload.EyesPayload,
+                    id: Swift.String,
+                    name: Swift.String,
+                    version: Swift.Double
+                ) {
+                    self.body = body
+                    self.eyes = eyes
+                    self.id = id
+                    self.name = name
+                    self.version = version
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case body
+                    case eyes
+                    case id
+                    case name
+                    case version
+                }
+                public init(from decoder: any Swift.Decoder) throws {
+                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    self.body = try container.decode(
+                        Components.Schemas.BotAvatarDefinition.DefinitionPayload.BodyPayload.self,
+                        forKey: .body
+                    )
+                    self.eyes = try container.decode(
+                        Components.Schemas.BotAvatarDefinition.DefinitionPayload.EyesPayload.self,
+                        forKey: .eyes
+                    )
+                    self.id = try container.decode(
+                        Swift.String.self,
+                        forKey: .id
+                    )
+                    self.name = try container.decode(
+                        Swift.String.self,
+                        forKey: .name
+                    )
+                    self.version = try container.decode(
+                        Swift.Double.self,
+                        forKey: .version
+                    )
+                    try decoder.ensureNoAdditionalProperties(knownKeys: [
+                        "body",
+                        "eyes",
+                        "id",
+                        "name",
+                        "version"
+                    ])
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/BotAvatarDefinition/definition`.
+            public var definition: Components.Schemas.BotAvatarDefinition.DefinitionPayload
+            /// - Remark: Generated from `#/components/schemas/BotAvatarDefinition/eyeColor`.
+            public var eyeColor: Swift.String
+            /// Creates a new `BotAvatarDefinition`.
+            ///
+            /// - Parameters:
+            ///   - color:
+            ///   - definition:
+            ///   - eyeColor:
+            public init(
+                color: Swift.String,
+                definition: Components.Schemas.BotAvatarDefinition.DefinitionPayload,
+                eyeColor: Swift.String
+            ) {
+                self.color = color
+                self.definition = definition
+                self.eyeColor = eyeColor
+            }
+            public enum CodingKeys: String, CodingKey {
+                case color
+                case definition
+                case eyeColor
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/BotCommunication`.
         public struct BotCommunication: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/BotCommunication/executionId`.
@@ -412,6 +794,526 @@ extension Components {
                 case toName
             }
         }
+        /// - Remark: Generated from `#/components/schemas/BotRequest`.
+        public struct BotRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/BotRequest/agentId`.
+            public var agentId: Swift.String
+            /// - Remark: Generated from `#/components/schemas/BotRequest/createdAgentId`.
+            public var createdAgentId: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/BotRequest/decidedAt`.
+            public var decidedAt: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/BotRequest/id`.
+            public var id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/BotRequest/proposal`.
+            public struct ProposalPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/avatar`.
+                public struct AvatarPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/avatar/color`.
+                    public var color: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/avatar/definition`.
+                    public struct DefinitionPayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/avatar/definition/body`.
+                        public struct BodyPayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/avatar/definition/body/path`.
+                            public var path: Swift.String
+                            /// Creates a new `BodyPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - path:
+                            public init(path: Swift.String) {
+                                self.path = path
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case path
+                            }
+                            public init(from decoder: any Swift.Decoder) throws {
+                                let container = try decoder.container(keyedBy: CodingKeys.self)
+                                self.path = try container.decode(
+                                    Swift.String.self,
+                                    forKey: .path
+                                )
+                                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                                    "path"
+                                ])
+                            }
+                        }
+                        /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/avatar/definition/body`.
+                        public var body: Components.Schemas.BotRequest.ProposalPayload.AvatarPayload.DefinitionPayload.BodyPayload
+                        /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/avatar/definition/eyes`.
+                        public struct EyesPayload: Codable, Hashable, Sendable {
+                            /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/avatar/definition/eyes/scale`.
+                            public var scale: Swift.Double
+                            /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/avatar/definition/eyes/spacing`.
+                            public var spacing: Swift.Double
+                            /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/avatar/definition/eyes/x`.
+                            public var x: Swift.Double
+                            /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/avatar/definition/eyes/y`.
+                            public var y: Swift.Double
+                            /// Creates a new `EyesPayload`.
+                            ///
+                            /// - Parameters:
+                            ///   - scale:
+                            ///   - spacing:
+                            ///   - x:
+                            ///   - y:
+                            public init(
+                                scale: Swift.Double,
+                                spacing: Swift.Double,
+                                x: Swift.Double,
+                                y: Swift.Double
+                            ) {
+                                self.scale = scale
+                                self.spacing = spacing
+                                self.x = x
+                                self.y = y
+                            }
+                            public enum CodingKeys: String, CodingKey {
+                                case scale
+                                case spacing
+                                case x
+                                case y
+                            }
+                            public init(from decoder: any Swift.Decoder) throws {
+                                let container = try decoder.container(keyedBy: CodingKeys.self)
+                                self.scale = try container.decode(
+                                    Swift.Double.self,
+                                    forKey: .scale
+                                )
+                                self.spacing = try container.decode(
+                                    Swift.Double.self,
+                                    forKey: .spacing
+                                )
+                                self.x = try container.decode(
+                                    Swift.Double.self,
+                                    forKey: .x
+                                )
+                                self.y = try container.decode(
+                                    Swift.Double.self,
+                                    forKey: .y
+                                )
+                                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                                    "scale",
+                                    "spacing",
+                                    "x",
+                                    "y"
+                                ])
+                            }
+                        }
+                        /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/avatar/definition/eyes`.
+                        public var eyes: Components.Schemas.BotRequest.ProposalPayload.AvatarPayload.DefinitionPayload.EyesPayload
+                        /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/avatar/definition/id`.
+                        public var id: Swift.String
+                        /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/avatar/definition/name`.
+                        public var name: Swift.String
+                        /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/avatar/definition/version`.
+                        public var version: Swift.Double
+                        /// Creates a new `DefinitionPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - body:
+                        ///   - eyes:
+                        ///   - id:
+                        ///   - name:
+                        ///   - version:
+                        public init(
+                            body: Components.Schemas.BotRequest.ProposalPayload.AvatarPayload.DefinitionPayload.BodyPayload,
+                            eyes: Components.Schemas.BotRequest.ProposalPayload.AvatarPayload.DefinitionPayload.EyesPayload,
+                            id: Swift.String,
+                            name: Swift.String,
+                            version: Swift.Double
+                        ) {
+                            self.body = body
+                            self.eyes = eyes
+                            self.id = id
+                            self.name = name
+                            self.version = version
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case body
+                            case eyes
+                            case id
+                            case name
+                            case version
+                        }
+                        public init(from decoder: any Swift.Decoder) throws {
+                            let container = try decoder.container(keyedBy: CodingKeys.self)
+                            self.body = try container.decode(
+                                Components.Schemas.BotRequest.ProposalPayload.AvatarPayload.DefinitionPayload.BodyPayload.self,
+                                forKey: .body
+                            )
+                            self.eyes = try container.decode(
+                                Components.Schemas.BotRequest.ProposalPayload.AvatarPayload.DefinitionPayload.EyesPayload.self,
+                                forKey: .eyes
+                            )
+                            self.id = try container.decode(
+                                Swift.String.self,
+                                forKey: .id
+                            )
+                            self.name = try container.decode(
+                                Swift.String.self,
+                                forKey: .name
+                            )
+                            self.version = try container.decode(
+                                Swift.Double.self,
+                                forKey: .version
+                            )
+                            try decoder.ensureNoAdditionalProperties(knownKeys: [
+                                "body",
+                                "eyes",
+                                "id",
+                                "name",
+                                "version"
+                            ])
+                        }
+                    }
+                    /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/avatar/definition`.
+                    public var definition: Components.Schemas.BotRequest.ProposalPayload.AvatarPayload.DefinitionPayload
+                    /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/avatar/eyeColor`.
+                    public var eyeColor: Swift.String
+                    /// Creates a new `AvatarPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - color:
+                    ///   - definition:
+                    ///   - eyeColor:
+                    public init(
+                        color: Swift.String,
+                        definition: Components.Schemas.BotRequest.ProposalPayload.AvatarPayload.DefinitionPayload,
+                        eyeColor: Swift.String
+                    ) {
+                        self.color = color
+                        self.definition = definition
+                        self.eyeColor = eyeColor
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case color
+                        case definition
+                        case eyeColor
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/avatar`.
+                public var avatar: Components.Schemas.BotRequest.ProposalPayload.AvatarPayload?
+                /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/delegates`.
+                public var delegates: [Swift.String]?
+                /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/description`.
+                public var description: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/desktopModel`.
+                public struct DesktopModelPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/desktopModel/model`.
+                    public var model: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/desktopModel/provider`.
+                    public var provider: Swift.String
+                    /// Creates a new `DesktopModelPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - model:
+                    ///   - provider:
+                    public init(
+                        model: Swift.String,
+                        provider: Swift.String
+                    ) {
+                        self.model = model
+                        self.provider = provider
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case model
+                        case provider
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/desktopModel`.
+                public var desktopModel: Components.Schemas.BotRequest.ProposalPayload.DesktopModelPayload?
+                /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/enabled`.
+                public var enabled: Swift.Bool?
+                /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/inference`.
+                public struct InferencePayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/inference/maxOutputTokens`.
+                    public var maxOutputTokens: Swift.Int?
+                    /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/inference/temperature`.
+                    public var temperature: Swift.Double?
+                    /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/inference/thinkingLevel`.
+                    @frozen public enum ThinkingLevelPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                        case off = "off"
+                        case minimal = "minimal"
+                        case low = "low"
+                        case medium = "medium"
+                        case high = "high"
+                        case xhigh = "xhigh"
+                        case max = "max"
+                    }
+                    /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/inference/thinkingLevel`.
+                    public var thinkingLevel: Components.Schemas.BotRequest.ProposalPayload.InferencePayload.ThinkingLevelPayload?
+                    /// Creates a new `InferencePayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - maxOutputTokens:
+                    ///   - temperature:
+                    ///   - thinkingLevel:
+                    public init(
+                        maxOutputTokens: Swift.Int? = nil,
+                        temperature: Swift.Double? = nil,
+                        thinkingLevel: Components.Schemas.BotRequest.ProposalPayload.InferencePayload.ThinkingLevelPayload? = nil
+                    ) {
+                        self.maxOutputTokens = maxOutputTokens
+                        self.temperature = temperature
+                        self.thinkingLevel = thinkingLevel
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case maxOutputTokens
+                        case temperature
+                        case thinkingLevel
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/inference`.
+                public var inference: Components.Schemas.BotRequest.ProposalPayload.InferencePayload?
+                /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/instructions`.
+                public var instructions: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/mcpServers`.
+                public var mcpServers: [Swift.String]?
+                /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/model`.
+                public var model: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/name`.
+                public var name: Swift.String
+                /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/provider`.
+                public var provider: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/review`.
+                public struct ReviewPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/review/enabled`.
+                    public var enabled: Swift.Bool?
+                    /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/review/maxInputTokens`.
+                    public var maxInputTokens: Swift.Int?
+                    /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/review/memoryThreshold`.
+                    public var memoryThreshold: Swift.Int?
+                    /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/review/skillThreshold`.
+                    public var skillThreshold: Swift.Int?
+                    /// Creates a new `ReviewPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - enabled:
+                    ///   - maxInputTokens:
+                    ///   - memoryThreshold:
+                    ///   - skillThreshold:
+                    public init(
+                        enabled: Swift.Bool? = nil,
+                        maxInputTokens: Swift.Int? = nil,
+                        memoryThreshold: Swift.Int? = nil,
+                        skillThreshold: Swift.Int? = nil
+                    ) {
+                        self.enabled = enabled
+                        self.maxInputTokens = maxInputTokens
+                        self.memoryThreshold = memoryThreshold
+                        self.skillThreshold = skillThreshold
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case enabled
+                        case maxInputTokens
+                        case memoryThreshold
+                        case skillThreshold
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/review`.
+                public var review: Components.Schemas.BotRequest.ProposalPayload.ReviewPayload?
+                /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/reviewModel`.
+                public struct ReviewModelPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/reviewModel/model`.
+                    public var model: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/reviewModel/provider`.
+                    public var provider: Swift.String
+                    /// Creates a new `ReviewModelPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - model:
+                    ///   - provider:
+                    public init(
+                        model: Swift.String,
+                        provider: Swift.String
+                    ) {
+                        self.model = model
+                        self.provider = provider
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case model
+                        case provider
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/reviewModel`.
+                public var reviewModel: Components.Schemas.BotRequest.ProposalPayload.ReviewModelPayload?
+                /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/sharedMemory`.
+                public var sharedMemory: Swift.Bool?
+                /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/sharedSkills`.
+                public var sharedSkills: [Swift.String]?
+                /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/SkillsPayload`.
+                public struct SkillsPayloadPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/SkillsPayload/instructions`.
+                    public var instructions: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/SkillsPayload/name`.
+                    public var name: Swift.String
+                    /// Creates a new `SkillsPayloadPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - instructions:
+                    ///   - name:
+                    public init(
+                        instructions: Swift.String,
+                        name: Swift.String
+                    ) {
+                        self.instructions = instructions
+                        self.name = name
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case instructions
+                        case name
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/skills`.
+                public typealias SkillsPayload = [Components.Schemas.BotRequest.ProposalPayload.SkillsPayloadPayload]
+                /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/skills`.
+                public var skills: Components.Schemas.BotRequest.ProposalPayload.SkillsPayload?
+                /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/tools`.
+                public var tools: [Swift.String]?
+                /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/webSearchProvider`.
+                @frozen public enum WebSearchProviderPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case mixed = "mixed"
+                    case exa = "exa"
+                    case _empty_ = ""
+                }
+                /// - Remark: Generated from `#/components/schemas/BotRequest/proposal/webSearchProvider`.
+                public var webSearchProvider: Components.Schemas.BotRequest.ProposalPayload.WebSearchProviderPayload?
+                /// Creates a new `ProposalPayload`.
+                ///
+                /// - Parameters:
+                ///   - avatar:
+                ///   - delegates:
+                ///   - description:
+                ///   - desktopModel:
+                ///   - enabled:
+                ///   - inference:
+                ///   - instructions:
+                ///   - mcpServers:
+                ///   - model:
+                ///   - name:
+                ///   - provider:
+                ///   - review:
+                ///   - reviewModel:
+                ///   - sharedMemory:
+                ///   - sharedSkills:
+                ///   - skills:
+                ///   - tools:
+                ///   - webSearchProvider:
+                public init(
+                    avatar: Components.Schemas.BotRequest.ProposalPayload.AvatarPayload? = nil,
+                    delegates: [Swift.String]? = nil,
+                    description: Swift.String? = nil,
+                    desktopModel: Components.Schemas.BotRequest.ProposalPayload.DesktopModelPayload? = nil,
+                    enabled: Swift.Bool? = nil,
+                    inference: Components.Schemas.BotRequest.ProposalPayload.InferencePayload? = nil,
+                    instructions: Swift.String? = nil,
+                    mcpServers: [Swift.String]? = nil,
+                    model: Swift.String? = nil,
+                    name: Swift.String,
+                    provider: Swift.String? = nil,
+                    review: Components.Schemas.BotRequest.ProposalPayload.ReviewPayload? = nil,
+                    reviewModel: Components.Schemas.BotRequest.ProposalPayload.ReviewModelPayload? = nil,
+                    sharedMemory: Swift.Bool? = nil,
+                    sharedSkills: [Swift.String]? = nil,
+                    skills: Components.Schemas.BotRequest.ProposalPayload.SkillsPayload? = nil,
+                    tools: [Swift.String]? = nil,
+                    webSearchProvider: Components.Schemas.BotRequest.ProposalPayload.WebSearchProviderPayload? = nil
+                ) {
+                    self.avatar = avatar
+                    self.delegates = delegates
+                    self.description = description
+                    self.desktopModel = desktopModel
+                    self.enabled = enabled
+                    self.inference = inference
+                    self.instructions = instructions
+                    self.mcpServers = mcpServers
+                    self.model = model
+                    self.name = name
+                    self.provider = provider
+                    self.review = review
+                    self.reviewModel = reviewModel
+                    self.sharedMemory = sharedMemory
+                    self.sharedSkills = sharedSkills
+                    self.skills = skills
+                    self.tools = tools
+                    self.webSearchProvider = webSearchProvider
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case avatar
+                    case delegates
+                    case description
+                    case desktopModel
+                    case enabled
+                    case inference
+                    case instructions
+                    case mcpServers
+                    case model
+                    case name
+                    case provider
+                    case review
+                    case reviewModel
+                    case sharedMemory
+                    case sharedSkills
+                    case skills
+                    case tools
+                    case webSearchProvider
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/BotRequest/proposal`.
+            public var proposal: Components.Schemas.BotRequest.ProposalPayload
+            /// - Remark: Generated from `#/components/schemas/BotRequest/reason`.
+            public var reason: Swift.String
+            /// - Remark: Generated from `#/components/schemas/BotRequest/requestedAt`.
+            public var requestedAt: Swift.String
+            /// - Remark: Generated from `#/components/schemas/BotRequest/status`.
+            @frozen public enum StatusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case pending = "pending"
+                case approved = "approved"
+                case declined = "declined"
+            }
+            /// - Remark: Generated from `#/components/schemas/BotRequest/status`.
+            public var status: Components.Schemas.BotRequest.StatusPayload
+            /// Creates a new `BotRequest`.
+            ///
+            /// - Parameters:
+            ///   - agentId:
+            ///   - createdAgentId:
+            ///   - decidedAt:
+            ///   - id:
+            ///   - proposal:
+            ///   - reason:
+            ///   - requestedAt:
+            ///   - status:
+            public init(
+                agentId: Swift.String,
+                createdAgentId: Swift.String? = nil,
+                decidedAt: Swift.String? = nil,
+                id: Swift.String,
+                proposal: Components.Schemas.BotRequest.ProposalPayload,
+                reason: Swift.String,
+                requestedAt: Swift.String,
+                status: Components.Schemas.BotRequest.StatusPayload
+            ) {
+                self.agentId = agentId
+                self.createdAgentId = createdAgentId
+                self.decidedAt = decidedAt
+                self.id = id
+                self.proposal = proposal
+                self.reason = reason
+                self.requestedAt = requestedAt
+                self.status = status
+            }
+            public enum CodingKeys: String, CodingKey {
+                case agentId
+                case createdAgentId
+                case decidedAt
+                case id
+                case proposal
+                case reason
+                case requestedAt
+                case status
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/Capabilities`.
         public struct Capabilities: Codable, Hashable, Sendable {
             /// Whether bots can be given the coding tool on this server.
@@ -422,21 +1324,109 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/Capabilities/desktop`.
             public var desktop: Swift.Bool
+            /// The kinds of background job bots can be given on this server, such as `coding` and `desktop`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Capabilities/jobKinds`.
+            public var jobKinds: [Swift.String]
             /// Creates a new `Capabilities`.
             ///
             /// - Parameters:
             ///   - coding: Whether bots can be given the coding tool on this server.
             ///   - desktop: Whether bots can be given the desktop tool, and with it a bot desktop, on this server.
+            ///   - jobKinds: The kinds of background job bots can be given on this server, such as `coding` and `desktop`.
             public init(
                 coding: Swift.Bool,
-                desktop: Swift.Bool
+                desktop: Swift.Bool,
+                jobKinds: [Swift.String]
             ) {
                 self.coding = coding
                 self.desktop = desktop
+                self.jobKinds = jobKinds
             }
             public enum CodingKeys: String, CodingKey {
                 case coding
                 case desktop
+                case jobKinds
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/ChangeActivity`.
+        public struct ChangeActivity: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ChangeActivity/agentId`.
+            public var agentId: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/ChangeActivity/agentName`.
+            public var agentName: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/ChangeActivity/change`.
+            public var change: Components.Schemas.LearnedChange
+            /// - Remark: Generated from `#/components/schemas/ChangeActivity/id`.
+            public var id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ChangeActivity/kind`.
+            @frozen public enum KindPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case change = "change"
+            }
+            /// - Remark: Generated from `#/components/schemas/ChangeActivity/kind`.
+            public var kind: Components.Schemas.ChangeActivity.KindPayload
+            /// - Remark: Generated from `#/components/schemas/ChangeActivity/timestamp`.
+            public var timestamp: Swift.Double
+            /// Creates a new `ChangeActivity`.
+            ///
+            /// - Parameters:
+            ///   - agentId:
+            ///   - agentName:
+            ///   - change:
+            ///   - id:
+            ///   - kind:
+            ///   - timestamp:
+            public init(
+                agentId: Swift.String? = nil,
+                agentName: Swift.String? = nil,
+                change: Components.Schemas.LearnedChange,
+                id: Swift.String,
+                kind: Components.Schemas.ChangeActivity.KindPayload,
+                timestamp: Swift.Double
+            ) {
+                self.agentId = agentId
+                self.agentName = agentName
+                self.change = change
+                self.id = id
+                self.kind = kind
+                self.timestamp = timestamp
+            }
+            public enum CodingKeys: String, CodingKey {
+                case agentId
+                case agentName
+                case change
+                case id
+                case kind
+                case timestamp
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/ChangeSource`.
+        public struct ChangeSource: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ChangeSource/conversationId`.
+            public var conversationId: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/ChangeSource/executionId`.
+            public var executionId: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/ChangeSource/groupId`.
+            public var groupId: Swift.String?
+            /// Creates a new `ChangeSource`.
+            ///
+            /// - Parameters:
+            ///   - conversationId:
+            ///   - executionId:
+            ///   - groupId:
+            public init(
+                conversationId: Swift.String? = nil,
+                executionId: Swift.String? = nil,
+                groupId: Swift.String? = nil
+            ) {
+                self.conversationId = conversationId
+                self.executionId = executionId
+                self.groupId = groupId
+            }
+            public enum CodingKeys: String, CodingKey {
+                case conversationId
+                case executionId
+                case groupId
             }
         }
         /// - Remark: Generated from `#/components/schemas/ChatPreviewEvent`.
@@ -584,8 +1574,88 @@ extension Components {
         public struct CodingJob: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/CodingJob/conversationId`.
             public var conversationId: Swift.String
+            /// The model the job runs with. Absent when the job has none of its own and uses the server's default.
+            ///
+            /// - Remark: Generated from `#/components/schemas/CodingJob/model`.
+            public struct ModelPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/CodingJob/model/model`.
+                public var model: Swift.String
+                /// - Remark: Generated from `#/components/schemas/CodingJob/model/provider`.
+                public var provider: Swift.String
+                /// Creates a new `ModelPayload`.
+                ///
+                /// - Parameters:
+                ///   - model:
+                ///   - provider:
+                public init(
+                    model: Swift.String,
+                    provider: Swift.String
+                ) {
+                    self.model = model
+                    self.provider = provider
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case model
+                    case provider
+                }
+            }
+            /// The model the job runs with. Absent when the job has none of its own and uses the server's default.
+            ///
+            /// - Remark: Generated from `#/components/schemas/CodingJob/model`.
+            public var model: Components.Schemas.CodingJob.ModelPayload?
             /// - Remark: Generated from `#/components/schemas/CodingJob/name`.
             public var name: Swift.String
+            /// The question the job asked the owner and waits on. Answer it with the job's `answer` route.
+            ///
+            /// - Remark: Generated from `#/components/schemas/CodingJob/question`.
+            public struct QuestionPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/CodingJob/question/askedAt`.
+                public var askedAt: Swift.Double
+                /// - Remark: Generated from `#/components/schemas/CodingJob/question/id`.
+                public var id: Swift.String
+                /// Whether several options can be picked; the answer lists each.
+                ///
+                /// - Remark: Generated from `#/components/schemas/CodingJob/question/multiple`.
+                public var multiple: Swift.Bool?
+                /// Answers the owner can pick; any other text is an answer too.
+                ///
+                /// - Remark: Generated from `#/components/schemas/CodingJob/question/options`.
+                public var options: [Swift.String]?
+                /// - Remark: Generated from `#/components/schemas/CodingJob/question/text`.
+                public var text: Swift.String
+                /// Creates a new `QuestionPayload`.
+                ///
+                /// - Parameters:
+                ///   - askedAt:
+                ///   - id:
+                ///   - multiple: Whether several options can be picked; the answer lists each.
+                ///   - options: Answers the owner can pick; any other text is an answer too.
+                ///   - text:
+                public init(
+                    askedAt: Swift.Double,
+                    id: Swift.String,
+                    multiple: Swift.Bool? = nil,
+                    options: [Swift.String]? = nil,
+                    text: Swift.String
+                ) {
+                    self.askedAt = askedAt
+                    self.id = id
+                    self.multiple = multiple
+                    self.options = options
+                    self.text = text
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case askedAt
+                    case id
+                    case multiple
+                    case options
+                    case text
+                }
+            }
+            /// The question the job asked the owner and waits on. Answer it with the job's `answer` route.
+            ///
+            /// - Remark: Generated from `#/components/schemas/CodingJob/question`.
+            public var question: Components.Schemas.CodingJob.QuestionPayload?
             /// - Remark: Generated from `#/components/schemas/CodingJob/status`.
             @frozen public enum StatusPayload: String, Codable, Hashable, Sendable, CaseIterable {
                 case working = "working"
@@ -601,23 +1671,31 @@ extension Components {
             ///
             /// - Parameters:
             ///   - conversationId:
+            ///   - model: The model the job runs with. Absent when the job has none of its own and uses the server's default.
             ///   - name:
+            ///   - question: The question the job asked the owner and waits on. Answer it with the job's `answer` route.
             ///   - status:
             ///   - usage: Pi Durable usage document of the job's own conversation: tokens and cost per model and tool. Absent before its first request.
             public init(
                 conversationId: Swift.String,
+                model: Components.Schemas.CodingJob.ModelPayload? = nil,
                 name: Swift.String,
+                question: Components.Schemas.CodingJob.QuestionPayload? = nil,
                 status: Components.Schemas.CodingJob.StatusPayload,
                 usage: OpenAPIRuntime.OpenAPIValueContainer? = nil
             ) {
                 self.conversationId = conversationId
+                self.model = model
                 self.name = name
+                self.question = question
                 self.status = status
                 self.usage = usage
             }
             public enum CodingKeys: String, CodingKey {
                 case conversationId
+                case model
                 case name
+                case question
                 case status
                 case usage
             }
@@ -701,6 +1779,253 @@ extension Components {
                 case updatedAt
             }
         }
+        /// - Remark: Generated from `#/components/schemas/CreatedInvite`.
+        public struct CreatedInvite: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/CreatedInvite/value1`.
+            public var value1: Components.Schemas.Invite
+            /// - Remark: Generated from `#/components/schemas/CreatedInvite/value2`.
+            public struct Value2Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/CreatedInvite/value2/url`.
+                public var url: Swift.String
+                /// Creates a new `Value2Payload`.
+                ///
+                /// - Parameters:
+                ///   - url:
+                public init(url: Swift.String) {
+                    self.url = url
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case url
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/CreatedInvite/value2`.
+            public var value2: Components.Schemas.CreatedInvite.Value2Payload
+            /// Creates a new `CreatedInvite`.
+            ///
+            /// - Parameters:
+            ///   - value1:
+            ///   - value2:
+            public init(
+                value1: Components.Schemas.Invite,
+                value2: Components.Schemas.CreatedInvite.Value2Payload
+            ) {
+                self.value1 = value1
+                self.value2 = value2
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                self.value1 = try .init(from: decoder)
+                self.value2 = try .init(from: decoder)
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                try self.value1.encode(to: encoder)
+                try self.value2.encode(to: encoder)
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/Credential`.
+        public struct Credential: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/Credential/createdAt`.
+            public var createdAt: Swift.String
+            /// The value is a GitHub token: from the bot's GitHub App, minted for the App or for the owner signed in through it, or its machine account's personal access token. It has no secret here.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Credential/github`.
+            public var github: Swift.Bool
+            /// - Remark: Generated from `#/components/schemas/Credential/hosts`.
+            public var hosts: [Swift.String]
+            /// Why the newest use couldn't read the value from its password manager; null when it could.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Credential/lastError`.
+            public var lastError: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/Credential/lastUsedAt`.
+            public var lastUsedAt: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/Credential/name`.
+            public var name: Swift.String
+            /// - Remark: Generated from `#/components/schemas/Credential/secret`.
+            public struct SecretPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/Credential/secret/value1`.
+                public var value1: Components.Schemas.SecretStatus
+                /// Null when `github` is true.
+                ///
+                /// - Remark: Generated from `#/components/schemas/Credential/secret/value2`.
+                public var value2: OpenAPIRuntime.OpenAPIObjectContainer
+                /// Creates a new `SecretPayload`.
+                ///
+                /// - Parameters:
+                ///   - value1:
+                ///   - value2: Null when `github` is true.
+                public init(
+                    value1: Components.Schemas.SecretStatus,
+                    value2: OpenAPIRuntime.OpenAPIObjectContainer
+                ) {
+                    self.value1 = value1
+                    self.value2 = value2
+                }
+                public init(from decoder: any Swift.Decoder) throws {
+                    self.value1 = try .init(from: decoder)
+                    self.value2 = try .init(from: decoder)
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    try self.value1.encode(to: encoder)
+                    try self.value2.encode(to: encoder)
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/Credential/secret`.
+            public var secret: Components.Schemas.Credential.SecretPayload?
+            /// - Remark: Generated from `#/components/schemas/Credential/updatedAt`.
+            public var updatedAt: Swift.String
+            /// Creates a new `Credential`.
+            ///
+            /// - Parameters:
+            ///   - createdAt:
+            ///   - github: The value is a GitHub token: from the bot's GitHub App, minted for the App or for the owner signed in through it, or its machine account's personal access token. It has no secret here.
+            ///   - hosts:
+            ///   - lastError: Why the newest use couldn't read the value from its password manager; null when it could.
+            ///   - lastUsedAt:
+            ///   - name:
+            ///   - secret:
+            ///   - updatedAt:
+            public init(
+                createdAt: Swift.String,
+                github: Swift.Bool,
+                hosts: [Swift.String],
+                lastError: Swift.String? = nil,
+                lastUsedAt: Swift.String? = nil,
+                name: Swift.String,
+                secret: Components.Schemas.Credential.SecretPayload? = nil,
+                updatedAt: Swift.String
+            ) {
+                self.createdAt = createdAt
+                self.github = github
+                self.hosts = hosts
+                self.lastError = lastError
+                self.lastUsedAt = lastUsedAt
+                self.name = name
+                self.secret = secret
+                self.updatedAt = updatedAt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case createdAt
+                case github
+                case hosts
+                case lastError
+                case lastUsedAt
+                case name
+                case secret
+                case updatedAt
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/CredentialRequest`.
+        public struct CredentialRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/CredentialRequest/hosts`.
+            public var hosts: [Swift.String]
+            /// - Remark: Generated from `#/components/schemas/CredentialRequest/name`.
+            public var name: Swift.String
+            /// - Remark: Generated from `#/components/schemas/CredentialRequest/reason`.
+            public var reason: Swift.String
+            /// - Remark: Generated from `#/components/schemas/CredentialRequest/requestedAt`.
+            public var requestedAt: Swift.String
+            /// Creates a new `CredentialRequest`.
+            ///
+            /// - Parameters:
+            ///   - hosts:
+            ///   - name:
+            ///   - reason:
+            ///   - requestedAt:
+            public init(
+                hosts: [Swift.String],
+                name: Swift.String,
+                reason: Swift.String,
+                requestedAt: Swift.String
+            ) {
+                self.hosts = hosts
+                self.name = name
+                self.reason = reason
+                self.requestedAt = requestedAt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case hosts
+                case name
+                case reason
+                case requestedAt
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/CredentialUse`.
+        public struct CredentialUse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/CredentialUse/at`.
+            public var at: Swift.String
+            /// Why the value couldn't be read from its password manager; the request was never sent.
+            ///
+            /// - Remark: Generated from `#/components/schemas/CredentialUse/error`.
+            public var error: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/CredentialUse/host`.
+            public var host: Swift.String
+            /// - Remark: Generated from `#/components/schemas/CredentialUse/id`.
+            public var id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/CredentialUse/method`.
+            public var method: Swift.String
+            /// - Remark: Generated from `#/components/schemas/CredentialUse/path`.
+            public var path: Swift.String
+            /// - Remark: Generated from `#/components/schemas/CredentialUse/status`.
+            public var status: Swift.Int?
+            /// Creates a new `CredentialUse`.
+            ///
+            /// - Parameters:
+            ///   - at:
+            ///   - error: Why the value couldn't be read from its password manager; the request was never sent.
+            ///   - host:
+            ///   - id:
+            ///   - method:
+            ///   - path:
+            ///   - status:
+            public init(
+                at: Swift.String,
+                error: Swift.String? = nil,
+                host: Swift.String,
+                id: Swift.String,
+                method: Swift.String,
+                path: Swift.String,
+                status: Swift.Int? = nil
+            ) {
+                self.at = at
+                self.error = error
+                self.host = host
+                self.id = id
+                self.method = method
+                self.path = path
+                self.status = status
+            }
+            public enum CodingKeys: String, CodingKey {
+                case at
+                case error
+                case host
+                case id
+                case method
+                case path
+                case status
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/Credentials`.
+        public struct Credentials: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/Credentials/credentials`.
+            public var credentials: [Components.Schemas.Credential]
+            /// - Remark: Generated from `#/components/schemas/Credentials/requests`.
+            public var requests: [Components.Schemas.CredentialRequest]
+            /// Creates a new `Credentials`.
+            ///
+            /// - Parameters:
+            ///   - credentials:
+            ///   - requests:
+            public init(
+                credentials: [Components.Schemas.Credential],
+                requests: [Components.Schemas.CredentialRequest]
+            ) {
+                self.credentials = credentials
+                self.requests = requests
+            }
+            public enum CodingKeys: String, CodingKey {
+                case credentials
+                case requests
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/DesktopControl`.
         public struct DesktopControl: Codable, Hashable, Sendable {
             /// How often control changed hands. A desktop job refuses actions it planned before a change.
@@ -745,8 +2070,88 @@ extension Components {
         public struct DesktopJob: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/DesktopJob/conversationId`.
             public var conversationId: Swift.String
+            /// The model the job runs with. Absent when the job has none of its own and uses the server's default.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DesktopJob/model`.
+            public struct ModelPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/DesktopJob/model/model`.
+                public var model: Swift.String
+                /// - Remark: Generated from `#/components/schemas/DesktopJob/model/provider`.
+                public var provider: Swift.String
+                /// Creates a new `ModelPayload`.
+                ///
+                /// - Parameters:
+                ///   - model:
+                ///   - provider:
+                public init(
+                    model: Swift.String,
+                    provider: Swift.String
+                ) {
+                    self.model = model
+                    self.provider = provider
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case model
+                    case provider
+                }
+            }
+            /// The model the job runs with. Absent when the job has none of its own and uses the server's default.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DesktopJob/model`.
+            public var model: Components.Schemas.DesktopJob.ModelPayload?
             /// - Remark: Generated from `#/components/schemas/DesktopJob/name`.
             public var name: Swift.String
+            /// The question the job asked the owner and waits on. Answer it with the job's `answer` route.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DesktopJob/question`.
+            public struct QuestionPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/DesktopJob/question/askedAt`.
+                public var askedAt: Swift.Double
+                /// - Remark: Generated from `#/components/schemas/DesktopJob/question/id`.
+                public var id: Swift.String
+                /// Whether several options can be picked; the answer lists each.
+                ///
+                /// - Remark: Generated from `#/components/schemas/DesktopJob/question/multiple`.
+                public var multiple: Swift.Bool?
+                /// Answers the owner can pick; any other text is an answer too.
+                ///
+                /// - Remark: Generated from `#/components/schemas/DesktopJob/question/options`.
+                public var options: [Swift.String]?
+                /// - Remark: Generated from `#/components/schemas/DesktopJob/question/text`.
+                public var text: Swift.String
+                /// Creates a new `QuestionPayload`.
+                ///
+                /// - Parameters:
+                ///   - askedAt:
+                ///   - id:
+                ///   - multiple: Whether several options can be picked; the answer lists each.
+                ///   - options: Answers the owner can pick; any other text is an answer too.
+                ///   - text:
+                public init(
+                    askedAt: Swift.Double,
+                    id: Swift.String,
+                    multiple: Swift.Bool? = nil,
+                    options: [Swift.String]? = nil,
+                    text: Swift.String
+                ) {
+                    self.askedAt = askedAt
+                    self.id = id
+                    self.multiple = multiple
+                    self.options = options
+                    self.text = text
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case askedAt
+                    case id
+                    case multiple
+                    case options
+                    case text
+                }
+            }
+            /// The question the job asked the owner and waits on. Answer it with the job's `answer` route.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DesktopJob/question`.
+            public var question: Components.Schemas.DesktopJob.QuestionPayload?
             /// - Remark: Generated from `#/components/schemas/DesktopJob/status`.
             @frozen public enum StatusPayload: String, Codable, Hashable, Sendable, CaseIterable {
                 case working = "working"
@@ -762,23 +2167,31 @@ extension Components {
             ///
             /// - Parameters:
             ///   - conversationId:
+            ///   - model: The model the job runs with. Absent when the job has none of its own and uses the server's default.
             ///   - name:
+            ///   - question: The question the job asked the owner and waits on. Answer it with the job's `answer` route.
             ///   - status:
             ///   - usage: Pi Durable usage document of the job's own conversation: tokens and cost per model and tool. Absent before its first request.
             public init(
                 conversationId: Swift.String,
+                model: Components.Schemas.DesktopJob.ModelPayload? = nil,
                 name: Swift.String,
+                question: Components.Schemas.DesktopJob.QuestionPayload? = nil,
                 status: Components.Schemas.DesktopJob.StatusPayload,
                 usage: OpenAPIRuntime.OpenAPIValueContainer? = nil
             ) {
                 self.conversationId = conversationId
+                self.model = model
                 self.name = name
+                self.question = question
                 self.status = status
                 self.usage = usage
             }
             public enum CodingKeys: String, CodingKey {
                 case conversationId
+                case model
                 case name
+                case question
                 case status
                 case usage
             }
@@ -798,6 +2211,23 @@ extension Components {
             }
             public enum CodingKeys: String, CodingKey {
                 case jobs
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/DesktopStatus`.
+        public struct DesktopStatus: Codable, Hashable, Sendable {
+            /// Whether the bot's machine runs its bot desktop now, so a passive viewer can connect. Always false for a bot without a bot desktop.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DesktopStatus/running`.
+            public var running: Swift.Bool
+            /// Creates a new `DesktopStatus`.
+            ///
+            /// - Parameters:
+            ///   - running: Whether the bot's machine runs its bot desktop now, so a passive viewer can connect. Always false for a bot without a bot desktop.
+            public init(running: Swift.Bool) {
+                self.running = running
+            }
+            public enum CodingKeys: String, CodingKey {
+                case running
             }
         }
         /// - Remark: Generated from `#/components/schemas/DesktopViewer`.
@@ -1003,6 +2433,14 @@ extension Components {
                 }
                 /// - Remark: Generated from `#/components/schemas/EventActivity/case1/type`.
                 public var _type: Components.Schemas.EventActivity.Case1Payload._TypePayload
+                /// - Remark: Generated from `#/components/schemas/EventActivity/case1/waitingFor`.
+                @frozen public enum WaitingForPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case approval = "approval"
+                    case credential = "credential"
+                    case login = "login"
+                }
+                /// - Remark: Generated from `#/components/schemas/EventActivity/case1/waitingFor`.
+                public var waitingFor: Components.Schemas.EventActivity.Case1Payload.WaitingForPayload?
                 /// A container of undocumented properties.
                 public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
                 /// Creates a new `Case1Payload`.
@@ -1021,6 +2459,7 @@ extension Components {
                 ///   - preview:
                 ///   - serverId:
                 ///   - _type:
+                ///   - waitingFor:
                 ///   - additionalProperties: A container of undocumented properties.
                 public init(
                     agentId: Swift.String,
@@ -1036,6 +2475,7 @@ extension Components {
                     preview: Swift.String,
                     serverId: Swift.String,
                     _type: Components.Schemas.EventActivity.Case1Payload._TypePayload,
+                    waitingFor: Components.Schemas.EventActivity.Case1Payload.WaitingForPayload? = nil,
                     additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()
                 ) {
                     self.agentId = agentId
@@ -1051,6 +2491,7 @@ extension Components {
                     self.preview = preview
                     self.serverId = serverId
                     self._type = _type
+                    self.waitingFor = waitingFor
                     self.additionalProperties = additionalProperties
                 }
                 public enum CodingKeys: String, CodingKey {
@@ -1067,6 +2508,7 @@ extension Components {
                     case preview
                     case serverId
                     case _type = "type"
+                    case waitingFor
                 }
                 public init(from decoder: any Swift.Decoder) throws {
                     let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -1122,6 +2564,10 @@ extension Components {
                         Components.Schemas.EventActivity.Case1Payload._TypePayload.self,
                         forKey: ._type
                     )
+                    self.waitingFor = try container.decodeIfPresent(
+                        Components.Schemas.EventActivity.Case1Payload.WaitingForPayload.self,
+                        forKey: .waitingFor
+                    )
                     additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
                         "agentId",
                         "agentName",
@@ -1135,7 +2581,8 @@ extension Components {
                         "origin",
                         "preview",
                         "serverId",
-                        "type"
+                        "type",
+                        "waitingFor"
                     ])
                 }
                 public func encode(to encoder: any Swift.Encoder) throws {
@@ -1191,6 +2638,10 @@ extension Components {
                     try container.encode(
                         self._type,
                         forKey: ._type
+                    )
+                    try container.encodeIfPresent(
+                        self.waitingFor,
+                        forKey: .waitingFor
                     )
                     try encoder.encodeAdditionalProperties(additionalProperties)
                 }
@@ -1672,10 +3123,169 @@ extension Components {
                 public var content: Swift.String
                 /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/entryId`.
                 public var entryId: Swift.String
+                /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/heldAction`.
+                public struct HeldActionPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/heldAction/id`.
+                    public var id: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/heldAction/job`.
+                    public var job: Swift.String
+                    /// A container of undocumented properties.
+                    public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
+                    /// Creates a new `HeldActionPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - id:
+                    ///   - job:
+                    ///   - additionalProperties: A container of undocumented properties.
+                    public init(
+                        id: Swift.String,
+                        job: Swift.String,
+                        additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()
+                    ) {
+                        self.id = id
+                        self.job = job
+                        self.additionalProperties = additionalProperties
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case id
+                        case job
+                    }
+                    public init(from decoder: any Swift.Decoder) throws {
+                        let container = try decoder.container(keyedBy: CodingKeys.self)
+                        self.id = try container.decode(
+                            Swift.String.self,
+                            forKey: .id
+                        )
+                        self.job = try container.decode(
+                            Swift.String.self,
+                            forKey: .job
+                        )
+                        additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
+                            "id",
+                            "job"
+                        ])
+                    }
+                    public func encode(to encoder: any Swift.Encoder) throws {
+                        var container = encoder.container(keyedBy: CodingKeys.self)
+                        try container.encode(
+                            self.id,
+                            forKey: .id
+                        )
+                        try container.encode(
+                            self.job,
+                            forKey: .job
+                        )
+                        try encoder.encodeAdditionalProperties(additionalProperties)
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/heldAction`.
+                public var heldAction: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.HeldActionPayload?
                 /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/id`.
                 public var id: Swift.String
                 /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/isError`.
                 public var isError: Swift.Bool?
+                /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/jobQuestion`.
+                public struct JobQuestionPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/jobQuestion/id`.
+                    public var id: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/jobQuestion/job`.
+                    public var job: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/jobQuestion/kind`.
+                    public var kind: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/jobQuestion/multiple`.
+                    public var multiple: Swift.Bool?
+                    /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/jobQuestion/options`.
+                    public var options: [Swift.String]?
+                    /// A container of undocumented properties.
+                    public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
+                    /// Creates a new `JobQuestionPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - id:
+                    ///   - job:
+                    ///   - kind:
+                    ///   - multiple:
+                    ///   - options:
+                    ///   - additionalProperties: A container of undocumented properties.
+                    public init(
+                        id: Swift.String,
+                        job: Swift.String,
+                        kind: Swift.String,
+                        multiple: Swift.Bool? = nil,
+                        options: [Swift.String]? = nil,
+                        additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()
+                    ) {
+                        self.id = id
+                        self.job = job
+                        self.kind = kind
+                        self.multiple = multiple
+                        self.options = options
+                        self.additionalProperties = additionalProperties
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case id
+                        case job
+                        case kind
+                        case multiple
+                        case options
+                    }
+                    public init(from decoder: any Swift.Decoder) throws {
+                        let container = try decoder.container(keyedBy: CodingKeys.self)
+                        self.id = try container.decode(
+                            Swift.String.self,
+                            forKey: .id
+                        )
+                        self.job = try container.decode(
+                            Swift.String.self,
+                            forKey: .job
+                        )
+                        self.kind = try container.decode(
+                            Swift.String.self,
+                            forKey: .kind
+                        )
+                        self.multiple = try container.decodeIfPresent(
+                            Swift.Bool.self,
+                            forKey: .multiple
+                        )
+                        self.options = try container.decodeIfPresent(
+                            [Swift.String].self,
+                            forKey: .options
+                        )
+                        additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
+                            "id",
+                            "job",
+                            "kind",
+                            "multiple",
+                            "options"
+                        ])
+                    }
+                    public func encode(to encoder: any Swift.Encoder) throws {
+                        var container = encoder.container(keyedBy: CodingKeys.self)
+                        try container.encode(
+                            self.id,
+                            forKey: .id
+                        )
+                        try container.encode(
+                            self.job,
+                            forKey: .job
+                        )
+                        try container.encode(
+                            self.kind,
+                            forKey: .kind
+                        )
+                        try container.encodeIfPresent(
+                            self.multiple,
+                            forKey: .multiple
+                        )
+                        try container.encodeIfPresent(
+                            self.options,
+                            forKey: .options
+                        )
+                        try encoder.encodeAdditionalProperties(additionalProperties)
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/jobQuestion`.
+                public var jobQuestion: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.JobQuestionPayload?
                 /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/kind`.
                 public var kind: Swift.String?
                 /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/origin`.
@@ -1686,6 +3296,10 @@ extension Components {
                     public var kind: Swift.String
                     /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/origin/name`.
                     public var name: Swift.String?
+                    /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/origin/source`.
+                    public var source: Swift.String?
+                    /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/origin/via`.
+                    public var via: Swift.String?
                     /// A container of undocumented properties.
                     public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
                     /// Creates a new `OriginPayload`.
@@ -1694,22 +3308,30 @@ extension Components {
                     ///   - agentId:
                     ///   - kind:
                     ///   - name:
+                    ///   - source:
+                    ///   - via:
                     ///   - additionalProperties: A container of undocumented properties.
                     public init(
                         agentId: Swift.String? = nil,
                         kind: Swift.String,
                         name: Swift.String? = nil,
+                        source: Swift.String? = nil,
+                        via: Swift.String? = nil,
                         additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()
                     ) {
                         self.agentId = agentId
                         self.kind = kind
                         self.name = name
+                        self.source = source
+                        self.via = via
                         self.additionalProperties = additionalProperties
                     }
                     public enum CodingKeys: String, CodingKey {
                         case agentId
                         case kind
                         case name
+                        case source
+                        case via
                     }
                     public init(from decoder: any Swift.Decoder) throws {
                         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -1725,10 +3347,20 @@ extension Components {
                             Swift.String.self,
                             forKey: .name
                         )
+                        self.source = try container.decodeIfPresent(
+                            Swift.String.self,
+                            forKey: .source
+                        )
+                        self.via = try container.decodeIfPresent(
+                            Swift.String.self,
+                            forKey: .via
+                        )
                         additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
                             "agentId",
                             "kind",
-                            "name"
+                            "name",
+                            "source",
+                            "via"
                         ])
                     }
                     public func encode(to encoder: any Swift.Encoder) throws {
@@ -1745,6 +3377,14 @@ extension Components {
                             self.name,
                             forKey: .name
                         )
+                        try container.encodeIfPresent(
+                            self.source,
+                            forKey: .source
+                        )
+                        try container.encodeIfPresent(
+                            self.via,
+                            forKey: .via
+                        )
                         try encoder.encodeAdditionalProperties(additionalProperties)
                     }
                 }
@@ -1758,6 +3398,65 @@ extension Components {
                 public var requestId: Swift.String?
                 /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/role`.
                 public var role: Swift.String
+                /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/SourcesPayload`.
+                public struct SourcesPayloadPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/SourcesPayload/title`.
+                    public var title: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/SourcesPayload/url`.
+                    public var url: Swift.String
+                    /// A container of undocumented properties.
+                    public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
+                    /// Creates a new `SourcesPayloadPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - title:
+                    ///   - url:
+                    ///   - additionalProperties: A container of undocumented properties.
+                    public init(
+                        title: Swift.String,
+                        url: Swift.String,
+                        additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()
+                    ) {
+                        self.title = title
+                        self.url = url
+                        self.additionalProperties = additionalProperties
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case title
+                        case url
+                    }
+                    public init(from decoder: any Swift.Decoder) throws {
+                        let container = try decoder.container(keyedBy: CodingKeys.self)
+                        self.title = try container.decode(
+                            Swift.String.self,
+                            forKey: .title
+                        )
+                        self.url = try container.decode(
+                            Swift.String.self,
+                            forKey: .url
+                        )
+                        additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
+                            "title",
+                            "url"
+                        ])
+                    }
+                    public func encode(to encoder: any Swift.Encoder) throws {
+                        var container = encoder.container(keyedBy: CodingKeys.self)
+                        try container.encode(
+                            self.title,
+                            forKey: .title
+                        )
+                        try container.encode(
+                            self.url,
+                            forKey: .url
+                        )
+                        try encoder.encodeAdditionalProperties(additionalProperties)
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/sources`.
+                public typealias SourcesPayload = [Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.SourcesPayloadPayload]
+                /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/sources`.
+                public var sources: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.SourcesPayload?
                 /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/stopReason`.
                 public var stopReason: Swift.String?
                 /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/timestamp`.
@@ -1778,14 +3477,17 @@ extension Components {
                 ///   - communication:
                 ///   - content:
                 ///   - entryId:
+                ///   - heldAction:
                 ///   - id:
                 ///   - isError:
+                ///   - jobQuestion:
                 ///   - kind:
                 ///   - origin:
                 ///   - replyPreview:
                 ///   - replyTo:
                 ///   - requestId:
                 ///   - role:
+                ///   - sources:
                 ///   - stopReason:
                 ///   - timestamp:
                 ///   - toolCallId:
@@ -1798,14 +3500,17 @@ extension Components {
                     communication: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.CommunicationPayload? = nil,
                     content: Swift.String,
                     entryId: Swift.String,
+                    heldAction: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.HeldActionPayload? = nil,
                     id: Swift.String,
                     isError: Swift.Bool? = nil,
+                    jobQuestion: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.JobQuestionPayload? = nil,
                     kind: Swift.String? = nil,
                     origin: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.OriginPayload? = nil,
                     replyPreview: Swift.String? = nil,
                     replyTo: Swift.String? = nil,
                     requestId: Swift.String? = nil,
                     role: Swift.String,
+                    sources: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.SourcesPayload? = nil,
                     stopReason: Swift.String? = nil,
                     timestamp: Swift.Double? = nil,
                     toolCallId: Swift.String? = nil,
@@ -1818,14 +3523,17 @@ extension Components {
                     self.communication = communication
                     self.content = content
                     self.entryId = entryId
+                    self.heldAction = heldAction
                     self.id = id
                     self.isError = isError
+                    self.jobQuestion = jobQuestion
                     self.kind = kind
                     self.origin = origin
                     self.replyPreview = replyPreview
                     self.replyTo = replyTo
                     self.requestId = requestId
                     self.role = role
+                    self.sources = sources
                     self.stopReason = stopReason
                     self.timestamp = timestamp
                     self.toolCallId = toolCallId
@@ -1839,14 +3547,17 @@ extension Components {
                     case communication
                     case content
                     case entryId
+                    case heldAction
                     case id
                     case isError
+                    case jobQuestion
                     case kind
                     case origin
                     case replyPreview
                     case replyTo
                     case requestId
                     case role
+                    case sources
                     case stopReason
                     case timestamp
                     case toolCallId
@@ -1875,6 +3586,10 @@ extension Components {
                         Swift.String.self,
                         forKey: .entryId
                     )
+                    self.heldAction = try container.decodeIfPresent(
+                        Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.HeldActionPayload.self,
+                        forKey: .heldAction
+                    )
                     self.id = try container.decode(
                         Swift.String.self,
                         forKey: .id
@@ -1882,6 +3597,10 @@ extension Components {
                     self.isError = try container.decodeIfPresent(
                         Swift.Bool.self,
                         forKey: .isError
+                    )
+                    self.jobQuestion = try container.decodeIfPresent(
+                        Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.JobQuestionPayload.self,
+                        forKey: .jobQuestion
                     )
                     self.kind = try container.decodeIfPresent(
                         Swift.String.self,
@@ -1906,6 +3625,10 @@ extension Components {
                     self.role = try container.decode(
                         Swift.String.self,
                         forKey: .role
+                    )
+                    self.sources = try container.decodeIfPresent(
+                        Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.SourcesPayload.self,
+                        forKey: .sources
                     )
                     self.stopReason = try container.decodeIfPresent(
                         Swift.String.self,
@@ -1933,14 +3656,17 @@ extension Components {
                         "communication",
                         "content",
                         "entryId",
+                        "heldAction",
                         "id",
                         "isError",
+                        "jobQuestion",
                         "kind",
                         "origin",
                         "replyPreview",
                         "replyTo",
                         "requestId",
                         "role",
+                        "sources",
                         "stopReason",
                         "timestamp",
                         "toolCallId",
@@ -1970,6 +3696,10 @@ extension Components {
                         self.entryId,
                         forKey: .entryId
                     )
+                    try container.encodeIfPresent(
+                        self.heldAction,
+                        forKey: .heldAction
+                    )
                     try container.encode(
                         self.id,
                         forKey: .id
@@ -1977,6 +3707,10 @@ extension Components {
                     try container.encodeIfPresent(
                         self.isError,
                         forKey: .isError
+                    )
+                    try container.encodeIfPresent(
+                        self.jobQuestion,
+                        forKey: .jobQuestion
                     )
                     try container.encodeIfPresent(
                         self.kind,
@@ -2001,6 +3735,10 @@ extension Components {
                     try container.encode(
                         self.role,
                         forKey: .role
+                    )
+                    try container.encodeIfPresent(
+                        self.sources,
+                        forKey: .sources
                     )
                     try container.encodeIfPresent(
                         self.stopReason,
@@ -2782,10 +4520,169 @@ extension Components {
                 public var content: Swift.String
                 /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/entryId`.
                 public var entryId: Swift.String
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/heldAction`.
+                public struct HeldActionPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/heldAction/id`.
+                    public var id: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/heldAction/job`.
+                    public var job: Swift.String
+                    /// A container of undocumented properties.
+                    public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
+                    /// Creates a new `HeldActionPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - id:
+                    ///   - job:
+                    ///   - additionalProperties: A container of undocumented properties.
+                    public init(
+                        id: Swift.String,
+                        job: Swift.String,
+                        additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()
+                    ) {
+                        self.id = id
+                        self.job = job
+                        self.additionalProperties = additionalProperties
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case id
+                        case job
+                    }
+                    public init(from decoder: any Swift.Decoder) throws {
+                        let container = try decoder.container(keyedBy: CodingKeys.self)
+                        self.id = try container.decode(
+                            Swift.String.self,
+                            forKey: .id
+                        )
+                        self.job = try container.decode(
+                            Swift.String.self,
+                            forKey: .job
+                        )
+                        additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
+                            "id",
+                            "job"
+                        ])
+                    }
+                    public func encode(to encoder: any Swift.Encoder) throws {
+                        var container = encoder.container(keyedBy: CodingKeys.self)
+                        try container.encode(
+                            self.id,
+                            forKey: .id
+                        )
+                        try container.encode(
+                            self.job,
+                            forKey: .job
+                        )
+                        try encoder.encodeAdditionalProperties(additionalProperties)
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/heldAction`.
+                public var heldAction: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.HeldActionPayload?
                 /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/id`.
                 public var id: Swift.String
                 /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/isError`.
                 public var isError: Swift.Bool?
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/jobQuestion`.
+                public struct JobQuestionPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/jobQuestion/id`.
+                    public var id: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/jobQuestion/job`.
+                    public var job: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/jobQuestion/kind`.
+                    public var kind: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/jobQuestion/multiple`.
+                    public var multiple: Swift.Bool?
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/jobQuestion/options`.
+                    public var options: [Swift.String]?
+                    /// A container of undocumented properties.
+                    public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
+                    /// Creates a new `JobQuestionPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - id:
+                    ///   - job:
+                    ///   - kind:
+                    ///   - multiple:
+                    ///   - options:
+                    ///   - additionalProperties: A container of undocumented properties.
+                    public init(
+                        id: Swift.String,
+                        job: Swift.String,
+                        kind: Swift.String,
+                        multiple: Swift.Bool? = nil,
+                        options: [Swift.String]? = nil,
+                        additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()
+                    ) {
+                        self.id = id
+                        self.job = job
+                        self.kind = kind
+                        self.multiple = multiple
+                        self.options = options
+                        self.additionalProperties = additionalProperties
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case id
+                        case job
+                        case kind
+                        case multiple
+                        case options
+                    }
+                    public init(from decoder: any Swift.Decoder) throws {
+                        let container = try decoder.container(keyedBy: CodingKeys.self)
+                        self.id = try container.decode(
+                            Swift.String.self,
+                            forKey: .id
+                        )
+                        self.job = try container.decode(
+                            Swift.String.self,
+                            forKey: .job
+                        )
+                        self.kind = try container.decode(
+                            Swift.String.self,
+                            forKey: .kind
+                        )
+                        self.multiple = try container.decodeIfPresent(
+                            Swift.Bool.self,
+                            forKey: .multiple
+                        )
+                        self.options = try container.decodeIfPresent(
+                            [Swift.String].self,
+                            forKey: .options
+                        )
+                        additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
+                            "id",
+                            "job",
+                            "kind",
+                            "multiple",
+                            "options"
+                        ])
+                    }
+                    public func encode(to encoder: any Swift.Encoder) throws {
+                        var container = encoder.container(keyedBy: CodingKeys.self)
+                        try container.encode(
+                            self.id,
+                            forKey: .id
+                        )
+                        try container.encode(
+                            self.job,
+                            forKey: .job
+                        )
+                        try container.encode(
+                            self.kind,
+                            forKey: .kind
+                        )
+                        try container.encodeIfPresent(
+                            self.multiple,
+                            forKey: .multiple
+                        )
+                        try container.encodeIfPresent(
+                            self.options,
+                            forKey: .options
+                        )
+                        try encoder.encodeAdditionalProperties(additionalProperties)
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/jobQuestion`.
+                public var jobQuestion: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.JobQuestionPayload?
                 /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/kind`.
                 public var kind: Swift.String?
                 /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/origin`.
@@ -2796,6 +4693,10 @@ extension Components {
                     public var kind: Swift.String
                     /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/origin/name`.
                     public var name: Swift.String?
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/origin/source`.
+                    public var source: Swift.String?
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/origin/via`.
+                    public var via: Swift.String?
                     /// A container of undocumented properties.
                     public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
                     /// Creates a new `OriginPayload`.
@@ -2804,22 +4705,30 @@ extension Components {
                     ///   - agentId:
                     ///   - kind:
                     ///   - name:
+                    ///   - source:
+                    ///   - via:
                     ///   - additionalProperties: A container of undocumented properties.
                     public init(
                         agentId: Swift.String? = nil,
                         kind: Swift.String,
                         name: Swift.String? = nil,
+                        source: Swift.String? = nil,
+                        via: Swift.String? = nil,
                         additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()
                     ) {
                         self.agentId = agentId
                         self.kind = kind
                         self.name = name
+                        self.source = source
+                        self.via = via
                         self.additionalProperties = additionalProperties
                     }
                     public enum CodingKeys: String, CodingKey {
                         case agentId
                         case kind
                         case name
+                        case source
+                        case via
                     }
                     public init(from decoder: any Swift.Decoder) throws {
                         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -2835,10 +4744,20 @@ extension Components {
                             Swift.String.self,
                             forKey: .name
                         )
+                        self.source = try container.decodeIfPresent(
+                            Swift.String.self,
+                            forKey: .source
+                        )
+                        self.via = try container.decodeIfPresent(
+                            Swift.String.self,
+                            forKey: .via
+                        )
                         additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
                             "agentId",
                             "kind",
-                            "name"
+                            "name",
+                            "source",
+                            "via"
                         ])
                     }
                     public func encode(to encoder: any Swift.Encoder) throws {
@@ -2855,6 +4774,14 @@ extension Components {
                             self.name,
                             forKey: .name
                         )
+                        try container.encodeIfPresent(
+                            self.source,
+                            forKey: .source
+                        )
+                        try container.encodeIfPresent(
+                            self.via,
+                            forKey: .via
+                        )
                         try encoder.encodeAdditionalProperties(additionalProperties)
                     }
                 }
@@ -2868,6 +4795,65 @@ extension Components {
                 public var requestId: Swift.String?
                 /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/role`.
                 public var role: Swift.String
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/SourcesPayload`.
+                public struct SourcesPayloadPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/SourcesPayload/title`.
+                    public var title: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/SourcesPayload/url`.
+                    public var url: Swift.String
+                    /// A container of undocumented properties.
+                    public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
+                    /// Creates a new `SourcesPayloadPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - title:
+                    ///   - url:
+                    ///   - additionalProperties: A container of undocumented properties.
+                    public init(
+                        title: Swift.String,
+                        url: Swift.String,
+                        additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()
+                    ) {
+                        self.title = title
+                        self.url = url
+                        self.additionalProperties = additionalProperties
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case title
+                        case url
+                    }
+                    public init(from decoder: any Swift.Decoder) throws {
+                        let container = try decoder.container(keyedBy: CodingKeys.self)
+                        self.title = try container.decode(
+                            Swift.String.self,
+                            forKey: .title
+                        )
+                        self.url = try container.decode(
+                            Swift.String.self,
+                            forKey: .url
+                        )
+                        additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
+                            "title",
+                            "url"
+                        ])
+                    }
+                    public func encode(to encoder: any Swift.Encoder) throws {
+                        var container = encoder.container(keyedBy: CodingKeys.self)
+                        try container.encode(
+                            self.title,
+                            forKey: .title
+                        )
+                        try container.encode(
+                            self.url,
+                            forKey: .url
+                        )
+                        try encoder.encodeAdditionalProperties(additionalProperties)
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/sources`.
+                public typealias SourcesPayload = [Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.SourcesPayloadPayload]
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/sources`.
+                public var sources: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.SourcesPayload?
                 /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/stopReason`.
                 public var stopReason: Swift.String?
                 /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/timestamp`.
@@ -2888,14 +4874,17 @@ extension Components {
                 ///   - communication:
                 ///   - content:
                 ///   - entryId:
+                ///   - heldAction:
                 ///   - id:
                 ///   - isError:
+                ///   - jobQuestion:
                 ///   - kind:
                 ///   - origin:
                 ///   - replyPreview:
                 ///   - replyTo:
                 ///   - requestId:
                 ///   - role:
+                ///   - sources:
                 ///   - stopReason:
                 ///   - timestamp:
                 ///   - toolCallId:
@@ -2908,14 +4897,17 @@ extension Components {
                     communication: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.CommunicationPayload? = nil,
                     content: Swift.String,
                     entryId: Swift.String,
+                    heldAction: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.HeldActionPayload? = nil,
                     id: Swift.String,
                     isError: Swift.Bool? = nil,
+                    jobQuestion: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.JobQuestionPayload? = nil,
                     kind: Swift.String? = nil,
                     origin: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.OriginPayload? = nil,
                     replyPreview: Swift.String? = nil,
                     replyTo: Swift.String? = nil,
                     requestId: Swift.String? = nil,
                     role: Swift.String,
+                    sources: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.SourcesPayload? = nil,
                     stopReason: Swift.String? = nil,
                     timestamp: Swift.Double? = nil,
                     toolCallId: Swift.String? = nil,
@@ -2928,14 +4920,17 @@ extension Components {
                     self.communication = communication
                     self.content = content
                     self.entryId = entryId
+                    self.heldAction = heldAction
                     self.id = id
                     self.isError = isError
+                    self.jobQuestion = jobQuestion
                     self.kind = kind
                     self.origin = origin
                     self.replyPreview = replyPreview
                     self.replyTo = replyTo
                     self.requestId = requestId
                     self.role = role
+                    self.sources = sources
                     self.stopReason = stopReason
                     self.timestamp = timestamp
                     self.toolCallId = toolCallId
@@ -2949,14 +4944,17 @@ extension Components {
                     case communication
                     case content
                     case entryId
+                    case heldAction
                     case id
                     case isError
+                    case jobQuestion
                     case kind
                     case origin
                     case replyPreview
                     case replyTo
                     case requestId
                     case role
+                    case sources
                     case stopReason
                     case timestamp
                     case toolCallId
@@ -2985,6 +4983,10 @@ extension Components {
                         Swift.String.self,
                         forKey: .entryId
                     )
+                    self.heldAction = try container.decodeIfPresent(
+                        Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.HeldActionPayload.self,
+                        forKey: .heldAction
+                    )
                     self.id = try container.decode(
                         Swift.String.self,
                         forKey: .id
@@ -2992,6 +4994,10 @@ extension Components {
                     self.isError = try container.decodeIfPresent(
                         Swift.Bool.self,
                         forKey: .isError
+                    )
+                    self.jobQuestion = try container.decodeIfPresent(
+                        Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.JobQuestionPayload.self,
+                        forKey: .jobQuestion
                     )
                     self.kind = try container.decodeIfPresent(
                         Swift.String.self,
@@ -3016,6 +5022,10 @@ extension Components {
                     self.role = try container.decode(
                         Swift.String.self,
                         forKey: .role
+                    )
+                    self.sources = try container.decodeIfPresent(
+                        Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.SourcesPayload.self,
+                        forKey: .sources
                     )
                     self.stopReason = try container.decodeIfPresent(
                         Swift.String.self,
@@ -3043,14 +5053,17 @@ extension Components {
                         "communication",
                         "content",
                         "entryId",
+                        "heldAction",
                         "id",
                         "isError",
+                        "jobQuestion",
                         "kind",
                         "origin",
                         "replyPreview",
                         "replyTo",
                         "requestId",
                         "role",
+                        "sources",
                         "stopReason",
                         "timestamp",
                         "toolCallId",
@@ -3080,6 +5093,10 @@ extension Components {
                         self.entryId,
                         forKey: .entryId
                     )
+                    try container.encodeIfPresent(
+                        self.heldAction,
+                        forKey: .heldAction
+                    )
                     try container.encode(
                         self.id,
                         forKey: .id
@@ -3087,6 +5104,10 @@ extension Components {
                     try container.encodeIfPresent(
                         self.isError,
                         forKey: .isError
+                    )
+                    try container.encodeIfPresent(
+                        self.jobQuestion,
+                        forKey: .jobQuestion
                     )
                     try container.encodeIfPresent(
                         self.kind,
@@ -3111,6 +5132,10 @@ extension Components {
                     try container.encode(
                         self.role,
                         forKey: .role
+                    )
+                    try container.encodeIfPresent(
+                        self.sources,
+                        forKey: .sources
                     )
                     try container.encodeIfPresent(
                         self.stopReason,
@@ -3359,6 +5384,152 @@ extension Components {
                 case updatedAt
             }
         }
+        /// - Remark: Generated from `#/components/schemas/GitHubAccount`.
+        public struct GitHubAccount: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/GitHubAccount/botIds`.
+            public var botIds: [Swift.String]
+            /// - Remark: Generated from `#/components/schemas/GitHubAccount/createdAt`.
+            public var createdAt: Swift.String
+            /// - Remark: Generated from `#/components/schemas/GitHubAccount/htmlUrl`.
+            public var htmlUrl: Swift.String
+            /// - Remark: Generated from `#/components/schemas/GitHubAccount/id`.
+            public var id: Swift.String
+            /// The GitHub user its bots act and commit as.
+            ///
+            /// - Remark: Generated from `#/components/schemas/GitHubAccount/login`.
+            public var login: Swift.String
+            /// The OpenSSH public key the account's commits are signed with. Add it on GitHub as the user's signing key so its commits show as verified.
+            ///
+            /// - Remark: Generated from `#/components/schemas/GitHubAccount/signingKey`.
+            public var signingKey: Swift.String
+            /// - Remark: Generated from `#/components/schemas/GitHubAccount/token`.
+            public var token: Components.Schemas.SecretStatus
+            /// Creates a new `GitHubAccount`.
+            ///
+            /// - Parameters:
+            ///   - botIds:
+            ///   - createdAt:
+            ///   - htmlUrl:
+            ///   - id:
+            ///   - login: The GitHub user its bots act and commit as.
+            ///   - signingKey: The OpenSSH public key the account's commits are signed with. Add it on GitHub as the user's signing key so its commits show as verified.
+            ///   - token:
+            public init(
+                botIds: [Swift.String],
+                createdAt: Swift.String,
+                htmlUrl: Swift.String,
+                id: Swift.String,
+                login: Swift.String,
+                signingKey: Swift.String,
+                token: Components.Schemas.SecretStatus
+            ) {
+                self.botIds = botIds
+                self.createdAt = createdAt
+                self.htmlUrl = htmlUrl
+                self.id = id
+                self.login = login
+                self.signingKey = signingKey
+                self.token = token
+            }
+            public enum CodingKeys: String, CodingKey {
+                case botIds
+                case createdAt
+                case htmlUrl
+                case id
+                case login
+                case signingKey
+                case token
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/GitHubApp`.
+        public struct GitHubApp: Codable, Hashable, Sendable {
+            /// The GitHub user or organization whose repositories the App works on.
+            ///
+            /// - Remark: Generated from `#/components/schemas/GitHubApp/account`.
+            public var account: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/GitHubApp/botIds`.
+            public var botIds: [Swift.String]
+            /// - Remark: Generated from `#/components/schemas/GitHubApp/clientSecret`.
+            public var clientSecret: Components.Schemas.SecretStatus
+            /// - Remark: Generated from `#/components/schemas/GitHubApp/createdAt`.
+            public var createdAt: Swift.String
+            /// - Remark: Generated from `#/components/schemas/GitHubApp/htmlUrl`.
+            public var htmlUrl: Swift.String
+            /// - Remark: Generated from `#/components/schemas/GitHubApp/id`.
+            public var id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/GitHubApp/installUrl`.
+            public var installUrl: Swift.String
+            /// - Remark: Generated from `#/components/schemas/GitHubApp/installed`.
+            public var installed: Swift.Bool
+            /// The name commits and pull requests show, such as `scout[bot]`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/GitHubApp/login`.
+            public var login: Swift.String
+            /// - Remark: Generated from `#/components/schemas/GitHubApp/name`.
+            public var name: Swift.String
+            /// - Remark: Generated from `#/components/schemas/GitHubApp/slug`.
+            public var slug: Swift.String
+            /// The owner's GitHub login when signed in through the App; its bots then act as the owner, with the App's badge.
+            ///
+            /// - Remark: Generated from `#/components/schemas/GitHubApp/user`.
+            public var user: Swift.String?
+            /// Creates a new `GitHubApp`.
+            ///
+            /// - Parameters:
+            ///   - account: The GitHub user or organization whose repositories the App works on.
+            ///   - botIds:
+            ///   - clientSecret:
+            ///   - createdAt:
+            ///   - htmlUrl:
+            ///   - id:
+            ///   - installUrl:
+            ///   - installed:
+            ///   - login: The name commits and pull requests show, such as `scout[bot]`.
+            ///   - name:
+            ///   - slug:
+            ///   - user: The owner's GitHub login when signed in through the App; its bots then act as the owner, with the App's badge.
+            public init(
+                account: Swift.String? = nil,
+                botIds: [Swift.String],
+                clientSecret: Components.Schemas.SecretStatus,
+                createdAt: Swift.String,
+                htmlUrl: Swift.String,
+                id: Swift.String,
+                installUrl: Swift.String,
+                installed: Swift.Bool,
+                login: Swift.String,
+                name: Swift.String,
+                slug: Swift.String,
+                user: Swift.String? = nil
+            ) {
+                self.account = account
+                self.botIds = botIds
+                self.clientSecret = clientSecret
+                self.createdAt = createdAt
+                self.htmlUrl = htmlUrl
+                self.id = id
+                self.installUrl = installUrl
+                self.installed = installed
+                self.login = login
+                self.name = name
+                self.slug = slug
+                self.user = user
+            }
+            public enum CodingKeys: String, CodingKey {
+                case account
+                case botIds
+                case clientSecret
+                case createdAt
+                case htmlUrl
+                case id
+                case installUrl
+                case installed
+                case login
+                case name
+                case slug
+                case user
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/GroupActivity`.
         public struct GroupActivity: Codable, Hashable, Sendable {
             /// Bot-started turns since the owner's last message.
@@ -3581,6 +5752,572 @@ extension Components {
         }
         /// - Remark: Generated from `#/components/schemas/HeartbeatEvent`.
         public typealias HeartbeatEvent = OpenAPIRuntime.OpenAPIObjectContainer
+        /// - Remark: Generated from `#/components/schemas/HeldAction`.
+        public struct HeldAction: Codable, Hashable, Sendable {
+            /// The action in plain words.
+            ///
+            /// - Remark: Generated from `#/components/schemas/HeldAction/action`.
+            public var action: Swift.String
+            /// - Remark: Generated from `#/components/schemas/HeldAction/decidedAt`.
+            public var decidedAt: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/HeldAction/declineReason`.
+            public var declineReason: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/HeldAction/heldAt`.
+            public var heldAt: Swift.String
+            /// - Remark: Generated from `#/components/schemas/HeldAction/id`.
+            public var id: Swift.String
+            /// The desktop job's name.
+            ///
+            /// - Remark: Generated from `#/components/schemas/HeldAction/job`.
+            public var job: Swift.String
+            /// - Remark: Generated from `#/components/schemas/HeldAction/OwnerMessagesPayload`.
+            public struct OwnerMessagesPayloadPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/HeldAction/OwnerMessagesPayload/from`.
+                @frozen public enum FromPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case owner = "owner"
+                    case automation = "automation"
+                }
+                /// - Remark: Generated from `#/components/schemas/HeldAction/OwnerMessagesPayload/from`.
+                public var from: Components.Schemas.HeldAction.OwnerMessagesPayloadPayload.FromPayload
+                /// - Remark: Generated from `#/components/schemas/HeldAction/OwnerMessagesPayload/requestId`.
+                public var requestId: Swift.String
+                /// - Remark: Generated from `#/components/schemas/HeldAction/OwnerMessagesPayload/text`.
+                public var text: Swift.String
+                /// Creates a new `OwnerMessagesPayloadPayload`.
+                ///
+                /// - Parameters:
+                ///   - from:
+                ///   - requestId:
+                ///   - text:
+                public init(
+                    from: Components.Schemas.HeldAction.OwnerMessagesPayloadPayload.FromPayload,
+                    requestId: Swift.String,
+                    text: Swift.String
+                ) {
+                    self.from = from
+                    self.requestId = requestId
+                    self.text = text
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case from
+                    case requestId
+                    case text
+                }
+            }
+            /// The owner messages the action was checked against.
+            ///
+            /// - Remark: Generated from `#/components/schemas/HeldAction/ownerMessages`.
+            public typealias OwnerMessagesPayload = [Components.Schemas.HeldAction.OwnerMessagesPayloadPayload]
+            /// The owner messages the action was checked against.
+            ///
+            /// - Remark: Generated from `#/components/schemas/HeldAction/ownerMessages`.
+            public var ownerMessages: Components.Schemas.HeldAction.OwnerMessagesPayload
+            /// The URL of the page the job read last.
+            ///
+            /// - Remark: Generated from `#/components/schemas/HeldAction/page`.
+            public var page: Swift.String?
+            /// Why the intent check held it.
+            ///
+            /// - Remark: Generated from `#/components/schemas/HeldAction/reason`.
+            public var reason: Swift.String
+            /// - Remark: Generated from `#/components/schemas/HeldAction/status`.
+            @frozen public enum StatusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case pending = "pending"
+                case approved = "approved"
+                case declined = "declined"
+                case expired = "expired"
+            }
+            /// - Remark: Generated from `#/components/schemas/HeldAction/status`.
+            public var status: Components.Schemas.HeldAction.StatusPayload
+            /// Creates a new `HeldAction`.
+            ///
+            /// - Parameters:
+            ///   - action: The action in plain words.
+            ///   - decidedAt:
+            ///   - declineReason:
+            ///   - heldAt:
+            ///   - id:
+            ///   - job: The desktop job's name.
+            ///   - ownerMessages: The owner messages the action was checked against.
+            ///   - page: The URL of the page the job read last.
+            ///   - reason: Why the intent check held it.
+            ///   - status:
+            public init(
+                action: Swift.String,
+                decidedAt: Swift.String? = nil,
+                declineReason: Swift.String? = nil,
+                heldAt: Swift.String,
+                id: Swift.String,
+                job: Swift.String,
+                ownerMessages: Components.Schemas.HeldAction.OwnerMessagesPayload,
+                page: Swift.String? = nil,
+                reason: Swift.String,
+                status: Components.Schemas.HeldAction.StatusPayload
+            ) {
+                self.action = action
+                self.decidedAt = decidedAt
+                self.declineReason = declineReason
+                self.heldAt = heldAt
+                self.id = id
+                self.job = job
+                self.ownerMessages = ownerMessages
+                self.page = page
+                self.reason = reason
+                self.status = status
+            }
+            public enum CodingKeys: String, CodingKey {
+                case action
+                case decidedAt
+                case declineReason
+                case heldAt
+                case id
+                case job
+                case ownerMessages
+                case page
+                case reason
+                case status
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/Invite`.
+        public struct Invite: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/Invite/createdAt`.
+            public var createdAt: Swift.String
+            /// - Remark: Generated from `#/components/schemas/Invite/id`.
+            public var id: Swift.String
+            /// Creates a new `Invite`.
+            ///
+            /// - Parameters:
+            ///   - createdAt:
+            ///   - id:
+            public init(
+                createdAt: Swift.String,
+                id: Swift.String
+            ) {
+                self.createdAt = createdAt
+                self.id = id
+            }
+            public enum CodingKeys: String, CodingKey {
+                case createdAt
+                case id
+            }
+        }
+        /// The model that judges now: a classifier, or a small chat model when no key reaches one. Null when no model is available; then only commit points are held.
+        ///
+        /// - Remark: Generated from `#/components/schemas/JudgeChoice`.
+        public struct JudgeChoice: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/JudgeChoice/kind`.
+            @frozen public enum KindPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case classifier = "classifier"
+                case chat = "chat"
+            }
+            /// - Remark: Generated from `#/components/schemas/JudgeChoice/kind`.
+            public var kind: Components.Schemas.JudgeChoice.KindPayload
+            /// - Remark: Generated from `#/components/schemas/JudgeChoice/model`.
+            public var model: Swift.String
+            /// - Remark: Generated from `#/components/schemas/JudgeChoice/name`.
+            public var name: Swift.String
+            /// - Remark: Generated from `#/components/schemas/JudgeChoice/provider`.
+            public var provider: Swift.String
+            /// Creates a new `JudgeChoice`.
+            ///
+            /// - Parameters:
+            ///   - kind:
+            ///   - model:
+            ///   - name:
+            ///   - provider:
+            public init(
+                kind: Components.Schemas.JudgeChoice.KindPayload,
+                model: Swift.String,
+                name: Swift.String,
+                provider: Swift.String
+            ) {
+                self.kind = kind
+                self.model = model
+                self.name = name
+                self.provider = provider
+            }
+            public enum CodingKeys: String, CodingKey {
+                case kind
+                case model
+                case name
+                case provider
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/JudgeModel`.
+        public struct JudgeModel: Codable, Hashable, Sendable {
+            /// The classifier models the account's provider keys reach.
+            ///
+            /// - Remark: Generated from `#/components/schemas/JudgeModel/choices`.
+            public var choices: [Components.Schemas.JudgeChoice]
+            /// - Remark: Generated from `#/components/schemas/JudgeModel/effective`.
+            public var effective: Components.Schemas.JudgeChoice?
+            /// The owner's classifier; null uses the default, GPT-6 Luna through OpenAI Decisions.
+            ///
+            /// - Remark: Generated from `#/components/schemas/JudgeModel/judgeModel`.
+            public struct JudgeModelPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/JudgeModel/judgeModel/model`.
+                public var model: Swift.String
+                /// - Remark: Generated from `#/components/schemas/JudgeModel/judgeModel/provider`.
+                public var provider: Swift.String
+                /// Creates a new `JudgeModelPayload`.
+                ///
+                /// - Parameters:
+                ///   - model:
+                ///   - provider:
+                public init(
+                    model: Swift.String,
+                    provider: Swift.String
+                ) {
+                    self.model = model
+                    self.provider = provider
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case model
+                    case provider
+                }
+            }
+            /// The owner's classifier; null uses the default, GPT-6 Luna through OpenAI Decisions.
+            ///
+            /// - Remark: Generated from `#/components/schemas/JudgeModel/judgeModel`.
+            public var judgeModel: Components.Schemas.JudgeModel.JudgeModelPayload?
+            /// Creates a new `JudgeModel`.
+            ///
+            /// - Parameters:
+            ///   - choices: The classifier models the account's provider keys reach.
+            ///   - effective:
+            ///   - judgeModel: The owner's classifier; null uses the default, GPT-6 Luna through OpenAI Decisions.
+            public init(
+                choices: [Components.Schemas.JudgeChoice],
+                effective: Components.Schemas.JudgeChoice? = nil,
+                judgeModel: Components.Schemas.JudgeModel.JudgeModelPayload? = nil
+            ) {
+                self.choices = choices
+                self.effective = effective
+                self.judgeModel = judgeModel
+            }
+            public enum CodingKeys: String, CodingKey {
+                case choices
+                case effective
+                case judgeModel
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/LearnedChange`.
+        public struct LearnedChange: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/LearnedChange/action`.
+            @frozen public enum ActionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case create = "create"
+                case update = "update"
+                case delete = "delete"
+                case revert = "revert"
+            }
+            /// - Remark: Generated from `#/components/schemas/LearnedChange/action`.
+            public var action: Components.Schemas.LearnedChange.ActionPayload
+            /// - Remark: Generated from `#/components/schemas/LearnedChange/actor`.
+            @frozen public enum ActorPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case owner = "owner"
+                case bot = "bot"
+                case review = "review"
+                case curator = "curator"
+            }
+            /// - Remark: Generated from `#/components/schemas/LearnedChange/actor`.
+            public var actor: Components.Schemas.LearnedChange.ActorPayload
+            /// - Remark: Generated from `#/components/schemas/LearnedChange/after`.
+            public struct AfterPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/LearnedChange/after/value1`.
+                public var value1: Components.Schemas.SkillPackage?
+                /// - Remark: Generated from `#/components/schemas/LearnedChange/after/value2`.
+                public var value2: Components.Schemas.Memory?
+                /// Creates a new `AfterPayload`.
+                ///
+                /// - Parameters:
+                ///   - value1:
+                ///   - value2:
+                public init(
+                    value1: Components.Schemas.SkillPackage? = nil,
+                    value2: Components.Schemas.Memory? = nil
+                ) {
+                    self.value1 = value1
+                    self.value2 = value2
+                }
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self.value1 = try .init(from: decoder)
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self.value2 = try .init(from: decoder)
+                    } catch {
+                        errors.append(error)
+                    }
+                    try Swift.DecodingError.verifyAtLeastOneSchemaIsNotNil(
+                        [
+                            self.value1,
+                            self.value2
+                        ],
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    try self.value1?.encode(to: encoder)
+                    try self.value2?.encode(to: encoder)
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/LearnedChange/after`.
+            public var after: Components.Schemas.LearnedChange.AfterPayload?
+            /// - Remark: Generated from `#/components/schemas/LearnedChange/agentId`.
+            public var agentId: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/LearnedChange/before`.
+            public struct BeforePayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/LearnedChange/before/value1`.
+                public var value1: Components.Schemas.SkillPackage?
+                /// - Remark: Generated from `#/components/schemas/LearnedChange/before/value2`.
+                public var value2: Components.Schemas.Memory?
+                /// Creates a new `BeforePayload`.
+                ///
+                /// - Parameters:
+                ///   - value1:
+                ///   - value2:
+                public init(
+                    value1: Components.Schemas.SkillPackage? = nil,
+                    value2: Components.Schemas.Memory? = nil
+                ) {
+                    self.value1 = value1
+                    self.value2 = value2
+                }
+                public init(from decoder: any Swift.Decoder) throws {
+                    var errors: [any Swift.Error] = []
+                    do {
+                        self.value1 = try .init(from: decoder)
+                    } catch {
+                        errors.append(error)
+                    }
+                    do {
+                        self.value2 = try .init(from: decoder)
+                    } catch {
+                        errors.append(error)
+                    }
+                    try Swift.DecodingError.verifyAtLeastOneSchemaIsNotNil(
+                        [
+                            self.value1,
+                            self.value2
+                        ],
+                        type: Self.self,
+                        codingPath: decoder.codingPath,
+                        errors: errors
+                    )
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    try self.value1?.encode(to: encoder)
+                    try self.value2?.encode(to: encoder)
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/LearnedChange/before`.
+            public var before: Components.Schemas.LearnedChange.BeforePayload?
+            /// - Remark: Generated from `#/components/schemas/LearnedChange/createdAt`.
+            public var createdAt: Swift.String
+            /// - Remark: Generated from `#/components/schemas/LearnedChange/id`.
+            public var id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/LearnedChange/revertsId`.
+            public var revertsId: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/LearnedChange/source`.
+            public struct SourcePayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/LearnedChange/source/conversationId`.
+                public var conversationId: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/LearnedChange/source/executionId`.
+                public var executionId: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/LearnedChange/source/groupId`.
+                public var groupId: Swift.String?
+                /// Creates a new `SourcePayload`.
+                ///
+                /// - Parameters:
+                ///   - conversationId:
+                ///   - executionId:
+                ///   - groupId:
+                public init(
+                    conversationId: Swift.String? = nil,
+                    executionId: Swift.String? = nil,
+                    groupId: Swift.String? = nil
+                ) {
+                    self.conversationId = conversationId
+                    self.executionId = executionId
+                    self.groupId = groupId
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case conversationId
+                    case executionId
+                    case groupId
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/LearnedChange/source`.
+            public var source: Components.Schemas.LearnedChange.SourcePayload?
+            /// - Remark: Generated from `#/components/schemas/LearnedChange/target`.
+            @frozen public enum TargetPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case skill = "skill"
+                case memory = "memory"
+            }
+            /// - Remark: Generated from `#/components/schemas/LearnedChange/target`.
+            public var target: Components.Schemas.LearnedChange.TargetPayload
+            /// - Remark: Generated from `#/components/schemas/LearnedChange/targetId`.
+            public var targetId: Swift.String
+            /// Creates a new `LearnedChange`.
+            ///
+            /// - Parameters:
+            ///   - action:
+            ///   - actor:
+            ///   - after:
+            ///   - agentId:
+            ///   - before:
+            ///   - createdAt:
+            ///   - id:
+            ///   - revertsId:
+            ///   - source:
+            ///   - target:
+            ///   - targetId:
+            public init(
+                action: Components.Schemas.LearnedChange.ActionPayload,
+                actor: Components.Schemas.LearnedChange.ActorPayload,
+                after: Components.Schemas.LearnedChange.AfterPayload? = nil,
+                agentId: Swift.String? = nil,
+                before: Components.Schemas.LearnedChange.BeforePayload? = nil,
+                createdAt: Swift.String,
+                id: Swift.String,
+                revertsId: Swift.String? = nil,
+                source: Components.Schemas.LearnedChange.SourcePayload? = nil,
+                target: Components.Schemas.LearnedChange.TargetPayload,
+                targetId: Swift.String
+            ) {
+                self.action = action
+                self.actor = actor
+                self.after = after
+                self.agentId = agentId
+                self.before = before
+                self.createdAt = createdAt
+                self.id = id
+                self.revertsId = revertsId
+                self.source = source
+                self.target = target
+                self.targetId = targetId
+            }
+            public enum CodingKeys: String, CodingKey {
+                case action
+                case actor
+                case after
+                case agentId
+                case before
+                case createdAt
+                case id
+                case revertsId
+                case source
+                case target
+                case targetId
+            }
+        }
+        /// A bot's review of one of its turns changed its skills or memory, sent as the `learned` event on /v1/events. Clients show a short notice in the bot chat and link to the change record.
+        ///
+        /// - Remark: Generated from `#/components/schemas/LearnedEvent`.
+        public struct LearnedEvent: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/LearnedEvent/agentId`.
+            public var agentId: Swift.String
+            /// - Remark: Generated from `#/components/schemas/LearnedEvent/agentName`.
+            public var agentName: Swift.String
+            /// - Remark: Generated from `#/components/schemas/LearnedEvent/ChangesPayload`.
+            public struct ChangesPayloadPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/LearnedEvent/ChangesPayload/action`.
+                @frozen public enum ActionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case create = "create"
+                    case update = "update"
+                    case delete = "delete"
+                    case revert = "revert"
+                }
+                /// - Remark: Generated from `#/components/schemas/LearnedEvent/ChangesPayload/action`.
+                public var action: Components.Schemas.LearnedEvent.ChangesPayloadPayload.ActionPayload
+                /// - Remark: Generated from `#/components/schemas/LearnedEvent/ChangesPayload/changeId`.
+                public var changeId: Swift.String
+                /// - Remark: Generated from `#/components/schemas/LearnedEvent/ChangesPayload/name`.
+                public var name: Swift.String
+                /// - Remark: Generated from `#/components/schemas/LearnedEvent/ChangesPayload/target`.
+                @frozen public enum TargetPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case skill = "skill"
+                    case memory = "memory"
+                }
+                /// - Remark: Generated from `#/components/schemas/LearnedEvent/ChangesPayload/target`.
+                public var target: Components.Schemas.LearnedEvent.ChangesPayloadPayload.TargetPayload
+                /// Creates a new `ChangesPayloadPayload`.
+                ///
+                /// - Parameters:
+                ///   - action:
+                ///   - changeId:
+                ///   - name:
+                ///   - target:
+                public init(
+                    action: Components.Schemas.LearnedEvent.ChangesPayloadPayload.ActionPayload,
+                    changeId: Swift.String,
+                    name: Swift.String,
+                    target: Components.Schemas.LearnedEvent.ChangesPayloadPayload.TargetPayload
+                ) {
+                    self.action = action
+                    self.changeId = changeId
+                    self.name = name
+                    self.target = target
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case action
+                    case changeId
+                    case name
+                    case target
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/LearnedEvent/changes`.
+            public typealias ChangesPayload = [Components.Schemas.LearnedEvent.ChangesPayloadPayload]
+            /// - Remark: Generated from `#/components/schemas/LearnedEvent/changes`.
+            public var changes: Components.Schemas.LearnedEvent.ChangesPayload
+            /// - Remark: Generated from `#/components/schemas/LearnedEvent/createdAt`.
+            public var createdAt: Swift.String
+            /// - Remark: Generated from `#/components/schemas/LearnedEvent/executionId`.
+            public var executionId: Swift.String
+            /// - Remark: Generated from `#/components/schemas/LearnedEvent/type`.
+            @frozen public enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case learned = "learned"
+            }
+            /// - Remark: Generated from `#/components/schemas/LearnedEvent/type`.
+            public var _type: Components.Schemas.LearnedEvent._TypePayload
+            /// Creates a new `LearnedEvent`.
+            ///
+            /// - Parameters:
+            ///   - agentId:
+            ///   - agentName:
+            ///   - changes:
+            ///   - createdAt:
+            ///   - executionId:
+            ///   - _type:
+            public init(
+                agentId: Swift.String,
+                agentName: Swift.String,
+                changes: Components.Schemas.LearnedEvent.ChangesPayload,
+                createdAt: Swift.String,
+                executionId: Swift.String,
+                _type: Components.Schemas.LearnedEvent._TypePayload
+            ) {
+                self.agentId = agentId
+                self.agentName = agentName
+                self.changes = changes
+                self.createdAt = createdAt
+                self.executionId = executionId
+                self._type = _type
+            }
+            public enum CodingKeys: String, CodingKey {
+                case agentId
+                case agentName
+                case changes
+                case createdAt
+                case executionId
+                case _type = "type"
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/ListedSkill`.
         @frozen public enum ListedSkill: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/ListedSkill/case1`.
@@ -3589,21 +6326,41 @@ extension Components {
                 public var value1: Components.Schemas.Skill
                 /// - Remark: Generated from `#/components/schemas/ListedSkill/case1/value2`.
                 public struct Value2Payload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/ListedSkill/case1/value2/description`.
+                    public var description: Swift.String?
+                    /// - Remark: Generated from `#/components/schemas/ListedSkill/case1/value2/origin`.
+                    public var origin: Components.Schemas.SkillOrigin?
                     /// - Remark: Generated from `#/components/schemas/ListedSkill/case1/value2/source`.
                     @frozen public enum SourcePayload: String, Codable, Hashable, Sendable, CaseIterable {
                         case shared = "shared"
                     }
                     /// - Remark: Generated from `#/components/schemas/ListedSkill/case1/value2/source`.
                     public var source: Components.Schemas.ListedSkill.Case1Payload.Value2Payload.SourcePayload
+                    /// - Remark: Generated from `#/components/schemas/ListedSkill/case1/value2/update`.
+                    public var update: Components.Schemas.SkillUpdate?
                     /// Creates a new `Value2Payload`.
                     ///
                     /// - Parameters:
+                    ///   - description:
+                    ///   - origin:
                     ///   - source:
-                    public init(source: Components.Schemas.ListedSkill.Case1Payload.Value2Payload.SourcePayload) {
+                    ///   - update:
+                    public init(
+                        description: Swift.String? = nil,
+                        origin: Components.Schemas.SkillOrigin? = nil,
+                        source: Components.Schemas.ListedSkill.Case1Payload.Value2Payload.SourcePayload,
+                        update: Components.Schemas.SkillUpdate? = nil
+                    ) {
+                        self.description = description
+                        self.origin = origin
                         self.source = source
+                        self.update = update
                     }
                     public enum CodingKeys: String, CodingKey {
+                        case description
+                        case origin
                         case source
+                        case update
                     }
                 }
                 /// - Remark: Generated from `#/components/schemas/ListedSkill/case1/value2`.
@@ -3713,6 +6470,209 @@ extension Components {
                 }
             }
         }
+        /// - Remark: Generated from `#/components/schemas/Login`.
+        public struct Login: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/Login/createdAt`.
+            public var createdAt: Swift.String
+            /// Where each field's value is read from. A login always has a username and a password; `one_time_code` only when it has one.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Login/fields`.
+            public struct FieldsPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/Login/fields/one_time_code`.
+                public var oneTimeCode: Components.Schemas.SecretStatus?
+                /// - Remark: Generated from `#/components/schemas/Login/fields/password`.
+                public var password: Components.Schemas.SecretStatus?
+                /// - Remark: Generated from `#/components/schemas/Login/fields/username`.
+                public var username: Components.Schemas.SecretStatus?
+                /// Creates a new `FieldsPayload`.
+                ///
+                /// - Parameters:
+                ///   - oneTimeCode:
+                ///   - password:
+                ///   - username:
+                public init(
+                    oneTimeCode: Components.Schemas.SecretStatus? = nil,
+                    password: Components.Schemas.SecretStatus? = nil,
+                    username: Components.Schemas.SecretStatus? = nil
+                ) {
+                    self.oneTimeCode = oneTimeCode
+                    self.password = password
+                    self.username = username
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case oneTimeCode = "one_time_code"
+                    case password
+                    case username
+                }
+            }
+            /// Where each field's value is read from. A login always has a username and a password; `one_time_code` only when it has one.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Login/fields`.
+            public var fields: Components.Schemas.Login.FieldsPayload
+            /// - Remark: Generated from `#/components/schemas/Login/hosts`.
+            public var hosts: [Swift.String]
+            /// Why the newest fill couldn't read its value; null when it could.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Login/lastError`.
+            public var lastError: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/Login/lastUsedAt`.
+            public var lastUsedAt: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/Login/name`.
+            public var name: Swift.String
+            /// - Remark: Generated from `#/components/schemas/Login/updatedAt`.
+            public var updatedAt: Swift.String
+            /// Creates a new `Login`.
+            ///
+            /// - Parameters:
+            ///   - createdAt:
+            ///   - fields: Where each field's value is read from. A login always has a username and a password; `one_time_code` only when it has one.
+            ///   - hosts:
+            ///   - lastError: Why the newest fill couldn't read its value; null when it could.
+            ///   - lastUsedAt:
+            ///   - name:
+            ///   - updatedAt:
+            public init(
+                createdAt: Swift.String,
+                fields: Components.Schemas.Login.FieldsPayload,
+                hosts: [Swift.String],
+                lastError: Swift.String? = nil,
+                lastUsedAt: Swift.String? = nil,
+                name: Swift.String,
+                updatedAt: Swift.String
+            ) {
+                self.createdAt = createdAt
+                self.fields = fields
+                self.hosts = hosts
+                self.lastError = lastError
+                self.lastUsedAt = lastUsedAt
+                self.name = name
+                self.updatedAt = updatedAt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case createdAt
+                case fields
+                case hosts
+                case lastError
+                case lastUsedAt
+                case name
+                case updatedAt
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/LoginRequest`.
+        public struct LoginRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/LoginRequest/hosts`.
+            public var hosts: [Swift.String]
+            /// - Remark: Generated from `#/components/schemas/LoginRequest/name`.
+            public var name: Swift.String
+            /// Whether the bot says the site asks for a one-time code.
+            ///
+            /// - Remark: Generated from `#/components/schemas/LoginRequest/oneTimeCode`.
+            public var oneTimeCode: Swift.Bool
+            /// - Remark: Generated from `#/components/schemas/LoginRequest/reason`.
+            public var reason: Swift.String
+            /// - Remark: Generated from `#/components/schemas/LoginRequest/requestedAt`.
+            public var requestedAt: Swift.String
+            /// Creates a new `LoginRequest`.
+            ///
+            /// - Parameters:
+            ///   - hosts:
+            ///   - name:
+            ///   - oneTimeCode: Whether the bot says the site asks for a one-time code.
+            ///   - reason:
+            ///   - requestedAt:
+            public init(
+                hosts: [Swift.String],
+                name: Swift.String,
+                oneTimeCode: Swift.Bool,
+                reason: Swift.String,
+                requestedAt: Swift.String
+            ) {
+                self.hosts = hosts
+                self.name = name
+                self.oneTimeCode = oneTimeCode
+                self.reason = reason
+                self.requestedAt = requestedAt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case hosts
+                case name
+                case oneTimeCode
+                case reason
+                case requestedAt
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/LoginUse`.
+        public struct LoginUse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/LoginUse/at`.
+            public var at: Swift.String
+            /// Why the value couldn't be read; nothing was typed.
+            ///
+            /// - Remark: Generated from `#/components/schemas/LoginUse/error`.
+            public var error: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/LoginUse/field`.
+            @frozen public enum FieldPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case username = "username"
+                case password = "password"
+                case oneTimeCode = "one_time_code"
+            }
+            /// - Remark: Generated from `#/components/schemas/LoginUse/field`.
+            public var field: Components.Schemas.LoginUse.FieldPayload
+            /// - Remark: Generated from `#/components/schemas/LoginUse/host`.
+            public var host: Swift.String
+            /// - Remark: Generated from `#/components/schemas/LoginUse/id`.
+            public var id: Swift.String
+            /// Creates a new `LoginUse`.
+            ///
+            /// - Parameters:
+            ///   - at:
+            ///   - error: Why the value couldn't be read; nothing was typed.
+            ///   - field:
+            ///   - host:
+            ///   - id:
+            public init(
+                at: Swift.String,
+                error: Swift.String? = nil,
+                field: Components.Schemas.LoginUse.FieldPayload,
+                host: Swift.String,
+                id: Swift.String
+            ) {
+                self.at = at
+                self.error = error
+                self.field = field
+                self.host = host
+                self.id = id
+            }
+            public enum CodingKeys: String, CodingKey {
+                case at
+                case error
+                case field
+                case host
+                case id
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/Logins`.
+        public struct Logins: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/Logins/logins`.
+            public var logins: [Components.Schemas.Login]
+            /// - Remark: Generated from `#/components/schemas/Logins/requests`.
+            public var requests: [Components.Schemas.LoginRequest]
+            /// Creates a new `Logins`.
+            ///
+            /// - Parameters:
+            ///   - logins:
+            ///   - requests:
+            public init(
+                logins: [Components.Schemas.Login],
+                requests: [Components.Schemas.LoginRequest]
+            ) {
+                self.logins = logins
+                self.requests = requests
+            }
+            public enum CodingKeys: String, CodingKey {
+                case logins
+                case requests
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/McpOAuthStart`.
         public struct McpOAuthStart: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/McpOAuthStart/value1`.
@@ -3798,6 +6758,14 @@ extension Components {
             public var id: Swift.String
             /// - Remark: Generated from `#/components/schemas/McpServer/name`.
             public var name: Swift.String
+            /// The client ID of an OAuth app the owner registered with the server's authorization server, used instead of registering Crumble.
+            ///
+            /// - Remark: Generated from `#/components/schemas/McpServer/oauthClientId`.
+            public var oauthClientId: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/McpServer/oauthClientSecret`.
+            public var oauthClientSecret: Components.Schemas.SecretStatus
+            /// - Remark: Generated from `#/components/schemas/McpServer/token`.
+            public var token: Components.Schemas.SecretStatus
             /// - Remark: Generated from `#/components/schemas/McpServer/url`.
             public var url: Swift.String
             /// Creates a new `McpServer`.
@@ -3807,18 +6775,27 @@ extension Components {
             ///   - enabled:
             ///   - id:
             ///   - name:
+            ///   - oauthClientId: The client ID of an OAuth app the owner registered with the server's authorization server, used instead of registering Crumble.
+            ///   - oauthClientSecret:
+            ///   - token:
             ///   - url:
             public init(
                 agentId: Swift.String? = nil,
                 enabled: Swift.Bool,
                 id: Swift.String,
                 name: Swift.String,
+                oauthClientId: Swift.String? = nil,
+                oauthClientSecret: Components.Schemas.SecretStatus,
+                token: Components.Schemas.SecretStatus,
                 url: Swift.String
             ) {
                 self.agentId = agentId
                 self.enabled = enabled
                 self.id = id
                 self.name = name
+                self.oauthClientId = oauthClientId
+                self.oauthClientSecret = oauthClientSecret
+                self.token = token
                 self.url = url
             }
             public enum CodingKeys: String, CodingKey {
@@ -3826,6 +6803,9 @@ extension Components {
                 case enabled
                 case id
                 case name
+                case oauthClientId
+                case oauthClientSecret
+                case token
                 case url
             }
         }
@@ -3845,21 +6825,29 @@ extension Components {
                 public var auth: Components.Schemas.McpServerStatus.Value2Payload.AuthPayload
                 /// - Remark: Generated from `#/components/schemas/McpServerStatus/value2/authenticated`.
                 public var authenticated: Swift.Bool
+                /// Why the server's tools were left out of a bot's last turn, such as a missing sign-in; null once it connects again.
+                ///
+                /// - Remark: Generated from `#/components/schemas/McpServerStatus/value2/error`.
+                public var error: Swift.String?
                 /// Creates a new `Value2Payload`.
                 ///
                 /// - Parameters:
                 ///   - auth:
                 ///   - authenticated:
+                ///   - error: Why the server's tools were left out of a bot's last turn, such as a missing sign-in; null once it connects again.
                 public init(
                     auth: Components.Schemas.McpServerStatus.Value2Payload.AuthPayload,
-                    authenticated: Swift.Bool
+                    authenticated: Swift.Bool,
+                    error: Swift.String? = nil
                 ) {
                     self.auth = auth
                     self.authenticated = authenticated
+                    self.error = error
                 }
                 public enum CodingKeys: String, CodingKey {
                     case auth
                     case authenticated
+                    case error
                 }
             }
             /// - Remark: Generated from `#/components/schemas/McpServerStatus/value2`.
@@ -4056,29 +7044,47 @@ extension Components {
         public struct MessageOrigin: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/MessageOrigin/agentId`.
             public var agentId: Swift.String?
+            /// Where the message came from: owner, task, event (an event automation's prompt), script (a script task's result), credential, bot, or group. Clients may receive other values later.
+            ///
             /// - Remark: Generated from `#/components/schemas/MessageOrigin/kind`.
             public var kind: Swift.String
             /// - Remark: Generated from `#/components/schemas/MessageOrigin/name`.
             public var name: Swift.String?
+            /// On an event automation's message: the name of the event source whose event started it.
+            ///
+            /// - Remark: Generated from `#/components/schemas/MessageOrigin/source`.
+            public var source: Swift.String?
+            /// On an owner message sent through a message gateway: the gateway's ID, such as `discord`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/MessageOrigin/via`.
+            public var via: Swift.String?
             /// Creates a new `MessageOrigin`.
             ///
             /// - Parameters:
             ///   - agentId:
-            ///   - kind:
+            ///   - kind: Where the message came from: owner, task, event (an event automation's prompt), script (a script task's result), credential, bot, or group. Clients may receive other values later.
             ///   - name:
+            ///   - source: On an event automation's message: the name of the event source whose event started it.
+            ///   - via: On an owner message sent through a message gateway: the gateway's ID, such as `discord`.
             public init(
                 agentId: Swift.String? = nil,
                 kind: Swift.String,
-                name: Swift.String? = nil
+                name: Swift.String? = nil,
+                source: Swift.String? = nil,
+                via: Swift.String? = nil
             ) {
                 self.agentId = agentId
                 self.kind = kind
                 self.name = name
+                self.source = source
+                self.via = via
             }
             public enum CodingKeys: String, CodingKey {
                 case agentId
                 case kind
                 case name
+                case source
+                case via
             }
         }
         /// - Remark: Generated from `#/components/schemas/Model`.
@@ -4093,6 +7099,24 @@ extension Components {
             public var provider: Swift.String
             /// - Remark: Generated from `#/components/schemas/Model/reasoning`.
             public var reasoning: Swift.Bool
+            /// - Remark: Generated from `#/components/schemas/Model/ThinkingLevelsPayload`.
+            @frozen public enum ThinkingLevelsPayloadPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case off = "off"
+                case minimal = "minimal"
+                case low = "low"
+                case medium = "medium"
+                case high = "high"
+                case xhigh = "xhigh"
+                case max = "max"
+            }
+            /// The thinking levels this model takes, from lowest to highest. A bot's level outside them runs at the nearest one.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Model/thinkingLevels`.
+            public typealias ThinkingLevelsPayload = [Components.Schemas.Model.ThinkingLevelsPayloadPayload]
+            /// The thinking levels this model takes, from lowest to highest. A bot's level outside them runs at the nearest one.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Model/thinkingLevels`.
+            public var thinkingLevels: Components.Schemas.Model.ThinkingLevelsPayload
             /// Creates a new `Model`.
             ///
             /// - Parameters:
@@ -4101,18 +7125,21 @@ extension Components {
             ///   - name:
             ///   - provider:
             ///   - reasoning:
+            ///   - thinkingLevels: The thinking levels this model takes, from lowest to highest. A bot's level outside them runs at the nearest one.
             public init(
                 contextWindow: Swift.Double,
                 id: Swift.String,
                 name: Swift.String,
                 provider: Swift.String,
-                reasoning: Swift.Bool
+                reasoning: Swift.Bool,
+                thinkingLevels: Components.Schemas.Model.ThinkingLevelsPayload
             ) {
                 self.contextWindow = contextWindow
                 self.id = id
                 self.name = name
                 self.provider = provider
                 self.reasoning = reasoning
+                self.thinkingLevels = thinkingLevels
             }
             public enum CodingKeys: String, CodingKey {
                 case contextWindow
@@ -4120,6 +7147,7 @@ extension Components {
                 case name
                 case provider
                 case reasoning
+                case thinkingLevels
             }
         }
         /// - Remark: Generated from `#/components/schemas/OperationalActivity`.
@@ -4200,10 +7228,232 @@ extension Components {
                 case timestamp
             }
         }
+        /// - Remark: Generated from `#/components/schemas/PasswordManager`.
+        public struct PasswordManager: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PasswordManager/connected`.
+            public var connected: Swift.Bool
+            /// - Remark: Generated from `#/components/schemas/PasswordManager/connectedAt`.
+            public var connectedAt: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/PasswordManager/id`.
+            @frozen public enum IdPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case _1password = "1password"
+                case bitwarden = "bitwarden"
+            }
+            /// - Remark: Generated from `#/components/schemas/PasswordManager/id`.
+            public var id: Components.Schemas.PasswordManager.IdPayload
+            /// - Remark: Generated from `#/components/schemas/PasswordManager/name`.
+            public var name: Swift.String
+            /// The keys of the secrets that read their value from this password manager, such as `mcp:<server ID>`; it can't be disconnected while any remain.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PasswordManager/usedBy`.
+            public var usedBy: [Swift.String]
+            /// Creates a new `PasswordManager`.
+            ///
+            /// - Parameters:
+            ///   - connected:
+            ///   - connectedAt:
+            ///   - id:
+            ///   - name:
+            ///   - usedBy: The keys of the secrets that read their value from this password manager, such as `mcp:<server ID>`; it can't be disconnected while any remain.
+            public init(
+                connected: Swift.Bool,
+                connectedAt: Swift.String? = nil,
+                id: Components.Schemas.PasswordManager.IdPayload,
+                name: Swift.String,
+                usedBy: [Swift.String]
+            ) {
+                self.connected = connected
+                self.connectedAt = connectedAt
+                self.id = id
+                self.name = name
+                self.usedBy = usedBy
+            }
+            public enum CodingKeys: String, CodingKey {
+                case connected
+                case connectedAt
+                case id
+                case name
+                case usedBy
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/PasswordManagers`.
+        public struct PasswordManagers: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PasswordManagers/passwordManagers`.
+            public var passwordManagers: [Components.Schemas.PasswordManager]
+            /// Creates a new `PasswordManagers`.
+            ///
+            /// - Parameters:
+            ///   - passwordManagers:
+            public init(passwordManagers: [Components.Schemas.PasswordManager]) {
+                self.passwordManagers = passwordManagers
+            }
+            public enum CodingKeys: String, CodingKey {
+                case passwordManagers
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/PendingSkillUpdate`.
+        public struct PendingSkillUpdate: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PendingSkillUpdate/commit`.
+            public var commit: Swift.String
+            /// - Remark: Generated from `#/components/schemas/PendingSkillUpdate/description`.
+            public var description: Swift.String
+            /// - Remark: Generated from `#/components/schemas/PendingSkillUpdate/documents`.
+            public var documents: [Components.Schemas.SkillDocument]
+            /// - Remark: Generated from `#/components/schemas/PendingSkillUpdate/instructions`.
+            public var instructions: Swift.String
+            /// - Remark: Generated from `#/components/schemas/PendingSkillUpdate/name`.
+            public var name: Swift.String
+            /// - Remark: Generated from `#/components/schemas/PendingSkillUpdate/skipped`.
+            public var skipped: [Swift.String]
+            /// Creates a new `PendingSkillUpdate`.
+            ///
+            /// - Parameters:
+            ///   - commit:
+            ///   - description:
+            ///   - documents:
+            ///   - instructions:
+            ///   - name:
+            ///   - skipped:
+            public init(
+                commit: Swift.String,
+                description: Swift.String,
+                documents: [Components.Schemas.SkillDocument],
+                instructions: Swift.String,
+                name: Swift.String,
+                skipped: [Swift.String]
+            ) {
+                self.commit = commit
+                self.description = description
+                self.documents = documents
+                self.instructions = instructions
+                self.name = name
+                self.skipped = skipped
+            }
+            public enum CodingKeys: String, CodingKey {
+                case commit
+                case description
+                case documents
+                case instructions
+                case name
+                case skipped
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/PluginSetting`.
+        public struct PluginSetting: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PluginSetting/key`.
+            public var key: Swift.String
+            /// A secret is written once and never returned.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PluginSetting/kind`.
+            @frozen public enum KindPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case secret = "secret"
+            }
+            /// A secret is written once and never returned.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PluginSetting/kind`.
+            public var kind: Components.Schemas.PluginSetting.KindPayload
+            /// - Remark: Generated from `#/components/schemas/PluginSetting/label`.
+            public var label: Swift.String
+            /// - Remark: Generated from `#/components/schemas/PluginSetting/secret`.
+            public var secret: Components.Schemas.SecretStatus
+            /// The status to show while the setting has no value.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PluginSetting/whenMissing`.
+            public var whenMissing: Swift.String
+            /// Creates a new `PluginSetting`.
+            ///
+            /// - Parameters:
+            ///   - key:
+            ///   - kind: A secret is written once and never returned.
+            ///   - label:
+            ///   - secret:
+            ///   - whenMissing: The status to show while the setting has no value.
+            public init(
+                key: Swift.String,
+                kind: Components.Schemas.PluginSetting.KindPayload,
+                label: Swift.String,
+                secret: Components.Schemas.SecretStatus,
+                whenMissing: Swift.String
+            ) {
+                self.key = key
+                self.kind = kind
+                self.label = label
+                self.secret = secret
+                self.whenMissing = whenMissing
+            }
+            public enum CodingKeys: String, CodingKey {
+                case key
+                case kind
+                case label
+                case secret
+                case whenMissing
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/PluginSettings`.
+        public struct PluginSettings: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PluginSettings/PluginsPayload`.
+            public struct PluginsPayloadPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/PluginSettings/PluginsPayload/ContributesPayload`.
+                @frozen public enum ContributesPayloadPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case providers = "providers"
+                    case jobKinds = "jobKinds"
+                    case webSearchProviders = "webSearchProviders"
+                    case chatAdapters = "chatAdapters"
+                }
+                /// What the plugin adds to the server, so a client can show its settings where those are chosen.
+                ///
+                /// - Remark: Generated from `#/components/schemas/PluginSettings/PluginsPayload/contributes`.
+                public typealias ContributesPayload = [Components.Schemas.PluginSettings.PluginsPayloadPayload.ContributesPayloadPayload]
+                /// What the plugin adds to the server, so a client can show its settings where those are chosen.
+                ///
+                /// - Remark: Generated from `#/components/schemas/PluginSettings/PluginsPayload/contributes`.
+                public var contributes: Components.Schemas.PluginSettings.PluginsPayloadPayload.ContributesPayload
+                /// - Remark: Generated from `#/components/schemas/PluginSettings/PluginsPayload/id`.
+                public var id: Swift.String
+                /// - Remark: Generated from `#/components/schemas/PluginSettings/PluginsPayload/settings`.
+                public var settings: [Components.Schemas.PluginSetting]
+                /// Creates a new `PluginsPayloadPayload`.
+                ///
+                /// - Parameters:
+                ///   - contributes: What the plugin adds to the server, so a client can show its settings where those are chosen.
+                ///   - id:
+                ///   - settings:
+                public init(
+                    contributes: Components.Schemas.PluginSettings.PluginsPayloadPayload.ContributesPayload,
+                    id: Swift.String,
+                    settings: [Components.Schemas.PluginSetting]
+                ) {
+                    self.contributes = contributes
+                    self.id = id
+                    self.settings = settings
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case contributes
+                    case id
+                    case settings
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/PluginSettings/plugins`.
+            public typealias PluginsPayload = [Components.Schemas.PluginSettings.PluginsPayloadPayload]
+            /// - Remark: Generated from `#/components/schemas/PluginSettings/plugins`.
+            public var plugins: Components.Schemas.PluginSettings.PluginsPayload
+            /// Creates a new `PluginSettings`.
+            ///
+            /// - Parameters:
+            ///   - plugins:
+            public init(plugins: Components.Schemas.PluginSettings.PluginsPayload) {
+                self.plugins = plugins
+            }
+            public enum CodingKeys: String, CodingKey {
+                case plugins
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/Provider`.
         public struct Provider: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/Provider/activeLoginId`.
             public var activeLoginId: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/Provider/apiKey`.
+            public var apiKey: Components.Schemas.SecretStatus
             /// - Remark: Generated from `#/components/schemas/Provider/authMethods`.
             public var authMethods: [Components.Schemas.ProviderLoginMethod]
             /// - Remark: Generated from `#/components/schemas/Provider/configured`.
@@ -4216,6 +7466,8 @@ extension Components {
             }
             /// - Remark: Generated from `#/components/schemas/Provider/credentialType`.
             public var credentialType: Components.Schemas.Provider.CredentialTypePayload?
+            /// - Remark: Generated from `#/components/schemas/Provider/externalAuth`.
+            public var externalAuth: Components.Schemas.ProviderExternalAuth?
             /// - Remark: Generated from `#/components/schemas/Provider/name`.
             public var name: Swift.String
             /// - Remark: Generated from `#/components/schemas/Provider/provider`.
@@ -4224,31 +7476,39 @@ extension Components {
             ///
             /// - Parameters:
             ///   - activeLoginId:
+            ///   - apiKey:
             ///   - authMethods:
             ///   - configured:
             ///   - credentialType:
+            ///   - externalAuth:
             ///   - name:
             ///   - provider:
             public init(
                 activeLoginId: Swift.String? = nil,
+                apiKey: Components.Schemas.SecretStatus,
                 authMethods: [Components.Schemas.ProviderLoginMethod],
                 configured: Swift.Bool,
                 credentialType: Components.Schemas.Provider.CredentialTypePayload? = nil,
+                externalAuth: Components.Schemas.ProviderExternalAuth? = nil,
                 name: Swift.String,
                 provider: Swift.String
             ) {
                 self.activeLoginId = activeLoginId
+                self.apiKey = apiKey
                 self.authMethods = authMethods
                 self.configured = configured
                 self.credentialType = credentialType
+                self.externalAuth = externalAuth
                 self.name = name
                 self.provider = provider
             }
             public enum CodingKeys: String, CodingKey {
                 case activeLoginId
+                case apiKey
                 case authMethods
                 case configured
                 case credentialType
+                case externalAuth
                 case name
                 case provider
             }
@@ -4274,6 +7534,54 @@ extension Components {
             public enum CodingKeys: String, CodingKey {
                 case configured
                 case provider
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/ProviderExternalAuth`.
+        public struct ProviderExternalAuth: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ProviderExternalAuth/cliVersion`.
+            public var cliVersion: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/ProviderExternalAuth/message`.
+            public var message: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/ProviderExternalAuth/signInCommand`.
+            public var signInCommand: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/ProviderExternalAuth/signOutCommand`.
+            public var signOutCommand: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/ProviderExternalAuth/status`.
+            @frozen public enum StatusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case signedIn = "signed_in"
+                case signedOut = "signed_out"
+                case cliMissing = "cli_missing"
+                case error = "error"
+            }
+            /// - Remark: Generated from `#/components/schemas/ProviderExternalAuth/status`.
+            public var status: Components.Schemas.ProviderExternalAuth.StatusPayload
+            /// Creates a new `ProviderExternalAuth`.
+            ///
+            /// - Parameters:
+            ///   - cliVersion:
+            ///   - message:
+            ///   - signInCommand:
+            ///   - signOutCommand:
+            ///   - status:
+            public init(
+                cliVersion: Swift.String? = nil,
+                message: Swift.String? = nil,
+                signInCommand: Swift.String? = nil,
+                signOutCommand: Swift.String? = nil,
+                status: Components.Schemas.ProviderExternalAuth.StatusPayload
+            ) {
+                self.cliVersion = cliVersion
+                self.message = message
+                self.signInCommand = signInCommand
+                self.signOutCommand = signOutCommand
+                self.status = status
+            }
+            public enum CodingKeys: String, CodingKey {
+                case cliVersion
+                case message
+                case signInCommand
+                case signOutCommand
+                case status
             }
         }
         /// - Remark: Generated from `#/components/schemas/ProviderLoginEvent`.
@@ -4807,7 +8115,7 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/ReplyEvent/jobName`.
             public var jobName: Swift.String?
-            /// What the bot answered: owner (a message from the owner), task (a scheduled task), bot (another bot's request), group (a group chat turn), or coding or desktop (a job's report; jobName names the job). Clients may receive other values later.
+            /// What the bot answered: owner (a message from the owner), task (a scheduled task), script (a script task's result), bot (another bot's request), group (a group chat turn), or coding or desktop (a job's report; jobName names the job). Clients may receive other values later.
             ///
             /// - Remark: Generated from `#/components/schemas/ReplyEvent/origin`.
             public var origin: Swift.String
@@ -4821,6 +8129,18 @@ extension Components {
             }
             /// - Remark: Generated from `#/components/schemas/ReplyEvent/type`.
             public var _type: Components.Schemas.ReplyEvent._TypePayload
+            /// Set when the bot waits for the owner's answer: approval (a desktop job action held by an intent check), credential, or login (a request the owner saves or declines). Clients may receive other values later.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ReplyEvent/waitingFor`.
+            @frozen public enum WaitingForPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case approval = "approval"
+                case credential = "credential"
+                case login = "login"
+            }
+            /// Set when the bot waits for the owner's answer: approval (a desktop job action held by an intent check), credential, or login (a request the owner saves or declines). Clients may receive other values later.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ReplyEvent/waitingFor`.
+            public var waitingFor: Components.Schemas.ReplyEvent.WaitingForPayload?
             /// Creates a new `ReplyEvent`.
             ///
             /// - Parameters:
@@ -4833,10 +8153,11 @@ extension Components {
             ///   - groupId: Set when a bot answered in a group chat; open the group rather than the bot chat.
             ///   - groupName:
             ///   - jobName: The job whose report the bot answered, for origin coding or desktop. A desktop job's report often asks for the owner; clients may open the bot desktop.
-            ///   - origin: What the bot answered: owner (a message from the owner), task (a scheduled task), bot (another bot's request), group (a group chat turn), or coding or desktop (a job's report; jobName names the job). Clients may receive other values later.
+            ///   - origin: What the bot answered: owner (a message from the owner), task (a scheduled task), script (a script task's result), bot (another bot's request), group (a group chat turn), or coding or desktop (a job's report; jobName names the job). Clients may receive other values later.
             ///   - preview:
             ///   - serverId:
             ///   - _type:
+            ///   - waitingFor: Set when the bot waits for the owner's answer: approval (a desktop job action held by an intent check), credential, or login (a request the owner saves or declines). Clients may receive other values later.
             public init(
                 agentId: Swift.String,
                 agentName: Swift.String,
@@ -4850,7 +8171,8 @@ extension Components {
                 origin: Swift.String,
                 preview: Swift.String,
                 serverId: Swift.String,
-                _type: Components.Schemas.ReplyEvent._TypePayload
+                _type: Components.Schemas.ReplyEvent._TypePayload,
+                waitingFor: Components.Schemas.ReplyEvent.WaitingForPayload? = nil
             ) {
                 self.agentId = agentId
                 self.agentName = agentName
@@ -4865,6 +8187,7 @@ extension Components {
                 self.preview = preview
                 self.serverId = serverId
                 self._type = _type
+                self.waitingFor = waitingFor
             }
             public enum CodingKeys: String, CodingKey {
                 case agentId
@@ -4880,12 +8203,50 @@ extension Components {
                 case preview
                 case serverId
                 case _type = "type"
+                case waitingFor
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/ReviewResult`.
+        public struct ReviewResult: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ReviewResult/agentId`.
+            public var agentId: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ReviewResult/changes`.
+            public var changes: [Components.Schemas.LearnedChange]
+            /// - Remark: Generated from `#/components/schemas/ReviewResult/createdAt`.
+            public var createdAt: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ReviewResult/executionId`.
+            public var executionId: Swift.String
+            /// Creates a new `ReviewResult`.
+            ///
+            /// - Parameters:
+            ///   - agentId:
+            ///   - changes:
+            ///   - createdAt:
+            ///   - executionId:
+            public init(
+                agentId: Swift.String,
+                changes: [Components.Schemas.LearnedChange],
+                createdAt: Swift.String,
+                executionId: Swift.String
+            ) {
+                self.agentId = agentId
+                self.changes = changes
+                self.createdAt = createdAt
+                self.executionId = executionId
+            }
+            public enum CodingKeys: String, CodingKey {
+                case agentId
+                case changes
+                case createdAt
+                case executionId
             }
         }
         /// - Remark: Generated from `#/components/schemas/Schedule`.
         public struct Schedule: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/Schedule/agentId`.
             public var agentId: Swift.String
+            /// - Remark: Generated from `#/components/schemas/Schedule/command`.
+            public var command: Swift.String?
             /// - Remark: Generated from `#/components/schemas/Schedule/createdAt`.
             public var createdAt: Swift.String
             /// - Remark: Generated from `#/components/schemas/Schedule/createdByAgentId`.
@@ -4894,68 +8255,103 @@ extension Components {
             public var cron: Swift.String?
             /// - Remark: Generated from `#/components/schemas/Schedule/enabled`.
             public var enabled: Swift.Bool
+            /// The event source whose events start this automation; set instead of `cron` and `runAt`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Schedule/eventSourceId`.
+            public var eventSourceId: Swift.String?
             /// - Remark: Generated from `#/components/schemas/Schedule/id`.
             public var id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/Schedule/kind`.
+            @frozen public enum KindPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case prompt = "prompt"
+                case script = "script"
+            }
+            /// - Remark: Generated from `#/components/schemas/Schedule/kind`.
+            public var kind: Components.Schemas.Schedule.KindPayload
             /// - Remark: Generated from `#/components/schemas/Schedule/name`.
             public var name: Swift.String
             /// - Remark: Generated from `#/components/schemas/Schedule/nextRunAt`.
             public var nextRunAt: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/Schedule/notify`.
+            public var notify: Swift.Bool
             /// - Remark: Generated from `#/components/schemas/Schedule/prompt`.
             public var prompt: Swift.String
             /// - Remark: Generated from `#/components/schemas/Schedule/runAt`.
             public var runAt: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/Schedule/timeoutSeconds`.
+            public var timeoutSeconds: Swift.Int
             /// - Remark: Generated from `#/components/schemas/Schedule/timezone`.
             public var timezone: Swift.String
             /// Creates a new `Schedule`.
             ///
             /// - Parameters:
             ///   - agentId:
+            ///   - command:
             ///   - createdAt:
             ///   - createdByAgentId:
             ///   - cron:
             ///   - enabled:
+            ///   - eventSourceId: The event source whose events start this automation; set instead of `cron` and `runAt`.
             ///   - id:
+            ///   - kind:
             ///   - name:
             ///   - nextRunAt:
+            ///   - notify:
             ///   - prompt:
             ///   - runAt:
+            ///   - timeoutSeconds:
             ///   - timezone:
             public init(
                 agentId: Swift.String,
+                command: Swift.String? = nil,
                 createdAt: Swift.String,
                 createdByAgentId: Swift.String? = nil,
                 cron: Swift.String? = nil,
                 enabled: Swift.Bool,
+                eventSourceId: Swift.String? = nil,
                 id: Swift.String,
+                kind: Components.Schemas.Schedule.KindPayload,
                 name: Swift.String,
                 nextRunAt: Swift.String? = nil,
+                notify: Swift.Bool,
                 prompt: Swift.String,
                 runAt: Swift.String? = nil,
+                timeoutSeconds: Swift.Int,
                 timezone: Swift.String
             ) {
                 self.agentId = agentId
+                self.command = command
                 self.createdAt = createdAt
                 self.createdByAgentId = createdByAgentId
                 self.cron = cron
                 self.enabled = enabled
+                self.eventSourceId = eventSourceId
                 self.id = id
+                self.kind = kind
                 self.name = name
                 self.nextRunAt = nextRunAt
+                self.notify = notify
                 self.prompt = prompt
                 self.runAt = runAt
+                self.timeoutSeconds = timeoutSeconds
                 self.timezone = timezone
             }
             public enum CodingKeys: String, CodingKey {
                 case agentId
+                case command
                 case createdAt
                 case createdByAgentId
                 case cron
                 case enabled
+                case eventSourceId
                 case id
+                case kind
                 case name
                 case nextRunAt
+                case notify
                 case prompt
                 case runAt
+                case timeoutSeconds
                 case timezone
             }
         }
@@ -5202,6 +8598,183 @@ extension Components {
                 try encoder.encodeAdditionalProperties(additionalProperties)
             }
         }
+        /// - Remark: Generated from `#/components/schemas/ScriptRun`.
+        public struct ScriptRun: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ScriptRun/agentId`.
+            public var agentId: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ScriptRun/command`.
+            public var command: Swift.String
+            /// Bytes dropped from the output tail.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ScriptRun/droppedBytes`.
+            public var droppedBytes: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/ScriptRun/error`.
+            public var error: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/ScriptRun/exitCode`.
+            public var exitCode: Swift.Int?
+            /// - Remark: Generated from `#/components/schemas/ScriptRun/finishedAt`.
+            public var finishedAt: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/ScriptRun/id`.
+            public var id: Swift.String
+            /// The last 64 KiB and 2000 lines of combined output.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ScriptRun/output`.
+            public var output: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ScriptRun/scheduleId`.
+            public var scheduleId: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ScriptRun/startedAt`.
+            public var startedAt: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ScriptRun/status`.
+            @frozen public enum StatusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case running = "running"
+                case succeeded = "succeeded"
+                case failed = "failed"
+                case timedOut = "timed_out"
+                case interrupted = "interrupted"
+            }
+            /// - Remark: Generated from `#/components/schemas/ScriptRun/status`.
+            public var status: Components.Schemas.ScriptRun.StatusPayload
+            /// Creates a new `ScriptRun`.
+            ///
+            /// - Parameters:
+            ///   - agentId:
+            ///   - command:
+            ///   - droppedBytes: Bytes dropped from the output tail.
+            ///   - error:
+            ///   - exitCode:
+            ///   - finishedAt:
+            ///   - id:
+            ///   - output: The last 64 KiB and 2000 lines of combined output.
+            ///   - scheduleId:
+            ///   - startedAt:
+            ///   - status:
+            public init(
+                agentId: Swift.String,
+                command: Swift.String,
+                droppedBytes: Swift.Int,
+                error: Swift.String? = nil,
+                exitCode: Swift.Int? = nil,
+                finishedAt: Swift.String? = nil,
+                id: Swift.String,
+                output: Swift.String,
+                scheduleId: Swift.String,
+                startedAt: Swift.String,
+                status: Components.Schemas.ScriptRun.StatusPayload
+            ) {
+                self.agentId = agentId
+                self.command = command
+                self.droppedBytes = droppedBytes
+                self.error = error
+                self.exitCode = exitCode
+                self.finishedAt = finishedAt
+                self.id = id
+                self.output = output
+                self.scheduleId = scheduleId
+                self.startedAt = startedAt
+                self.status = status
+            }
+            public enum CodingKeys: String, CodingKey {
+                case agentId
+                case command
+                case droppedBytes
+                case error
+                case exitCode
+                case finishedAt
+                case id
+                case output
+                case scheduleId
+                case startedAt
+                case status
+            }
+        }
+        /// A secret the owner entered; its value is never returned.
+        ///
+        /// - Remark: Generated from `#/components/schemas/SecretStatus`.
+        public struct SecretStatus: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SecretStatus/configured`.
+            public var configured: Swift.Bool
+            /// The password manager the value is read from; null for a value stored in Crumble or no value.
+            ///
+            /// - Remark: Generated from `#/components/schemas/SecretStatus/passwordManager`.
+            @frozen public enum PasswordManagerPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case _1password = "1password"
+                case bitwarden = "bitwarden"
+                case _empty_ = ""
+            }
+            /// The password manager the value is read from; null for a value stored in Crumble or no value.
+            ///
+            /// - Remark: Generated from `#/components/schemas/SecretStatus/passwordManager`.
+            public var passwordManager: Components.Schemas.SecretStatus.PasswordManagerPayload?
+            /// Where in `passwordManager` the value is read from.
+            ///
+            /// - Remark: Generated from `#/components/schemas/SecretStatus/reference`.
+            public var reference: Swift.String?
+            /// Creates a new `SecretStatus`.
+            ///
+            /// - Parameters:
+            ///   - configured:
+            ///   - passwordManager: The password manager the value is read from; null for a value stored in Crumble or no value.
+            ///   - reference: Where in `passwordManager` the value is read from.
+            public init(
+                configured: Swift.Bool,
+                passwordManager: Components.Schemas.SecretStatus.PasswordManagerPayload? = nil,
+                reference: Swift.String? = nil
+            ) {
+                self.configured = configured
+                self.passwordManager = passwordManager
+                self.reference = reference
+            }
+            public enum CodingKeys: String, CodingKey {
+                case configured
+                case passwordManager
+                case reference
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/ServerSettings`.
+        public struct ServerSettings: Codable, Hashable, Sendable {
+            /// Image new workspaces boot from, such as `ghcr.io/owner/image:tag`; null uses the server's `CRUMBLE_WORKSPACE_IMAGE`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ServerSettings/codingImage`.
+            public var codingImage: Swift.String?
+            /// How long a coding job waiting on the owner's answer keeps its workspace running.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ServerSettings/questionGraceMinutes`.
+            public var questionGraceMinutes: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/ServerSettings/signUpOpen`.
+            public var signUpOpen: Swift.Bool
+            /// - Remark: Generated from `#/components/schemas/ServerSettings/workspaceCpus`.
+            public var workspaceCpus: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/ServerSettings/workspaceMemoryMib`.
+            public var workspaceMemoryMib: Swift.Int
+            /// Creates a new `ServerSettings`.
+            ///
+            /// - Parameters:
+            ///   - codingImage: Image new workspaces boot from, such as `ghcr.io/owner/image:tag`; null uses the server's `CRUMBLE_WORKSPACE_IMAGE`.
+            ///   - questionGraceMinutes: How long a coding job waiting on the owner's answer keeps its workspace running.
+            ///   - signUpOpen:
+            ///   - workspaceCpus:
+            ///   - workspaceMemoryMib:
+            public init(
+                codingImage: Swift.String? = nil,
+                questionGraceMinutes: Swift.Int,
+                signUpOpen: Swift.Bool,
+                workspaceCpus: Swift.Int,
+                workspaceMemoryMib: Swift.Int
+            ) {
+                self.codingImage = codingImage
+                self.questionGraceMinutes = questionGraceMinutes
+                self.signUpOpen = signUpOpen
+                self.workspaceCpus = workspaceCpus
+                self.workspaceMemoryMib = workspaceMemoryMib
+            }
+            public enum CodingKeys: String, CodingKey {
+                case codingImage
+                case questionGraceMinutes
+                case signUpOpen
+                case workspaceCpus
+                case workspaceMemoryMib
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/Skill`.
         public struct Skill: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/Skill/createdAt`.
@@ -5243,6 +8816,387 @@ extension Components {
                 case updatedAt
             }
         }
+        /// - Remark: Generated from `#/components/schemas/SkillCandidate`.
+        public struct SkillCandidate: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SkillCandidate/description`.
+            public var description: Swift.String
+            /// - Remark: Generated from `#/components/schemas/SkillCandidate/name`.
+            public var name: Swift.String
+            /// The skill's folder; empty for the root.
+            ///
+            /// - Remark: Generated from `#/components/schemas/SkillCandidate/path`.
+            public var path: Swift.String
+            /// Why a `clash` or `invalid` skill can't be installed.
+            ///
+            /// - Remark: Generated from `#/components/schemas/SkillCandidate/problem`.
+            public var problem: Swift.String?
+            /// The installed skill, for `installed` and `update`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/SkillCandidate/skillId`.
+            public var skillId: Swift.String?
+            /// Files in the folder that won't be imported: only SKILL.md and references/*.md are.
+            ///
+            /// - Remark: Generated from `#/components/schemas/SkillCandidate/skipped`.
+            public var skipped: [Swift.String]
+            /// - Remark: Generated from `#/components/schemas/SkillCandidate/status`.
+            @frozen public enum StatusPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case new = "new"
+                case installed = "installed"
+                case update = "update"
+                case clash = "clash"
+                case invalid = "invalid"
+            }
+            /// - Remark: Generated from `#/components/schemas/SkillCandidate/status`.
+            public var status: Components.Schemas.SkillCandidate.StatusPayload
+            /// Creates a new `SkillCandidate`.
+            ///
+            /// - Parameters:
+            ///   - description:
+            ///   - name:
+            ///   - path: The skill's folder; empty for the root.
+            ///   - problem: Why a `clash` or `invalid` skill can't be installed.
+            ///   - skillId: The installed skill, for `installed` and `update`.
+            ///   - skipped: Files in the folder that won't be imported: only SKILL.md and references/*.md are.
+            ///   - status:
+            public init(
+                description: Swift.String,
+                name: Swift.String,
+                path: Swift.String,
+                problem: Swift.String? = nil,
+                skillId: Swift.String? = nil,
+                skipped: [Swift.String],
+                status: Components.Schemas.SkillCandidate.StatusPayload
+            ) {
+                self.description = description
+                self.name = name
+                self.path = path
+                self.problem = problem
+                self.skillId = skillId
+                self.skipped = skipped
+                self.status = status
+            }
+            public enum CodingKeys: String, CodingKey {
+                case description
+                case name
+                case path
+                case problem
+                case skillId
+                case skipped
+                case status
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/SkillCheck`.
+        public struct SkillCheck: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SkillCheck/FailedPayload`.
+            public struct FailedPayloadPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/SkillCheck/FailedPayload/branch`.
+                public var branch: Swift.String
+                /// - Remark: Generated from `#/components/schemas/SkillCheck/FailedPayload/message`.
+                public var message: Swift.String
+                /// - Remark: Generated from `#/components/schemas/SkillCheck/FailedPayload/repository`.
+                public var repository: Swift.String
+                /// Creates a new `FailedPayloadPayload`.
+                ///
+                /// - Parameters:
+                ///   - branch:
+                ///   - message:
+                ///   - repository:
+                public init(
+                    branch: Swift.String,
+                    message: Swift.String,
+                    repository: Swift.String
+                ) {
+                    self.branch = branch
+                    self.message = message
+                    self.repository = repository
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case branch
+                    case message
+                    case repository
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/SkillCheck/failed`.
+            public typealias FailedPayload = [Components.Schemas.SkillCheck.FailedPayloadPayload]
+            /// - Remark: Generated from `#/components/schemas/SkillCheck/failed`.
+            public var failed: Components.Schemas.SkillCheck.FailedPayload
+            /// Creates a new `SkillCheck`.
+            ///
+            /// - Parameters:
+            ///   - failed:
+            public init(failed: Components.Schemas.SkillCheck.FailedPayload) {
+                self.failed = failed
+            }
+            public enum CodingKeys: String, CodingKey {
+                case failed
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/SkillDocument`.
+        public struct SkillDocument: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SkillDocument/content`.
+            public var content: Swift.String
+            /// - Remark: Generated from `#/components/schemas/SkillDocument/path`.
+            public var path: Swift.String
+            /// Creates a new `SkillDocument`.
+            ///
+            /// - Parameters:
+            ///   - content:
+            ///   - path:
+            public init(
+                content: Swift.String,
+                path: Swift.String
+            ) {
+                self.content = content
+                self.path = path
+            }
+            public enum CodingKeys: String, CodingKey {
+                case content
+                case path
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/SkillListing`.
+        public struct SkillListing: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SkillListing/branch`.
+            public var branch: Swift.String
+            /// - Remark: Generated from `#/components/schemas/SkillListing/commit`.
+            public var commit: Swift.String
+            /// Skills beyond the first hundred, not listed.
+            ///
+            /// - Remark: Generated from `#/components/schemas/SkillListing/omitted`.
+            public var omitted: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/SkillListing/path`.
+            public var path: Swift.String
+            /// - Remark: Generated from `#/components/schemas/SkillListing/repository`.
+            public var repository: Swift.String
+            /// - Remark: Generated from `#/components/schemas/SkillListing/skills`.
+            public var skills: [Components.Schemas.SkillCandidate]
+            /// Creates a new `SkillListing`.
+            ///
+            /// - Parameters:
+            ///   - branch:
+            ///   - commit:
+            ///   - omitted: Skills beyond the first hundred, not listed.
+            ///   - path:
+            ///   - repository:
+            ///   - skills:
+            public init(
+                branch: Swift.String,
+                commit: Swift.String,
+                omitted: Swift.Int,
+                path: Swift.String,
+                repository: Swift.String,
+                skills: [Components.Schemas.SkillCandidate]
+            ) {
+                self.branch = branch
+                self.commit = commit
+                self.omitted = omitted
+                self.path = path
+                self.repository = repository
+                self.skills = skills
+            }
+            public enum CodingKeys: String, CodingKey {
+                case branch
+                case commit
+                case omitted
+                case path
+                case repository
+                case skills
+            }
+        }
+        /// Where an installed skill came from. Installed skills are read-only.
+        ///
+        /// - Remark: Generated from `#/components/schemas/SkillOrigin`.
+        public struct SkillOrigin: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SkillOrigin/branch`.
+            public var branch: Swift.String
+            /// - Remark: Generated from `#/components/schemas/SkillOrigin/commit`.
+            public var commit: Swift.String
+            /// Fingerprint of the imported files; an update is available when upstream's differs.
+            ///
+            /// - Remark: Generated from `#/components/schemas/SkillOrigin/digest`.
+            public var digest: Swift.String
+            /// The skill's folder; empty for the root.
+            ///
+            /// - Remark: Generated from `#/components/schemas/SkillOrigin/path`.
+            public var path: Swift.String
+            /// `owner/repo`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/SkillOrigin/repository`.
+            public var repository: Swift.String
+            /// Creates a new `SkillOrigin`.
+            ///
+            /// - Parameters:
+            ///   - branch:
+            ///   - commit:
+            ///   - digest: Fingerprint of the imported files; an update is available when upstream's differs.
+            ///   - path: The skill's folder; empty for the root.
+            ///   - repository: `owner/repo`.
+            public init(
+                branch: Swift.String,
+                commit: Swift.String,
+                digest: Swift.String,
+                path: Swift.String,
+                repository: Swift.String
+            ) {
+                self.branch = branch
+                self.commit = commit
+                self.digest = digest
+                self.path = path
+                self.repository = repository
+            }
+            public enum CodingKeys: String, CodingKey {
+                case branch
+                case commit
+                case digest
+                case path
+                case repository
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/SkillPackage`.
+        public struct SkillPackage: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SkillPackage/agentId`.
+            public var agentId: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/SkillPackage/copiedFromSkillId`.
+            public var copiedFromSkillId: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/SkillPackage/createdAt`.
+            public var createdAt: Swift.String
+            /// - Remark: Generated from `#/components/schemas/SkillPackage/createdBy`.
+            @frozen public enum CreatedByPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case owner = "owner"
+                case bot = "bot"
+            }
+            /// - Remark: Generated from `#/components/schemas/SkillPackage/createdBy`.
+            public var createdBy: Components.Schemas.SkillPackage.CreatedByPayload
+            /// - Remark: Generated from `#/components/schemas/SkillPackage/description`.
+            public var description: Swift.String
+            /// - Remark: Generated from `#/components/schemas/SkillPackage/documents`.
+            public var documents: [Components.Schemas.SkillDocument]
+            /// - Remark: Generated from `#/components/schemas/SkillPackage/id`.
+            public var id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/SkillPackage/instructions`.
+            public var instructions: Swift.String
+            /// - Remark: Generated from `#/components/schemas/SkillPackage/lastUsedAt`.
+            public var lastUsedAt: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/SkillPackage/name`.
+            public var name: Swift.String
+            /// - Remark: Generated from `#/components/schemas/SkillPackage/origin`.
+            public var origin: Components.Schemas.SkillOrigin?
+            /// - Remark: Generated from `#/components/schemas/SkillPackage/pinned`.
+            public var pinned: Swift.Bool
+            /// - Remark: Generated from `#/components/schemas/SkillPackage/sourceExecutionId`.
+            public var sourceExecutionId: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/SkillPackage/state`.
+            @frozen public enum StatePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case active = "active"
+                case stale = "stale"
+                case archived = "archived"
+            }
+            /// - Remark: Generated from `#/components/schemas/SkillPackage/state`.
+            public var state: Components.Schemas.SkillPackage.StatePayload
+            /// - Remark: Generated from `#/components/schemas/SkillPackage/updatedAt`.
+            public var updatedAt: Swift.String
+            /// - Remark: Generated from `#/components/schemas/SkillPackage/useCount`.
+            public var useCount: Swift.Int
+            /// Creates a new `SkillPackage`.
+            ///
+            /// - Parameters:
+            ///   - agentId:
+            ///   - copiedFromSkillId:
+            ///   - createdAt:
+            ///   - createdBy:
+            ///   - description:
+            ///   - documents:
+            ///   - id:
+            ///   - instructions:
+            ///   - lastUsedAt:
+            ///   - name:
+            ///   - origin:
+            ///   - pinned:
+            ///   - sourceExecutionId:
+            ///   - state:
+            ///   - updatedAt:
+            ///   - useCount:
+            public init(
+                agentId: Swift.String? = nil,
+                copiedFromSkillId: Swift.String? = nil,
+                createdAt: Swift.String,
+                createdBy: Components.Schemas.SkillPackage.CreatedByPayload,
+                description: Swift.String,
+                documents: [Components.Schemas.SkillDocument],
+                id: Swift.String,
+                instructions: Swift.String,
+                lastUsedAt: Swift.String? = nil,
+                name: Swift.String,
+                origin: Components.Schemas.SkillOrigin? = nil,
+                pinned: Swift.Bool,
+                sourceExecutionId: Swift.String? = nil,
+                state: Components.Schemas.SkillPackage.StatePayload,
+                updatedAt: Swift.String,
+                useCount: Swift.Int
+            ) {
+                self.agentId = agentId
+                self.copiedFromSkillId = copiedFromSkillId
+                self.createdAt = createdAt
+                self.createdBy = createdBy
+                self.description = description
+                self.documents = documents
+                self.id = id
+                self.instructions = instructions
+                self.lastUsedAt = lastUsedAt
+                self.name = name
+                self.origin = origin
+                self.pinned = pinned
+                self.sourceExecutionId = sourceExecutionId
+                self.state = state
+                self.updatedAt = updatedAt
+                self.useCount = useCount
+            }
+            public enum CodingKeys: String, CodingKey {
+                case agentId
+                case copiedFromSkillId
+                case createdAt
+                case createdBy
+                case description
+                case documents
+                case id
+                case instructions
+                case lastUsedAt
+                case name
+                case origin
+                case pinned
+                case sourceExecutionId
+                case state
+                case updatedAt
+                case useCount
+            }
+        }
+        /// The newer upstream commit of an installed skill.
+        ///
+        /// - Remark: Generated from `#/components/schemas/SkillUpdate`.
+        public struct SkillUpdate: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SkillUpdate/commit`.
+            public var commit: Swift.String
+            /// The skill's folder is gone from the branch.
+            ///
+            /// - Remark: Generated from `#/components/schemas/SkillUpdate/removed`.
+            public var removed: Swift.Bool
+            /// Creates a new `SkillUpdate`.
+            ///
+            /// - Parameters:
+            ///   - commit:
+            ///   - removed: The skill's folder is gone from the branch.
+            public init(
+                commit: Swift.String,
+                removed: Swift.Bool
+            ) {
+                self.commit = commit
+                self.removed = removed
+            }
+            public enum CodingKeys: String, CodingKey {
+                case commit
+                case removed
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/TranscriptMessage`.
         public struct TranscriptMessage: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/TranscriptMessage/attachments`.
@@ -5257,10 +9211,86 @@ extension Components {
             public var content: Swift.String
             /// - Remark: Generated from `#/components/schemas/TranscriptMessage/entryId`.
             public var entryId: Swift.String
+            /// On a `held-action` event: the desktop job action waiting for the owner. Its state is under `/v1/agents/{id}/held-actions`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TranscriptMessage/heldAction`.
+            public struct HeldActionPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/TranscriptMessage/heldAction/id`.
+                public var id: Swift.String
+                /// - Remark: Generated from `#/components/schemas/TranscriptMessage/heldAction/job`.
+                public var job: Swift.String
+                /// Creates a new `HeldActionPayload`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                ///   - job:
+                public init(
+                    id: Swift.String,
+                    job: Swift.String
+                ) {
+                    self.id = id
+                    self.job = job
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case id
+                    case job
+                }
+            }
+            /// On a `held-action` event: the desktop job action waiting for the owner. Its state is under `/v1/agents/{id}/held-actions`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TranscriptMessage/heldAction`.
+            public var heldAction: Components.Schemas.TranscriptMessage.HeldActionPayload?
             /// - Remark: Generated from `#/components/schemas/TranscriptMessage/id`.
             public var id: Swift.String
             /// - Remark: Generated from `#/components/schemas/TranscriptMessage/isError`.
             public var isError: Swift.Bool?
+            /// On a `job-question` event: the job that asked the owner the question in `content`. Whether it still waits is the job's `question` in its listing.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TranscriptMessage/jobQuestion`.
+            public struct JobQuestionPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/TranscriptMessage/jobQuestion/id`.
+                public var id: Swift.String
+                /// - Remark: Generated from `#/components/schemas/TranscriptMessage/jobQuestion/job`.
+                public var job: Swift.String
+                /// - Remark: Generated from `#/components/schemas/TranscriptMessage/jobQuestion/kind`.
+                public var kind: Swift.String
+                /// - Remark: Generated from `#/components/schemas/TranscriptMessage/jobQuestion/multiple`.
+                public var multiple: Swift.Bool?
+                /// - Remark: Generated from `#/components/schemas/TranscriptMessage/jobQuestion/options`.
+                public var options: [Swift.String]?
+                /// Creates a new `JobQuestionPayload`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                ///   - job:
+                ///   - kind:
+                ///   - multiple:
+                ///   - options:
+                public init(
+                    id: Swift.String,
+                    job: Swift.String,
+                    kind: Swift.String,
+                    multiple: Swift.Bool? = nil,
+                    options: [Swift.String]? = nil
+                ) {
+                    self.id = id
+                    self.job = job
+                    self.kind = kind
+                    self.multiple = multiple
+                    self.options = options
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case id
+                    case job
+                    case kind
+                    case multiple
+                    case options
+                }
+            }
+            /// On a `job-question` event: the job that asked the owner the question in `content`. Whether it still waits is the job's `question` in its listing.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TranscriptMessage/jobQuestion`.
+            public var jobQuestion: Components.Schemas.TranscriptMessage.JobQuestionPayload?
             /// - Remark: Generated from `#/components/schemas/TranscriptMessage/kind`.
             public var kind: Swift.String?
             /// - Remark: Generated from `#/components/schemas/TranscriptMessage/origin`.
@@ -5273,13 +9303,44 @@ extension Components {
             public var requestId: Swift.String?
             /// - Remark: Generated from `#/components/schemas/TranscriptMessage/role`.
             public var role: Swift.String
+            /// - Remark: Generated from `#/components/schemas/TranscriptMessage/SourcesPayload`.
+            public struct SourcesPayloadPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/TranscriptMessage/SourcesPayload/title`.
+                public var title: Swift.String
+                /// - Remark: Generated from `#/components/schemas/TranscriptMessage/SourcesPayload/url`.
+                public var url: Swift.String
+                /// Creates a new `SourcesPayloadPayload`.
+                ///
+                /// - Parameters:
+                ///   - title:
+                ///   - url:
+                public init(
+                    title: Swift.String,
+                    url: Swift.String
+                ) {
+                    self.title = title
+                    self.url = url
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case title
+                    case url
+                }
+            }
+            /// In a group chat, the pages the sending bot searched or read in the turn that wrote the message.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TranscriptMessage/sources`.
+            public typealias SourcesPayload = [Components.Schemas.TranscriptMessage.SourcesPayloadPayload]
+            /// In a group chat, the pages the sending bot searched or read in the turn that wrote the message.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TranscriptMessage/sources`.
+            public var sources: Components.Schemas.TranscriptMessage.SourcesPayload?
             /// - Remark: Generated from `#/components/schemas/TranscriptMessage/stopReason`.
             public var stopReason: Swift.String?
             /// - Remark: Generated from `#/components/schemas/TranscriptMessage/timestamp`.
             public var timestamp: Swift.Double?
             /// - Remark: Generated from `#/components/schemas/TranscriptMessage/toolCallId`.
             public var toolCallId: Swift.String?
-            /// Provider-specific tool details, including nested code-mode calls.
+            /// Provider-specific tool details, including nested code-mode calls. A successful `desktop_screenshot` result has `{ mimeType, size }`; read its image from `GET /v1/agents/{id}/attachments/{entryId}/0`.
             ///
             /// - Remark: Generated from `#/components/schemas/TranscriptMessage/toolDetails`.
             public var toolDetails: OpenAPIRuntime.OpenAPIValueContainer?
@@ -5293,18 +9354,21 @@ extension Components {
             ///   - communication:
             ///   - content:
             ///   - entryId:
+            ///   - heldAction: On a `held-action` event: the desktop job action waiting for the owner. Its state is under `/v1/agents/{id}/held-actions`.
             ///   - id:
             ///   - isError:
+            ///   - jobQuestion: On a `job-question` event: the job that asked the owner the question in `content`. Whether it still waits is the job's `question` in its listing.
             ///   - kind:
             ///   - origin:
             ///   - replyPreview:
             ///   - replyTo:
             ///   - requestId:
             ///   - role:
+            ///   - sources: In a group chat, the pages the sending bot searched or read in the turn that wrote the message.
             ///   - stopReason:
             ///   - timestamp:
             ///   - toolCallId:
-            ///   - toolDetails: Provider-specific tool details, including nested code-mode calls.
+            ///   - toolDetails: Provider-specific tool details, including nested code-mode calls. A successful `desktop_screenshot` result has `{ mimeType, size }`; read its image from `GET /v1/agents/{id}/attachments/{entryId}/0`.
             ///   - toolName:
             public init(
                 attachments: [Components.Schemas.AttachmentInfo]? = nil,
@@ -5312,14 +9376,17 @@ extension Components {
                 communication: Components.Schemas.BotCommunication? = nil,
                 content: Swift.String,
                 entryId: Swift.String,
+                heldAction: Components.Schemas.TranscriptMessage.HeldActionPayload? = nil,
                 id: Swift.String,
                 isError: Swift.Bool? = nil,
+                jobQuestion: Components.Schemas.TranscriptMessage.JobQuestionPayload? = nil,
                 kind: Swift.String? = nil,
                 origin: Components.Schemas.MessageOrigin? = nil,
                 replyPreview: Swift.String? = nil,
                 replyTo: Swift.String? = nil,
                 requestId: Swift.String? = nil,
                 role: Swift.String,
+                sources: Components.Schemas.TranscriptMessage.SourcesPayload? = nil,
                 stopReason: Swift.String? = nil,
                 timestamp: Swift.Double? = nil,
                 toolCallId: Swift.String? = nil,
@@ -5331,14 +9398,17 @@ extension Components {
                 self.communication = communication
                 self.content = content
                 self.entryId = entryId
+                self.heldAction = heldAction
                 self.id = id
                 self.isError = isError
+                self.jobQuestion = jobQuestion
                 self.kind = kind
                 self.origin = origin
                 self.replyPreview = replyPreview
                 self.replyTo = replyTo
                 self.requestId = requestId
                 self.role = role
+                self.sources = sources
                 self.stopReason = stopReason
                 self.timestamp = timestamp
                 self.toolCallId = toolCallId
@@ -5351,14 +9421,17 @@ extension Components {
                 case communication
                 case content
                 case entryId
+                case heldAction
                 case id
                 case isError
+                case jobQuestion
                 case kind
                 case origin
                 case replyPreview
                 case replyTo
                 case requestId
                 case role
+                case sources
                 case stopReason
                 case timestamp
                 case toolCallId
@@ -5393,6 +9466,87 @@ extension Components {
                 case hasMore
                 case messages
                 case oldestEntryId
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/VisionChoice`.
+        public struct VisionChoice: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/VisionChoice/model`.
+            public var model: Swift.String
+            /// - Remark: Generated from `#/components/schemas/VisionChoice/name`.
+            public var name: Swift.String
+            /// - Remark: Generated from `#/components/schemas/VisionChoice/provider`.
+            public var provider: Swift.String
+            /// Creates a new `VisionChoice`.
+            ///
+            /// - Parameters:
+            ///   - model:
+            ///   - name:
+            ///   - provider:
+            public init(
+                model: Swift.String,
+                name: Swift.String,
+                provider: Swift.String
+            ) {
+                self.model = model
+                self.name = name
+                self.provider = provider
+            }
+            public enum CodingKeys: String, CodingKey {
+                case model
+                case name
+                case provider
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/VisionModel`.
+        public struct VisionModel: Codable, Hashable, Sendable {
+            /// The chat models that read images and that the account's provider keys reach.
+            ///
+            /// - Remark: Generated from `#/components/schemas/VisionModel/choices`.
+            public var choices: [Components.Schemas.VisionChoice]
+            /// The model that describes images for bots whose model can't read them. Null when off: such bots refuse images in their chat and get only an image's name in group chats.
+            ///
+            /// - Remark: Generated from `#/components/schemas/VisionModel/visionModel`.
+            public struct VisionModelPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/VisionModel/visionModel/model`.
+                public var model: Swift.String
+                /// - Remark: Generated from `#/components/schemas/VisionModel/visionModel/provider`.
+                public var provider: Swift.String
+                /// Creates a new `VisionModelPayload`.
+                ///
+                /// - Parameters:
+                ///   - model:
+                ///   - provider:
+                public init(
+                    model: Swift.String,
+                    provider: Swift.String
+                ) {
+                    self.model = model
+                    self.provider = provider
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case model
+                    case provider
+                }
+            }
+            /// The model that describes images for bots whose model can't read them. Null when off: such bots refuse images in their chat and get only an image's name in group chats.
+            ///
+            /// - Remark: Generated from `#/components/schemas/VisionModel/visionModel`.
+            public var visionModel: Components.Schemas.VisionModel.VisionModelPayload?
+            /// Creates a new `VisionModel`.
+            ///
+            /// - Parameters:
+            ///   - choices: The chat models that read images and that the account's provider keys reach.
+            ///   - visionModel: The model that describes images for bots whose model can't read them. Null when off: such bots refuse images in their chat and get only an image's name in group chats.
+            public init(
+                choices: [Components.Schemas.VisionChoice],
+                visionModel: Components.Schemas.VisionModel.VisionModelPayload? = nil
+            ) {
+                self.choices = choices
+                self.visionModel = visionModel
+            }
+            public enum CodingKeys: String, CodingKey {
+                case choices
+                case visionModel
             }
         }
     }

@@ -8,9 +8,56 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /health`.
     /// - Remark: Generated from `#/paths//health/get(getHealth)`.
     func getHealth(_ input: Operations.GetHealth.Input) async throws -> Operations.GetHealth.Output
+    /// Bots' tool calls, tool results, MCP calls, and bot messages, and skill and memory changes, newest first. Page with `cursor` set to the previous page's `nextCursor`. A page may hold fewer than `limit` items while `hasMore` is true.
+    ///
     /// - Remark: HTTP `GET /v1/activity/feed`.
     /// - Remark: Generated from `#/paths//v1/activity/feed/get(getActivityFeed)`.
     func getActivityFeed(_ input: Operations.GetActivityFeed.Input) async throws -> Operations.GetActivityFeed.Output
+    /// Invite links not yet used or revoked, newest first. Admins only.
+    ///
+    /// - Remark: HTTP `GET /v1/admin/invites`.
+    /// - Remark: Generated from `#/paths//v1/admin/invites/get(listInvites)`.
+    func listInvites(_ input: Operations.ListInvites.Input) async throws -> Operations.ListInvites.Output
+    /// Makes a one-time invite link. Only its hash is stored, so the link is shown once. Admins only.
+    ///
+    /// - Remark: HTTP `POST /v1/admin/invites`.
+    /// - Remark: Generated from `#/paths//v1/admin/invites/post(createInvite)`.
+    func createInvite(_ input: Operations.CreateInvite.Input) async throws -> Operations.CreateInvite.Output
+    /// Revokes an invite link. Admins only.
+    ///
+    /// - Remark: HTTP `DELETE /v1/admin/invites/{id}`.
+    /// - Remark: Generated from `#/paths//v1/admin/invites/{id}/delete(revokeInvite)`.
+    func revokeInvite(_ input: Operations.RevokeInvite.Input) async throws -> Operations.RevokeInvite.Output
+    /// The server's settings. Admins only.
+    ///
+    /// - Remark: HTTP `GET /v1/admin/settings`.
+    /// - Remark: Generated from `#/paths//v1/admin/settings/get(getServerSettings)`.
+    func getServerSettings(_ input: Operations.GetServerSettings.Input) async throws -> Operations.GetServerSettings.Output
+    /// Changes the given settings. New workspace size and image apply to workspaces as they boot. Admins only.
+    ///
+    /// - Remark: HTTP `PATCH /v1/admin/settings`.
+    /// - Remark: Generated from `#/paths//v1/admin/settings/patch(updateServerSettings)`.
+    func updateServerSettings(_ input: Operations.UpdateServerSettings.Input) async throws -> Operations.UpdateServerSettings.Output
+    /// Every account on the server, oldest first. Admins only.
+    ///
+    /// - Remark: HTTP `GET /v1/admin/users`.
+    /// - Remark: Generated from `#/paths//v1/admin/users/get(listUsers)`.
+    func listUsers(_ input: Operations.ListUsers.Input) async throws -> Operations.ListUsers.Output
+    /// Makes the account an admin or a regular user. 409 when it would leave the server without an admin. Admins only.
+    ///
+    /// - Remark: HTTP `PATCH /v1/admin/users/{id}`.
+    /// - Remark: Generated from `#/paths//v1/admin/users/{id}/patch(setUserRole)`.
+    func setUserRole(_ input: Operations.SetUserRole.Input) async throws -> Operations.SetUserRole.Output
+    /// Removes the account, its sessions, and all its data, bots included. 409 for the caller's own account. Admins only.
+    ///
+    /// - Remark: HTTP `DELETE /v1/admin/users/{id}`.
+    /// - Remark: Generated from `#/paths//v1/admin/users/{id}/delete(removeUser)`.
+    func removeUser(_ input: Operations.RemoveUser.Input) async throws -> Operations.RemoveUser.Output
+    /// Running workspaces whose machine has another image than the server's settings name. Each switches at its next idle stop, keeping its files; stopped workspaces switch when they next start. Admins only.
+    ///
+    /// - Remark: HTTP `GET /v1/admin/workspaces/outdated`.
+    /// - Remark: Generated from `#/paths//v1/admin/workspaces/outdated/get(listOutdatedWorkspaces)`.
+    func listOutdatedWorkspaces(_ input: Operations.ListOutdatedWorkspaces.Input) async throws -> Operations.ListOutdatedWorkspaces.Output
     /// - Remark: HTTP `GET /v1/agents`.
     /// - Remark: Generated from `#/paths//v1/agents/get(listAgents)`.
     func listAgents(_ input: Operations.ListAgents.Input) async throws -> Operations.ListAgents.Output
@@ -32,6 +79,21 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v1/agents/{id}/attachments/{entryId}/{index}`.
     /// - Remark: Generated from `#/paths//v1/agents/{id}/attachments/{entryId}/{index}/get(getAttachment)`.
     func getAttachment(_ input: Operations.GetAttachment.Input) async throws -> Operations.GetAttachment.Output
+    /// Lists bot requests, newest first, including their current approval status.
+    ///
+    /// - Remark: HTTP `GET /v1/agents/{id}/bot-requests`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/bot-requests/get(listBotRequests)`.
+    func listBotRequests(_ input: Operations.ListBotRequests.Input) async throws -> Operations.ListBotRequests.Output
+    /// Approves a pending bot request, optionally saving an edited proposal and creating the new bot.
+    ///
+    /// - Remark: HTTP `POST /v1/agents/{id}/bot-requests/{requestId}/approve`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/bot-requests/{requestId}/approve/post(approveBotRequest)`.
+    func approveBotRequest(_ input: Operations.ApproveBotRequest.Input) async throws -> Operations.ApproveBotRequest.Output
+    /// Declines a pending bot request.
+    ///
+    /// - Remark: HTTP `POST /v1/agents/{id}/bot-requests/{requestId}/decline`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/bot-requests/{requestId}/decline/post(declineBotRequest)`.
+    func declineBotRequest(_ input: Operations.DeclineBotRequest.Input) async throws -> Operations.DeclineBotRequest.Output
     /// - Remark: HTTP `GET /v1/agents/{id}/chat`.
     /// - Remark: Generated from `#/paths//v1/agents/{id}/chat/get(getChat)`.
     func getChat(_ input: Operations.GetChat.Input) async throws -> Operations.GetChat.Output
@@ -41,12 +103,42 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v1/agents/{id}/coding-jobs`.
     /// - Remark: Generated from `#/paths//v1/agents/{id}/coding-jobs/get(listCodingJobs)`.
     func listCodingJobs(_ input: Operations.ListCodingJobs.Input) async throws -> Operations.ListCodingJobs.Output
+    /// Answers the coding job's open question, which resumes the job. 409 when the job no longer waits on that question.
+    ///
+    /// - Remark: HTTP `POST /v1/agents/{id}/coding-jobs/{name}/answer`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/coding-jobs/{name}/answer/post(answerCodingJob)`.
+    func answerCodingJob(_ input: Operations.AnswerCodingJob.Input) async throws -> Operations.AnswerCodingJob.Output
     /// - Remark: HTTP `GET /v1/agents/{id}/coding-jobs/{name}/history`.
     /// - Remark: Generated from `#/paths//v1/agents/{id}/coding-jobs/{name}/history/get(getCodingJobHistory)`.
     func getCodingJobHistory(_ input: Operations.GetCodingJobHistory.Input) async throws -> Operations.GetCodingJobHistory.Output
     /// - Remark: HTTP `POST /v1/agents/{id}/compact`.
     /// - Remark: Generated from `#/paths//v1/agents/{id}/compact/post(compactChat)`.
     func compactChat(_ input: Operations.CompactChat.Input) async throws -> Operations.CompactChat.Output
+    /// The bot's credentials and its requests for credentials the owner has not answered. Values are never returned.
+    ///
+    /// - Remark: HTTP `GET /v1/agents/{id}/credentials`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/credentials/get(listAgentCredentials)`.
+    func listAgentCredentials(_ input: Operations.ListAgentCredentials.Input) async throws -> Operations.ListAgentCredentials.Output
+    /// Creates or updates a credential. Saving one the bot requested answers the request and starts a bot turn with a notice. A new value applies from the next request; the placeholder stays the same.
+    ///
+    /// - Remark: HTTP `PUT /v1/agents/{id}/credentials/{name}`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/credentials/{name}/put(saveAgentCredential)`.
+    func saveAgentCredential(_ input: Operations.SaveAgentCredential.Input) async throws -> Operations.SaveAgentCredential.Output
+    /// Deletes a credential and its use records, or declines a request for one, which starts a bot turn with a notice.
+    ///
+    /// - Remark: HTTP `DELETE /v1/agents/{id}/credentials/{name}`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/credentials/{name}/delete(deleteAgentCredential)`.
+    func deleteAgentCredential(_ input: Operations.DeleteAgentCredential.Input) async throws -> Operations.DeleteAgentCredential.Output
+    /// Declines a pending credential request without changing a saved credential.
+    ///
+    /// - Remark: HTTP `POST /v1/agents/{id}/credentials/{name}/decline`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/credentials/{name}/decline/post(declineAgentCredential)`.
+    func declineAgentCredential(_ input: Operations.DeclineAgentCredential.Input) async throws -> Operations.DeclineAgentCredential.Output
+    /// Requests sent with the credential's value in the last 90 days, newest first. Page with `before` set to the last use's ID.
+    ///
+    /// - Remark: HTTP `GET /v1/agents/{id}/credentials/{name}/uses`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/credentials/{name}/uses/get(listAgentCredentialUses)`.
+    func listAgentCredentialUses(_ input: Operations.ListAgentCredentialUses.Input) async throws -> Operations.ListAgentCredentialUses.Output
     /// - Remark: HTTP `GET /v1/agents/{id}/desktop-jobs`.
     /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop-jobs/get(listDesktopJobs)`.
     func listDesktopJobs(_ input: Operations.ListDesktopJobs.Input) async throws -> Operations.ListDesktopJobs.Output
@@ -66,7 +158,10 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v1/agents/{id}/desktop/events`.
     /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/events/get(streamDesktopEvents)`.
     func streamDesktopEvents(_ input: Operations.StreamDesktopEvents.Input) async throws -> Operations.StreamDesktopEvents.Output
-    /// Issue a single-use viewer link for the bot desktop. The page and its WebSocket live outside /v1 and need no Authorization header: the link is the credential. 409 when the bot has no bot desktop.
+    /// - Remark: HTTP `GET /v1/agents/{id}/desktop/status`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/status/get(getDesktopStatus)`.
+    func getDesktopStatus(_ input: Operations.GetDesktopStatus.Input) async throws -> Operations.GetDesktopStatus.Output
+    /// Issue a single-use viewer link for the bot desktop. The page and its WebSocket live outside /v1 and need no Authorization header: the link is the credential. With passive=true the link is watch-only: it neither boots the bot's machine nor keeps it awake, and its connection ends when the machine stops. 409 when the bot has no bot desktop.
     ///
     /// - Remark: HTTP `POST /v1/agents/{id}/desktop/viewer`.
     /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/viewer/post(createDesktopViewer)`.
@@ -79,6 +174,46 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v1/agents/{id}/events`.
     /// - Remark: Generated from `#/paths//v1/agents/{id}/events/get(streamChatEvents)`.
     func streamChatEvents(_ input: Operations.StreamChatEvents.Input) async throws -> Operations.StreamChatEvents.Output
+    /// Desktop job actions an intent check held for the owner, newest first, pending and decided.
+    ///
+    /// - Remark: HTTP `GET /v1/agents/{id}/held-actions`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/held-actions/get(listAgentHeldActions)`.
+    func listAgentHeldActions(_ input: Operations.ListAgentHeldActions.Input) async throws -> Operations.ListAgentHeldActions.Output
+    /// Runs the held action; the job continues where it stopped. Fails with 409 once the action was decided.
+    ///
+    /// - Remark: HTTP `POST /v1/agents/{id}/held-actions/{actionId}/approve`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/held-actions/{actionId}/approve/post(approveAgentHeldAction)`.
+    func approveAgentHeldAction(_ input: Operations.ApproveAgentHeldAction.Input) async throws -> Operations.ApproveAgentHeldAction.Output
+    /// Refuses the held action with an optional reason; the job reports back. Fails with 409 once the action was decided.
+    ///
+    /// - Remark: HTTP `POST /v1/agents/{id}/held-actions/{actionId}/decline`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/held-actions/{actionId}/decline/post(declineAgentHeldAction)`.
+    func declineAgentHeldAction(_ input: Operations.DeclineAgentHeldAction.Input) async throws -> Operations.DeclineAgentHeldAction.Output
+    /// The logins the bot's desktop jobs can fill into web pages, and its requests for logins the owner has not answered. Values are never returned.
+    ///
+    /// - Remark: HTTP `GET /v1/agents/{id}/logins`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/logins/get(listAgentLogins)`.
+    func listAgentLogins(_ input: Operations.ListAgentLogins.Input) async throws -> Operations.ListAgentLogins.Output
+    /// Creates or updates a login. Saving one the bot requested answers the request and starts a bot turn with a notice. Each field is a value stored in Crumble or a password manager reference; a 1Password `item` fills every field. Every reference is read once to check it, and nothing is saved if one fails.
+    ///
+    /// - Remark: HTTP `PUT /v1/agents/{id}/logins/{name}`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/logins/{name}/put(saveAgentLogin)`.
+    func saveAgentLogin(_ input: Operations.SaveAgentLogin.Input) async throws -> Operations.SaveAgentLogin.Output
+    /// Deletes a login and its fill records, or declines a request for one, which starts a bot turn with a notice.
+    ///
+    /// - Remark: HTTP `DELETE /v1/agents/{id}/logins/{name}`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/logins/{name}/delete(deleteAgentLogin)`.
+    func deleteAgentLogin(_ input: Operations.DeleteAgentLogin.Input) async throws -> Operations.DeleteAgentLogin.Output
+    /// Declines a pending login request without changing a saved login.
+    ///
+    /// - Remark: HTTP `POST /v1/agents/{id}/logins/{name}/decline`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/logins/{name}/decline/post(declineAgentLogin)`.
+    func declineAgentLogin(_ input: Operations.DeclineAgentLogin.Input) async throws -> Operations.DeclineAgentLogin.Output
+    /// Fills of the login's fields in the last 90 days, newest first. Page with `before` set to the last use's ID.
+    ///
+    /// - Remark: HTTP `GET /v1/agents/{id}/logins/{name}/uses`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/logins/{name}/uses/get(listAgentLoginUses)`.
+    func listAgentLoginUses(_ input: Operations.ListAgentLoginUses.Input) async throws -> Operations.ListAgentLoginUses.Output
     /// - Remark: HTTP `GET /v1/agents/{id}/memories`.
     /// - Remark: Generated from `#/paths//v1/agents/{id}/memories/get(listAgentMemories)`.
     func listAgentMemories(_ input: Operations.ListAgentMemories.Input) async throws -> Operations.ListAgentMemories.Output
@@ -94,10 +229,66 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /v1/agents/{id}/messages`.
     /// - Remark: Generated from `#/paths//v1/agents/{id}/messages/post(sendMessage)`.
     func sendMessage(_ input: Operations.SendMessage.Input) async throws -> Operations.SendMessage.Output
+    /// What the bot's reviews changed, newest first, one entry per reviewed execution with its changes. Clients show these as notices in the bot chat, also after reconnecting.
+    ///
+    /// - Remark: HTTP `GET /v1/agents/{id}/reviews`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/reviews/get(listAgentReviews)`.
+    func listAgentReviews(_ input: Operations.ListAgentReviews.Input) async throws -> Operations.ListAgentReviews.Output
+    /// The bot's own skill packages, including stale and archived ones. The agent's inline `skills` field lists the same skills by name and instructions.
+    ///
+    /// - Remark: HTTP `GET /v1/agents/{id}/skills`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/skills/get(listAgentSkills)`.
+    func listAgentSkills(_ input: Operations.ListAgentSkills.Input) async throws -> Operations.ListAgentSkills.Output
+    /// - Remark: HTTP `POST /v1/agents/{id}/skills`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/skills/post(createAgentSkill)`.
+    func createAgentSkill(_ input: Operations.CreateAgentSkill.Input) async throws -> Operations.CreateAgentSkill.Output
+    /// Changes a skill's content, restores an archived skill by setting state to active, or pins it so the curator never marks it stale or archives it.
+    ///
+    /// - Remark: HTTP `PATCH /v1/agents/{id}/skills/{skillId}`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/skills/{skillId}/patch(updateAgentSkill)`.
+    func updateAgentSkill(_ input: Operations.UpdateAgentSkill.Input) async throws -> Operations.UpdateAgentSkill.Output
+    /// - Remark: HTTP `DELETE /v1/agents/{id}/skills/{skillId}`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/skills/{skillId}/delete(deleteAgentSkill)`.
+    func deleteAgentSkill(_ input: Operations.DeleteAgentSkill.Input) async throws -> Operations.DeleteAgentSkill.Output
     /// - Remark: HTTP `GET /v1/capabilities`.
     /// - Remark: Generated from `#/paths//v1/capabilities/get(getCapabilities)`.
     func getCapabilities(_ input: Operations.GetCapabilities.Input) async throws -> Operations.GetCapabilities.Output
-    /// Server-sent events. Each activity event carries a ReplyEvent or ChatPreviewEvent JSON object in data. Current chat previews replay on connection; finished replies are not replayed. Heartbeat events carry {} every 15 seconds. Authenticate with the Authorization header. No Last-Event-ID replay.
+    /// Skill and memory changes by owners, bots, and reviews, newest first, with the state before and after each. Page with `before` set to the last change's ID.
+    ///
+    /// - Remark: HTTP `GET /v1/changes`.
+    /// - Remark: Generated from `#/paths//v1/changes/get(listChanges)`.
+    func listChanges(_ input: Operations.ListChanges.Input) async throws -> Operations.ListChanges.Output
+    /// Restores the state before the change, whatever happened since, and records the revert as a change of its own.
+    ///
+    /// - Remark: HTTP `POST /v1/changes/{id}/revert`.
+    /// - Remark: Generated from `#/paths//v1/changes/{id}/revert/post(revertChange)`.
+    func revertChange(_ input: Operations.RevertChange.Input) async throws -> Operations.RevertChange.Output
+    /// The account's event relay: its URL, whether the Doorstep account token is set (plugin setting `doorstep:token`), and the connection status.
+    ///
+    /// - Remark: HTTP `GET /v1/event-relay`.
+    /// - Remark: Generated from `#/paths//v1/event-relay/get(getEventRelay)`.
+    func getEventRelay(_ input: Operations.GetEventRelay.Input) async throws -> Operations.GetEventRelay.Output
+    /// Sets the event relay URL, or removes it with `null`, which disconnects the relay.
+    ///
+    /// - Remark: HTTP `PUT /v1/event-relay`.
+    /// - Remark: Generated from `#/paths//v1/event-relay/put(updateEventRelay)`.
+    func updateEventRelay(_ input: Operations.UpdateEventRelay.Input) async throws -> Operations.UpdateEventRelay.Output
+    /// The account's event sources, each with the number of automations that use it.
+    ///
+    /// - Remark: HTTP `GET /v1/event-sources`.
+    /// - Remark: Generated from `#/paths//v1/event-sources/get(listEventSources)`.
+    func listEventSources(_ input: Operations.ListEventSources.Input) async throws -> Operations.ListEventSources.Output
+    /// Creates a source on the event relay. The response's `address` contains the source's secret and is returned only once. 400 when the relay URL or token is missing, or the relay can't be reached or rejects the token.
+    ///
+    /// - Remark: HTTP `POST /v1/event-sources`.
+    /// - Remark: Generated from `#/paths//v1/event-sources/post(createEventSource)`.
+    func createEventSource(_ input: Operations.CreateEventSource.Input) async throws -> Operations.CreateEventSource.Output
+    /// Deletes the source on the event relay and in Crumble; its address stops working. 409 while an automation uses it.
+    ///
+    /// - Remark: HTTP `DELETE /v1/event-sources/{id}`.
+    /// - Remark: Generated from `#/paths//v1/event-sources/{id}/delete(deleteEventSource)`.
+    func deleteEventSource(_ input: Operations.DeleteEventSource.Input) async throws -> Operations.DeleteEventSource.Output
+    /// Server-sent events. Each activity event carries a ReplyEvent or ChatPreviewEvent JSON object in data. Each learned event carries a LearnedEvent: what a bot's review of one turn changed; GET /v1/agents/{id}/reviews lists them durably. Current chat previews replay on connection; finished replies and learned events are not replayed. Heartbeat events carry {} every 15 seconds. Authenticate with the Authorization header. No Last-Event-ID replay.
     ///
     /// - Remark: HTTP `GET /v1/events`.
     /// - Remark: Generated from `#/paths//v1/events/get(streamActivityEvents)`.
@@ -105,6 +296,81 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v1/executions`.
     /// - Remark: Generated from `#/paths//v1/executions/get(listExecutions)`.
     func listExecutions(_ input: Operations.ListExecutions.Input) async throws -> Operations.ListExecutions.Output
+    /// The account's machine accounts: GitHub users made for bots. A bot acts as its machine account wherever none of its GitHub Apps does.
+    ///
+    /// - Remark: HTTP `GET /v1/github-accounts`.
+    /// - Remark: Generated from `#/paths//v1/github-accounts/get(listGithubAccounts)`.
+    func listGithubAccounts(_ input: Operations.ListGithubAccounts.Input) async throws -> Operations.ListGithubAccounts.Output
+    /// Adds the GitHub user a personal access token signs in as. 400 when GitHub refuses the token; 409 when the user is already added.
+    ///
+    /// - Remark: HTTP `POST /v1/github-accounts`.
+    /// - Remark: Generated from `#/paths//v1/github-accounts/post(addGithubAccount)`.
+    func addGithubAccount(_ input: Operations.AddGithubAccount.Input) async throws -> Operations.AddGithubAccount.Output
+    /// Forgets the machine account and its token, and takes GH_TOKEN from bots left without an installed App. The user stays on GitHub.
+    ///
+    /// - Remark: HTTP `DELETE /v1/github-accounts/{id}`.
+    /// - Remark: Generated from `#/paths//v1/github-accounts/{id}/delete(deleteGithubAccount)`.
+    func deleteGithubAccount(_ input: Operations.DeleteGithubAccount.Input) async throws -> Operations.DeleteGithubAccount.Output
+    /// Replaces the bots that act as the machine account, giving them GH_TOKEN. A bot acts as at most one; 409 when a bot already acts as another.
+    ///
+    /// - Remark: HTTP `PUT /v1/github-accounts/{id}/bots`.
+    /// - Remark: Generated from `#/paths//v1/github-accounts/{id}/bots/put(setGithubAccountBots)`.
+    func setGithubAccountBots(_ input: Operations.SetGithubAccountBots.Input) async throws -> Operations.SetGithubAccountBots.Output
+    /// Replaces the machine account's token. 400 when GitHub refuses it or it signs in as another user.
+    ///
+    /// - Remark: HTTP `PUT /v1/github-accounts/{id}/token`.
+    /// - Remark: Generated from `#/paths//v1/github-accounts/{id}/token/put(setGithubAccountToken)`.
+    func setGithubAccountToken(_ input: Operations.SetGithubAccountToken.Input) async throws -> Operations.SetGithubAccountToken.Output
+    /// The account's GitHub Apps, each the GitHub identity its bots act through in one GitHub account's repositories.
+    ///
+    /// - Remark: HTTP `GET /v1/github-apps`.
+    /// - Remark: Generated from `#/paths//v1/github-apps/get(listGithubApps)`.
+    func listGithubApps(_ input: Operations.ListGithubApps.Input) async throws -> Operations.ListGithubApps.Output
+    /// Exchanges the code GitHub redirected back with for the App's keys, within an hour of starting. 400 for a stale or reused state.
+    ///
+    /// - Remark: HTTP `POST /v1/github-apps/complete`.
+    /// - Remark: Generated from `#/paths//v1/github-apps/complete/post(completeGithubApp)`.
+    func completeGithubApp(_ input: Operations.CompleteGithubApp.Input) async throws -> Operations.CompleteGithubApp.Output
+    /// Starts creating a private GitHub App. The client posts `manifest` as a form field to `url`; GitHub then sends the owner to `{origin}/github-app/callback` with a code and state.
+    ///
+    /// - Remark: HTTP `POST /v1/github-apps/manifest`.
+    /// - Remark: Generated from `#/paths//v1/github-apps/manifest/post(createGithubAppManifest)`.
+    func createGithubAppManifest(_ input: Operations.CreateGithubAppManifest.Input) async throws -> Operations.CreateGithubAppManifest.Output
+    /// Exchanges the code GitHub sent the owner back with for the owner's tokens, within ten minutes of starting. 400 for a stale or reused state or a refused sign-in.
+    ///
+    /// - Remark: HTTP `POST /v1/github-apps/sign-in/complete`.
+    /// - Remark: Generated from `#/paths//v1/github-apps/sign-in/complete/post(completeGithubAppSignIn)`.
+    func completeGithubAppSignIn(_ input: Operations.CompleteGithubAppSignIn.Input) async throws -> Operations.CompleteGithubAppSignIn.Output
+    /// Forgets the App, signs the owner out of it, and takes GH_TOKEN from bots left without an installed App. The App stays on GitHub until the owner deletes it there.
+    ///
+    /// - Remark: HTTP `DELETE /v1/github-apps/{id}`.
+    /// - Remark: Generated from `#/paths//v1/github-apps/{id}/delete(deleteGithubApp)`.
+    func deleteGithubApp(_ input: Operations.DeleteGithubApp.Input) async throws -> Operations.DeleteGithubApp.Output
+    /// Replaces the bots that act through the App. A bot uses at most one App per GitHub account; 409 when a bot already uses another App for this App's account.
+    ///
+    /// - Remark: HTTP `PUT /v1/github-apps/{id}/bots`.
+    /// - Remark: Generated from `#/paths//v1/github-apps/{id}/bots/put(setGithubAppBots)`.
+    func setGithubAppBots(_ input: Operations.SetGithubAppBots.Input) async throws -> Operations.SetGithubAppBots.Output
+    /// Stores a client secret generated in the App's GitHub settings, for an App created before Crumble kept it.
+    ///
+    /// - Remark: HTTP `PUT /v1/github-apps/{id}/client-secret`.
+    /// - Remark: Generated from `#/paths//v1/github-apps/{id}/client-secret/put(setGithubAppClientSecret)`.
+    func setGithubAppClientSecret(_ input: Operations.SetGithubAppClientSecret.Input) async throws -> Operations.SetGithubAppClientSecret.Output
+    /// Finds the App's installation on its account and gives its bots the GH_TOKEN credential. 409 until the owner installs the App.
+    ///
+    /// - Remark: HTTP `POST /v1/github-apps/{id}/connect`.
+    /// - Remark: Generated from `#/paths//v1/github-apps/{id}/connect/post(connectGithubApp)`.
+    func connectGithubApp(_ input: Operations.ConnectGithubApp.Input) async throws -> Operations.ConnectGithubApp.Output
+    /// Starts signing the owner in to GitHub through the App, so its bots act as the owner. The client opens `url`; GitHub sends the owner to the App's callback URL, `{origin}/github-app/authorized`, or `{origin}/ui/github-app/authorized` for Apps created before the web UI moved to `/`, with a code and state. `origin` is no longer used. 409 without a client secret.
+    ///
+    /// - Remark: HTTP `POST /v1/github-apps/{id}/sign-in`.
+    /// - Remark: Generated from `#/paths//v1/github-apps/{id}/sign-in/post(signInGithubApp)`.
+    func signInGithubApp(_ input: Operations.SignInGithubApp.Input) async throws -> Operations.SignInGithubApp.Output
+    /// Revokes and forgets the owner's sign-in through the App; its bots act as the App again.
+    ///
+    /// - Remark: HTTP `DELETE /v1/github-apps/{id}/user`.
+    /// - Remark: Generated from `#/paths//v1/github-apps/{id}/user/delete(signOutGithubApp)`.
+    func signOutGithubApp(_ input: Operations.SignOutGithubApp.Input) async throws -> Operations.SignOutGithubApp.Output
     /// - Remark: HTTP `GET /v1/group-chats`.
     /// - Remark: Generated from `#/paths//v1/group-chats/get(listGroupChats)`.
     func listGroupChats(_ input: Operations.ListGroupChats.Input) async throws -> Operations.ListGroupChats.Output
@@ -142,6 +408,14 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /v1/group-chats/{id}/stop`.
     /// - Remark: Generated from `#/paths//v1/group-chats/{id}/stop/post(stopGroupChat)`.
     func stopGroupChat(_ input: Operations.StopGroupChat.Input) async throws -> Operations.StopGroupChat.Output
+    /// The account's judge model for desktop jobs' intent checks, and the models the account's provider keys reach.
+    ///
+    /// - Remark: HTTP `GET /v1/judge-model`.
+    /// - Remark: Generated from `#/paths//v1/judge-model/get(getJudgeModel)`.
+    func getJudgeModel(_ input: Operations.GetJudgeModel.Input) async throws -> Operations.GetJudgeModel.Output
+    /// - Remark: HTTP `PUT /v1/judge-model`.
+    /// - Remark: Generated from `#/paths//v1/judge-model/put(updateJudgeModel)`.
+    func updateJudgeModel(_ input: Operations.UpdateJudgeModel.Input) async throws -> Operations.UpdateJudgeModel.Output
     /// - Remark: HTTP `GET /v1/mcp-servers`.
     /// - Remark: Generated from `#/paths//v1/mcp-servers/get(listMcpServers)`.
     func listMcpServers(_ input: Operations.ListMcpServers.Input) async throws -> Operations.ListMcpServers.Output
@@ -175,9 +449,45 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `DELETE /v1/memories/{id}`.
     /// - Remark: Generated from `#/paths//v1/memories/{id}/delete(deleteSharedMemory)`.
     func deleteSharedMemory(_ input: Operations.DeleteSharedMemory.Input) async throws -> Operations.DeleteSharedMemory.Output
+    /// - Remark: HTTP `GET /v1/message-gateways`.
+    /// - Remark: Generated from `#/paths//v1/message-gateways/get(messageGateways)`.
+    func messageGateways(_ input: Operations.MessageGateways.Input) async throws -> Operations.MessageGateways.Output
+    /// - Remark: HTTP `PUT /v1/message-gateways/{id}`.
+    /// - Remark: Generated from `#/paths//v1/message-gateways/{id}/put(updateMessageGateway)`.
+    func updateMessageGateway(_ input: Operations.UpdateMessageGateway.Input) async throws -> Operations.UpdateMessageGateway.Output
     /// - Remark: HTTP `GET /v1/models`.
     /// - Remark: Generated from `#/paths//v1/models/get(listModels)`.
     func listModels(_ input: Operations.ListModels.Input) async throws -> Operations.ListModels.Output
+    /// Every password manager this server supports, whether it is connected, and which secrets read from it.
+    ///
+    /// - Remark: HTTP `GET /v1/password-managers`.
+    /// - Remark: Generated from `#/paths//v1/password-managers/get(listPasswordManagers)`.
+    func listPasswordManagers(_ input: Operations.ListPasswordManagers.Input) async throws -> Operations.ListPasswordManagers.Output
+    /// Signs in with the token to check it, then connects the password manager or replaces its token. A new token drops the values read with the old one. 400 when the password manager rejects the token; 503 when it can't be reached.
+    ///
+    /// - Remark: HTTP `PUT /v1/password-managers/{id}`.
+    /// - Remark: Generated from `#/paths//v1/password-managers/{id}/put(connectPasswordManager)`.
+    func connectPasswordManager(_ input: Operations.ConnectPasswordManager.Input) async throws -> Operations.ConnectPasswordManager.Output
+    /// Disconnects the password manager and drops its token. 409 while any secret still reads from it; `usedBy` in the list names them.
+    ///
+    /// - Remark: HTTP `DELETE /v1/password-managers/{id}`.
+    /// - Remark: Generated from `#/paths//v1/password-managers/{id}/delete(disconnectPasswordManager)`.
+    func disconnectPasswordManager(_ input: Operations.DisconnectPasswordManager.Input) async throws -> Operations.DisconnectPasswordManager.Output
+    /// Each plugin that has settings, and whether each setting has a value. Values are never returned.
+    ///
+    /// - Remark: HTTP `GET /v1/plugin-settings`.
+    /// - Remark: Generated from `#/paths//v1/plugin-settings/get(listPluginSettings)`.
+    func listPluginSettings(_ input: Operations.ListPluginSettings.Input) async throws -> Operations.ListPluginSettings.Output
+    /// Sets a plugin setting to a `value` stored in Crumble, or to a `reference` read from a connected password manager, replacing the one before; send exactly one. A reference is checked by reading it once; 400 when it can't be read. 404 for a plugin or key the server doesn't have.
+    ///
+    /// - Remark: HTTP `PUT /v1/plugin-settings/{pluginId}/{key}`.
+    /// - Remark: Generated from `#/paths//v1/plugin-settings/{pluginId}/{key}/put(setPluginSetting)`.
+    func setPluginSetting(_ input: Operations.SetPluginSetting.Input) async throws -> Operations.SetPluginSetting.Output
+    /// Removes a plugin setting's value. 404 for a plugin or key the server doesn't have.
+    ///
+    /// - Remark: HTTP `DELETE /v1/plugin-settings/{pluginId}/{key}`.
+    /// - Remark: Generated from `#/paths//v1/plugin-settings/{pluginId}/{key}/delete(deletePluginSetting)`.
+    func deletePluginSetting(_ input: Operations.DeletePluginSetting.Input) async throws -> Operations.DeletePluginSetting.Output
     /// - Remark: HTTP `GET /v1/provider-logins/{id}`.
     /// - Remark: Generated from `#/paths//v1/provider-logins/{id}/get(getProviderLogin)`.
     func getProviderLogin(_ input: Operations.GetProviderLogin.Input) async throws -> Operations.GetProviderLogin.Output
@@ -190,9 +500,13 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v1/providers`.
     /// - Remark: Generated from `#/paths//v1/providers/get(listProviders)`.
     func listProviders(_ input: Operations.ListProviders.Input) async throws -> Operations.ListProviders.Output
+    /// Saves the provider's API key, or a password manager reference to read it from. A reference is read once to check it; 400 when it can't be read, keeping the previous credential.
+    ///
     /// - Remark: HTTP `PUT /v1/providers/{provider}`.
     /// - Remark: Generated from `#/paths//v1/providers/{provider}/put(putProviderKey)`.
     func putProviderKey(_ input: Operations.PutProviderKey.Input) async throws -> Operations.PutProviderKey.Output
+    /// Remove the provider's saved credential. 409 for a provider that signs in outside Crumble; the message names its sign-out command.
+    ///
     /// - Remark: HTTP `DELETE /v1/providers/{provider}`.
     /// - Remark: Generated from `#/paths//v1/providers/{provider}/delete(deleteProviderKey)`.
     func deleteProviderKey(_ input: Operations.DeleteProviderKey.Input) async throws -> Operations.DeleteProviderKey.Output
@@ -226,18 +540,74 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /v1/schedules/{id}/run`.
     /// - Remark: Generated from `#/paths//v1/schedules/{id}/run/post(runSchedule)`.
     func runSchedule(_ input: Operations.RunSchedule.Input) async throws -> Operations.RunSchedule.Output
+    /// Script task runs from the last 90 days, newest first. Page with `before` set to the last run's ID. An unknown ID returns an empty list.
+    ///
+    /// - Remark: HTTP `GET /v1/schedules/{id}/runs`.
+    /// - Remark: Generated from `#/paths//v1/schedules/{id}/runs/get(listScriptRuns)`.
+    func listScriptRuns(_ input: Operations.ListScriptRuns.Input) async throws -> Operations.ListScriptRuns.Output
     /// - Remark: HTTP `GET /v1/skills`.
     /// - Remark: Generated from `#/paths//v1/skills/get(listSkills)`.
     func listSkills(_ input: Operations.ListSkills.Input) async throws -> Operations.ListSkills.Output
     /// - Remark: HTTP `POST /v1/skills`.
     /// - Remark: Generated from `#/paths//v1/skills/post(createSkill)`.
     func createSkill(_ input: Operations.CreateSkill.Input) async throws -> Operations.CreateSkill.Output
+    /// Lists the skills in a public GitHub repository: every folder with a SKILL.md, and whether each can be installed.
+    ///
+    /// - Remark: HTTP `POST /v1/skills/github/browse`.
+    /// - Remark: Generated from `#/paths//v1/skills/github/browse/post(browseSkillRepository)`.
+    func browseSkillRepository(_ input: Operations.BrowseSkillRepository.Input) async throws -> Operations.BrowseSkillRepository.Output
+    /// Installs skills from one commit of a public GitHub repository as read-only shared skills, all or none, and turns them on for `botIds`.
+    ///
+    /// - Remark: HTTP `POST /v1/skills/github/install`.
+    /// - Remark: Generated from `#/paths//v1/skills/github/install/post(installSkills)`.
+    func installSkills(_ input: Operations.InstallSkills.Input) async throws -> Operations.InstallSkills.Output
+    /// Checks every installed skill's branch for changes now. The server also checks daily; GET /v1/skills shows the results as `update`.
+    ///
+    /// - Remark: HTTP `POST /v1/skills/updates/check`.
+    /// - Remark: Generated from `#/paths//v1/skills/updates/check/post(checkSkillUpdates)`.
+    func checkSkillUpdates(_ input: Operations.CheckSkillUpdates.Input) async throws -> Operations.CheckSkillUpdates.Output
+    /// One shared skill as a full package. GET /v1/skills keeps its earlier item shapes; the full records are here and in the create and update responses.
+    ///
+    /// - Remark: HTTP `GET /v1/skills/{id}`.
+    /// - Remark: Generated from `#/paths//v1/skills/{id}/get(getSkill)`.
+    func getSkill(_ input: Operations.GetSkill.Input) async throws -> Operations.GetSkill.Output
     /// - Remark: HTTP `PATCH /v1/skills/{id}`.
     /// - Remark: Generated from `#/paths//v1/skills/{id}/patch(updateSkill)`.
     func updateSkill(_ input: Operations.UpdateSkill.Input) async throws -> Operations.UpdateSkill.Output
     /// - Remark: HTTP `DELETE /v1/skills/{id}`.
     /// - Remark: Generated from `#/paths//v1/skills/{id}/delete(deleteSkill)`.
     func deleteSkill(_ input: Operations.DeleteSkill.Input) async throws -> Operations.DeleteSkill.Output
+    /// Turns a shared skill on or off for one bot. For a bot-owned skill, assignment copies the full package and records its source ID; an existing linked copy is left unchanged. Removal deletes only direct linked copies, never name matches or the source. Source deletion leaves copies and their provenance intact. Default skills cannot be assigned. Each request is independent, so clients can report partial failures and retry safely.
+    ///
+    /// - Remark: HTTP `POST /v1/skills/{id}/assignment`.
+    /// - Remark: Generated from `#/paths//v1/skills/{id}/assignment/post(assignSkillBot)`.
+    func assignSkillBot(_ input: Operations.AssignSkillBot.Input) async throws -> Operations.AssignSkillBot.Output
+    /// The upstream version an installed skill would update to.
+    ///
+    /// - Remark: HTTP `GET /v1/skills/{id}/update`.
+    /// - Remark: Generated from `#/paths//v1/skills/{id}/update/get(getPendingSkillUpdate)`.
+    func getPendingSkillUpdate(_ input: Operations.GetPendingSkillUpdate.Input) async throws -> Operations.GetPendingSkillUpdate.Output
+    /// Replaces an installed skill with its upstream version, recorded as a change the owner can revert.
+    ///
+    /// - Remark: HTTP `POST /v1/skills/{id}/update`.
+    /// - Remark: Generated from `#/paths//v1/skills/{id}/update/post(applySkillUpdate)`.
+    func applySkillUpdate(_ input: Operations.ApplySkillUpdate.Input) async throws -> Operations.ApplySkillUpdate.Output
+    /// The account's vision model, which describes images for bots whose model can't read them, and the models that read images the account's provider keys reach.
+    ///
+    /// - Remark: HTTP `GET /v1/vision-model`.
+    /// - Remark: Generated from `#/paths//v1/vision-model/get(getVisionModel)`.
+    func getVisionModel(_ input: Operations.GetVisionModel.Input) async throws -> Operations.GetVisionModel.Output
+    /// Choose the account's vision model, or turn it off with null. It must be one of the choices `getVisionModel` lists.
+    ///
+    /// - Remark: HTTP `PUT /v1/vision-model`.
+    /// - Remark: Generated from `#/paths//v1/vision-model/put(updateVisionModel)`.
+    func updateVisionModel(_ input: Operations.UpdateVisionModel.Input) async throws -> Operations.UpdateVisionModel.Output
+    /// - Remark: HTTP `GET /v1/web-search`.
+    /// - Remark: Generated from `#/paths//v1/web-search/get(getWebSearch)`.
+    func getWebSearch(_ input: Operations.GetWebSearch.Input) async throws -> Operations.GetWebSearch.Output
+    /// - Remark: HTTP `PUT /v1/web-search`.
+    /// - Remark: Generated from `#/paths//v1/web-search/put(updateWebSearch)`.
+    func updateWebSearch(_ input: Operations.UpdateWebSearch.Input) async throws -> Operations.UpdateWebSearch.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -247,6 +617,8 @@ extension APIProtocol {
     public func getHealth(headers: Operations.GetHealth.Input.Headers = .init()) async throws -> Operations.GetHealth.Output {
         try await getHealth(Operations.GetHealth.Input(headers: headers))
     }
+    /// Bots' tool calls, tool results, MCP calls, and bot messages, and skill and memory changes, newest first. Page with `cursor` set to the previous page's `nextCursor`. A page may hold fewer than `limit` items while `hasMore` is true.
+    ///
     /// - Remark: HTTP `GET /v1/activity/feed`.
     /// - Remark: Generated from `#/paths//v1/activity/feed/get(getActivityFeed)`.
     public func getActivityFeed(
@@ -257,6 +629,95 @@ extension APIProtocol {
             query: query,
             headers: headers
         ))
+    }
+    /// Invite links not yet used or revoked, newest first. Admins only.
+    ///
+    /// - Remark: HTTP `GET /v1/admin/invites`.
+    /// - Remark: Generated from `#/paths//v1/admin/invites/get(listInvites)`.
+    public func listInvites(headers: Operations.ListInvites.Input.Headers = .init()) async throws -> Operations.ListInvites.Output {
+        try await listInvites(Operations.ListInvites.Input(headers: headers))
+    }
+    /// Makes a one-time invite link. Only its hash is stored, so the link is shown once. Admins only.
+    ///
+    /// - Remark: HTTP `POST /v1/admin/invites`.
+    /// - Remark: Generated from `#/paths//v1/admin/invites/post(createInvite)`.
+    public func createInvite(headers: Operations.CreateInvite.Input.Headers = .init()) async throws -> Operations.CreateInvite.Output {
+        try await createInvite(Operations.CreateInvite.Input(headers: headers))
+    }
+    /// Revokes an invite link. Admins only.
+    ///
+    /// - Remark: HTTP `DELETE /v1/admin/invites/{id}`.
+    /// - Remark: Generated from `#/paths//v1/admin/invites/{id}/delete(revokeInvite)`.
+    public func revokeInvite(
+        path: Operations.RevokeInvite.Input.Path,
+        headers: Operations.RevokeInvite.Input.Headers = .init()
+    ) async throws -> Operations.RevokeInvite.Output {
+        try await revokeInvite(Operations.RevokeInvite.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// The server's settings. Admins only.
+    ///
+    /// - Remark: HTTP `GET /v1/admin/settings`.
+    /// - Remark: Generated from `#/paths//v1/admin/settings/get(getServerSettings)`.
+    public func getServerSettings(headers: Operations.GetServerSettings.Input.Headers = .init()) async throws -> Operations.GetServerSettings.Output {
+        try await getServerSettings(Operations.GetServerSettings.Input(headers: headers))
+    }
+    /// Changes the given settings. New workspace size and image apply to workspaces as they boot. Admins only.
+    ///
+    /// - Remark: HTTP `PATCH /v1/admin/settings`.
+    /// - Remark: Generated from `#/paths//v1/admin/settings/patch(updateServerSettings)`.
+    public func updateServerSettings(
+        headers: Operations.UpdateServerSettings.Input.Headers = .init(),
+        body: Operations.UpdateServerSettings.Input.Body
+    ) async throws -> Operations.UpdateServerSettings.Output {
+        try await updateServerSettings(Operations.UpdateServerSettings.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Every account on the server, oldest first. Admins only.
+    ///
+    /// - Remark: HTTP `GET /v1/admin/users`.
+    /// - Remark: Generated from `#/paths//v1/admin/users/get(listUsers)`.
+    public func listUsers(headers: Operations.ListUsers.Input.Headers = .init()) async throws -> Operations.ListUsers.Output {
+        try await listUsers(Operations.ListUsers.Input(headers: headers))
+    }
+    /// Makes the account an admin or a regular user. 409 when it would leave the server without an admin. Admins only.
+    ///
+    /// - Remark: HTTP `PATCH /v1/admin/users/{id}`.
+    /// - Remark: Generated from `#/paths//v1/admin/users/{id}/patch(setUserRole)`.
+    public func setUserRole(
+        path: Operations.SetUserRole.Input.Path,
+        headers: Operations.SetUserRole.Input.Headers = .init(),
+        body: Operations.SetUserRole.Input.Body
+    ) async throws -> Operations.SetUserRole.Output {
+        try await setUserRole(Operations.SetUserRole.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Removes the account, its sessions, and all its data, bots included. 409 for the caller's own account. Admins only.
+    ///
+    /// - Remark: HTTP `DELETE /v1/admin/users/{id}`.
+    /// - Remark: Generated from `#/paths//v1/admin/users/{id}/delete(removeUser)`.
+    public func removeUser(
+        path: Operations.RemoveUser.Input.Path,
+        headers: Operations.RemoveUser.Input.Headers = .init()
+    ) async throws -> Operations.RemoveUser.Output {
+        try await removeUser(Operations.RemoveUser.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Running workspaces whose machine has another image than the server's settings name. Each switches at its next idle stop, keeping its files; stopped workspaces switch when they next start. Admins only.
+    ///
+    /// - Remark: HTTP `GET /v1/admin/workspaces/outdated`.
+    /// - Remark: Generated from `#/paths//v1/admin/workspaces/outdated/get(listOutdatedWorkspaces)`.
+    public func listOutdatedWorkspaces(headers: Operations.ListOutdatedWorkspaces.Input.Headers = .init()) async throws -> Operations.ListOutdatedWorkspaces.Output {
+        try await listOutdatedWorkspaces(Operations.ListOutdatedWorkspaces.Input(headers: headers))
     }
     /// - Remark: HTTP `GET /v1/agents`.
     /// - Remark: Generated from `#/paths//v1/agents/get(listAgents)`.
@@ -331,6 +792,47 @@ extension APIProtocol {
             headers: headers
         ))
     }
+    /// Lists bot requests, newest first, including their current approval status.
+    ///
+    /// - Remark: HTTP `GET /v1/agents/{id}/bot-requests`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/bot-requests/get(listBotRequests)`.
+    public func listBotRequests(
+        path: Operations.ListBotRequests.Input.Path,
+        headers: Operations.ListBotRequests.Input.Headers = .init()
+    ) async throws -> Operations.ListBotRequests.Output {
+        try await listBotRequests(Operations.ListBotRequests.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Approves a pending bot request, optionally saving an edited proposal and creating the new bot.
+    ///
+    /// - Remark: HTTP `POST /v1/agents/{id}/bot-requests/{requestId}/approve`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/bot-requests/{requestId}/approve/post(approveBotRequest)`.
+    public func approveBotRequest(
+        path: Operations.ApproveBotRequest.Input.Path,
+        headers: Operations.ApproveBotRequest.Input.Headers = .init(),
+        body: Operations.ApproveBotRequest.Input.Body? = nil
+    ) async throws -> Operations.ApproveBotRequest.Output {
+        try await approveBotRequest(Operations.ApproveBotRequest.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Declines a pending bot request.
+    ///
+    /// - Remark: HTTP `POST /v1/agents/{id}/bot-requests/{requestId}/decline`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/bot-requests/{requestId}/decline/post(declineBotRequest)`.
+    public func declineBotRequest(
+        path: Operations.DeclineBotRequest.Input.Path,
+        headers: Operations.DeclineBotRequest.Input.Headers = .init()
+    ) async throws -> Operations.DeclineBotRequest.Output {
+        try await declineBotRequest(Operations.DeclineBotRequest.Input(
+            path: path,
+            headers: headers
+        ))
+    }
     /// - Remark: HTTP `GET /v1/agents/{id}/chat`.
     /// - Remark: Generated from `#/paths//v1/agents/{id}/chat/get(getChat)`.
     public func getChat(
@@ -368,6 +870,21 @@ extension APIProtocol {
             headers: headers
         ))
     }
+    /// Answers the coding job's open question, which resumes the job. 409 when the job no longer waits on that question.
+    ///
+    /// - Remark: HTTP `POST /v1/agents/{id}/coding-jobs/{name}/answer`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/coding-jobs/{name}/answer/post(answerCodingJob)`.
+    public func answerCodingJob(
+        path: Operations.AnswerCodingJob.Input.Path,
+        headers: Operations.AnswerCodingJob.Input.Headers = .init(),
+        body: Operations.AnswerCodingJob.Input.Body
+    ) async throws -> Operations.AnswerCodingJob.Output {
+        try await answerCodingJob(Operations.AnswerCodingJob.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
     /// - Remark: HTTP `GET /v1/agents/{id}/coding-jobs/{name}/history`.
     /// - Remark: Generated from `#/paths//v1/agents/{id}/coding-jobs/{name}/history/get(getCodingJobHistory)`.
     public func getCodingJobHistory(
@@ -389,6 +906,75 @@ extension APIProtocol {
     ) async throws -> Operations.CompactChat.Output {
         try await compactChat(Operations.CompactChat.Input(
             path: path,
+            headers: headers
+        ))
+    }
+    /// The bot's credentials and its requests for credentials the owner has not answered. Values are never returned.
+    ///
+    /// - Remark: HTTP `GET /v1/agents/{id}/credentials`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/credentials/get(listAgentCredentials)`.
+    public func listAgentCredentials(
+        path: Operations.ListAgentCredentials.Input.Path,
+        headers: Operations.ListAgentCredentials.Input.Headers = .init()
+    ) async throws -> Operations.ListAgentCredentials.Output {
+        try await listAgentCredentials(Operations.ListAgentCredentials.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Creates or updates a credential. Saving one the bot requested answers the request and starts a bot turn with a notice. A new value applies from the next request; the placeholder stays the same.
+    ///
+    /// - Remark: HTTP `PUT /v1/agents/{id}/credentials/{name}`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/credentials/{name}/put(saveAgentCredential)`.
+    public func saveAgentCredential(
+        path: Operations.SaveAgentCredential.Input.Path,
+        headers: Operations.SaveAgentCredential.Input.Headers = .init(),
+        body: Operations.SaveAgentCredential.Input.Body
+    ) async throws -> Operations.SaveAgentCredential.Output {
+        try await saveAgentCredential(Operations.SaveAgentCredential.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Deletes a credential and its use records, or declines a request for one, which starts a bot turn with a notice.
+    ///
+    /// - Remark: HTTP `DELETE /v1/agents/{id}/credentials/{name}`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/credentials/{name}/delete(deleteAgentCredential)`.
+    public func deleteAgentCredential(
+        path: Operations.DeleteAgentCredential.Input.Path,
+        headers: Operations.DeleteAgentCredential.Input.Headers = .init()
+    ) async throws -> Operations.DeleteAgentCredential.Output {
+        try await deleteAgentCredential(Operations.DeleteAgentCredential.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Declines a pending credential request without changing a saved credential.
+    ///
+    /// - Remark: HTTP `POST /v1/agents/{id}/credentials/{name}/decline`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/credentials/{name}/decline/post(declineAgentCredential)`.
+    public func declineAgentCredential(
+        path: Operations.DeclineAgentCredential.Input.Path,
+        headers: Operations.DeclineAgentCredential.Input.Headers = .init()
+    ) async throws -> Operations.DeclineAgentCredential.Output {
+        try await declineAgentCredential(Operations.DeclineAgentCredential.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Requests sent with the credential's value in the last 90 days, newest first. Page with `before` set to the last use's ID.
+    ///
+    /// - Remark: HTTP `GET /v1/agents/{id}/credentials/{name}/uses`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/credentials/{name}/uses/get(listAgentCredentialUses)`.
+    public func listAgentCredentialUses(
+        path: Operations.ListAgentCredentialUses.Input.Path,
+        query: Operations.ListAgentCredentialUses.Input.Query = .init(),
+        headers: Operations.ListAgentCredentialUses.Input.Headers = .init()
+    ) async throws -> Operations.ListAgentCredentialUses.Output {
+        try await listAgentCredentialUses(Operations.ListAgentCredentialUses.Input(
+            path: path,
+            query: query,
             headers: headers
         ))
     }
@@ -455,16 +1041,29 @@ extension APIProtocol {
             headers: headers
         ))
     }
-    /// Issue a single-use viewer link for the bot desktop. The page and its WebSocket live outside /v1 and need no Authorization header: the link is the credential. 409 when the bot has no bot desktop.
+    /// - Remark: HTTP `GET /v1/agents/{id}/desktop/status`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/status/get(getDesktopStatus)`.
+    public func getDesktopStatus(
+        path: Operations.GetDesktopStatus.Input.Path,
+        headers: Operations.GetDesktopStatus.Input.Headers = .init()
+    ) async throws -> Operations.GetDesktopStatus.Output {
+        try await getDesktopStatus(Operations.GetDesktopStatus.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Issue a single-use viewer link for the bot desktop. The page and its WebSocket live outside /v1 and need no Authorization header: the link is the credential. With passive=true the link is watch-only: it neither boots the bot's machine nor keeps it awake, and its connection ends when the machine stops. 409 when the bot has no bot desktop.
     ///
     /// - Remark: HTTP `POST /v1/agents/{id}/desktop/viewer`.
     /// - Remark: Generated from `#/paths//v1/agents/{id}/desktop/viewer/post(createDesktopViewer)`.
     public func createDesktopViewer(
         path: Operations.CreateDesktopViewer.Input.Path,
+        query: Operations.CreateDesktopViewer.Input.Query = .init(),
         headers: Operations.CreateDesktopViewer.Input.Headers = .init()
     ) async throws -> Operations.CreateDesktopViewer.Output {
         try await createDesktopViewer(Operations.CreateDesktopViewer.Input(
             path: path,
+            query: query,
             headers: headers
         ))
     }
@@ -489,6 +1088,116 @@ extension APIProtocol {
         headers: Operations.StreamChatEvents.Input.Headers = .init()
     ) async throws -> Operations.StreamChatEvents.Output {
         try await streamChatEvents(Operations.StreamChatEvents.Input(
+            path: path,
+            query: query,
+            headers: headers
+        ))
+    }
+    /// Desktop job actions an intent check held for the owner, newest first, pending and decided.
+    ///
+    /// - Remark: HTTP `GET /v1/agents/{id}/held-actions`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/held-actions/get(listAgentHeldActions)`.
+    public func listAgentHeldActions(
+        path: Operations.ListAgentHeldActions.Input.Path,
+        headers: Operations.ListAgentHeldActions.Input.Headers = .init()
+    ) async throws -> Operations.ListAgentHeldActions.Output {
+        try await listAgentHeldActions(Operations.ListAgentHeldActions.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Runs the held action; the job continues where it stopped. Fails with 409 once the action was decided.
+    ///
+    /// - Remark: HTTP `POST /v1/agents/{id}/held-actions/{actionId}/approve`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/held-actions/{actionId}/approve/post(approveAgentHeldAction)`.
+    public func approveAgentHeldAction(
+        path: Operations.ApproveAgentHeldAction.Input.Path,
+        headers: Operations.ApproveAgentHeldAction.Input.Headers = .init()
+    ) async throws -> Operations.ApproveAgentHeldAction.Output {
+        try await approveAgentHeldAction(Operations.ApproveAgentHeldAction.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Refuses the held action with an optional reason; the job reports back. Fails with 409 once the action was decided.
+    ///
+    /// - Remark: HTTP `POST /v1/agents/{id}/held-actions/{actionId}/decline`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/held-actions/{actionId}/decline/post(declineAgentHeldAction)`.
+    public func declineAgentHeldAction(
+        path: Operations.DeclineAgentHeldAction.Input.Path,
+        headers: Operations.DeclineAgentHeldAction.Input.Headers = .init(),
+        body: Operations.DeclineAgentHeldAction.Input.Body
+    ) async throws -> Operations.DeclineAgentHeldAction.Output {
+        try await declineAgentHeldAction(Operations.DeclineAgentHeldAction.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// The logins the bot's desktop jobs can fill into web pages, and its requests for logins the owner has not answered. Values are never returned.
+    ///
+    /// - Remark: HTTP `GET /v1/agents/{id}/logins`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/logins/get(listAgentLogins)`.
+    public func listAgentLogins(
+        path: Operations.ListAgentLogins.Input.Path,
+        headers: Operations.ListAgentLogins.Input.Headers = .init()
+    ) async throws -> Operations.ListAgentLogins.Output {
+        try await listAgentLogins(Operations.ListAgentLogins.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Creates or updates a login. Saving one the bot requested answers the request and starts a bot turn with a notice. Each field is a value stored in Crumble or a password manager reference; a 1Password `item` fills every field. Every reference is read once to check it, and nothing is saved if one fails.
+    ///
+    /// - Remark: HTTP `PUT /v1/agents/{id}/logins/{name}`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/logins/{name}/put(saveAgentLogin)`.
+    public func saveAgentLogin(
+        path: Operations.SaveAgentLogin.Input.Path,
+        headers: Operations.SaveAgentLogin.Input.Headers = .init(),
+        body: Operations.SaveAgentLogin.Input.Body
+    ) async throws -> Operations.SaveAgentLogin.Output {
+        try await saveAgentLogin(Operations.SaveAgentLogin.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Deletes a login and its fill records, or declines a request for one, which starts a bot turn with a notice.
+    ///
+    /// - Remark: HTTP `DELETE /v1/agents/{id}/logins/{name}`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/logins/{name}/delete(deleteAgentLogin)`.
+    public func deleteAgentLogin(
+        path: Operations.DeleteAgentLogin.Input.Path,
+        headers: Operations.DeleteAgentLogin.Input.Headers = .init()
+    ) async throws -> Operations.DeleteAgentLogin.Output {
+        try await deleteAgentLogin(Operations.DeleteAgentLogin.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Declines a pending login request without changing a saved login.
+    ///
+    /// - Remark: HTTP `POST /v1/agents/{id}/logins/{name}/decline`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/logins/{name}/decline/post(declineAgentLogin)`.
+    public func declineAgentLogin(
+        path: Operations.DeclineAgentLogin.Input.Path,
+        headers: Operations.DeclineAgentLogin.Input.Headers = .init()
+    ) async throws -> Operations.DeclineAgentLogin.Output {
+        try await declineAgentLogin(Operations.DeclineAgentLogin.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Fills of the login's fields in the last 90 days, newest first. Page with `before` set to the last use's ID.
+    ///
+    /// - Remark: HTTP `GET /v1/agents/{id}/logins/{name}/uses`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/logins/{name}/uses/get(listAgentLoginUses)`.
+    public func listAgentLoginUses(
+        path: Operations.ListAgentLoginUses.Input.Path,
+        query: Operations.ListAgentLoginUses.Input.Query = .init(),
+        headers: Operations.ListAgentLoginUses.Input.Headers = .init()
+    ) async throws -> Operations.ListAgentLoginUses.Output {
+        try await listAgentLoginUses(Operations.ListAgentLoginUses.Input(
             path: path,
             query: query,
             headers: headers
@@ -555,12 +1264,158 @@ extension APIProtocol {
             body: body
         ))
     }
+    /// What the bot's reviews changed, newest first, one entry per reviewed execution with its changes. Clients show these as notices in the bot chat, also after reconnecting.
+    ///
+    /// - Remark: HTTP `GET /v1/agents/{id}/reviews`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/reviews/get(listAgentReviews)`.
+    public func listAgentReviews(
+        path: Operations.ListAgentReviews.Input.Path,
+        query: Operations.ListAgentReviews.Input.Query = .init(),
+        headers: Operations.ListAgentReviews.Input.Headers = .init()
+    ) async throws -> Operations.ListAgentReviews.Output {
+        try await listAgentReviews(Operations.ListAgentReviews.Input(
+            path: path,
+            query: query,
+            headers: headers
+        ))
+    }
+    /// The bot's own skill packages, including stale and archived ones. The agent's inline `skills` field lists the same skills by name and instructions.
+    ///
+    /// - Remark: HTTP `GET /v1/agents/{id}/skills`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/skills/get(listAgentSkills)`.
+    public func listAgentSkills(
+        path: Operations.ListAgentSkills.Input.Path,
+        headers: Operations.ListAgentSkills.Input.Headers = .init()
+    ) async throws -> Operations.ListAgentSkills.Output {
+        try await listAgentSkills(Operations.ListAgentSkills.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `POST /v1/agents/{id}/skills`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/skills/post(createAgentSkill)`.
+    public func createAgentSkill(
+        path: Operations.CreateAgentSkill.Input.Path,
+        headers: Operations.CreateAgentSkill.Input.Headers = .init(),
+        body: Operations.CreateAgentSkill.Input.Body
+    ) async throws -> Operations.CreateAgentSkill.Output {
+        try await createAgentSkill(Operations.CreateAgentSkill.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Changes a skill's content, restores an archived skill by setting state to active, or pins it so the curator never marks it stale or archives it.
+    ///
+    /// - Remark: HTTP `PATCH /v1/agents/{id}/skills/{skillId}`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/skills/{skillId}/patch(updateAgentSkill)`.
+    public func updateAgentSkill(
+        path: Operations.UpdateAgentSkill.Input.Path,
+        headers: Operations.UpdateAgentSkill.Input.Headers = .init(),
+        body: Operations.UpdateAgentSkill.Input.Body
+    ) async throws -> Operations.UpdateAgentSkill.Output {
+        try await updateAgentSkill(Operations.UpdateAgentSkill.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `DELETE /v1/agents/{id}/skills/{skillId}`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/skills/{skillId}/delete(deleteAgentSkill)`.
+    public func deleteAgentSkill(
+        path: Operations.DeleteAgentSkill.Input.Path,
+        headers: Operations.DeleteAgentSkill.Input.Headers = .init()
+    ) async throws -> Operations.DeleteAgentSkill.Output {
+        try await deleteAgentSkill(Operations.DeleteAgentSkill.Input(
+            path: path,
+            headers: headers
+        ))
+    }
     /// - Remark: HTTP `GET /v1/capabilities`.
     /// - Remark: Generated from `#/paths//v1/capabilities/get(getCapabilities)`.
     public func getCapabilities(headers: Operations.GetCapabilities.Input.Headers = .init()) async throws -> Operations.GetCapabilities.Output {
         try await getCapabilities(Operations.GetCapabilities.Input(headers: headers))
     }
-    /// Server-sent events. Each activity event carries a ReplyEvent or ChatPreviewEvent JSON object in data. Current chat previews replay on connection; finished replies are not replayed. Heartbeat events carry {} every 15 seconds. Authenticate with the Authorization header. No Last-Event-ID replay.
+    /// Skill and memory changes by owners, bots, and reviews, newest first, with the state before and after each. Page with `before` set to the last change's ID.
+    ///
+    /// - Remark: HTTP `GET /v1/changes`.
+    /// - Remark: Generated from `#/paths//v1/changes/get(listChanges)`.
+    public func listChanges(
+        query: Operations.ListChanges.Input.Query = .init(),
+        headers: Operations.ListChanges.Input.Headers = .init()
+    ) async throws -> Operations.ListChanges.Output {
+        try await listChanges(Operations.ListChanges.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// Restores the state before the change, whatever happened since, and records the revert as a change of its own.
+    ///
+    /// - Remark: HTTP `POST /v1/changes/{id}/revert`.
+    /// - Remark: Generated from `#/paths//v1/changes/{id}/revert/post(revertChange)`.
+    public func revertChange(
+        path: Operations.RevertChange.Input.Path,
+        headers: Operations.RevertChange.Input.Headers = .init()
+    ) async throws -> Operations.RevertChange.Output {
+        try await revertChange(Operations.RevertChange.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// The account's event relay: its URL, whether the Doorstep account token is set (plugin setting `doorstep:token`), and the connection status.
+    ///
+    /// - Remark: HTTP `GET /v1/event-relay`.
+    /// - Remark: Generated from `#/paths//v1/event-relay/get(getEventRelay)`.
+    public func getEventRelay(headers: Operations.GetEventRelay.Input.Headers = .init()) async throws -> Operations.GetEventRelay.Output {
+        try await getEventRelay(Operations.GetEventRelay.Input(headers: headers))
+    }
+    /// Sets the event relay URL, or removes it with `null`, which disconnects the relay.
+    ///
+    /// - Remark: HTTP `PUT /v1/event-relay`.
+    /// - Remark: Generated from `#/paths//v1/event-relay/put(updateEventRelay)`.
+    public func updateEventRelay(
+        headers: Operations.UpdateEventRelay.Input.Headers = .init(),
+        body: Operations.UpdateEventRelay.Input.Body
+    ) async throws -> Operations.UpdateEventRelay.Output {
+        try await updateEventRelay(Operations.UpdateEventRelay.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// The account's event sources, each with the number of automations that use it.
+    ///
+    /// - Remark: HTTP `GET /v1/event-sources`.
+    /// - Remark: Generated from `#/paths//v1/event-sources/get(listEventSources)`.
+    public func listEventSources(headers: Operations.ListEventSources.Input.Headers = .init()) async throws -> Operations.ListEventSources.Output {
+        try await listEventSources(Operations.ListEventSources.Input(headers: headers))
+    }
+    /// Creates a source on the event relay. The response's `address` contains the source's secret and is returned only once. 400 when the relay URL or token is missing, or the relay can't be reached or rejects the token.
+    ///
+    /// - Remark: HTTP `POST /v1/event-sources`.
+    /// - Remark: Generated from `#/paths//v1/event-sources/post(createEventSource)`.
+    public func createEventSource(
+        headers: Operations.CreateEventSource.Input.Headers = .init(),
+        body: Operations.CreateEventSource.Input.Body
+    ) async throws -> Operations.CreateEventSource.Output {
+        try await createEventSource(Operations.CreateEventSource.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Deletes the source on the event relay and in Crumble; its address stops working. 409 while an automation uses it.
+    ///
+    /// - Remark: HTTP `DELETE /v1/event-sources/{id}`.
+    /// - Remark: Generated from `#/paths//v1/event-sources/{id}/delete(deleteEventSource)`.
+    public func deleteEventSource(
+        path: Operations.DeleteEventSource.Input.Path,
+        headers: Operations.DeleteEventSource.Input.Headers = .init()
+    ) async throws -> Operations.DeleteEventSource.Output {
+        try await deleteEventSource(Operations.DeleteEventSource.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Server-sent events. Each activity event carries a ReplyEvent or ChatPreviewEvent JSON object in data. Each learned event carries a LearnedEvent: what a bot's review of one turn changed; GET /v1/agents/{id}/reviews lists them durably. Current chat previews replay on connection; finished replies and learned events are not replayed. Heartbeat events carry {} every 15 seconds. Authenticate with the Authorization header. No Last-Event-ID replay.
     ///
     /// - Remark: HTTP `GET /v1/events`.
     /// - Remark: Generated from `#/paths//v1/events/get(streamActivityEvents)`.
@@ -575,6 +1430,199 @@ extension APIProtocol {
     ) async throws -> Operations.ListExecutions.Output {
         try await listExecutions(Operations.ListExecutions.Input(
             query: query,
+            headers: headers
+        ))
+    }
+    /// The account's machine accounts: GitHub users made for bots. A bot acts as its machine account wherever none of its GitHub Apps does.
+    ///
+    /// - Remark: HTTP `GET /v1/github-accounts`.
+    /// - Remark: Generated from `#/paths//v1/github-accounts/get(listGithubAccounts)`.
+    public func listGithubAccounts(headers: Operations.ListGithubAccounts.Input.Headers = .init()) async throws -> Operations.ListGithubAccounts.Output {
+        try await listGithubAccounts(Operations.ListGithubAccounts.Input(headers: headers))
+    }
+    /// Adds the GitHub user a personal access token signs in as. 400 when GitHub refuses the token; 409 when the user is already added.
+    ///
+    /// - Remark: HTTP `POST /v1/github-accounts`.
+    /// - Remark: Generated from `#/paths//v1/github-accounts/post(addGithubAccount)`.
+    public func addGithubAccount(
+        headers: Operations.AddGithubAccount.Input.Headers = .init(),
+        body: Operations.AddGithubAccount.Input.Body
+    ) async throws -> Operations.AddGithubAccount.Output {
+        try await addGithubAccount(Operations.AddGithubAccount.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Forgets the machine account and its token, and takes GH_TOKEN from bots left without an installed App. The user stays on GitHub.
+    ///
+    /// - Remark: HTTP `DELETE /v1/github-accounts/{id}`.
+    /// - Remark: Generated from `#/paths//v1/github-accounts/{id}/delete(deleteGithubAccount)`.
+    public func deleteGithubAccount(
+        path: Operations.DeleteGithubAccount.Input.Path,
+        headers: Operations.DeleteGithubAccount.Input.Headers = .init()
+    ) async throws -> Operations.DeleteGithubAccount.Output {
+        try await deleteGithubAccount(Operations.DeleteGithubAccount.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Replaces the bots that act as the machine account, giving them GH_TOKEN. A bot acts as at most one; 409 when a bot already acts as another.
+    ///
+    /// - Remark: HTTP `PUT /v1/github-accounts/{id}/bots`.
+    /// - Remark: Generated from `#/paths//v1/github-accounts/{id}/bots/put(setGithubAccountBots)`.
+    public func setGithubAccountBots(
+        path: Operations.SetGithubAccountBots.Input.Path,
+        headers: Operations.SetGithubAccountBots.Input.Headers = .init(),
+        body: Operations.SetGithubAccountBots.Input.Body
+    ) async throws -> Operations.SetGithubAccountBots.Output {
+        try await setGithubAccountBots(Operations.SetGithubAccountBots.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Replaces the machine account's token. 400 when GitHub refuses it or it signs in as another user.
+    ///
+    /// - Remark: HTTP `PUT /v1/github-accounts/{id}/token`.
+    /// - Remark: Generated from `#/paths//v1/github-accounts/{id}/token/put(setGithubAccountToken)`.
+    public func setGithubAccountToken(
+        path: Operations.SetGithubAccountToken.Input.Path,
+        headers: Operations.SetGithubAccountToken.Input.Headers = .init(),
+        body: Operations.SetGithubAccountToken.Input.Body
+    ) async throws -> Operations.SetGithubAccountToken.Output {
+        try await setGithubAccountToken(Operations.SetGithubAccountToken.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// The account's GitHub Apps, each the GitHub identity its bots act through in one GitHub account's repositories.
+    ///
+    /// - Remark: HTTP `GET /v1/github-apps`.
+    /// - Remark: Generated from `#/paths//v1/github-apps/get(listGithubApps)`.
+    public func listGithubApps(headers: Operations.ListGithubApps.Input.Headers = .init()) async throws -> Operations.ListGithubApps.Output {
+        try await listGithubApps(Operations.ListGithubApps.Input(headers: headers))
+    }
+    /// Exchanges the code GitHub redirected back with for the App's keys, within an hour of starting. 400 for a stale or reused state.
+    ///
+    /// - Remark: HTTP `POST /v1/github-apps/complete`.
+    /// - Remark: Generated from `#/paths//v1/github-apps/complete/post(completeGithubApp)`.
+    public func completeGithubApp(
+        headers: Operations.CompleteGithubApp.Input.Headers = .init(),
+        body: Operations.CompleteGithubApp.Input.Body
+    ) async throws -> Operations.CompleteGithubApp.Output {
+        try await completeGithubApp(Operations.CompleteGithubApp.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Starts creating a private GitHub App. The client posts `manifest` as a form field to `url`; GitHub then sends the owner to `{origin}/github-app/callback` with a code and state.
+    ///
+    /// - Remark: HTTP `POST /v1/github-apps/manifest`.
+    /// - Remark: Generated from `#/paths//v1/github-apps/manifest/post(createGithubAppManifest)`.
+    public func createGithubAppManifest(
+        headers: Operations.CreateGithubAppManifest.Input.Headers = .init(),
+        body: Operations.CreateGithubAppManifest.Input.Body
+    ) async throws -> Operations.CreateGithubAppManifest.Output {
+        try await createGithubAppManifest(Operations.CreateGithubAppManifest.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Exchanges the code GitHub sent the owner back with for the owner's tokens, within ten minutes of starting. 400 for a stale or reused state or a refused sign-in.
+    ///
+    /// - Remark: HTTP `POST /v1/github-apps/sign-in/complete`.
+    /// - Remark: Generated from `#/paths//v1/github-apps/sign-in/complete/post(completeGithubAppSignIn)`.
+    public func completeGithubAppSignIn(
+        headers: Operations.CompleteGithubAppSignIn.Input.Headers = .init(),
+        body: Operations.CompleteGithubAppSignIn.Input.Body
+    ) async throws -> Operations.CompleteGithubAppSignIn.Output {
+        try await completeGithubAppSignIn(Operations.CompleteGithubAppSignIn.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Forgets the App, signs the owner out of it, and takes GH_TOKEN from bots left without an installed App. The App stays on GitHub until the owner deletes it there.
+    ///
+    /// - Remark: HTTP `DELETE /v1/github-apps/{id}`.
+    /// - Remark: Generated from `#/paths//v1/github-apps/{id}/delete(deleteGithubApp)`.
+    public func deleteGithubApp(
+        path: Operations.DeleteGithubApp.Input.Path,
+        headers: Operations.DeleteGithubApp.Input.Headers = .init()
+    ) async throws -> Operations.DeleteGithubApp.Output {
+        try await deleteGithubApp(Operations.DeleteGithubApp.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Replaces the bots that act through the App. A bot uses at most one App per GitHub account; 409 when a bot already uses another App for this App's account.
+    ///
+    /// - Remark: HTTP `PUT /v1/github-apps/{id}/bots`.
+    /// - Remark: Generated from `#/paths//v1/github-apps/{id}/bots/put(setGithubAppBots)`.
+    public func setGithubAppBots(
+        path: Operations.SetGithubAppBots.Input.Path,
+        headers: Operations.SetGithubAppBots.Input.Headers = .init(),
+        body: Operations.SetGithubAppBots.Input.Body
+    ) async throws -> Operations.SetGithubAppBots.Output {
+        try await setGithubAppBots(Operations.SetGithubAppBots.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Stores a client secret generated in the App's GitHub settings, for an App created before Crumble kept it.
+    ///
+    /// - Remark: HTTP `PUT /v1/github-apps/{id}/client-secret`.
+    /// - Remark: Generated from `#/paths//v1/github-apps/{id}/client-secret/put(setGithubAppClientSecret)`.
+    public func setGithubAppClientSecret(
+        path: Operations.SetGithubAppClientSecret.Input.Path,
+        headers: Operations.SetGithubAppClientSecret.Input.Headers = .init(),
+        body: Operations.SetGithubAppClientSecret.Input.Body
+    ) async throws -> Operations.SetGithubAppClientSecret.Output {
+        try await setGithubAppClientSecret(Operations.SetGithubAppClientSecret.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Finds the App's installation on its account and gives its bots the GH_TOKEN credential. 409 until the owner installs the App.
+    ///
+    /// - Remark: HTTP `POST /v1/github-apps/{id}/connect`.
+    /// - Remark: Generated from `#/paths//v1/github-apps/{id}/connect/post(connectGithubApp)`.
+    public func connectGithubApp(
+        path: Operations.ConnectGithubApp.Input.Path,
+        headers: Operations.ConnectGithubApp.Input.Headers = .init()
+    ) async throws -> Operations.ConnectGithubApp.Output {
+        try await connectGithubApp(Operations.ConnectGithubApp.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Starts signing the owner in to GitHub through the App, so its bots act as the owner. The client opens `url`; GitHub sends the owner to the App's callback URL, `{origin}/github-app/authorized`, or `{origin}/ui/github-app/authorized` for Apps created before the web UI moved to `/`, with a code and state. `origin` is no longer used. 409 without a client secret.
+    ///
+    /// - Remark: HTTP `POST /v1/github-apps/{id}/sign-in`.
+    /// - Remark: Generated from `#/paths//v1/github-apps/{id}/sign-in/post(signInGithubApp)`.
+    public func signInGithubApp(
+        path: Operations.SignInGithubApp.Input.Path,
+        headers: Operations.SignInGithubApp.Input.Headers = .init(),
+        body: Operations.SignInGithubApp.Input.Body
+    ) async throws -> Operations.SignInGithubApp.Output {
+        try await signInGithubApp(Operations.SignInGithubApp.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Revokes and forgets the owner's sign-in through the App; its bots act as the App again.
+    ///
+    /// - Remark: HTTP `DELETE /v1/github-apps/{id}/user`.
+    /// - Remark: Generated from `#/paths//v1/github-apps/{id}/user/delete(signOutGithubApp)`.
+    public func signOutGithubApp(
+        path: Operations.SignOutGithubApp.Input.Path,
+        headers: Operations.SignOutGithubApp.Input.Headers = .init()
+    ) async throws -> Operations.SignOutGithubApp.Output {
+        try await signOutGithubApp(Operations.SignOutGithubApp.Input(
+            path: path,
             headers: headers
         ))
     }
@@ -707,6 +1755,24 @@ extension APIProtocol {
             headers: headers
         ))
     }
+    /// The account's judge model for desktop jobs' intent checks, and the models the account's provider keys reach.
+    ///
+    /// - Remark: HTTP `GET /v1/judge-model`.
+    /// - Remark: Generated from `#/paths//v1/judge-model/get(getJudgeModel)`.
+    public func getJudgeModel(headers: Operations.GetJudgeModel.Input.Headers = .init()) async throws -> Operations.GetJudgeModel.Output {
+        try await getJudgeModel(Operations.GetJudgeModel.Input(headers: headers))
+    }
+    /// - Remark: HTTP `PUT /v1/judge-model`.
+    /// - Remark: Generated from `#/paths//v1/judge-model/put(updateJudgeModel)`.
+    public func updateJudgeModel(
+        headers: Operations.UpdateJudgeModel.Input.Headers = .init(),
+        body: Operations.UpdateJudgeModel.Input.Body
+    ) async throws -> Operations.UpdateJudgeModel.Output {
+        try await updateJudgeModel(Operations.UpdateJudgeModel.Input(
+            headers: headers,
+            body: body
+        ))
+    }
     /// - Remark: HTTP `GET /v1/mcp-servers`.
     /// - Remark: Generated from `#/paths//v1/mcp-servers/get(listMcpServers)`.
     public func listMcpServers(headers: Operations.ListMcpServers.Input.Headers = .init()) async throws -> Operations.ListMcpServers.Output {
@@ -824,6 +1890,24 @@ extension APIProtocol {
             headers: headers
         ))
     }
+    /// - Remark: HTTP `GET /v1/message-gateways`.
+    /// - Remark: Generated from `#/paths//v1/message-gateways/get(messageGateways)`.
+    public func messageGateways(headers: Operations.MessageGateways.Input.Headers = .init()) async throws -> Operations.MessageGateways.Output {
+        try await messageGateways(Operations.MessageGateways.Input(headers: headers))
+    }
+    /// - Remark: HTTP `PUT /v1/message-gateways/{id}`.
+    /// - Remark: Generated from `#/paths//v1/message-gateways/{id}/put(updateMessageGateway)`.
+    public func updateMessageGateway(
+        path: Operations.UpdateMessageGateway.Input.Path,
+        headers: Operations.UpdateMessageGateway.Input.Headers = .init(),
+        body: Operations.UpdateMessageGateway.Input.Body
+    ) async throws -> Operations.UpdateMessageGateway.Output {
+        try await updateMessageGateway(Operations.UpdateMessageGateway.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
     /// - Remark: HTTP `GET /v1/models`.
     /// - Remark: Generated from `#/paths//v1/models/get(listModels)`.
     public func listModels(
@@ -832,6 +1916,76 @@ extension APIProtocol {
     ) async throws -> Operations.ListModels.Output {
         try await listModels(Operations.ListModels.Input(
             query: query,
+            headers: headers
+        ))
+    }
+    /// Every password manager this server supports, whether it is connected, and which secrets read from it.
+    ///
+    /// - Remark: HTTP `GET /v1/password-managers`.
+    /// - Remark: Generated from `#/paths//v1/password-managers/get(listPasswordManagers)`.
+    public func listPasswordManagers(headers: Operations.ListPasswordManagers.Input.Headers = .init()) async throws -> Operations.ListPasswordManagers.Output {
+        try await listPasswordManagers(Operations.ListPasswordManagers.Input(headers: headers))
+    }
+    /// Signs in with the token to check it, then connects the password manager or replaces its token. A new token drops the values read with the old one. 400 when the password manager rejects the token; 503 when it can't be reached.
+    ///
+    /// - Remark: HTTP `PUT /v1/password-managers/{id}`.
+    /// - Remark: Generated from `#/paths//v1/password-managers/{id}/put(connectPasswordManager)`.
+    public func connectPasswordManager(
+        path: Operations.ConnectPasswordManager.Input.Path,
+        headers: Operations.ConnectPasswordManager.Input.Headers = .init(),
+        body: Operations.ConnectPasswordManager.Input.Body
+    ) async throws -> Operations.ConnectPasswordManager.Output {
+        try await connectPasswordManager(Operations.ConnectPasswordManager.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Disconnects the password manager and drops its token. 409 while any secret still reads from it; `usedBy` in the list names them.
+    ///
+    /// - Remark: HTTP `DELETE /v1/password-managers/{id}`.
+    /// - Remark: Generated from `#/paths//v1/password-managers/{id}/delete(disconnectPasswordManager)`.
+    public func disconnectPasswordManager(
+        path: Operations.DisconnectPasswordManager.Input.Path,
+        headers: Operations.DisconnectPasswordManager.Input.Headers = .init()
+    ) async throws -> Operations.DisconnectPasswordManager.Output {
+        try await disconnectPasswordManager(Operations.DisconnectPasswordManager.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Each plugin that has settings, and whether each setting has a value. Values are never returned.
+    ///
+    /// - Remark: HTTP `GET /v1/plugin-settings`.
+    /// - Remark: Generated from `#/paths//v1/plugin-settings/get(listPluginSettings)`.
+    public func listPluginSettings(headers: Operations.ListPluginSettings.Input.Headers = .init()) async throws -> Operations.ListPluginSettings.Output {
+        try await listPluginSettings(Operations.ListPluginSettings.Input(headers: headers))
+    }
+    /// Sets a plugin setting to a `value` stored in Crumble, or to a `reference` read from a connected password manager, replacing the one before; send exactly one. A reference is checked by reading it once; 400 when it can't be read. 404 for a plugin or key the server doesn't have.
+    ///
+    /// - Remark: HTTP `PUT /v1/plugin-settings/{pluginId}/{key}`.
+    /// - Remark: Generated from `#/paths//v1/plugin-settings/{pluginId}/{key}/put(setPluginSetting)`.
+    public func setPluginSetting(
+        path: Operations.SetPluginSetting.Input.Path,
+        headers: Operations.SetPluginSetting.Input.Headers = .init(),
+        body: Operations.SetPluginSetting.Input.Body
+    ) async throws -> Operations.SetPluginSetting.Output {
+        try await setPluginSetting(Operations.SetPluginSetting.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Removes a plugin setting's value. 404 for a plugin or key the server doesn't have.
+    ///
+    /// - Remark: HTTP `DELETE /v1/plugin-settings/{pluginId}/{key}`.
+    /// - Remark: Generated from `#/paths//v1/plugin-settings/{pluginId}/{key}/delete(deletePluginSetting)`.
+    public func deletePluginSetting(
+        path: Operations.DeletePluginSetting.Input.Path,
+        headers: Operations.DeletePluginSetting.Input.Headers = .init()
+    ) async throws -> Operations.DeletePluginSetting.Output {
+        try await deletePluginSetting(Operations.DeletePluginSetting.Input(
+            path: path,
             headers: headers
         ))
     }
@@ -875,6 +2029,8 @@ extension APIProtocol {
     public func listProviders(headers: Operations.ListProviders.Input.Headers = .init()) async throws -> Operations.ListProviders.Output {
         try await listProviders(Operations.ListProviders.Input(headers: headers))
     }
+    /// Saves the provider's API key, or a password manager reference to read it from. A reference is read once to check it; 400 when it can't be read, keeping the previous credential.
+    ///
     /// - Remark: HTTP `PUT /v1/providers/{provider}`.
     /// - Remark: Generated from `#/paths//v1/providers/{provider}/put(putProviderKey)`.
     public func putProviderKey(
@@ -888,6 +2044,8 @@ extension APIProtocol {
             body: body
         ))
     }
+    /// Remove the provider's saved credential. 409 for a provider that signs in outside Crumble; the message names its sign-out command.
+    ///
     /// - Remark: HTTP `DELETE /v1/providers/{provider}`.
     /// - Remark: Generated from `#/paths//v1/providers/{provider}/delete(deleteProviderKey)`.
     public func deleteProviderKey(
@@ -1011,6 +2169,21 @@ extension APIProtocol {
             headers: headers
         ))
     }
+    /// Script task runs from the last 90 days, newest first. Page with `before` set to the last run's ID. An unknown ID returns an empty list.
+    ///
+    /// - Remark: HTTP `GET /v1/schedules/{id}/runs`.
+    /// - Remark: Generated from `#/paths//v1/schedules/{id}/runs/get(listScriptRuns)`.
+    public func listScriptRuns(
+        path: Operations.ListScriptRuns.Input.Path,
+        query: Operations.ListScriptRuns.Input.Query = .init(),
+        headers: Operations.ListScriptRuns.Input.Headers = .init()
+    ) async throws -> Operations.ListScriptRuns.Output {
+        try await listScriptRuns(Operations.ListScriptRuns.Input(
+            path: path,
+            query: query,
+            headers: headers
+        ))
+    }
     /// - Remark: HTTP `GET /v1/skills`.
     /// - Remark: Generated from `#/paths//v1/skills/get(listSkills)`.
     public func listSkills(headers: Operations.ListSkills.Input.Headers = .init()) async throws -> Operations.ListSkills.Output {
@@ -1025,6 +2198,52 @@ extension APIProtocol {
         try await createSkill(Operations.CreateSkill.Input(
             headers: headers,
             body: body
+        ))
+    }
+    /// Lists the skills in a public GitHub repository: every folder with a SKILL.md, and whether each can be installed.
+    ///
+    /// - Remark: HTTP `POST /v1/skills/github/browse`.
+    /// - Remark: Generated from `#/paths//v1/skills/github/browse/post(browseSkillRepository)`.
+    public func browseSkillRepository(
+        headers: Operations.BrowseSkillRepository.Input.Headers = .init(),
+        body: Operations.BrowseSkillRepository.Input.Body
+    ) async throws -> Operations.BrowseSkillRepository.Output {
+        try await browseSkillRepository(Operations.BrowseSkillRepository.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Installs skills from one commit of a public GitHub repository as read-only shared skills, all or none, and turns them on for `botIds`.
+    ///
+    /// - Remark: HTTP `POST /v1/skills/github/install`.
+    /// - Remark: Generated from `#/paths//v1/skills/github/install/post(installSkills)`.
+    public func installSkills(
+        headers: Operations.InstallSkills.Input.Headers = .init(),
+        body: Operations.InstallSkills.Input.Body
+    ) async throws -> Operations.InstallSkills.Output {
+        try await installSkills(Operations.InstallSkills.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Checks every installed skill's branch for changes now. The server also checks daily; GET /v1/skills shows the results as `update`.
+    ///
+    /// - Remark: HTTP `POST /v1/skills/updates/check`.
+    /// - Remark: Generated from `#/paths//v1/skills/updates/check/post(checkSkillUpdates)`.
+    public func checkSkillUpdates(headers: Operations.CheckSkillUpdates.Input.Headers = .init()) async throws -> Operations.CheckSkillUpdates.Output {
+        try await checkSkillUpdates(Operations.CheckSkillUpdates.Input(headers: headers))
+    }
+    /// One shared skill as a full package. GET /v1/skills keeps its earlier item shapes; the full records are here and in the create and update responses.
+    ///
+    /// - Remark: HTTP `GET /v1/skills/{id}`.
+    /// - Remark: Generated from `#/paths//v1/skills/{id}/get(getSkill)`.
+    public func getSkill(
+        path: Operations.GetSkill.Input.Path,
+        headers: Operations.GetSkill.Input.Headers = .init()
+    ) async throws -> Operations.GetSkill.Output {
+        try await getSkill(Operations.GetSkill.Input(
+            path: path,
+            headers: headers
         ))
     }
     /// - Remark: HTTP `PATCH /v1/skills/{id}`.
@@ -1049,6 +2268,83 @@ extension APIProtocol {
         try await deleteSkill(Operations.DeleteSkill.Input(
             path: path,
             headers: headers
+        ))
+    }
+    /// Turns a shared skill on or off for one bot. For a bot-owned skill, assignment copies the full package and records its source ID; an existing linked copy is left unchanged. Removal deletes only direct linked copies, never name matches or the source. Source deletion leaves copies and their provenance intact. Default skills cannot be assigned. Each request is independent, so clients can report partial failures and retry safely.
+    ///
+    /// - Remark: HTTP `POST /v1/skills/{id}/assignment`.
+    /// - Remark: Generated from `#/paths//v1/skills/{id}/assignment/post(assignSkillBot)`.
+    public func assignSkillBot(
+        path: Operations.AssignSkillBot.Input.Path,
+        headers: Operations.AssignSkillBot.Input.Headers = .init(),
+        body: Operations.AssignSkillBot.Input.Body
+    ) async throws -> Operations.AssignSkillBot.Output {
+        try await assignSkillBot(Operations.AssignSkillBot.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// The upstream version an installed skill would update to.
+    ///
+    /// - Remark: HTTP `GET /v1/skills/{id}/update`.
+    /// - Remark: Generated from `#/paths//v1/skills/{id}/update/get(getPendingSkillUpdate)`.
+    public func getPendingSkillUpdate(
+        path: Operations.GetPendingSkillUpdate.Input.Path,
+        headers: Operations.GetPendingSkillUpdate.Input.Headers = .init()
+    ) async throws -> Operations.GetPendingSkillUpdate.Output {
+        try await getPendingSkillUpdate(Operations.GetPendingSkillUpdate.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Replaces an installed skill with its upstream version, recorded as a change the owner can revert.
+    ///
+    /// - Remark: HTTP `POST /v1/skills/{id}/update`.
+    /// - Remark: Generated from `#/paths//v1/skills/{id}/update/post(applySkillUpdate)`.
+    public func applySkillUpdate(
+        path: Operations.ApplySkillUpdate.Input.Path,
+        headers: Operations.ApplySkillUpdate.Input.Headers = .init()
+    ) async throws -> Operations.ApplySkillUpdate.Output {
+        try await applySkillUpdate(Operations.ApplySkillUpdate.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// The account's vision model, which describes images for bots whose model can't read them, and the models that read images the account's provider keys reach.
+    ///
+    /// - Remark: HTTP `GET /v1/vision-model`.
+    /// - Remark: Generated from `#/paths//v1/vision-model/get(getVisionModel)`.
+    public func getVisionModel(headers: Operations.GetVisionModel.Input.Headers = .init()) async throws -> Operations.GetVisionModel.Output {
+        try await getVisionModel(Operations.GetVisionModel.Input(headers: headers))
+    }
+    /// Choose the account's vision model, or turn it off with null. It must be one of the choices `getVisionModel` lists.
+    ///
+    /// - Remark: HTTP `PUT /v1/vision-model`.
+    /// - Remark: Generated from `#/paths//v1/vision-model/put(updateVisionModel)`.
+    public func updateVisionModel(
+        headers: Operations.UpdateVisionModel.Input.Headers = .init(),
+        body: Operations.UpdateVisionModel.Input.Body
+    ) async throws -> Operations.UpdateVisionModel.Output {
+        try await updateVisionModel(Operations.UpdateVisionModel.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/web-search`.
+    /// - Remark: Generated from `#/paths//v1/web-search/get(getWebSearch)`.
+    public func getWebSearch(headers: Operations.GetWebSearch.Input.Headers = .init()) async throws -> Operations.GetWebSearch.Output {
+        try await getWebSearch(Operations.GetWebSearch.Input(headers: headers))
+    }
+    /// - Remark: HTTP `PUT /v1/web-search`.
+    /// - Remark: Generated from `#/paths//v1/web-search/put(updateWebSearch)`.
+    public func updateWebSearch(
+        headers: Operations.UpdateWebSearch.Input.Headers = .init(),
+        body: Operations.UpdateWebSearch.Input.Body
+    ) async throws -> Operations.UpdateWebSearch.Output {
+        try await updateWebSearch(Operations.UpdateWebSearch.Input(
+            headers: headers,
+            body: body
         ))
     }
 }

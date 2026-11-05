@@ -165,7 +165,12 @@ struct APIClientTests {
             case "/v1/mcp-servers/s1/oauth":
                 (200, #"{"authorizationUrl":"https://auth.example.com/authorize?state=x"}"#)
             case "/v1/mcp-servers/s1/oauth/callback":
-                (200, #"{"id":"s1","name":"Linear","url":"https://mcp.linear.app/mcp","enabled":true,"agentId":null,"auth":"oauth","authenticated":true}"#)
+                (200, #"""
+                {"id":"s1","name":"Linear","url":"https://mcp.linear.app/mcp","enabled":true,"agentId":null,
+                 "oauthClientId":null,"auth":"oauth","authenticated":true,
+                 "token":{"configured":false,"passwordManager":null,"reference":null},
+                 "oauthClientSecret":{"configured":false,"passwordManager":null,"reference":null}}
+                """#)
             default: (404, "")
             }
         }

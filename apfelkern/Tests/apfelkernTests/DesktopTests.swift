@@ -5,14 +5,14 @@ import Testing
 @testable import apfelkern
 
 private let agentJSON = #"""
-  {"id":"bot","name":"Desk","avatar":"bot","description":"","instructions":"","provider":"openai",
+  {"id":"bot","name":"Desk","avatar":{"definition":{"version":1,"id":"bot","name":"Bot","body":{"path":"M0 0"},"eyes":{"x":0,"y":0,"spacing":1,"scale":1}},"color":"#000000","eyeColor":"#ffffff"},"description":"","instructions":"","provider":"openai",
    "model":"gpt-4.1","enabled":true,"tools":["desktop"],"skills":[],"mcpServers":[],"delegates":[],
    "desktopModel":{"provider":"opencode-go","model":"gpt-6-luna"},"createdAt":"now","updatedAt":"now"}
   """#
 
 @Test func capabilitiesReportBotDesktops() async throws {
   try await withClient(handler: { _ in
-    StubResponse(body: Data(#"{"coding":true,"desktop":true}"#.utf8))
+    StubResponse(body: Data(#"{"coding":true,"desktop":true,"jobKinds":["coding","desktop"]}"#.utf8))
   }) { client in
     let capabilities = try await client.capabilities()
     #expect(capabilities.desktop)

@@ -6,7 +6,10 @@ extension APIClient {
   }
 
   public func createAgent(_ agent: Agent) async throws -> Agent {
-    let body: Operations.CreateAgent.Input.Body.JsonPayload = try requestModel(agent)
+    // The client still has seed avatars; the server's avatar definition stays server-managed.
+    var input = agent
+    input.avatar = nil
+    let body: Operations.CreateAgent.Input.Body.JsonPayload = try requestModel(input)
     return try await invoke {
       Agent(wire: try await $0.createAgent(.init(body: .json(body))).created.body.json)
     }
@@ -14,6 +17,7 @@ extension APIClient {
 
   /// A `null` value clears a nullable field, such as `desktopModel`.
   public func updateAgent(_ id: String, patch: [String: JSONValue]) async throws -> Agent {
+    let patch = patch.filter { $0.key != "avatar" }
     let body: Operations.UpdateAgent.Input.Body.JsonPayload = try requestModel(patch)
     return try await invoke(nullFields: Set(patch.filter { $0.value == .null }.keys)) {
       Agent(wire: try requestModel(required(try await $0.updateAgent(

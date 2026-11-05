@@ -49,6 +49,12 @@
               },
               "agentId": {
                 "type": "string"
+              },
+              "via": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string"
               }
             },
             "required": [
@@ -94,6 +100,51 @@
             ],
             "additionalProperties": true
           },
+          "jobQuestion": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string"
+              },
+              "job": {
+                "type": "string"
+              },
+              "options": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "multiple": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "job"
+            ],
+            "additionalProperties": true
+          },
+          "heldAction": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "job": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "job"
+            ],
+            "additionalProperties": true
+          },
           "attachments": {
             "type": "array",
             "items": {
@@ -134,7 +185,26 @@
           "isError": {
             "type": "boolean"
           },
-          "toolDetails": {}
+          "toolDetails": {},
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "url",
+                "title"
+              ],
+              "additionalProperties": true
+            }
+          }
         },
         "required": [
           "id",
