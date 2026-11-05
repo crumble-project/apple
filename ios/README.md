@@ -10,7 +10,7 @@ Native SwiftUI client for iPhone and iPad, sharing [`../apfelkern`](../apfelkern
 ## Run and connect
 
 1. Open `Crumble.xcodeproj` in Xcode and run the **Crumble** scheme on a simulator or signed device.
-2. Open **Settings**, enter your server URL (`http://127.0.0.1:7337` on Simulator, or your host's LAN/HTTPS address on a device) and `server-token`, and tap **Save Connection**.
+2. Open **Settings**, enter your server URL (`http://127.0.0.1:7337` on Simulator, or your host's LAN/HTTPS address on a device) and account session token (the `token` field returned by `POST /api/auth/sign-in/email`), and tap **Save Connection**.
 3. For development overrides, set `CRUMBLE_URL` and `CRUMBLE_TOKEN` in the scheme's environment variables.
 
 ## Build and test

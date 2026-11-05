@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Build against bot contract 6.0.0. The bearer token must be an account session token from `POST /api/auth/sign-in/email`; the old server token is rejected, and Settings has no email sign-in yet. Until avatars move to the new definition, bots render from their ID.
 - CI runs SwiftLint in its own job, beside the build.
 - New bots start with **Schedule tasks**, **Message other bots**, and **Code mode** on, besides **Memory**, and may message every existing bot.
 - Move into the `crumble-project/apple` repository and reference `../apfelkern` as a local package instead of a pinned revision. This adopts apfelkern through bot contract 1.6.0; group chat routes, which iOS doesn't show yet, open nothing.
