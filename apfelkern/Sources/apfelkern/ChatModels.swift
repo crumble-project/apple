@@ -62,6 +62,7 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
   public var origin: MessageOrigin?
   public var communication: BotCommunication?
   public var jobQuestion: JobQuestionEvent?
+  public var heldAction: HeldActionEvent?
   public var timestamp: Int64?
   public var createdAt: String?
   public var attachments: [AttachmentInfo]?
@@ -80,7 +81,8 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
     id: String, entryId: String? = nil, role: String, content: JSONValue? = nil,
     blocks: JSONValue? = nil, kind: String? = nil,
     replyTo: String? = nil, replyPreview: String? = nil, origin: MessageOrigin? = nil,
-    communication: BotCommunication? = nil, jobQuestion: JobQuestionEvent? = nil, timestamp: Int64? = nil,
+    communication: BotCommunication? = nil, jobQuestion: JobQuestionEvent? = nil,
+    heldAction: HeldActionEvent? = nil, timestamp: Int64? = nil,
     attachments: [AttachmentInfo]? = nil, toolName: String? = nil, toolCallId: String? = nil,
     isError: Bool? = nil,
     toolDetails: JSONValue? = nil, requestId: String? = nil, sources: [MessageSource]? = nil,
@@ -97,6 +99,7 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
     self.origin = origin
     self.communication = communication
     self.jobQuestion = jobQuestion
+    self.heldAction = heldAction
     self.timestamp = timestamp
     self.attachments = attachments
     self.toolName = toolName
@@ -121,6 +124,7 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
     origin = try container.decodeIfPresent(MessageOrigin.self, forKey: .origin)
     communication = try container.decodeIfPresent(BotCommunication.self, forKey: .communication)
     jobQuestion = try container.decodeIfPresent(JobQuestionEvent.self, forKey: .jobQuestion)
+    heldAction = try container.decodeIfPresent(HeldActionEvent.self, forKey: .heldAction)
     timestamp = try container.decodeIfPresent(Int64.self, forKey: .timestamp)
     createdAt = try container.decodeIfPresent(String.self, forKey: .createdAt)
     attachments = try container.decodeIfPresent([AttachmentInfo].self, forKey: .attachments)

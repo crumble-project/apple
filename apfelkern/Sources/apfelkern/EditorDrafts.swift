@@ -46,6 +46,8 @@ public struct AgentDraft: Identifiable, Sendable {
   public var mcpServers: Set<String> = []
   public var skills: [Skill] = []
   public var sharedSkills: Set<String> = []
+  /// Saving this draft approves the request instead of creating or updating a bot.
+  public var botRequest: BotRequest?
 
   public init(
     isNew: Bool,
@@ -99,6 +101,48 @@ public struct AgentDraft: Identifiable, Sendable {
     self.mcpServers = mcpServers
     self.skills = skills
     self.sharedSkills = sharedSkills
+  }
+
+  public init(agent: Agent) {
+    self.init(isNew: false, agentID: agent.id)
+    name = agent.name
+    description = agent.description ?? ""
+    instructions = agent.instructions ?? ""
+    model = agent.model ?? ""
+    provider = agent.provider ?? ""
+    enabled = agent.enabled
+    avatar = agent.avatar
+    if let inference = agent.inference {
+      thinking = inference.thinkingLevel
+      temperature = inference.temperature.map { String($0) } ?? ""
+      maxOutput = inference.maxOutputTokens.map { String($0) } ?? ""
+    }
+    let tools = agent.tools ?? []
+    toolsMemory = tools.contains("memory")
+    toolsDelegate = tools.contains("delegate")
+    toolsSchedule = tools.contains("schedule")
+    toolsCodemode = tools.contains("codemode")
+    toolsCoding = tools.contains("coding")
+    toolsDesktop = tools.contains(DesktopJob.toolName)
+    desktopProvider = agent.desktopModel?.provider ?? ""
+    desktopModel = agent.desktopModel?.model ?? ""
+    skills = agent.skills ?? []
+    sharedSkills = Set(agent.sharedSkills ?? [])
+    sharedMemory = agent.sharedMemory ?? false
+    delegates = Set(agent.delegates ?? [])
+    mcpServers = Set(agent.mcpServers ?? [])
+  }
+
+  /// The proposal, to edit before approving it.
+  public init(botRequest: BotRequest) {
+    self.init(agent: botRequest.proposal)
+    isNew = true
+    self.botRequest = botRequest
+  }
+
+  /// A proposal needs a name and a model to become a bot.
+  public var canApprove: Bool {
+    [name, provider, model].allSatisfy { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
   }
 
   /// The bot's tools after saving: the toggles, plus the `stored` tools set elsewhere that have no toggle.

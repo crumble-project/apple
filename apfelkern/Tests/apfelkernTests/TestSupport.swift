@@ -12,11 +12,14 @@ struct StubResponse: Sendable {
   var hold = false
   /// Sends the body but keeps the connection open, as a live event stream does.
   var open = false
+  /// Answers late without blocking the one thread all URL protocols load on.
+  var delay: TimeInterval = 0
 }
 
 final class ContractURLProtocol: URLProtocol, @unchecked Sendable {
   typealias Handler = @Sendable (URLRequest) throws -> StubResponse
   static let handlers = Mutex<[String: Handler]>([:])
+  private var delayed: StubResponse?
 
   override class func canInit(with request: URLRequest) -> Bool { true }
   override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
@@ -24,19 +27,34 @@ final class ContractURLProtocol: URLProtocol, @unchecked Sendable {
   override func startLoading() {
     do {
       let url = try #require(request.url)
-      let handler = try #require(Self.handlers.withLock { $0[url.host ?? ""] })
+      // A board's follow-up read can start after its test ended.
+      guard let handler = Self.handlers.withLock({ $0[url.host ?? ""] }) else { throw URLError(.cancelled) }
       let stub = try handler(request)
       if stub.hold { return }
-      let response = try #require(HTTPURLResponse(
-        url: url, statusCode: stub.status, httpVersion: nil,
-        headerFields: ["Content-Type": stub.contentType]))
-      client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-      client?.urlProtocol(self, didLoad: stub.body)
-      if stub.open { return }
-      client?.urlProtocolDidFinishLoading(self)
+      if stub.delay > 0 {
+        delayed = stub
+        perform(#selector(respondLate), with: nil, afterDelay: stub.delay)
+      } else {
+        try respond(stub, url: url)
+      }
     } catch {
       client?.urlProtocol(self, didFailWithError: error)
     }
+  }
+
+  private func respond(_ stub: StubResponse, url: URL) throws {
+    let response = try #require(HTTPURLResponse(
+      url: url, statusCode: stub.status, httpVersion: nil,
+      headerFields: ["Content-Type": stub.contentType]))
+    client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+    client?.urlProtocol(self, didLoad: stub.body)
+    if stub.open { return }
+    client?.urlProtocolDidFinishLoading(self)
+  }
+
+  @objc private func respondLate() {
+    guard let delayed, let url = request.url else { return }
+    try? respond(delayed, url: url)
   }
 
   override func stopLoading() {}
@@ -67,7 +85,7 @@ func withClient(
   configuration.protocolClasses = [ContractURLProtocol.self]
   let session = URLSession(configuration: configuration)
   defer {
-    session.invalidateAndCancel()
+    session.getAllTasks { tasks in tasks.forEach { $0.cancel() } }
     _ = ContractURLProtocol.handlers.withLock { $0.removeValue(forKey: host) }
   }
   try await test(APIClient(baseURL: "https://" + host + "/prefix/", token: token, session: session))

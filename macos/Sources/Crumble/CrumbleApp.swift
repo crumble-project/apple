@@ -66,6 +66,7 @@ struct ContentView: View {
             model.notifier.openMainWindow = { openWindow(id: "main") }
         }
         .sheet(item: $model.agentDraft) { AgentEditorView(draft: sheetBinding($model.agentDraft, for: $0)) }
+        .botSecretSheets(active: model.agentDraft == nil)
         .sheet(item: $model.jobHistory) { JobSheet(job: $0) }
         .sheet(item: $model.groupDraft) { GroupEditorView(draft: sheetBinding($model.groupDraft, for: $0)) }
     }

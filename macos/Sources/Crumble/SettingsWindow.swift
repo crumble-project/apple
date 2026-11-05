@@ -69,7 +69,7 @@ struct SettingsView: View {
         .sheet(item: $model.memoryDraft) { MemoryFormView(draft: sheetBinding($model.memoryDraft, for: $0)) }
         .sheet(item: $model.taskDraft) { TaskFormView(draft: sheetBinding($model.taskDraft, for: $0)) }
         .sheet(item: $model.mcpDraft) { MCPFormView(draft: sheetBinding($model.mcpDraft, for: $0)) }
-        .sheet(item: $model.skillDraft) { SkillFormView(draft: sheetBinding($model.skillDraft, for: $0)) }
+        .skillSheet(active: model.agentDraft == nil)
     }
 
     private func loadSelection() {

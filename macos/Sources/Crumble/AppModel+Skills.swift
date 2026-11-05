@@ -13,9 +13,7 @@ extension AppModel {
 
     func openPersonalSkillForm(agentID: String, skillID: String = "") {
         var form = SkillDraft(skillID: skillID, agentID: agentID, personal: true)
-        if let skill = agents.first(where: { $0.id == agentID })?.skills?.first(where: {
-            $0.id.uuidString == skillID
-        }) {
+        if let skill = botSkillBoard.skill(skillID, agentID: agentID) {
             form.name = skill.name
             form.instructions = skill.instructions
         }
@@ -38,20 +36,22 @@ extension AppModel {
     }
 
     private func savePersonalSkill(_ form: SkillDraft, name: String, instructions: String) {
-        guard let agentID = form.agentID, let index = agents.firstIndex(where: { $0.id == agentID }) else {
+        guard let agentID = form.agentID, agents.contains(where: { $0.id == agentID }) else {
             errorText = "Choose which bot owns this skill."
             return
         }
-        var skills = agents[index].skills ?? []
-        if let skillIndex = skills.firstIndex(where: { $0.id.uuidString == form.skillID }) {
-            skills[skillIndex].name = name
-            skills[skillIndex].instructions = instructions
-        } else {
-            skills.append(Skill(name: name, instructions: instructions))
+        guard let client else {
+            errorText = "Connect to your server in Settings."
+            return
         }
-        if saveAgentSkills(agentID: agentID, skills: skills, draftToRestore: form) {
-            skillDraft = nil
+        errorText = ""
+        let saving = botSkillBoard.save(
+            agentID: agentID, skillID: form.skillID.nilIfEmpty, name: name, instructions: instructions, client: client
+        ) { [self] message in
+            if workspaceRoute == .skills || agentDraft?.agentID == agentID, skillDraft == nil { skillDraft = form }
+            errorText = message
         }
+        if saving { skillDraft = nil }
     }
 
     private func saveSharedSkill(_ form: SkillDraft, name: String, instructions: String) {
@@ -94,36 +94,19 @@ extension AppModel {
             })
     }
 
-    func deletePersonalSkill(agentID: String, skillID: String) {
-        guard let agent = agents.first(where: { $0.id == agentID }) else { return }
-        saveAgentSkills(agentID: agentID, skills: (agent.skills ?? []).filter { $0.id.uuidString != skillID })
+    func loadBotSkills(agentID: String) {
+        guard let client else { return }
+        botSkillBoard.refresh(agentID: agentID, client: client)
     }
 
-    @discardableResult
-    func saveAgentSkills(agentID: String, skills: [Skill], draftToRestore: SkillDraft? = nil) -> Bool {
-        guard let agentIndex = agents.firstIndex(where: { $0.id == agentID }) else { return false }
-        let key = "agent-skills:\(agentID)"
-        guard client != nil, !pendingMutations.contains(key) else { return false }
-        let old = agents[agentIndex].skills ?? []
-        optimisticMutation(
-            key: key,
-            update: { [self] in
-                guard let index = agents.firstIndex(where: { $0.id == agentID }) else { return }
-                agents[index].skills = skills
-            },
-            rollback: { [self] in
-                if let index = agents.firstIndex(where: { $0.id == agentID }) { agents[index].skills = old }
-                if let draftToRestore, workspaceRoute == .skills, skillDraft == nil { skillDraft = draftToRestore }
-            },
-            work: { client in
-                let saved = try await client.updateAgent(agentID, patch: ["skills": try JSONValue(encoding: skills)])
-                return { [self] in
-                    if let index = agents.firstIndex(where: { $0.id == agentID }) {
-                        agents[index].skills = saved.skills
-                    }
-                }
-            })
-        return true
+    func deleteBotSkill(_ skill: BotSkill) {
+        guard let client else { return }
+        botSkillBoard.delete(skill, client: client)
+    }
+
+    func setBotSkillPinned(_ skill: BotSkill, pinned: Bool) {
+        guard let client else { return }
+        botSkillBoard.setPinned(skill, pinned: pinned, client: client)
     }
 
     func deleteSharedSkill(_ id: String) {
@@ -169,13 +152,8 @@ extension AppModel {
                 if let index = agents.firstIndex(where: { $0.id == agentID }) { agents[index].sharedSkills = old }
             },
             work: { client in
-                let saved = try await client.updateAgent(
-                    agentID, patch: ["sharedSkills": .array(memberships.map(JSONValue.string))])
-                return { [self] in
-                    if let index = agents.firstIndex(where: { $0.id == agentID }) {
-                        agents[index].sharedSkills = saved.sharedSkills
-                    }
-                }
+                try await client.assignSharedSkill(skillID, agentID: agentID, assigned: enabled)
+                return nil
             })
     }
 }

@@ -51,7 +51,8 @@ enum ChatRow: Identifiable {
   static func shownInChat(_ message: Message) -> Bool {
     switch message.role {
     case "toolResult":
-      return Job(message: message) != nil
+      return Job(message: message) != nil || BotRequest(message: message) != nil
+        || BotSecretAsk(message: message) != nil
     case "user":
       guard !JobKind.isReport(message) else { return false }
       return !message.text.isEmpty || !(message.attachments ?? []).isEmpty
@@ -94,6 +95,9 @@ struct ChatView: View {
       if rows.isEmpty { EmptyChatView(agent: agent) }
     }
     .task(id: model.jobPollDelay) { await model.watchJobs() }
+    .task(id: model.heldActionBoard.needsPolling) { await model.watchHeldActions() }
+    .task(id: model.botRequestBoard.needsPolling) { await model.watchBotRequests() }
+    .task(id: model.botSecretBoard.needsPolling) { await model.watchBotSecrets() }
     .safeAreaInset(edge: .bottom) {
       if model.snapshot != nil { Composer(target: .chat(agent, model: model)) }
     }

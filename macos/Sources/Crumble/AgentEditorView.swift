@@ -11,6 +11,7 @@ struct AgentEditorView: View {
         Form {
             avatarSection
             SheetError()
+            if let request = draft.botRequest { BotRequestEditorStatus(request: request) }
             Section {
                 TextField("Name", text: $draft.name, prompt: Text("Required"))
                 TextField("Description", text: $draft.description, prompt: Text("What it helps with"))
@@ -20,10 +21,18 @@ struct AgentEditorView: View {
             instructionsSection
             capabilitiesSection
             integrationsSection
-            Section("Skills") {
-                Text("Manage this bot’s personal skills and shared skill assignments in the Skills tab.")
-                    .foregroundStyle(.secondary)
-                Button("Open Skills") { model.openPanel(.skills) }
+            if !draft.isNew {
+                BotSecretsSection(kind: .credential, agentID: draft.agentID)
+                BotSecretsSection(kind: .login, agentID: draft.agentID)
+            }
+            if draft.isNew {
+                Section("Skills") {
+                    Text("Add this bot’s own skills and turn on shared skills after you create it.")
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                BotSkillsSection(title: "Skills", agentID: draft.agentID, agentName: draft.name)
+                SharedSkillToggles(agentID: draft.agentID)
             }
             if !draft.isNew {
                 Section {
@@ -42,7 +51,15 @@ struct AgentEditorView: View {
                 }
             }
             ToolbarItem(placement: .confirmationAction) {
-                Button(draft.isNew ? "Create" : "Save") { model.saveAgentEditor() }.disabled(model.loading)
+                Button(saveTitle) { model.saveAgentEditor() }.disabled(saveDisabled)
+            }
+        }
+        .botSecretSheets(active: true)
+        .skillSheet(active: true)
+        .task(id: draft.agentID) {
+            if !draft.isNew {
+                model.loadBotSecrets(agentID: draft.agentID)
+                model.loadBotSkills(agentID: draft.agentID)
             }
         }
         .confirmationDialog("Delete agent?", isPresented: $model.confirmingDelete) {
@@ -50,6 +67,16 @@ struct AgentEditorView: View {
         } message: {
             Text("The agent, its chat, memories and tasks will be removed.")
         }
+    }
+
+    private var saveTitle: String {
+        if draft.botRequest != nil { return "Approve" }
+        return draft.isNew ? "Create" : "Save"
+    }
+
+    private var saveDisabled: Bool {
+        guard let request = draft.botRequest else { return model.loading }
+        return model.loading || !draft.canApprove || model.botRequestBoard.decision(for: request.id).sending
     }
 
     private var avatarSection: some View {

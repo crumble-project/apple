@@ -66,29 +66,46 @@ extension APIClientTests {
         #expect(writes.compactMap { $0.url?.path } == ["/v1/agents/a2/memories/m2", "/v1/agents/a2/memories/m2"])
     }
 
-    @MainActor @Test func failedPersonalSkillSaveRestoresDraftWithoutReplacingNewerAgentFields() async throws {
-        let client = StubProtocol.client { request in
-            request.httpMethod == "PATCH" ? (500, #"{"error":"busy"}"#) : (200, "[]")
-        }
-        let skill = Skill(name: "Old", instructions: "Old instructions")
+    @MainActor @Test func savingTheEditorLeavesSkillsAndAssignmentsAlone() async throws {
+        let client = StubProtocol.client { _ in (200, agentFixture(#"{"id":"a1"}"#)) }
         let model = AppModel(client: client)
-        model.workspaceRoute = .skills
-        model.agents = [Agent(id: "a1", name: "Atlas", skills: [skill])]
-        model.openPersonalSkillForm(agentID: "a1", skillID: skill.id.uuidString)
+        model.agents = [Agent(id: "a1", name: "Atlas", model: "example")]
+        var draft = AgentDraft(agent: model.agents[0])
+        draft.skills = [Skill(name: "Stale", instructions: "From when the editor opened")]
+        draft.sharedSkills = ["stale"]
+        model.agentDraft = draft
+        model.agents[0].sharedSkills = ["newer"]
+        model.saveAgentEditor()
+        #expect(model.agents[0].sharedSkills == ["newer"])
+        while model.loading { try await Task.sleep(for: .milliseconds(10)) }
+        let patch = try #require(StubProtocol.requests.first { $0.httpMethod == "PATCH" })
+        let body = try JSONDecoder().decode(JSONValue.self, from: #require(patch.httpBody))
+        #expect(body["skills"] == nil && body["sharedSkills"] == nil)
+    }
+
+    @MainActor @Test func failedBotSkillSaveRestoresDraftInTheEditor() async throws {
+        let client = StubProtocol.client { request in
+            request.httpMethod == "POST" ? (500, #"{"error":"busy"}"#) : (200, "[]")
+        }
+        let model = AppModel(client: client)
+        model.agents = [Agent(id: "a1", name: "Atlas")]
+        model.agentDraft = AgentDraft(agent: model.agents[0])
+        model.openPersonalSkillForm(agentID: "a1")
         model.skillDraft?.name = "Updated"
         model.skillDraft?.instructions = "Updated instructions"
         model.saveSkill()
-        model.agents[0].name = "Atlas renamed while saving"
-        while model.loading { try await Task.sleep(for: .milliseconds(10)) }
-        #expect(model.agents[0].name == "Atlas renamed while saving")
-        #expect(model.agents[0].skills?.first?.name == "Old")
+        #expect(model.skillDraft == nil)
+        #expect(model.botSkillBoard.skills(agentID: "a1").map(\.name) == ["Updated"])
+        while !model.botSkillBoard.pending.isEmpty { try await Task.sleep(for: .milliseconds(10)) }
+        #expect(model.botSkillBoard.skills(agentID: "a1").isEmpty)
         #expect(model.skillDraft?.name == "Updated")
         #expect(model.errorText.contains("busy"))
+        model.botSkillBoard.reset()
     }
 
     @MainActor @Test func failedSharedSkillAssignmentRestoresMembershipWithoutReplacingNewerAgentFields() async throws {
         let client = StubProtocol.client { request in
-            request.httpMethod == "PATCH" ? (500, #"{"error":"busy"}"#) : (200, "[]")
+            request.url?.path == "/v1/skills/s1/assignment" ? (500, #"{"error":"busy"}"#) : (200, "[]")
         }
         let model = AppModel(client: client)
         model.agents = [Agent(id: "a1", name: "Atlas", sharedSkills: [])]

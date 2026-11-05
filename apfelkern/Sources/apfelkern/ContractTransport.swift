@@ -64,6 +64,7 @@ struct ContractTransport: ClientTransport {
     case Operations.PutPushPresence.id: allowed = ["agentId"]
     case Operations.CreateMcpServer.id: allowed = ["agentId"]
     case Operations.UpdateAgent.id: allowed = ["desktopModel"]
+    case Operations.SaveAgentLogin.id: allowed = ["fields.one_time_code"]
     default: allowed = []
     }
     guard nullFields.isSubset(of: allowed), let body = request.httpBody,
@@ -71,7 +72,15 @@ struct ContractTransport: ClientTransport {
       throw EncodingError.invalidValue(nullFields, .init(
         codingPath: [], debugDescription: "Invalid nullable request fields"))
     }
-    for field in nullFields { object[field] = .null }
+    for field in nullFields {
+      let path = field.split(separator: ".").map(String.init)
+      if path.count == 2, case .object(var parent)? = object[path[0]] {
+        parent[path[1]] = .null
+        object[path[0]] = .object(parent)
+      } else {
+        object[field] = .null
+      }
+    }
     request.httpBody = try JSONEncoder().encode(JSONValue.object(object))
   }
 

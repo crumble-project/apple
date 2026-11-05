@@ -40,6 +40,10 @@ final class AppModel {
     var capabilities: ServerCapabilities?
     /// The selected bot's jobs, refreshed when the chat shows job activity.
     let jobBoard = JobBoard()
+    let heldActionBoard = HeldActionBoard()
+    let botRequestBoard = BotRequestBoard()
+    let botSecretBoard = BotSecretBoard()
+    let botSkillBoard = BotSkillBoard()
 
     var draft = ""
     var attachments: [PendingAttachment] = []
@@ -263,6 +267,10 @@ extension AppModel {
         providerLoginBoard.reset()
         capabilities = nil
         jobBoard.reset()
+        heldActionBoard.reset()
+        botRequestBoard.reset()
+        botSecretBoard.reset()
+        botSkillBoard.reset()
         signingIn = nil
         agentDraft = nil
         memoryDraft = nil

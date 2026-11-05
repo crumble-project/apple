@@ -12,9 +12,8 @@ extension AppModel {
   }
 
   func openPersonalSkillForm(agentID: String, skillID: String = "") {
-    guard let agent = agents.first(where: { $0.id == agentID }) else { return }
     var form = SkillDraft(skillID: skillID, agentID: agentID)
-    if let skill = agent.skills?.first(where: { $0.id.uuidString == skillID }) {
+    if let skill = botSkillBoard.skill(skillID, agentID: agentID) {
       form.name = skill.name
       form.instructions = skill.instructions
     }
@@ -24,40 +23,19 @@ extension AppModel {
   private func savePersonalSkill(
     _ form: SkillDraft, agentID: String, name: String, instructions: String
   ) {
-    guard let index = agents.firstIndex(where: { $0.id == agentID }) else { return }
-    let previous = agents[index].skills ?? []
-    var updated = previous
-    let skill = Skill(name: name, instructions: instructions)
-    if let existing = previous.firstIndex(where: { $0.id.uuidString == form.skillID }) {
-      var replacement = previous[existing]
-      replacement.name = name
-      replacement.instructions = instructions
-      updated[existing] = replacement
-    } else {
-      updated.append(skill)
+    guard let client else {
+      errorText = "Connect to your server in Settings."
+      return
     }
-    skillDraft = nil
-    optimisticMutation(
-      key: "agent-skill:\(agentID):skills",
-      update: { [self] in
-        guard let index = agents.firstIndex(where: { $0.id == agentID }) else { return }
-        agents[index].skills = updated
-      },
-      rollback: { [self] in
-        guard let index = agents.firstIndex(where: { $0.id == agentID }) else { return }
-        agents[index].skills = previous
-        if route == .skills, skillDraft == nil { skillDraft = form }
-      },
-      work: { client in
-        _ = try await client.updateAgent(
-          agentID, patch: ["skills": try JSONValue(encoding: updated)])
-        return { [self] in
-          // Keep fields changed by another editor or a newer optimistic mutation intact.
-          if let index = agents.firstIndex(where: { $0.id == agentID }) {
-            agents[index].skills = updated
-          }
-        }
-      })
+    errorText = ""
+    let saving = botSkillBoard.save(
+      agentID: agentID, skillID: form.skillID.nilIfEmpty, name: name, instructions: instructions,
+      client: client
+    ) { [self] message in
+      if route == .skills || agentDraft?.agentID == agentID, skillDraft == nil { skillDraft = form }
+      errorText = message
+    }
+    if saving { skillDraft = nil }
   }
 
   func saveSkill() {
@@ -166,8 +144,7 @@ extension AppModel {
         agents[index].sharedSkills = previous
       },
       work: { client in
-        _ = try await client.updateAgent(
-          agentID, patch: ["sharedSkills": .array(updated.map(JSONValue.string))])
+        try await client.assignSharedSkill(skillID, agentID: agentID, assigned: enabled)
         return { [self] in
           guard let index = agents.firstIndex(where: { $0.id == agentID }) else { return }
           agents[index].sharedSkills = updated
@@ -175,31 +152,18 @@ extension AppModel {
       })
   }
 
-  func deletePersonalSkill(_ skillID: String, from agentID: String) {
-    guard let index = agents.firstIndex(where: { $0.id == agentID }),
-      let skillIndex = agents[index].skills?.firstIndex(where: { $0.id.uuidString == skillID })
-    else { return }
-    let previous = agents[index].skills ?? []
-    var updated = previous
-    updated.remove(at: skillIndex)
-    optimisticMutation(
-      key: "agent-skill-personal:\(agentID):\(skillID)",
-      update: { [self] in
-        guard let index = agents.firstIndex(where: { $0.id == agentID }) else { return }
-        agents[index].skills = updated
-      },
-      rollback: { [self] in
-        guard let index = agents.firstIndex(where: { $0.id == agentID }) else { return }
-        agents[index].skills = previous
-      },
-      work: { client in
-        _ = try await client.updateAgent(
-          agentID, patch: ["skills": try JSONValue(encoding: updated)])
-        return { [self] in
-          if let index = agents.firstIndex(where: { $0.id == agentID }) {
-            agents[index].skills = updated
-          }
-        }
-      })
+  func loadBotSkills(agentID: String) {
+    guard let client else { return }
+    botSkillBoard.refresh(agentID: agentID, client: client)
+  }
+
+  func deleteBotSkill(_ skill: BotSkill) {
+    guard let client else { return }
+    botSkillBoard.delete(skill, client: client)
+  }
+
+  func setBotSkillPinned(_ skill: BotSkill, pinned: Bool) {
+    guard let client else { return }
+    botSkillBoard.setPinned(skill, pinned: pinned, client: client)
   }
 }

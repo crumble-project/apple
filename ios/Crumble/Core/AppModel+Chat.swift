@@ -34,6 +34,18 @@ extension AppModel {
     }
   }
 
+  /// Reloads the bot list when a bot may have appeared, leaving the open chat alone.
+  func reconcileAgents() {
+    guard let client else { return }
+    let generation = generation
+    let revision = mutationRevision
+    Task {
+      guard let agents = try? await client.agents(), self.generation == generation,
+        mutationRevision == revision, pendingMutations.isEmpty else { return }
+      self.agents = agents
+    }
+  }
+
   func navigate(to route: Route?) {
     guard let route else { return }
     switch route {
@@ -62,6 +74,9 @@ extension AppModel {
     loadingOlder = false
     replyTo = nil
     jobBoard.select(id)
+    heldActionBoard.select(id)
+    botRequestBoard.select(id)
+    botSecretBoard.select(id)
     draft = ""
     attachments = []
     failedDraft = ""
@@ -95,6 +110,9 @@ extension AppModel {
     messages = mergeMessages(messages.filter { $0.deliveryState == .confirmed }, incomingMessages)
     messages.append(contentsOf: local)
     refreshJobsIfChanged()
+    refreshHeldActionsIfChanged()
+    refreshBotRequestsIfChanged()
+    refreshBotSecretsIfChanged()
     var snapshot = incoming
     snapshot.messages = nil
     self.snapshot = snapshot
@@ -236,6 +254,9 @@ extension AppModel {
           guard selectionVersion == version else { return }
           loadingOlder = false
           messages = mergeMessages(messages, page.messages ?? [])
+          refreshHeldActionsIfChanged()
+          refreshBotRequestsIfChanged()
+          refreshBotSecretsIfChanged()
           hasMore = page.hasMore ?? false
           oldestEntryID = page.oldestEntryId ?? ""
         }

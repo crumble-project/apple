@@ -139,13 +139,16 @@ private func stop(_ board: ProviderLoginBoard) async throws {
 }
 
 @MainActor @Test func resetDropsAResponseFromTheOldConnection() async throws {
+  let arrived = Mutex(false)
   let release = Mutex(false)
   try await withClient(handler: { _ in
+    arrived.withLock { $0 = true }
     while !release.withLock({ $0 }) { Thread.sleep(forTimeInterval: 0.002) }
     return started()
   }, test: { client in
     let board = board()
     board.start("openai", method: .oauth, client: client)
+    while !arrived.withLock({ $0 }) { try await Task.sleep(for: .milliseconds(2)) }
     board.reset()
     #expect(board.requests.isEmpty)
     release.withLock { $0 = true }

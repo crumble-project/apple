@@ -22,6 +22,11 @@ struct MessageView: View {
                     JobQuestionCard(question: question, text: message.text)
                     Spacer(minLength: 56)
                 }
+            } else if message.kind == HeldActionEvent.messageKind, let held = message.heldAction {
+                HStack {
+                    HeldActionCard(held: held, title: message.text)
+                    Spacer(minLength: 56)
+                }
             } else {
                 EventView(message: message)
             }
@@ -43,6 +48,16 @@ struct MessageView: View {
             } else if let job = Job(message: message) {
                 HStack {
                     JobCard(job: model.job(job))
+                    Spacer(minLength: 56)
+                }
+            } else if let request = BotRequest(message: message) {
+                HStack {
+                    BotRequestCard(request: request)
+                    Spacer(minLength: 56)
+                }
+            } else if let ask = BotSecretAsk(message: message) {
+                HStack {
+                    BotSecretRequestCard(ask: ask)
                     Spacer(minLength: 56)
                 }
             }

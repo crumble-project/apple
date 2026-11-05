@@ -8,7 +8,7 @@ struct SkillsPanel: View {
     Form {
       sharedSection
       ForEach(model.agents) { agent in
-        personalSection(agent)
+        BotSkillsSection(title: agent.name, agentID: agent.id, agentName: agent.name)
       }
     }
     .formStyle(.grouped)
@@ -88,45 +88,5 @@ struct SkillsPanel: View {
     }
     .accessibilityLabel("Skill actions")
     .disabled(skill.id.hasPrefix("pending-") || model.pendingMutations.contains("skill:\(skill.id)"))
-  }
-
-  private func personalSection(_ agent: Agent) -> some View {
-    Section {
-      let skills = agent.skills ?? []
-      if skills.isEmpty {
-        Text("No skills of its own.").foregroundStyle(.secondary)
-      }
-      ForEach(skills) { skill in
-        personalRow(skill, agent: agent)
-      }
-      Button("New Skill", systemImage: "plus") {
-        model.openPersonalSkillForm(agentID: agent.id)
-      }.disabled(model.pendingMutations.contains("agent-skill:\(agent.id):skills"))
-    } header: {
-      Text(agent.name)
-    } footer: {
-      Text("Instructions only \(agent.name) follows.").foregroundStyle(.secondary)
-    }
-  }
-
-  private func personalRow(_ skill: Skill, agent: Agent) -> some View {
-    DisclosureGroup {
-      Text(skill.instructions)
-        .textSelection(.enabled)
-        .frame(maxWidth: .infinity, alignment: .leading)
-    } label: {
-      HStack {
-        Text(skill.name).fontWeight(.semibold)
-        Spacer()
-        Menu {
-          Button("Edit") { model.openPersonalSkillForm(agentID: agent.id, skillID: skill.id.uuidString) }
-          Button("Delete", role: .destructive) { model.deletePersonalSkill(skill.id.uuidString, from: agent.id) }
-        } label: {
-          Image(systemName: "ellipsis.circle")
-        }
-        .accessibilityLabel("Skill actions")
-        .disabled(model.pendingMutations.contains("agent-skill:\(agent.id):skills"))
-      }
-    }
   }
 }

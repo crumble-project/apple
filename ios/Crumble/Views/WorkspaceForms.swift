@@ -185,7 +185,7 @@ struct SkillFormView: View {
         SheetError()
         Section {
           TextField("Skill name", text: $draft.name, prompt: Text("Skill name"))
-            .accessibilityLabel("Shared skill name")
+            .accessibilityLabel(draft.agentID == nil ? "Shared skill name" : "Bot skill name")
           TextEditor(text: $draft.instructions).frame(minHeight: 120)
         } header: {
           Text(draft.agentID == nil ? "Shared Skill" : "Bot Skill")
@@ -199,7 +199,7 @@ struct SkillFormView: View {
         }
       }
       .formStyle(.grouped)
-      .navigationTitle("Shared Skill")
+      .navigationTitle(draft.agentID == nil ? "Shared Skill" : "Bot Skill")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         SheetActions(

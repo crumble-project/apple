@@ -41,6 +41,10 @@ final class AppModel {
   var expanded: Set<String> = []
   /// The selected bot's jobs, refreshed when the chat shows job activity.
   let jobBoard = JobBoard()
+  let heldActionBoard = HeldActionBoard()
+  let botRequestBoard = BotRequestBoard()
+  let botSecretBoard = BotSecretBoard()
+  let botSkillBoard = BotSkillBoard()
 
   var draft = ""
   var attachments: [PendingAttachment] = []
@@ -207,6 +211,10 @@ final class AppModel {
     snapshot = nil
     messages = []
     jobBoard.reset()
+    heldActionBoard.reset()
+    botRequestBoard.reset()
+    botSecretBoard.reset()
+    botSkillBoard.reset()
     if case .agent = route {
       if let next = agents.first { selectAgent(next.id) } else { route = nil }
     }
@@ -232,6 +240,10 @@ extension AppModel {
     agents = []
     capabilities = nil
     jobBoard.reset()
+    heldActionBoard.reset()
+    botRequestBoard.reset()
+    botSecretBoard.reset()
+    botSkillBoard.reset()
     botDesktop = nil
     agentMemories = [:]
     sharedMemories = []

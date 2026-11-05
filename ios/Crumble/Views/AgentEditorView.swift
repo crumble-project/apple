@@ -24,12 +24,19 @@ struct AgentEditorView: View {
           }
         }
         ToolbarItem(placement: .confirmationAction) {
-          Button(draft.isNew ? "Create" : "Save") { model.saveAgentEditor() }.disabled(
-            model.loading)
+          Button(saveTitle) { model.saveAgentEditor() }.disabled(saveDisabled)
         }
       }
-      .navigationTitle(draft.isNew ? "New Agent" : "Edit Agent")
+      .navigationTitle(navigationTitle)
       .navigationBarTitleDisplayMode(.inline)
+    }
+    .botSecretSheets(active: true)
+    .skillSheet(active: true)
+    .task(id: draft.agentID) {
+      if !draft.isNew {
+        model.loadBotSecrets(agentID: draft.agentID)
+        model.loadBotSkills(agentID: draft.agentID)
+      }
     }
     .confirmationDialog("Delete agent?", isPresented: $model.confirmingDelete) {
       Button("Delete", role: .destructive) { model.deleteSelected() }
@@ -40,11 +47,27 @@ struct AgentEditorView: View {
 }
 
 extension AgentEditorView {
+  private var saveTitle: String {
+    if draft.botRequest != nil { return "Approve" }
+    return draft.isNew ? "Create" : "Save"
+  }
+
+  private var navigationTitle: String {
+    if draft.botRequest != nil { return "Edit Bot Proposal" }
+    return draft.isNew ? "New Agent" : "Edit Agent"
+  }
+
+  private var saveDisabled: Bool {
+    guard let request = draft.botRequest else { return model.loading }
+    return model.loading || !draft.canApprove || model.botRequestBoard.decision(for: request.id).sending
+  }
+
   private var editorForm: some View {
     Form {
       desktopPreviewSection
       avatarSection
       SheetError()
+      if let request = draft.botRequest { BotRequestEditorStatus(request: request) }
       Section {
         TextField("Agent name", text: $draft.name, prompt: Text("Agent name"))
           .accessibilityLabel("Agent name")
@@ -64,7 +87,16 @@ extension AgentEditorView {
       }
       capabilitiesSection
       integrationsSection
-      skillsSection
+      if !draft.isNew {
+        BotSecretsSection(kind: .credential, agentID: draft.agentID)
+        BotSecretsSection(kind: .login, agentID: draft.agentID)
+      }
+      if draft.isNew {
+        skillsSection
+      } else {
+        BotSkillsSection(title: "Skills", agentID: draft.agentID, agentName: draft.name)
+        SharedSkillToggles(agentID: draft.agentID)
+      }
       if !draft.isNew {
         Section {
           Button("Duplicate Agent") { model.duplicateSelected() }

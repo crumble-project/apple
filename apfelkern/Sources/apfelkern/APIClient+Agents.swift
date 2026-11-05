@@ -75,6 +75,57 @@ extension APIClient {
     }
   }
 
+  /// Desktop job actions held for the owner, newest first, pending and decided.
+  public func heldActions(_ agentID: String) async throws -> [HeldAction] {
+    try await invoke {
+      try await $0.listAgentHeldActions(.init(path: .init(id: agentID))).ok.body.json.map(HeldAction.init(wire:))
+    }
+  }
+
+  /// Runs the held action. Fails with a 409 once the action was decided.
+  public func approveHeldAction(_ agentID: String, id: String) async throws -> HeldAction {
+    try await invoke {
+      HeldAction(wire: try await $0.approveAgentHeldAction(.init(
+        path: .init(id: agentID, actionId: id))).ok.body.json)
+    }
+  }
+
+  /// Refuses the held action. Fails with a 409 once the action was decided.
+  public func declineHeldAction(_ agentID: String, id: String, reason: String) async throws -> HeldAction {
+    try await invoke {
+      HeldAction(wire: try await $0.declineAgentHeldAction(.init(
+        path: .init(id: agentID, actionId: id), body: .json(.init(reason: reason.nilIfEmpty))
+      )).ok.body.json)
+    }
+  }
+
+  /// The bot's requests for new bots, newest first, pending and decided.
+  public func botRequests(_ agentID: String) async throws -> [BotRequest] {
+    try await invoke {
+      try await $0.listBotRequests(.init(path: .init(id: agentID))).ok.body.json.map(BotRequest.init(wire:))
+    }
+  }
+
+  /// Creates the bot from `proposal`, or as the bot proposed it. Fails with a 409 once decided.
+  func approveBotRequest(_ agentID: String, id: String, proposal: JSONValue?)
+    async throws -> (request: BotRequest, agent: Agent) {
+    let body: Operations.ApproveBotRequest.Input.Body? = try proposal.map {
+      .json(.init(proposal: try requestModel($0)))
+    }
+    return try await invoke {
+      let approval = try await $0.approveBotRequest(.init(path: .init(id: agentID, requestId: id), body: body))
+        .ok.body.json
+      return (try BotRequest(wire: approval.request), Agent(wire: approval.agent))
+    }
+  }
+
+  /// Fails with a 409 once decided.
+  public func declineBotRequest(_ agentID: String, id: String) async throws -> BotRequest {
+    try await invoke {
+      try BotRequest(wire: try await $0.declineBotRequest(.init(path: .init(id: agentID, requestId: id))).ok.body.json)
+    }
+  }
+
   public func codingJobHistory(_ agentID: String, name: String, before: String, limit: Int)
     async throws -> ChatHistoryResponse {
     try await invoke {
