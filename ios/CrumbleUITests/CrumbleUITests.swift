@@ -13,8 +13,9 @@ final class CrumbleUITests: XCTestCase {
     settings.tap()
     XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
     XCTAssertTrue(app.textFields["serverURL"].exists)
-    XCTAssertTrue(app.secureTextFields["serverToken"].exists)
-    XCTAssertTrue(app.buttons["Save Connection"].exists)
+    XCTAssertTrue(app.textFields["email"].exists)
+    XCTAssertTrue(app.secureTextFields["password"].exists)
+    XCTAssertTrue(app.buttons["Sign In"].exists)
     let settingsScreenshot = XCTAttachment(screenshot: app.screenshot())
     settingsScreenshot.name = "Connection settings"
     settingsScreenshot.lifetime = .keepAlways

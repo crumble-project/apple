@@ -13,7 +13,7 @@ Native SwiftUI macOS client for a Crumble server. Supports bot chats, group chat
 swift run Crumble
 ```
 
-Defaults to `http://127.0.0.1:7337`. The bearer token is an account session token: the `token` field returned by `POST /api/auth/sign-in/email`. Configure the server URL and bearer token in **Settings** (`⌘,`), where credentials are stored in the Keychain (`ng.crumbli.mac` for release bundles, `ng.crumbli.mac.dev` for `swift run` and dev bundles), or override via environment variables:
+Defaults to `http://127.0.0.1:7337`. Enter the server URL, email, and password in **Settings** (`⌘,`). The app signs in and stores the account session token in the Keychain (`ng.crumbli.mac` for release bundles, `ng.crumbli.mac.dev` for `swift run` and dev bundles), or override via environment variables:
 
 ```bash
 CRUMBLE_URL="http://127.0.0.1:7338" CRUMBLE_TOKEN="REPLACE_WITH_TOKEN" swift run Crumble

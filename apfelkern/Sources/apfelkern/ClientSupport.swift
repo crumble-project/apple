@@ -89,7 +89,7 @@ public func taskRunDate(_ value: String) -> Date? {
 public func friendlyError(_ error: Error) -> String {
   if let apiError = error as? APIError {
     if apiError.statusCode == 401 {
-      return "Authentication failed. Check the server token in Settings."
+      return "Your session has ended. Sign in again in Settings."
     }
     struct Body: Decodable {
       struct Detail: Decodable { var message: String? }

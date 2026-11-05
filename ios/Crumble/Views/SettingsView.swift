@@ -10,17 +10,21 @@ struct SettingsView: View {
         .keyboardType(.URL)
         .textInputAutocapitalization(.never)
         .autocorrectionDisabled()
-      SecureField("Server token", text: $model.token, prompt: Text("Server token"))
-        .accessibilityIdentifier("serverToken")
-        .accessibilityLabel("Server token")
+      TextField("Email", text: $model.email, prompt: Text("Email"))
+        .accessibilityIdentifier("email")
+        .keyboardType(.emailAddress)
+        .textContentType(.username)
         .textInputAutocapitalization(.never)
         .autocorrectionDisabled()
+      SecureField("Password", text: $model.password, prompt: Text("Password"))
+        .accessibilityIdentifier("password")
+        .textContentType(.password)
       HStack {
-        Button("Save Connection") { model.saveSettings() }
+        Button("Sign In") { model.saveSettings() }
           .disabled(model.savingConnection)
         if model.savingConnection {
           ProgressView()
-          Text("Connecting…").foregroundStyle(.secondary)
+          Text("Signing in…").foregroundStyle(.secondary)
         }
       }
     } header: {
@@ -28,7 +32,7 @@ struct SettingsView: View {
     } footer: {
       Text(
         """
-        The token is stored securely on this device and never written to the project. For a physical \
+        Your session is stored securely on this device and never written to the project. For a physical \
         iPhone, use your Mac’s LAN address instead of 127.0.0.1.
         """
       ).foregroundStyle(.secondary)

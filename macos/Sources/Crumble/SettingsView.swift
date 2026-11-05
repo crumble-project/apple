@@ -39,19 +39,22 @@ struct ConnectionSettingsView: View {
         @Bindable var model = model
         return Section {
             TextField("Server URL", text: $model.serverURL, prompt: Text("http://127.0.0.1:7337"))
-            SecureField("Server token", text: $model.token, prompt: Text("Required"))
+            TextField("Email", text: $model.email, prompt: Text("Required"))
+                .textContentType(.username)
+            SecureField("Password", text: $model.password, prompt: Text("Required"))
+                .textContentType(.password)
             HStack {
-                Button("Save Connection") { model.saveSettings() }
+                Button("Sign In") { model.saveSettings() }
                     .disabled(model.savingConnection)
                 if model.savingConnection {
                     ProgressView().controlSize(.small)
-                    Text("Connecting…").foregroundStyle(.secondary)
+                    Text("Signing in…").foregroundStyle(.secondary)
                 }
             }
         } header: {
             Text("Server")
         } footer: {
-            Text("The token stays in the macOS Keychain; it is never written to the project.").foregroundStyle(
+            Text("Your session stays in the macOS Keychain; it is never written to the project.").foregroundStyle(
                 .secondary)
         }
     }

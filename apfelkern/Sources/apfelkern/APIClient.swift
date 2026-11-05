@@ -16,6 +16,18 @@ public struct APIError: Error, LocalizedError, Sendable {
   }
 }
 
+public enum AccountSignInError: Error, LocalizedError, Equatable {
+  case invalidCredentials
+  case noSession
+
+  public var errorDescription: String? {
+    switch self {
+    case .invalidCredentials: "Invalid email or password."
+    case .noSession: "Sign-in returned no session."
+    }
+  }
+}
+
 public struct SSEClosedError: Error, LocalizedError {
   public init() {}
   public var errorDescription: String? { "server-sent event stream closed" }
@@ -56,6 +68,25 @@ public struct APIClient: Sendable {
         body: decodeUTF8(data.prefix(8 << 10)).trimmingCharacters(in: .whitespacesAndNewlines))
     }
     return data
+  }
+
+  /// Signs in to the server's account endpoint, which sits outside the `/v1` contract, and returns the bearer token.
+  /// Uses an ephemeral session: a stored auth cookie without an Origin header makes the server answer 403.
+  public static func signIn(
+    baseURL: String, email: String, password: String,
+    session: URLSession = URLSession(configuration: .ephemeral)
+  ) async throws -> String {
+    struct Credentials: Encodable { var email, password: String }
+    struct Session: Decodable { var token: String? }
+    let client = APIClient(baseURL: baseURL, token: "", session: session)
+    do {
+      let result: Session = try await client.call(
+        "POST", "/api/auth/sign-in/email", body: Credentials(email: email, password: password))
+      guard let token = result.token, !token.isEmpty else { throw AccountSignInError.noSession }
+      return token
+    } catch let error as APIError where error.statusCode == 401 {
+      throw AccountSignInError.invalidCredentials
+    }
   }
 
   public func call<T: Decodable>(

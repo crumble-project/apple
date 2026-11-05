@@ -239,7 +239,7 @@ struct APIClientTests {
       Issue.record("expected an error")
     } catch let error as APIError {
       #expect(error.statusCode == 401 && error.body == "bad token")
-      #expect(friendlyError(error) == "Authentication failed. Check the server token in Settings.")
+      #expect(friendlyError(error) == "Your session has ended. Sign in again in Settings.")
     }
   }
 

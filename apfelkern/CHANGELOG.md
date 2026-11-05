@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add `APIClient.signIn(baseURL:email:password:session:)`, which returns the account session token.
 - Update to bot contract 6.0.0 from a local export, since the bot repository no longer publishes contract releases. `Agent.avatar` is no longer read from or sent to the server. `activityFeed()` omits change activities. `setProviderKey` sends the secret body `{"value"}`.
 - `AgentDraft` turns on `toolsDelegate`, `toolsSchedule`, and `toolsCodemode` by default.
 - Add provider sign-in from bot contract 1.7.0. `ProviderStatus` gains `authMethods`, `credentialType`, and `activeLoginId`. `ProviderLogin` carries a server sign-in's status, its link, device-code, info, and progress events, and the prompt it waits on; `APIClient` starts, reads, answers, and cancels it. Pin bot contract `contract-v1.7.0`. `ProviderStatus` now lives in `ProviderLogin.swift`.

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Sign in with account email and password in Settings; the app stores the returned session.
 - Build against bot contract 6.0.0. The bearer token must be an account session token from `POST /api/auth/sign-in/email`; the old server token is rejected. Until avatars move to the new definition, bots render from their ID and the avatar picker does not save.
 - CI runs SwiftLint in its own job, beside the tests.
 - New bots start with **Memory**, **Schedule tasks**, **Message other bots**, and **Code mode** on, and may message every existing bot. The profile's capability toggles each carry a one-line description instead of one long footer.

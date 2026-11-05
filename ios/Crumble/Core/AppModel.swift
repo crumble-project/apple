@@ -13,6 +13,8 @@ final class AppModel {
   /// Localhost works in the simulator. On a physical iPhone use the Mac's LAN address.
   var serverURL = "http://127.0.0.1:7337"
   var token = ""
+  var email = ""
+  var password = ""
   private(set) var client: APIClient?
   private(set) var generation = 0
 
@@ -245,15 +247,25 @@ extension AppModel {
       errorText = "Enter a valid server URL."
       return
     }
-    let candidate = APIClient(baseURL: rawURL, token: token)
+    let email = email.trimmingCharacters(in: .whitespaces)
+    let password = password
+    guard !password.isEmpty || !token.isEmpty else {
+      errorText = "Enter your email and password."
+      return
+    }
     savingConnection = true
     errorText = ""
     Task {
       defer { savingConnection = false }
       do {
+        let token = password.isEmpty
+          ? token : try await APIClient.signIn(baseURL: rawURL, email: email, password: password)
+        let candidate = APIClient(baseURL: rawURL, token: token)
         _ = try await candidate.agents()
         try Keychain.write("server-token", value: token)
         try Keychain.write("server-url", value: rawURL)
+        self.token = token
+        self.password = ""
         applyConnection(candidate)
         showNotice("Connected")
         refresh()
