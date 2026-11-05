@@ -6,10 +6,7 @@ extension APIClient {
   }
 
   public func createAgent(_ agent: Agent) async throws -> Agent {
-    // The client still has seed avatars; the server's avatar definition stays server-managed.
-    var input = agent
-    input.avatar = nil
-    let body: Operations.CreateAgent.Input.Body.JsonPayload = try requestModel(input)
+    let body: Operations.CreateAgent.Input.Body.JsonPayload = try requestModel(agent)
     return try await invoke {
       Agent(wire: try await $0.createAgent(.init(body: .json(body))).created.body.json)
     }
@@ -17,7 +14,6 @@ extension APIClient {
 
   /// A `null` value clears a nullable field, such as `desktopModel`.
   public func updateAgent(_ id: String, patch: [String: JSONValue]) async throws -> Agent {
-    let patch = patch.filter { $0.key != "avatar" }
     let body: Operations.UpdateAgent.Input.Body.JsonPayload = try requestModel(patch)
     return try await invoke(nullFields: Set(patch.filter { $0.value == .null }.keys)) {
       Agent(wire: try requestModel(required(try await $0.updateAgent(
@@ -60,8 +56,22 @@ extension APIClient {
       try await $0.listCodingJobs(.init(path: .init(id: agentID))).ok.body.json.jobs.map {
         CodingJob(
           name: $0.name, conversationId: $0.conversationId, status: $0.status.rawValue,
-          usage: JobUsage(document: $0.usage))
+          usage: JobUsage(document: $0.usage),
+          model: $0.model.map { DesktopModel(provider: $0.provider, model: $0.model) },
+          question: $0.question.map {
+            JobQuestion(id: $0.id, text: $0.text, options: $0.options, multiple: $0.multiple)
+          })
       }
+    }
+  }
+
+  /// Answers the job's open question, which resumes it. Fails with a 409 when the job no longer waits on it.
+  public func answerCodingJob(_ agentID: String, name: String, questionID: String, text: String) async throws {
+    try await invoke {
+      _ = try await $0.answerCodingJob(.init(
+        path: .init(id: agentID, name: name),
+        body: .json(.init(questionId: questionID, text: text))
+      )).noContent
     }
   }
 

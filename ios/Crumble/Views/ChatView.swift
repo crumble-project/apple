@@ -46,11 +46,14 @@ enum ChatRow: Identifiable {
     return rows
   }
 
-  /// Keeps the conversation itself: owner and agent text and context events, not thinking,
-  /// tool calls, or tool results.
+  /// Keeps the conversation itself: owner and agent text, context events, and job cards, not
+  /// thinking, tool calls, or other tool results.
   static func shownInChat(_ message: Message) -> Bool {
     switch message.role {
+    case "toolResult":
+      return Job(message: message) != nil
     case "user":
+      guard !JobKind.isReport(message) else { return false }
       return !message.text.isEmpty || !(message.attachments ?? []).isEmpty
     case "event":
       return !message.text.isEmpty
@@ -90,8 +93,9 @@ struct ChatView: View {
     .overlay {
       if rows.isEmpty { EmptyChatView(agent: agent) }
     }
+    .task(id: model.jobPollDelay) { await model.watchJobs() }
     .safeAreaInset(edge: .bottom) {
-      if model.snapshot != nil { Composer(agent: agent) }
+      if model.snapshot != nil { Composer(target: .chat(agent, model: model)) }
     }
     .navigationTitle(agent.name)
     .navigationBarTitleDisplayMode(.inline)
@@ -117,6 +121,13 @@ struct ChatView: View {
         }
       }
       .sharedBackgroundVisibility(.hidden)
+      if agent.tools?.contains(DesktopJob.toolName) == true {
+        ToolbarItem(placement: .primaryAction) {
+          Button("Bot Desktop", systemImage: "display") {
+            model.botDesktop = BotDesktopTarget(id: agent.id)
+          }
+        }
+      }
     }
   }
 

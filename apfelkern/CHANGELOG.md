@@ -2,8 +2,22 @@
 
 ## Unreleased
 
+- Add `GroupChatHost`, moved from the macOS and iOS apps. An app model conforms by exposing its conversation state and gets group chat loading, streaming, sending, retry, and optimistic create, update, and delete.
+- Add `BotDesktopSession.settle()`, which returns when no control request waits for the server, so iOS can hold a background task until a hand-back lands.
+- Add `ProviderLoginBoard`, moved from the macOS app so iOS shares it. It follows provider sign-ins on the server and reports what the app shows through its `onEvent` closure. Add `ProviderLogin.progressText`.
+- Add `JobBoard`, which holds the selected bot's jobs, its open job, and answers to job questions, and polls while an open job or question depends on it. `JobKind`, `Job`, `JobHistory`, and `usageLine` move here from the macOS app so iOS shares them.
+- Add `APIClient.answerCodingJob`, `jobs(_:agentID:)`, `jobHistory`, and `fullJobHistory`, plus `JobQuestion`, `JobQuestionEvent`, `Message.jobQuestion`, `JobAnswer`, and `JobTranscript`, a job's history as a Markdown file. `CodingJob` gains `model` and `question`; `DesktopJob` gains `model`.
+- `usageLine` leaves out a zero cost, which subscription providers report and which says nothing.
+- Add `GroupDraft`, `GroupChatRow`, and `ComposerTarget`, moved from the macOS app so iOS shares them, plus `GroupChat.deliveryKey`, `GroupMemberActivity.Status.label(for:)`, and `ActivityEvent.groupTitle`. `GroupDraft` also limits names to 80 characters, and `GroupChatRow.failure` carries the bot's name so a deleted bot's failed turn still shows; rows skip messages with no text or attachments.
+- Add `Message.sources` and `SourceCitations`, which takes a group reply's citations of pages it read out of the text as `SourceChip`s.
+- `messageLabel` names the bot of an assistant message that has an origin.
+- Add `BotDesktopSession`, moved from the macOS app so iOS shares it, and `BotDesktopPreview`, a watch-only preview that wakes on request. `BotDesktopSession.close()` is now `leave()`, which also hands back a take the server confirms after the owner left; `controlKnown`, `controlLabel`, and `connecting` are new, and `action` is `.waiting` until the server first reports control.
+- Add `APIClient.desktopRunning`, and `passive` on `desktopViewer` for a link that neither boots the bot's machine nor keeps it awake.
+- Add `AgentDraft.tools(keeping:)` and `AgentDraft.desktopModelChoice`, moved from the macOS app.
+- Replace the seeded avatars with Open Bot Avatar, a new dependency pinned by revision. `Agent.avatar` and `AgentDraft.avatar` are now a `BotAvatarDefinition`, read from and sent to the server; an invalid definition from the server falls back to the bot's starter shape. `BotAvatarView` takes a `BotAvatarDefinition` or an `Agent`, `BotAvatarEditor` is the shared editor, and `BotAvatarDefinition` gains `default(for:)`, `importing(json:)`, `recolored(color:eyeColor:)`, and `generationPrompt(_:)`.
+- Remove `agentAvatarSeed`, the `bot:` and `critters:` seed prefixes, `AgentDraft.avatarChoices`, `shuffleAvatars()`, `BotLook`, `BotShape`, `BotFinish`, and `\.botFinish`.
 - Add `APIClient.signIn(baseURL:email:password:session:)`, which returns the account session token.
-- Update to bot contract 6.0.0 from a local export, since the bot repository no longer publishes contract releases. `Agent.avatar` is no longer read from or sent to the server. `activityFeed()` omits change activities. `setProviderKey` sends the secret body `{"value"}`.
+- Update to bot contract 6.0.0 from a local export, since the bot repository no longer publishes contract releases. `activityFeed()` omits change activities. `setProviderKey` sends the secret body `{"value"}`.
 - `AgentDraft` turns on `toolsDelegate`, `toolsSchedule`, and `toolsCodemode` by default.
 - Add provider sign-in from bot contract 1.7.0. `ProviderStatus` gains `authMethods`, `credentialType`, and `activeLoginId`. `ProviderLogin` carries a server sign-in's status, its link, device-code, info, and progress events, and the prompt it waits on; `APIClient` starts, reads, answers, and cancels it. Pin bot contract `contract-v1.7.0`. `ProviderStatus` now lives in `ProviderLogin.swift`.
 - Move into the `crumble-project/apple` repository, where the macOS and iOS apps depend on this package by path instead of a pinned revision.

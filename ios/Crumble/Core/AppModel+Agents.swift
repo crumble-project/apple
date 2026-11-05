@@ -7,7 +7,6 @@ extension AppModel {
   func createAgent() {
     var draft = AgentDraft(isNew: true, agentID: "")
     draft.delegates = Set(agents.map(\.id))
-    draft.shuffleAvatars()
     agentDraft = draft
     loadEditorData(provider: draft.provider)
   }
@@ -21,7 +20,7 @@ extension AppModel {
     draft.model = agent.model ?? ""
     draft.provider = agent.provider ?? ""
     draft.enabled = agent.enabled
-    draft.avatar = "bot:" + agentAvatarSeed(agent)
+    draft.avatar = agent.avatar
     if let inference = agent.inference {
       draft.thinking = inference.thinkingLevel
       draft.temperature = inference.temperature.map { String($0) } ?? ""
@@ -32,12 +31,15 @@ extension AppModel {
     draft.toolsDelegate = tools.contains("delegate")
     draft.toolsSchedule = tools.contains("schedule")
     draft.toolsCodemode = tools.contains("codemode")
+    draft.toolsCoding = tools.contains("coding")
+    draft.toolsDesktop = tools.contains(DesktopJob.toolName)
+    draft.desktopProvider = agent.desktopModel?.provider ?? ""
+    draft.desktopModel = agent.desktopModel?.model ?? ""
     draft.skills = agent.skills ?? []
     draft.sharedSkills = Set(agent.sharedSkills ?? [])
     draft.sharedMemory = agent.sharedMemory ?? false
     draft.delegates = Set(agent.delegates ?? [])
     draft.mcpServers = Set(agent.mcpServers ?? [])
-    draft.shuffleAvatars()
     agentDraft = draft
     loadEditorData(provider: draft.provider)
   }
@@ -62,7 +64,10 @@ extension AppModel {
   func loadProviders() {
     request { client in
       let providers = try await client.providers()
-      return { [self] in self.providers = providers }
+      return { [self] in
+        self.providers = providers
+        resumeProviderLogins()
+      }
     }
   }
 
@@ -128,11 +133,6 @@ extension AppModel {
       errorText = "Give your agent a name."
       return nil
     }
-    var tools: [String] = []
-    if draft.toolsMemory { tools.append("memory") }
-    if draft.toolsDelegate { tools.append("delegate") }
-    if draft.toolsSchedule { tools.append("schedule") }
-    if draft.toolsCodemode { tools.append("codemode") }
     if draft.skills.contains(where: {
       $0.name.trimmingCharacters(in: .whitespaces).isEmpty
         || $0.instructions.trimmingCharacters(in: .whitespaces).isEmpty
@@ -151,9 +151,10 @@ extension AppModel {
       instructions: draft.instructions.nilIfEmpty,
       avatar: draft.avatar, enabled: draft.enabled, provider: draft.provider.nilIfEmpty,
       model: draft.model.nilIfEmpty,
-      tools: tools, delegates: delegates, skills: draft.skills,
+      tools: draft.tools(keeping: agents.first { $0.id == draft.agentID }?.tools ?? []),
+      delegates: delegates, skills: draft.skills,
       sharedSkills: shared, sharedMemory: draft.sharedMemory, mcpServers: servers,
-      inference: inference)
+      inference: inference, desktopModel: draft.desktopModelChoice)
   }
 
   func saveAgentEditor() {
@@ -207,7 +208,7 @@ extension AppModel {
         "name": .string(input.name), "description": .string(draft.description),
         "instructions": .string(draft.instructions),
         "provider": .string(draft.provider), "model": .string(draft.model),
-        "avatar": .string(draft.avatar),
+        "avatar": try JSONValue(encoding: draft.avatar),
         "enabled": .bool(draft.enabled),
         "tools": .array((input.tools ?? []).map(JSONValue.string)),
         "skills": try JSONValue(encoding: draft.skills),
@@ -215,8 +216,32 @@ extension AppModel {
         "sharedMemory": .bool(draft.sharedMemory),
         "mcpServers": .array((input.mcpServers ?? []).map(JSONValue.string)),
         "delegates": .array((input.delegates ?? []).map(JSONValue.string)),
-        "inference": try JSONValue(encoding: input.inference)
+        "inference": try JSONValue(encoding: input.inference),
+        // Null clears an override, so the bot's desktop jobs use its own model again.
+        "desktopModel": try input.desktopModel.map { try JSONValue(encoding: $0) } ?? .null
       ])
+  }
+
+  /// Loaded once per connection; a failed load leaves it unknown and the next refresh tries again.
+  func loadCapabilities() {
+    guard capabilities == nil, let client else { return }
+    let connection = generation
+    Task {
+      guard let loaded = try? await client.capabilities(), generation == connection else { return }
+      capabilities = loaded
+    }
+  }
+
+  /// The Coding toggle appears when the server can run jobs. A bot that already has coding keeps
+  /// the toggle if the server can't be asked, so the owner can still turn it off.
+  func offersCoding(for draft: AgentDraft) -> Bool {
+    (capabilities?.coding ?? false) || draft.toolsCoding
+  }
+
+  /// The Bot desktop toggle appears when the server has a desktop image. A bot that already has
+  /// one keeps the toggle if the server can't be asked, so the owner can still turn it off.
+  func offersDesktop(for draft: AgentDraft) -> Bool {
+    (capabilities?.desktop ?? false) || draft.toolsDesktop
   }
 
   func duplicateSelected() {

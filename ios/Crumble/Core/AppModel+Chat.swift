@@ -12,6 +12,13 @@ extension AppModel {
       return { [self] in
         guard mutationRevision == revision, pendingMutations.isEmpty else { return }
         self.agents = agents
+        loadCapabilities()
+        loadGroupChats()
+        // An open group chat stays open; the bot list only refreshes.
+        guard selectedGroupID.isEmpty else {
+          Notifier.shared.routePendingTap()
+          return
+        }
         var chosen = selectedAgentID
         if !agents.contains(where: { $0.id == chosen }) { chosen = agents.first?.id ?? "" }
         if chosen.isEmpty {
@@ -32,6 +39,8 @@ extension AppModel {
     switch route {
     case .agent(let id):
       if id != selectedAgentID || self.route != route { selectAgent(id) }
+    case .group(let id):
+      if id != selectedGroupID || self.route != route { selectGroup(id) }
     default:
       openPanel(route)
     }
@@ -39,6 +48,7 @@ extension AppModel {
 
   /// Opens the bot's one continuous chat and follows its event stream.
   func selectAgent(_ id: String) {
+    leaveGroup()
     cancelStream()
     selectionVersion += 1
     let version = selectionVersion
@@ -51,6 +61,7 @@ extension AppModel {
     oldestEntryID = ""
     loadingOlder = false
     replyTo = nil
+    jobBoard.select(id)
     draft = ""
     attachments = []
     failedDraft = ""
@@ -83,6 +94,7 @@ extension AppModel {
     let local = delivery.messages(botID: selectedAgentID)
     messages = mergeMessages(messages.filter { $0.deliveryState == .confirmed }, incomingMessages)
     messages.append(contentsOf: local)
+    refreshJobsIfChanged()
     var snapshot = incoming
     snapshot.messages = nil
     self.snapshot = snapshot
@@ -100,6 +112,7 @@ extension AppModel {
   func suspendStreams() {
     streamsSuspended = true
     cancelStream()
+    stopGroupStream()
     activityVersion += 1
     activityTask?.cancel()
     activityTask = nil
@@ -112,6 +125,8 @@ extension AppModel {
     // Be safe when scene phase notifications arrive more than once.
     cancelStream()
     followActivity()
+    loadGroupChats()
+    reconnectGroupStream()
     guard client != nil, !selectedAgentID.isEmpty else {
       if agents.isEmpty, route == nil { refresh() }
       return
@@ -208,6 +223,7 @@ extension AppModel {
   }
 
   func loadOlder() {
+    guard selectedGroupID.isEmpty else { return loadOlderGroupMessages() }
     guard !loadingOlder, hasMore, !oldestEntryID.isEmpty else { return }
     let id = selectedAgentID
     let before = oldestEntryID

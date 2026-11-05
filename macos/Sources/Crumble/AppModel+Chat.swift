@@ -57,9 +57,7 @@ extension AppModel {
         oldestEntryID = ""
         loadingOlder = false
         replyTo = nil
-        jobs = [:]
-        jobActivity = 0
-        jobHistory = nil
+        jobBoard.select(id)
         draft = ""
         attachments = []
         failedDraft = ""
@@ -302,7 +300,7 @@ extension AppModel {
 
     func attachmentImage(message: Message, index: Int) -> NSImage? {
         if let entryID = message.entryId { return attachmentImage(entryID: entryID, index: index) }
-        let key = selectedGroupID.isEmpty ? selectedAgentID : Self.groupKey(selectedGroupID)
+        let key = selectedGroupID.isEmpty ? selectedAgentID : GroupChat.deliveryKey(selectedGroupID)
         guard let requestID = message.requestId,
             let data = delivery.imageData(botID: key, requestID: requestID, index: index)
         else { return nil }

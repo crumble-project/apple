@@ -6,11 +6,14 @@ struct AgentEditorView: View {
   @Environment(AppModel.self) private var model
   @Environment(\.dismiss) private var dismiss
   @Binding var draft: AgentDraft
+  @State var showingDesktop = false
 
   var body: some View {
     @Bindable var model = model
     NavigationStack {
       editorForm
+        // Here and not on the list row, which unloads once the cover hides it and would end the cover.
+        .fullScreenCover(isPresented: $showingDesktop) { BotDesktopView(agentID: draft.agentID) }
       .formStyle(.grouped)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
@@ -39,6 +42,7 @@ struct AgentEditorView: View {
 extension AgentEditorView {
   private var editorForm: some View {
     Form {
+      desktopPreviewSection
       avatarSection
       SheetError()
       Section {
@@ -70,34 +74,6 @@ extension AgentEditorView {
     }
   }
 
-  private var avatarChoices: some View {
-    ScrollView(.horizontal, showsIndicators: false) {
-      HStack(spacing: 8) {
-        ForEach(draft.avatarChoices, id: \.self) { seed in
-          Button {
-            draft.avatar = "bot:" + seed
-          } label: {
-            BotAvatarView(seed: seed, size: 36)
-              .frame(width: 44, height: 44)
-              .contentShape(Rectangle())
-              .overlay {
-                if draft.avatar == "bot:" + seed {
-                  RoundedRectangle(cornerRadius: 10).strokeBorder(.tint, lineWidth: 2)
-                }
-              }
-          }
-          .buttonStyle(.plain)
-          .accessibilityLabel("Choose this avatar")
-        }
-        Button("More Avatars", systemImage: "shuffle") { draft.shuffleAvatars() }
-          .labelStyle(.iconOnly)
-          .buttonStyle(.borderless)
-          .frame(width: 44, height: 44)
-      }
-      .padding(.horizontal, 4)
-    }
-  }
-
   private var integrationsSection: some View {
     Section("Integrations") {
       let servers = model.usableServers(for: draft.agentID)
@@ -118,14 +94,12 @@ extension AgentEditorView {
   private var avatarSection: some View {
     Section {
       VStack(spacing: 8) {
-        BotAvatarView(
-          seed: agentAvatarSeed(Agent(id: draft.agentID, avatar: draft.avatar)), size: 96,
-          live: true)
+        BotAvatarView(avatar: draft.avatar, size: 96, live: true)
         Text(draft.name.trimmingCharacters(in: .whitespaces).nilIfEmpty ?? "New Agent").font(
           .title2.bold())
-        avatarChoices
       }
       .frame(maxWidth: .infinity)
+      BotAvatarEditor(value: $draft.avatar)
     }
   }
 
@@ -210,6 +184,33 @@ extension AgentEditorView {
     }
   }
 
+  @ViewBuilder private var desktopPreviewSection: some View {
+    let saved = model.agents.first { $0.id == draft.agentID }
+    if let client = model.client, saved?.tools?.contains(DesktopJob.toolName) == true {
+      Section("Desktop") {
+        BotDesktopPreviewCard(
+          preview: BotDesktopPreview(agentID: draft.agentID, client: client),
+          open: { showingDesktop = true }
+        )
+        .listRowInsets(EdgeInsets())
+      }
+    }
+  }
+
+  @ViewBuilder private var desktopModelFields: some View {
+    if model.providerChoices.isEmpty {
+      TextField("Desktop job provider", text: $draft.desktopProvider, prompt: Text("Same as the agent"))
+    } else {
+      Picker("Desktop job provider", selection: $draft.desktopProvider) {
+        Text("Same as the agent").tag("")
+        ForEach(model.providerChoices, id: \.self) { Text($0).tag($0) }
+      }
+    }
+    if !draft.desktopProvider.isEmpty {
+      TextField("Desktop job model", text: $draft.desktopModel, prompt: Text("Model ID"))
+    }
+  }
+
   private var capabilitiesSection: some View {
     Section {
       Toggle("Memory", isOn: $draft.toolsMemory)
@@ -224,6 +225,19 @@ extension AgentEditorView {
         }
       }
       Toggle("Code mode", isOn: $draft.toolsCodemode)
+      if model.offersCoding(for: draft) {
+        Toggle(isOn: $draft.toolsCoding) {
+          Text("Coding")
+          Text("Starts coding jobs that read, write, and run code in its workspace.")
+        }
+      }
+      if model.offersDesktop(for: draft) {
+        Toggle(isOn: $draft.toolsDesktop) {
+          Text("Bot desktop")
+          Text("Its own desktop with a browser, operated by desktop jobs. You can watch and take control.")
+        }
+        if draft.toolsDesktop { desktopModelFields.padding(.leading, 16) }
+      }
     } header: {
       Text("Capabilities")
     } footer: {

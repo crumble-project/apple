@@ -2,18 +2,6 @@ import apfelkern
 import AppKit
 import SwiftUI
 
-/// What the composer writes to: a bot chat or a group chat.
-struct ComposerTarget {
-    var placeholder: String
-    var enabled: Bool
-    /// Bots that `@` completes.
-    var mentionable: [Agent]
-    var running: Bool
-    var stopHelp: String
-    var send: @MainActor () -> Void
-    var stop: @MainActor () -> Void
-}
-
 extension ComposerTarget {
     /// A bot chat: mentions complete to the bots the bot may message.
     @MainActor static func chat(_ agent: Agent, model: AppModel) -> ComposerTarget {

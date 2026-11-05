@@ -1,6 +1,15 @@
 {
-  "originHash" : "29f45043f571d380d30791aa4d238a8c56824656c57a0201d384273331c1d033",
+  "originHash" : "085c9e9767324980c937560c5566c57da0eba1cc9ca4c17ac413dd8d1f25114a",
   "pins" : [
+    {
+      "identity" : "open-bot-avatar-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/cheetahbyte/open-bot-avatar-swift.git",
+      "state" : {
+        "revision" : "079e9e97fa6447181fcb4e724d515fc6b2851dee",
+        "version" : "0.1.0"
+      }
+    },
     {
       "identity" : "swift-http-types",
       "kind" : "remoteSourceControl",

@@ -14,7 +14,6 @@ struct CrumbleApp: App {
     WindowGroup {
       ContentView()
         .environment(model)
-        .environment(\.botFinish, .dither)
         .task {
           guard !started else { return }
           started = true
@@ -54,6 +53,12 @@ struct ContentView: View {
     } detail: {
       Group {
         switch model.route {
+        case .group?:
+          if let group = model.selectedGroup {
+            GroupChatView(group: group)
+          } else {
+            ProgressView()
+          }
         case .agent?, nil:
           if let agent = model.selectedAgent {
             ChatView(agent: agent)
@@ -68,8 +73,9 @@ struct ContentView: View {
       .overlay(alignment: .bottom) { NoticeToast() }
     }
     .onChange(of: model.route) { _, route in
-      if route != nil { compactColumn = .detail }
+      compactColumn = route == nil ? .sidebar : .detail
     }
+    .fullScreenCover(item: $model.botDesktop) { BotDesktopView(agentID: $0.id) }
     .sheet(isPresented: $showingSettings) { SettingsView() }
     .sheet(item: $model.agentDraft) {
       AgentEditorView(draft: sheetBinding($model.agentDraft, for: $0))
@@ -82,6 +88,8 @@ struct ContentView: View {
     .sheet(item: $model.skillDraft) {
       SkillFormView(draft: sheetBinding($model.skillDraft, for: $0))
     }
+    .sheet(item: $model.jobHistory) { JobSheet(job: $0) }
+    .sheet(item: $model.groupDraft) { GroupEditorView(draft: sheetBinding($model.groupDraft, for: $0)) }
   }
 }
 
@@ -95,6 +103,27 @@ func sheetBinding<Draft: Identifiable & Sendable>(_ source: Binding<Draft?>, for
 }
 
 struct SidebarView: View {
+  private var groupsSection: some View {
+    Section {
+      ForEach(model.groupChats) { GroupRow(group: $0) }
+      if model.groupChats.isEmpty {
+        Text(
+          model.agents.count < GroupDraft.memberRange.lowerBound
+            ? "Create two bots to start a group chat" : "No group chats yet"
+        )
+        .foregroundStyle(.secondary)
+      }
+    } header: {
+      HStack {
+        Text("Group Chats")
+        Spacer()
+        Button("New Group Chat", systemImage: "plus") { model.createGroup() }
+          .labelStyle(.iconOnly)
+          .disabled(model.agents.count < GroupDraft.memberRange.lowerBound)
+      }
+    }
+  }
+
   private func agentRow(_ agent: Agent) -> some View {
     NavigationLink(value: Route.agent(agent.id)) {
       HStack(spacing: 12) {
@@ -147,6 +176,7 @@ struct SidebarView: View {
           }
         }
       }
+      groupsSection
       Section("Workspace") {
         ForEach(Self.workspace, id: \.route) { item in
           NavigationLink(value: item.route) { Label(item.title, systemImage: item.symbol) }
@@ -221,7 +251,7 @@ struct ErrorBanner: View {
   @Environment(AppModel.self) private var model
   var body: some View {
     if !model.errorText.isEmpty, model.agentDraft == nil, model.memoryDraft == nil,
-      model.taskDraft == nil, model.mcpDraft == nil, model.skillDraft == nil {
+      model.taskDraft == nil, model.mcpDraft == nil, model.skillDraft == nil, model.groupDraft == nil {
       HStack(alignment: .top, spacing: 8) {
         Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.red)
         Text(model.errorText).font(.callout).textSelection(.enabled)

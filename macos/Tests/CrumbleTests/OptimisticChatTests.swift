@@ -45,15 +45,15 @@ extension APIClientTests {
         model.applySnapshot(ChatSnapshot(status: "running", agentId: first.id))
         model.selectAgent(second.id)
         #expect(model.botState(first) == .working)
-        await waitUntil { model.botState(first) == .sleeping && model.snapshot?.agentId == second.id }
-        #expect(model.botState(first) == .sleeping)
+        await waitUntil { model.botState(first) == .idle && model.snapshot?.agentId == second.id }
+        #expect(model.botState(first) == .idle)
         #expect(model.backgroundChats.isEmpty)
         #expect(model.snapshot?.agentId == second.id)
         #expect(model.route == .agent(second.id))
 
         model.updateRunningBot(first.id, running: true)
         model.resetRunningBots()
-        #expect(model.botState(first) == .sleeping)
+        #expect(model.botState(first) == .idle)
         #expect(model.runningAgentIDs.isEmpty)
     }
 

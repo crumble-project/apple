@@ -38,11 +38,8 @@ final class AppModel {
     var expanded: Set<String> = []
     /// Nil until the server answers; the editor offers only what the server can run.
     var capabilities: ServerCapabilities?
-    /// The selected bot's coding jobs by name, refreshed when the chat shows job activity.
-    /// Jobs of the selected bot, by `Job.id`.
-    var jobs: [String: Job] = [:]
-    var jobActivity = 0
-    var jobHistory: JobHistory?
+    /// The selected bot's jobs, refreshed when the chat shows job activity.
+    let jobBoard = JobBoard()
 
     var draft = ""
     var attachments: [PendingAttachment] = []
@@ -94,13 +91,9 @@ final class AppModel {
 
     var provider = "melious"
     var providerKey = ""
-    /// Provider sign-ins running on the server, by provider.
-    var providerLogins: [String: ProviderLogin] = [:]
-    /// Providers waiting for the server to start, answer, or cancel their sign-in.
-    var providerLoginRequests: Set<String> = []
-    /// Why a provider's last sign-in ended without signing in.
-    var providerLoginOutcomes: [String: String] = [:]
-    @ObservationIgnored var providerLoginPolls: [String: Task<Void, Never>] = [:]
+    @ObservationIgnored lazy var providerLoginBoard = ProviderLoginBoard { [weak self] in
+        self?.handleProviderLogin($0)
+    }
 
     init(environment: [String: String] = ProcessInfo.processInfo.environment, loadKeychain: Bool = true) {
         if loadKeychain {
@@ -133,8 +126,7 @@ final class AppModel {
 
     func botState(_ agent: Agent) -> BotState {
         if runningAgentIDs.contains(agent.id) { return .working }
-        guard agent.enabled, route == .agent(agent.id) else { return .sleeping }
-        return .idle
+        return agent.enabled ? .idle : .sleeping
     }
 }
 
@@ -268,11 +260,9 @@ extension AppModel {
         mcpServers = []
         providers = []
         models = []
-        resetProviderLogins()
+        providerLoginBoard.reset()
         capabilities = nil
-        jobs = [:]
-        jobActivity = 0
-        jobHistory = nil
+        jobBoard.reset()
         signingIn = nil
         agentDraft = nil
         memoryDraft = nil

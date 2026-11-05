@@ -5,7 +5,8 @@ extension Agent {
   init(wire: Components.Schemas.Agent) {
     self.init(
       id: wire.id, name: wire.name, description: wire.description, instructions: wire.instructions,
-      avatar: nil, enabled: wire.enabled, provider: wire.provider, model: wire.model,
+      avatar: BotAvatarDefinition(wire: wire.avatar, botID: wire.id), enabled: wire.enabled,
+      provider: wire.provider, model: wire.model,
       tools: wire.tools, delegates: wire.delegates,
       skills: wire.skills.map { Skill(name: $0.name, instructions: $0.instructions) },
       sharedSkills: wire.sharedSkills, sharedMemory: wire.sharedMemory, mcpServers: wire.mcpServers,
@@ -39,12 +40,14 @@ extension Message {
         BotCommunication(executionId: $0.executionId, fromAgentId: $0.fromAgentId,
                          fromName: $0.fromName, toAgentId: $0.toAgentId, toName: $0.toName,
                          status: $0.status.rawValue)
-      }, timestamp: wire.timestamp.flatMap(Int64.init(exactly:)),
+      }, jobQuestion: wire.jobQuestion.map { JobQuestionEvent(id: $0.id, kind: $0.kind, job: $0.job) },
+      timestamp: wire.timestamp.flatMap(Int64.init(exactly:)),
       attachments: wire.attachments?.map {
         AttachmentInfo(name: $0.name, mimeType: $0.mimeType, size: Int(exactly: $0.size) ?? 0,
                        kind: $0.kind.rawValue)
       }, toolName: wire.toolName, toolCallId: wire.toolCallId, isError: wire.isError,
-      toolDetails: try wire.toolDetails.map { try JSONValue(wire: $0) }, requestId: wire.requestId)
+      toolDetails: try wire.toolDetails.map { try JSONValue(wire: $0) }, requestId: wire.requestId,
+      sources: wire.sources?.map { MessageSource(url: $0.url, title: $0.title) })
   }
 }
 

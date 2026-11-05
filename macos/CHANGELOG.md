@@ -2,8 +2,17 @@
 
 ## Unreleased
 
+- Group chat logic moves to `GroupChatHost` in apfelkern, shared with iOS. Retrying a failed group message now clears the draft the failure restored, so pressing Return can't send it twice.
+- Provider sign-in state moves to `ProviderLoginBoard` in apfelkern, with no change in behavior.
+- Answer a coding job's question in the chat or on the job's panel: pick an option or write an answer. While the job waits, the box stays up to date, and once it is answered, by you or by the bot that delegated the task, the chat shows it as answered. An answer that fails keeps what you wrote.
+- The job panel follows a working job's steps every few seconds, names the job's model in its title, and downloads the whole transcript as Markdown with **Download Transcript**. A zero cost, which subscription providers report, no longer shows.
+- Group chats catch up with the web app. Deleting a group asks first, from its context menu or from a new **Delete Group…** in the editor, and a failed deletion reopens the group. Bot messages show source links for the pages their turn read instead of inline citations. Turns that only called tools no longer leave an empty bubble, a failed turn of a deleted bot still shows, replying to a bot names it instead of "Agent", group names stop at 80 characters, and an empty **Group Chats** section says what to do next.
+- `BotDesktopSession` moves to apfelkern. The bot desktop window offers **Take Control** only once the server has reported who holds control, disables **Reconnect** while connecting, and hands back a take that the server confirms after the window closed.
+- Bots show the avatar stored on the server, rendered with Open Bot Avatar, instead of a face seeded from their ID. The bot editor gains the web app's avatar editor: body and eye colors, a gallery of 22 shapes, **Import** of a definition's JSON, and **Generate**, which copies a design prompt. The choice saves when you create or update a bot.
+- As on the web and iOS, only paused bots show as sleeping, dimmed and still. Bots you aren't viewing used to sleep too; in the sidebar they now hold still at full strength, and only the open and working bots animate.
+- Remove the `AvatarPlayground` target and the `--finishes`, `--snapshot`, and benchmark commands; they only exercised the old renderer.
 - Sign in with account email and password in Settings; the app stores the returned session.
-- Build against bot contract 6.0.0. The bearer token must be an account session token from `POST /api/auth/sign-in/email`; the old server token is rejected. Until avatars move to the new definition, bots render from their ID and the avatar picker does not save.
+- Build against bot contract 6.0.0. The bearer token must be an account session token from `POST /api/auth/sign-in/email`; the old server token is rejected.
 - CI runs SwiftLint in its own job, beside the tests.
 - New bots start with **Memory**, **Schedule tasks**, **Message other bots**, and **Code mode** on, and may message every existing bot. The profile's capability toggles each carry a one-line description instead of one long footer.
 - **Skills** and **Integrations** show one list instead of a **Shared** section plus one per bot; each row names its scope. **New Skill** (formerly **New Shared Skill**) and **Add MCP Server** (formerly **Add Shared MCP Server**) choose the scope in the form.

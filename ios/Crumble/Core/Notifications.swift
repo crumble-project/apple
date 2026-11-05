@@ -14,8 +14,12 @@ func notification(for event: ActivityEvent, in context: NotificationContext) -> 
   switch event.type {
   case "reply":
     guard event.origin != "bot" else { return nil }
-    if context.appActive, context.route == .agent(event.agentId) { return nil }
     let text = preview(event.preview ?? "")
+    if let group = event.groupId {
+      if context.appActive, context.route == .group(group) { return nil }
+      return (event.groupTitle, text.isEmpty ? "Replied" : text)
+    }
+    if context.appActive, context.route == .agent(event.agentId) { return nil }
     return (event.agentName, text.isEmpty ? "Replied" : text)
   default:
     return nil
@@ -73,7 +77,7 @@ struct NotificationPayload: Sendable {
 
 /// Retains a cold-launch destination until both server identity and agents are available.
 struct NotificationTapRouter {
-  enum Resolution: Equatable { case open(String), differentServer }
+  enum Resolution: Equatable { case open(String), openGroup(String), openDesktop(String), differentServer }
   private var pending: NotificationPayload?
 
   mutating func queue(_ payload: NotificationPayload) {
@@ -90,9 +94,16 @@ struct NotificationTapRouter {
       pending = nil
       return .differentServer
     }
+    // A group outlives the bot that answered in it, so wait only for the bot list to load.
+    if let group = event.groupId {
+      guard !agentIDs.isEmpty else { return nil }
+      pending = nil
+      return .openGroup(group)
+    }
     guard agentIDs.contains(event.agentId) else { return nil }
     pending = nil
-    return .open(event.agentId)
+    // A desktop job's report usually needs the owner on the bot desktop.
+    return event.origin == DesktopJob.originKind ? .openDesktop(event.agentId) : .open(event.agentId)
   }
 }
 
@@ -175,6 +186,10 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
     switch tapRouter.resolve(
       serverID: push.serverID, serverURL: model.client?.baseURL, agentIDs: model.agents.map(\.id)) {
     case .open(let agentID): model.selectAgent(agentID)
+    case .openGroup(let groupID): model.openNotificationGroup(groupID)
+    case .openDesktop(let agentID):
+      model.selectAgent(agentID)
+      model.botDesktop = BotDesktopTarget(id: agentID)
     case .differentServer: model.showNotice("This notification belongs to a different server.")
     case nil: break
     }
@@ -200,8 +215,11 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
     info["eventId"] = event.eventId
     info["serverId"] = event.serverId
     info["origin"] = event.origin
+    info["groupId"] = event.groupId
+    info["groupName"] = event.groupName
     content.userInfo = info
-    center.add(UNNotificationRequest(identifier: "reply-\(event.agentId)", content: content, trigger: nil))
+    let identifier = event.groupId.map { "reply-group-\($0)" } ?? "reply-\(event.agentId)"
+    center.add(UNNotificationRequest(identifier: identifier, content: content, trigger: nil))
   }
 
   private func presentation(for payload: NotificationPayload) -> UNNotificationPresentationOptions {

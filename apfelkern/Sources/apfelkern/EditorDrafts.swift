@@ -28,8 +28,7 @@ public struct AgentDraft: Identifiable, Sendable {
   public var provider = "melious"
   public var model = ""
   public var instructions = "You are a thoughtful, capable personal assistant."
-  public var avatar = "bot:" + newRequestID()
-  public var avatarChoices: [String] = []
+  public var avatar = BotAvatarDefinition.default(for: newRequestID())
   public var thinking = "off"
   public var temperature = ""
   public var maxOutput = ""
@@ -48,12 +47,6 @@ public struct AgentDraft: Identifiable, Sendable {
   public var skills: [Skill] = []
   public var sharedSkills: Set<String> = []
 
-  /// Offers new bots to pick from, keeping the current one first.
-  public mutating func shuffleAvatars() {
-    avatarChoices = [agentAvatarSeed(Agent(id: agentID, avatar: avatar))]
-    while avatarChoices.count < 7 { avatarChoices.append(newRequestID()) }
-  }
-
   public init(
     isNew: Bool,
     agentID: String,
@@ -63,8 +56,7 @@ public struct AgentDraft: Identifiable, Sendable {
     provider: String = "melious",
     model: String = "",
     instructions: String = "You are a thoughtful, capable personal assistant.",
-    avatar: String = "bot:" + newRequestID(),
-    avatarChoices: [String] = [],
+    avatar: BotAvatarDefinition = .default(for: newRequestID()),
     thinking: String = "off",
     temperature: String = "",
     maxOutput: String = "",
@@ -91,7 +83,6 @@ public struct AgentDraft: Identifiable, Sendable {
     self.model = model
     self.instructions = instructions
     self.avatar = avatar
-    self.avatarChoices = avatarChoices
     self.thinking = thinking
     self.temperature = temperature
     self.maxOutput = maxOutput
@@ -108,6 +99,23 @@ public struct AgentDraft: Identifiable, Sendable {
     self.mcpServers = mcpServers
     self.skills = skills
     self.sharedSkills = sharedSkills
+  }
+
+  /// The bot's tools after saving: the toggles, plus the `stored` tools set elsewhere that have no toggle.
+  public func tools(keeping stored: [String]) -> [String] {
+    let toggles = [
+      ("memory", toolsMemory), ("delegate", toolsDelegate), ("schedule", toolsSchedule),
+      ("codemode", toolsCodemode), ("coding", toolsCoding), (DesktopJob.toolName, toolsDesktop)
+    ]
+    let toggled = Set(toggles.map(\.0))
+    return toggles.filter(\.1).map(\.0) + stored.filter { !toggled.contains($0) }
+  }
+
+  /// Both fields set picks a model for desktop jobs; otherwise they use the bot's own model.
+  public var desktopModelChoice: DesktopModel? {
+    let provider = desktopProvider.trimmingCharacters(in: .whitespaces)
+    let model = desktopModel.trimmingCharacters(in: .whitespaces)
+    return provider.isEmpty || model.isEmpty ? nil : DesktopModel(provider: provider, model: model)
   }
 }
 

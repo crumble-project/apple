@@ -5,6 +5,7 @@ import UIKit
 struct MessageView: View {
   @Environment(AppModel.self) private var model
   let message: Message
+  var reactions: [String] = []
 
   private var replyable: Bool {
     !(message.entryId ?? "").isEmpty && (message.role == "user" || message.role == "assistant")
@@ -16,8 +17,20 @@ struct MessageView: View {
     case "event":
       if message.kind == "bot-message" {
         BotMessageView(message: message)
+      } else if message.kind == JobQuestionEvent.messageKind, let question = message.jobQuestion {
+        HStack {
+          JobQuestionCard(question: question, text: message.text)
+          Spacer(minLength: 24)
+        }
       } else {
         EventView(message: message)
+      }
+    case "toolResult":
+      if let job = Job(message: message) {
+        HStack {
+          JobCard(job: model.job(job))
+          Spacer(minLength: 24)
+        }
       }
     case "user":
       HStack(spacing: 6) {
@@ -62,6 +75,10 @@ struct MessageView: View {
           .textSelection(.enabled)
           .bubble(owner: owner)
           .contextMenu { menu }
+          .overlay(alignment: .bottomLeading) {
+            if !reactions.isEmpty { ReactionBadge(reactions: reactions).offset(x: -8, y: 16) }
+          }
+          .padding(.bottom, reactions.isEmpty ? 0 : 14)
       }
       deliveryStatus
     }

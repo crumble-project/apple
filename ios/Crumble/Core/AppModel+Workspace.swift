@@ -5,6 +5,7 @@ extension AppModel {
   // MARK: Workspace panels
 
   func openPanel(_ panel: Route) {
+    leaveGroup()
     route = panel
     memoryDraft = nil
     taskDraft = nil

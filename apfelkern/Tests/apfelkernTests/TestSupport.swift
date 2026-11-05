@@ -58,8 +58,8 @@ func requestJSON(_ request: URLRequest) throws -> JSONValue {
 }
 
 func withClient(
-  token: String = "test-token", handler: @escaping ContractURLProtocol.Handler,
-  test: (APIClient) async throws -> Void
+  token: String = "test-token", isolation: isolated (any Actor)? = #isolation,
+  handler: @escaping ContractURLProtocol.Handler, test: (APIClient) async throws -> Void
 ) async throws {
   let host = UUID().uuidString.lowercased() + ".invalid"
   ContractURLProtocol.handlers.withLock { $0[host] = handler }

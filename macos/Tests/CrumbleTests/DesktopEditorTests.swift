@@ -26,6 +26,23 @@ extension APIClientTests {
         #expect(model.offersDesktop(for: plain))
     }
 
+    @MainActor @Test func theEditorSavesTheChosenAvatar() async throws {
+        nonisolated(unsafe) var sent: [String: Any]?
+        let model = AppModel(client: StubProtocol.client { request in
+            guard request.httpMethod == "PATCH" else { return (404, "") }
+            sent = try? JSONSerialization.jsonObject(with: request.httpBody ?? Data()) as? [String: Any]
+            return (200, agentFixture(#"{"id":"a1","name":"Desk","enabled":true,"tools":[]}"#))
+        })
+        model.agents = [Agent(id: "a1", name: "Desk", tools: [])]
+        model.openEditor(agentID: "a1")
+        #expect(model.agentDraft?.avatar == model.agents[0].avatar)
+        model.agentDraft?.avatar.color = "#1fbf68"
+        let patch = try await saveAndCapturePatch(model) { sent }
+        let avatar = try #require(patch["avatar"] as? [String: Any])
+        #expect(avatar["color"] as? String == "#1fbf68")
+        #expect((avatar["definition"] as? [String: Any])?["id"] as? String == model.agents[0].avatar.definition.id)
+    }
+
     @MainActor @Test func theEditorSavesTheDesktopToolAndModel() async throws {
         nonisolated(unsafe) var sent: [String: Any]?
         let model = AppModel(client: StubProtocol.client { request in

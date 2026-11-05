@@ -32,6 +32,7 @@ extension AppModel {
 
   /// Re-sends a failed optimistic row with its original idempotency key and attachments.
   func retryMessage(_ message: Message) {
+    guard selectedGroupID.isEmpty else { return retryGroupMessage(message) }
     guard message.deliveryState == .failed, let requestID = message.requestId, let client,
       let record = delivery.beginRetry(botID: selectedAgentID, requestID: requestID)
     else { return }
@@ -144,7 +145,7 @@ extension AppModel {
   func attachmentImage(message: Message, index: Int) -> UIImage? {
     if let entryID = message.entryId { return attachmentImage(entryID: entryID, index: index) }
     guard let requestID = message.requestId,
-      let data = delivery.imageData(botID: selectedAgentID, requestID: requestID, index: index)
+      let data = delivery.imageData(botID: conversationKey, requestID: requestID, index: index)
     else { return nil }
     return UIImage(data: data)
   }
@@ -154,8 +155,11 @@ extension AppModel {
     guard attachmentImages[key] == nil, let client else { return }
     guard !entryID.hasPrefix("local:") else { return }
     let agent = selectedAgentID
-    guard let data = try? await client.attachment(agent, entryID: entryID, index: index),
-      let image = UIImage(data: data)
+    let group = selectedGroupID
+    let data = group.isEmpty
+      ? try? await client.attachment(agent, entryID: entryID, index: index)
+      : try? await client.groupAttachment(group, entryID: entryID, index: index)
+    guard let data, let image = UIImage(data: data)
     else { return }
     cacheAttachmentImage(image, key: key)
   }

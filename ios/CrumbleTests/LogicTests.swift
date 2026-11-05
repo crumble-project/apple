@@ -1,5 +1,4 @@
 import apfelkern
-import BotAvatar
 import Foundation
 import ImageIO
 import Testing
@@ -76,18 +75,6 @@ struct LogicTests {
     let id = newRequestID()
     #expect(UUID(uuidString: id) != nil)
     #expect(id.split(separator: "-").count == 5)
-  }
-
-  @Test func avatarSeedsAcceptLegacyValues() {
-    let cases = [
-      "bot:violet": "violet", "critters:violet": "violet", "sparkles": "a1", "😀": "a1", "": "a1"
-    ]
-    for (avatar, seed) in cases {
-      #expect(agentAvatarSeed(Agent(id: "a1", avatar: avatar)) == seed)
-    }
-    let first = BotLook(seed: "agent-seed")
-    let repeated = BotLook(seed: "agent-seed")
-    #expect(first == repeated)
   }
 
   @Test func chatHidesToolActivity() {

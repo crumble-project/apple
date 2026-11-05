@@ -18,7 +18,6 @@ struct CrumbleApp: App {
         Window("Crumble", id: "main") {
             ContentView()
                 .environment(model)
-                .environment(\.botFinish, .dither)
                 .frame(minWidth: 860, minHeight: 560)
                 .task { model.start() }
         }
@@ -34,7 +33,7 @@ struct CrumbleApp: App {
         // A plain window rather than a Settings scene: those lay their toolbar out as a row of tabs
         // under the title, which leaves a split view with an empty band across the top.
         Window("Settings", id: SettingsButton.windowID) {
-            SettingsView().environment(model).environment(\.botFinish, .dither)
+            SettingsView().environment(model)
         }
         .windowResizability(.contentMinSize)
         .defaultSize(width: 800, height: 680)
@@ -124,6 +123,12 @@ struct SidebarView: View {
                         .tag(Route.group(group.id))
                         .disabled(model.pendingMutations.contains("group:\(group.id)") || group.id.hasPrefix("local:"))
                 }
+                if model.groupChats.isEmpty {
+                    Text(model.agents.count < GroupDraft.memberRange.lowerBound
+                        ? "Create two bots to start a group chat" : "No group chats yet")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
             } header: {
                 HStack {
                     Text("Group Chats")
@@ -176,7 +181,10 @@ struct AgentRow: View {
 
     var body: some View {
         HStack(spacing: 11) {
-            BotAvatarView(agent: agent, size: 38, state: model.botState(agent), live: true)
+            let state = model.botState(agent)
+            // Only the open and working bots animate: a long sidebar shouldn't repaint every bot.
+            BotAvatarView(
+                agent: agent, size: 38, state: state, live: state == .working || model.route == .agent(agent.id))
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(agent.name)

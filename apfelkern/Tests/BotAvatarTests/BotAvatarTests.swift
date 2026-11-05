@@ -1,16 +1,20 @@
+import apfelkern
+import OpenBotAvatar
+import OpenBotAvatarUI
 import Testing
 
 @testable import BotAvatar
 
 struct BotAvatarTests {
-  @Test func workingHopSquashesOncePerLandingAndOnlyOnTheGround() {
-    let samples = stride(from: 0.2, to: 1.1, by: 0.004).map { BotPose.working(at: $0) }
-    let dips = samples.indices.dropFirst().dropLast().filter {
-      samples[$0].scaleY < samples[$0 - 1].scaleY && samples[$0].scaleY <= samples[$0 + 1].scaleY
-    }.count
-    for pose in samples where pose.scaleY < 1 {
-      #expect(pose.lift == 0)
-    }
-    #expect(dips == 1)
+  @Test func onlyWorkingBotsThink() {
+    #expect(BotState.working.mood == .thinking)
+    #expect(BotState.idle.mood == .idle)
+    #expect(BotState.sleeping.mood == .idle)
+  }
+
+  @Test func bodyColorFallsBackForAnInvalidColor() {
+    var avatar = BotAvatarDefinition.default(for: "bot")
+    avatar.color = "orange"
+    #expect(avatar.bodyColor == .init(AvatarColor.defaultBody))
   }
 }

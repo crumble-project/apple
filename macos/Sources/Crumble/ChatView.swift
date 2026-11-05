@@ -49,9 +49,7 @@ enum ChatRow: Identifiable {
         case "toolResult":
             return DisplayComponent(message: message) != nil || Job(message: message) != nil
         case "user":
-            // A job's report is behind its card; the bot relays what matters.
-            let jobReport = JobKind.allCases.contains { $0.originKind == message.origin?.kind }
-            guard !jobReport else { return false }
+            guard !JobKind.isReport(message) else { return false }
             return !message.text.isEmpty || !(message.attachments ?? []).isEmpty
         case "event":
             return !message.text.isEmpty
@@ -108,6 +106,7 @@ struct ChatView: View {
         .overlay {
             if rows.isEmpty { EmptyChatView(agent: agent) }
         }
+        .task(id: model.jobPollDelay) { await model.watchJobs() }
         .background(alignment: .top) {
             DitherGlow(color: agent.color).frame(height: 150).ignoresSafeArea(edges: .top)
         }

@@ -51,22 +51,19 @@ private struct BotDesktopContent: View {
         }
         .toolbar {
             ToolbarItem(placement: .status) {
-                Text(session.holder == .owner ? "You have control" : "The bot has control")
+                Text(session.controlLabel ?? "")
                     .foregroundStyle(.secondary)
             }
             .sharedBackgroundVisibility(.hidden)
             ToolbarItem(placement: .primaryAction) {
                 Button("Reconnect", systemImage: "arrow.clockwise") { session.reconnect() }
                     .help("Reconnect")
+                    .disabled(session.connecting)
             }
             ToolbarItem(placement: .primaryAction) { controlButton }
         }
         .onAppear { session.connect() }
-        // Control left with a closed window would keep the bot's job paused with nobody watching.
-        .onDisappear {
-            if session.holder == .owner { session.handBack() }
-            session.close()
-        }
+        .onDisappear { session.leave() }
     }
 
     @ViewBuilder private var controlButton: some View {

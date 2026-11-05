@@ -21,7 +21,7 @@ func notification(for event: ActivityEvent, in context: NotificationContext) -> 
         let text = preview(event.preview ?? "")
         if let group = event.groupId {
             if context.windowOnScreen, context.route == .group(group) { return nil }
-            return ("\(event.agentName) in \(event.groupName ?? "a group chat")", text.isEmpty ? "Replied" : text)
+            return (event.groupTitle, text.isEmpty ? "Replied" : text)
         }
         if context.windowOnScreen, context.route == .agent(event.agentId) { return nil }
         guard let kind = JobKind.allCases.first(where: { $0.originKind == event.origin }) else {

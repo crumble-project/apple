@@ -17,6 +17,11 @@ struct MessageView: View {
         case "event":
             if message.kind == "bot-message" {
                 BotMessageView(message: message)
+            } else if message.kind == JobQuestionEvent.messageKind, let question = message.jobQuestion {
+                HStack {
+                    JobQuestionCard(question: question, text: message.text)
+                    Spacer(minLength: 56)
+                }
             } else {
                 EventView(message: message)
             }

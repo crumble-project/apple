@@ -61,6 +61,7 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
   public var replyPreview: String?
   public var origin: MessageOrigin?
   public var communication: BotCommunication?
+  public var jobQuestion: JobQuestionEvent?
   public var timestamp: Int64?
   public var createdAt: String?
   public var attachments: [AttachmentInfo]?
@@ -71,16 +72,18 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
   public var toolDetails: JSONValue?
   /// The idempotency key echoed by the server for owner messages.
   public var requestId: String?
+  /// In a group chat, the pages the sending bot searched or read in the turn that wrote the message.
+  public var sources: [MessageSource]?
   public var deliveryState: MessageDeliveryState
 
   public init(
     id: String, entryId: String? = nil, role: String, content: JSONValue? = nil,
     blocks: JSONValue? = nil, kind: String? = nil,
     replyTo: String? = nil, replyPreview: String? = nil, origin: MessageOrigin? = nil,
-    communication: BotCommunication? = nil, timestamp: Int64? = nil,
+    communication: BotCommunication? = nil, jobQuestion: JobQuestionEvent? = nil, timestamp: Int64? = nil,
     attachments: [AttachmentInfo]? = nil, toolName: String? = nil, toolCallId: String? = nil,
     isError: Bool? = nil,
-    toolDetails: JSONValue? = nil, requestId: String? = nil,
+    toolDetails: JSONValue? = nil, requestId: String? = nil, sources: [MessageSource]? = nil,
     deliveryState: MessageDeliveryState = .confirmed
   ) {
     self.id = id
@@ -93,6 +96,7 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
     self.replyPreview = replyPreview
     self.origin = origin
     self.communication = communication
+    self.jobQuestion = jobQuestion
     self.timestamp = timestamp
     self.attachments = attachments
     self.toolName = toolName
@@ -100,6 +104,7 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
     self.isError = isError
     self.toolDetails = toolDetails
     self.requestId = requestId
+    self.sources = sources
     self.deliveryState = deliveryState
   }
 
@@ -115,6 +120,7 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
     replyPreview = try container.decodeIfPresent(String.self, forKey: .replyPreview)
     origin = try container.decodeIfPresent(MessageOrigin.self, forKey: .origin)
     communication = try container.decodeIfPresent(BotCommunication.self, forKey: .communication)
+    jobQuestion = try container.decodeIfPresent(JobQuestionEvent.self, forKey: .jobQuestion)
     timestamp = try container.decodeIfPresent(Int64.self, forKey: .timestamp)
     createdAt = try container.decodeIfPresent(String.self, forKey: .createdAt)
     attachments = try container.decodeIfPresent([AttachmentInfo].self, forKey: .attachments)
@@ -123,6 +129,7 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
     isError = try container.decodeIfPresent(Bool.self, forKey: .isError)
     toolDetails = try container.decodeIfPresent(JSONValue.self, forKey: .toolDetails)
     requestId = try container.decodeIfPresent(String.self, forKey: .requestId)
+    sources = try container.decodeIfPresent([MessageSource].self, forKey: .sources)
     deliveryState =
       try container.decodeIfPresent(MessageDeliveryState.self, forKey: .deliveryState) ?? .confirmed
   }

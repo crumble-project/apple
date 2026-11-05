@@ -17,15 +17,12 @@ enum Palette {
 extension Agent {
     /// The body color of the bot's avatar, for touches that should feel like the bot.
     var color: Color {
-        let value = UInt32(BotLook(seed: agentAvatarSeed(self)).hex.dropFirst(), radix: 16) ?? 0
-        return Color(
-            red: Double(value >> 16 & 0xFF) / 255, green: Double(value >> 8 & 0xFF) / 255,
-            blue: Double(value & 0xFF) / 255)
+        avatar.bodyColor
     }
 }
 
 /// A pixel-art glow in the bot's color hanging from the top edge, quantized into a few tones with
-/// the same 4×4 ordered dither the avatars use. Its lower edge is an arch: deepest at the sides and
+/// a 4×4 ordered dither. Its lower edge is an arch: deepest at the sides and
 /// rising to `peak` points in the middle, so whatever sits there stays clear.
 struct DitherGlow: View {
     let color: Color

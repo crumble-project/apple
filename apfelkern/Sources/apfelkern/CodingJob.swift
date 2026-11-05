@@ -27,15 +27,23 @@ public struct CodingJob: Codable, Identifiable, Hashable, Sendable {
   public var conversationId: String
   public var status: String
   public var usage: JobUsage?
+  public var model: DesktopModel?
+  /// What the job asked the owner and waits on.
+  public var question: JobQuestion?
 
   public var id: String { name }
   public var isWorking: Bool { status == "working" }
 
-  public init(name: String, conversationId: String, status: String, usage: JobUsage? = nil) {
+  public init(
+    name: String, conversationId: String, status: String, usage: JobUsage? = nil,
+    model: DesktopModel? = nil, question: JobQuestion? = nil
+  ) {
     self.name = name
     self.conversationId = conversationId
     self.status = status
     self.usage = usage
+    self.model = model
+    self.question = question
   }
 
   /// The job a successful `coding` tool result names; nil for status listings and other messages.
@@ -51,6 +59,40 @@ public struct CodingJob: Codable, Identifiable, Hashable, Sendable {
 }
 
 public typealias CodingJobsResponse = Components.Schemas.CodingJobs
+
+/// A question a coding job waits on until its reporter or the owner answers.
+public struct JobQuestion: Codable, Identifiable, Hashable, Sendable {
+  public var id: String
+  public var text: String
+  /// Answers the owner can pick; any other text is an answer too.
+  public var options: [String]?
+  /// Whether several options can be picked; the answer lists each.
+  public var multiple: Bool?
+
+  public var allowsMultiple: Bool { multiple == true }
+
+  public init(id: String, text: String, options: [String]? = nil, multiple: Bool? = nil) {
+    self.id = id
+    self.text = text
+    self.options = options
+    self.multiple = multiple
+  }
+}
+
+/// On a `job-question` event: the job that asked. Whether it still waits is the job's listing.
+public struct JobQuestionEvent: Codable, Hashable, Sendable {
+  public static let messageKind = "job-question"
+
+  public var id: String
+  public var kind: String
+  public var job: String
+
+  public init(id: String, kind: String, job: String) {
+    self.id = id
+    self.kind = kind
+    self.job = job
+  }
+}
 
 /// One readable step of a coding job's history.
 public enum CodingJobItem: Identifiable, Hashable, Sendable {

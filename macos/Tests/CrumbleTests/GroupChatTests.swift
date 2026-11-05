@@ -114,6 +114,36 @@ extension APIClientTests {
         #expect(model.messages.first?.deliveryState == .confirmed)
     }
 
+    @MainActor @Test func retryingAFailedGroupMessageClearsTheDraftItRestored() async {
+        var attempts = 0
+        let model = AppModel(client: StubProtocol.client { request in
+            switch request.url?.path {
+            case "/v1/group-chats/trip/chat": return (200, groupSnapshotFixture)
+            case "/v1/group-chats/trip/events": return (200, "")
+            case "/v1/group-chats/trip/messages":
+                attempts += 1
+                return attempts == 1 ? (500, #"{"error":"busy"}"#) : (201, #"{"requestId":"r","entryId":"trip:1"}"#)
+            default: return (404, "")
+            }
+        })
+        defer { model.leaveGroup() }
+        model.groupChats = [trip]
+        model.selectGroup("trip")
+        await waitFor { model.groupSnapshot != nil }
+
+        model.draft = "Who packs the tent?"
+        await model.sendGroupMessage()?.value
+        #expect(model.draft == "Who packs the tent?")
+        guard let failed = model.messages.first(where: { $0.deliveryState == .failed }) else {
+            Issue.record("Missing failed message")
+            return
+        }
+
+        model.retryMessage(failed)
+        #expect(model.draft.isEmpty)
+        await waitFor { !model.sending }
+    }
+
     @MainActor @Test func openingABotChatClosesTheGroup() async {
         let model = AppModel(client: StubProtocol.client { request in
             switch request.url?.path {
@@ -154,6 +184,27 @@ extension APIClientTests {
         model.selectGroup("trip")
         await waitFor { model.messages.contains { $0.text == "From the stream" } }
         #expect(model.messages.map(\.text) == ["From the stream"])
+    }
+
+    @MainActor @Test func aFailedDeletionReopensTheGroup() async {
+        let model = AppModel(client: StubProtocol.client { request in
+            switch (request.httpMethod, request.url?.path) {
+            case ("DELETE", "/v1/group-chats/trip"): (500, #"{"error":"busy"}"#)
+            case (_, "/v1/group-chats/trip/chat"): (200, groupSnapshotFixture)
+            case (_, "/v1/group-chats/trip/events"): (200, "")
+            default: (404, "")
+            }
+        })
+        defer { model.leaveGroup() }
+        model.groupChats = [trip]
+        model.selectGroup("trip")
+        await waitFor { model.groupSnapshot != nil }
+        model.deleteGroup("trip")
+        #expect(model.groupChats.isEmpty)
+        #expect(model.route == nil)
+        await waitFor { model.errorText.contains("busy") && model.groupSnapshot != nil }
+        #expect(model.groupChats.map(\.id) == ["trip"])
+        #expect(model.route == .group("trip"))
     }
 
     @MainActor @Test func aSlowGroupCreationDoesNotTakeOverNewerNavigation() async {

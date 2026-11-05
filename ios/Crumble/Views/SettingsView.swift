@@ -1,6 +1,7 @@
+import apfelkern
 import SwiftUI
 
-/// Server connection and provider API keys.
+/// Server connection, provider API keys, and provider account sign-ins.
 struct SettingsView: View {
   private var serverSection: some View {
     @Bindable var model = model
@@ -70,35 +71,70 @@ struct SettingsView: View {
   private var providerSection: some View {
     @Bindable var model = model
     let configured = model.providers.filter(\.configured).map(\.provider)
+    let status = model.providers.first { $0.provider == model.provider }
+    let busy = model.pendingMutations.contains("provider:\(model.provider)")
+    let offersKey = status.map { $0.authMethods.contains { $0.type == .apiKey } } ?? true
+    let accountMethods = status?.authMethods.filter { $0.type == .oauth } ?? []
     return Section {
       if model.client?.token.isEmpty != false {
         Text("Save a server connection above before managing provider keys.")
           .foregroundStyle(.secondary)
       }
       providerPicker
-      SecureField(
-        "Provider API key", text: $model.providerKey, prompt: Text("Provider API key")
-      )
-      .accessibilityLabel("Provider API key")
+      if let credential = status?.credentialType {
+        LabeledContent("Saved", value: credential == .oauth ? "Account sign-in" : "API key")
+      }
+      if offersKey {
+        SecureField(
+          "Provider API key", text: $model.providerKey, prompt: Text("Provider API key")
+        )
+        .accessibilityLabel("Provider API key")
+      }
       HStack {
-        Button("Save Key") { model.saveProviderKey() }
-        Button("Remove Key", role: .destructive) { model.removeProviderKey() }
-        if model.pendingMutations.contains("provider:\(model.provider)") {
+        if offersKey { Button("Save Key") { model.saveProviderKey() } }
+        Button(status?.credentialType == .oauth ? "Sign Out" : "Remove Key", role: .destructive) {
+          model.removeProviderKey()
+        }
+        if busy {
           ProgressView()
           Text("Updating key…").foregroundStyle(.secondary)
         }
       }
-      .disabled(model.pendingMutations.contains("provider:\(model.provider)"))
+      .disabled(busy)
+      providerLogin(accountMethods)
     } header: {
-      Text("Provider API Keys")
+      Text("Providers")
     } footer: {
       Text(
         (configured.isEmpty ? "" : "Configured: " + configured.joined(separator: ", ") + ". ")
-          + "Keys are stored encrypted on your server."
+          + "Keys and account sign-ins are stored encrypted on your server and shared by its bots."
       )
       .foregroundStyle(.secondary)
     }
     .disabled(model.client?.token.isEmpty != false)
+  }
+
+  @ViewBuilder
+  private func providerLogin(_ methods: [ProviderLoginMethod]) -> some View {
+    let provider = model.provider
+    if let login = model.providerLogins[provider] {
+      ProviderLoginView(login: login).id(login.id)
+    } else if !methods.isEmpty {
+      let starting = model.providerLoginRequests.contains(provider)
+      ForEach(methods, id: \.label) { method in
+        Button(method.label) { model.startProviderLogin(provider, method: method.type) }
+      }
+      .disabled(starting)
+      if starting {
+        HStack {
+          ProgressView()
+          Text("Starting sign-in…").foregroundStyle(.secondary)
+        }
+      }
+    }
+    if let outcome = model.providerLoginOutcomes[provider] {
+      Text(outcome).foregroundStyle(.red)
+    }
   }
 
   @Environment(AppModel.self) private var model

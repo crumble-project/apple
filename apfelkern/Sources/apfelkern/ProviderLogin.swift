@@ -111,6 +111,14 @@ public struct ProviderLogin: Identifiable, Hashable, Sendable {
     }
   }
 
+  /// The latest progress the provider reported, or what the sign-in waits on.
+  public var progressText: String {
+    for event in events.reversed() {
+      if case let .progress(message) = event { return message }
+    }
+    return prompt == nil ? "Waiting for the provider…" : "Waiting for your answer…"
+  }
+
   init(wire: Components.Schemas.ProviderLoginSession) {
     id = wire.id
     provider = wire.provider

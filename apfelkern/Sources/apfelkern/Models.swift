@@ -69,7 +69,7 @@ public struct Agent: Codable, Identifiable, Hashable, Sendable {
   public var name: String
   public var description: String?
   public var instructions: String?
-  public var avatar: String?
+  public var avatar: BotAvatarDefinition
   public var enabled: Bool
   public var provider: String?
   public var model: String?
@@ -86,7 +86,7 @@ public struct Agent: Codable, Identifiable, Hashable, Sendable {
 
   public init(
     id: String = "", name: String = "", description: String? = nil, instructions: String? = nil,
-    avatar: String? = nil,
+    avatar: BotAvatarDefinition? = nil,
     enabled: Bool = true, provider: String? = nil, model: String? = nil, tools: [String]? = nil,
     delegates: [String]? = nil, skills: [Skill]? = nil, sharedSkills: [String]? = nil,
     sharedMemory: Bool? = nil,
@@ -97,7 +97,7 @@ public struct Agent: Codable, Identifiable, Hashable, Sendable {
     self.name = name
     self.description = description
     self.instructions = instructions
-    self.avatar = avatar
+    self.avatar = avatar ?? .default(for: id)
     self.enabled = enabled
     self.provider = provider
     self.model = model
@@ -118,7 +118,7 @@ public struct Agent: Codable, Identifiable, Hashable, Sendable {
     name = try container.decodeIfPresent(String.self, forKey: .name) ?? ""
     description = try container.decodeIfPresent(String.self, forKey: .description)
     instructions = try container.decodeIfPresent(String.self, forKey: .instructions)
-    avatar = try container.decodeIfPresent(String.self, forKey: .avatar)
+    avatar = try container.decode(BotAvatarDefinition.self, forKey: .avatar)
     enabled = try container.decodeIfPresent(Bool.self, forKey: .enabled) ?? false
     provider = try container.decodeIfPresent(String.self, forKey: .provider)
     model = try container.decodeIfPresent(String.self, forKey: .model)

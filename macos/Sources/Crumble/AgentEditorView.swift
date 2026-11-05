@@ -55,32 +55,11 @@ struct AgentEditorView: View {
     private var avatarSection: some View {
         Section {
             VStack(spacing: 8) {
-                BotAvatarView(
-                    seed: agentAvatarSeed(Agent(id: draft.agentID, avatar: draft.avatar)), size: 96, live: true)
+                BotAvatarView(avatar: draft.avatar, size: 96, live: true)
                 Text(draft.name.trimmingCharacters(in: .whitespaces).nilIfEmpty ?? "New Agent").font(.title2.bold())
-                HStack(spacing: 6) {
-                    ForEach(draft.avatarChoices, id: \.self) { seed in
-                        Button {
-                            draft.avatar = "bot:" + seed
-                        } label: {
-                            BotAvatarView(seed: seed, size: 36)
-                                .padding(3)
-                                .overlay {
-                                    if draft.avatar == "bot:" + seed {
-                                        RoundedRectangle(cornerRadius: 10).strokeBorder(.tint, lineWidth: 2)
-                                    }
-                                }
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("Choose this avatar")
-                    }
-                    Button("More Avatars", systemImage: "shuffle") { draft.shuffleAvatars() }
-                        .labelStyle(.iconOnly)
-                        .buttonStyle(.borderless)
-                        .help("More avatars")
-                }
             }
             .frame(maxWidth: .infinity)
+            BotAvatarEditor(value: $draft.avatar)
         }
     }
 

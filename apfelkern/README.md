@@ -5,7 +5,7 @@ Shared Swift package for the Crumble macOS and iOS apps. Requires Swift 6.2+ and
 ## Libraries
 
 - **`apfelkern`:** Generated OpenAPI and SSE client (`Sources/apfelkern/Generated`), custom `URLSession` transport with per-operation timeouts (`ContractTransport.swift`), domain models, drafts, and optimistic chat delivery (`BotChatDelivery`). Contains no SwiftUI, AppKit, or UIKit code.
-- **`BotAvatar`:** SwiftUI and Core Animation bot avatars with seeded motion and body finishes (`dither`, `glossy`, `matte`, `halftone`, `grain`, `outline`). Adapted from MIT-licensed work ([THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)); keep changes aligned with Android's `BotAvatar.kt`.
+- **`BotAvatar`:** SwiftUI bot avatars and the shared `BotAvatarEditor`, on top of [Open Bot Avatar for Swift](https://github.com/cheetahbyte/open-bot-avatar-swift), pinned by revision ([THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)).
 
 ## Update the API contract
 

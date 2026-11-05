@@ -19,14 +19,6 @@ Defaults to `http://127.0.0.1:7337`. Enter the server URL, email, and password i
 CRUMBLE_URL="http://127.0.0.1:7338" CRUMBLE_TOKEN="REPLACE_WITH_TOKEN" swift run Crumble
 ```
 
-Preview and snapshot bot avatars with the playground:
-
-```bash
-swift run AvatarPlayground
-swift run AvatarPlayground --finishes finishes.png
-swift run AvatarPlayground --snapshot avatars.png 0.3
-```
-
 ## Build and verify
 
 ```bash

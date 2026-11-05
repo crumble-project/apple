@@ -3,11 +3,29 @@ import PhotosUI
 import SwiftUI
 import UniformTypeIdentifiers
 
+extension ComposerTarget {
+  /// A bot chat: mentions complete to the bots the bot may message.
+  @MainActor static func chat(_ agent: Agent, model: AppModel) -> ComposerTarget {
+    ComposerTarget(
+      placeholder: agent.enabled
+        ? "Message \(agent.name)" : "\(agent.name) is paused. Enable it in its profile.",
+      enabled: agent.enabled,
+      mentionable: model.agents.filter {
+        $0.enabled && $0.id != agent.id && (agent.delegates ?? []).contains($0.id)
+          && (agent.tools ?? []).contains("delegate")
+      },
+      running: model.snapshot?.isRunning == true,
+      stopHelp: "Stop the current run",
+      send: { model.sendMessage() },
+      stop: { model.abortChat() })
+  }
+}
+
 struct Composer: View {
   /// The height of the message field and the attach button beside it.
   static let height: CGFloat = 44
   @Environment(AppModel.self) private var model
-  let agent: Agent
+  let target: ComposerTarget
   @FocusState private var focused: Bool
   @State private var selection: TextSelection?
   @State private var selectedMention = 0
@@ -51,7 +69,7 @@ struct Composer: View {
       importPhotos(items)
     }
     .dropDestination(for: URL.self) { urls, _ in
-      guard agent.enabled else { return false }
+      guard target.enabled else { return false }
       model.addAttachments(urls)
       return true
     }
@@ -89,16 +107,15 @@ extension Composer {
     }
     .buttonStyle(.plain)
     .glassEffect(.regular.interactive(), in: .circle)
-    .disabled(!agent.enabled)
+    .disabled(!target.enabled)
     .accessibilityLabel("Attach Files")
     .help("Attach images or text files")
   }
 
   @ViewBuilder private var sendControl: some View {
-    let running = model.snapshot?.isRunning == true
-    if running {
+    if target.running {
       Button {
-        model.abortChat()
+        target.stop()
       } label: {
         Image(systemName: "stop.fill")
           .font(.system(size: 16, weight: .medium))
@@ -108,10 +125,10 @@ extension Composer {
       .buttonStyle(.plain)
       .glassEffect(.regular.interactive(), in: .circle)
       .accessibilityLabel("Stop")
-      .help("Stop the current run")
+      .help(target.stopHelp)
     } else {
       Button {
-        model.sendMessage()
+        target.send()
       } label: {
         Image(systemName: "arrow.up")
           .font(.system(size: 16, weight: .bold))
@@ -121,7 +138,7 @@ extension Composer {
       .buttonStyle(.plain)
       .glassEffect(.regular.interactive(), in: .circle)
       .disabled(
-        !agent.enabled
+        !target.enabled
           || (model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && model.attachments.isEmpty)
       )
@@ -131,7 +148,7 @@ extension Composer {
 
   private func importPhotos(_ items: [PhotosPickerItem]) {
     guard !items.isEmpty else { return }
-    let agentID = agent.id
+    let conversation = model.conversationKey
     let serverURL = model.client?.baseURL
     let serverToken = model.client?.token
     photoItems = []
@@ -140,7 +157,7 @@ extension Composer {
         guard let data = try? await item.loadTransferable(type: Data.self),
           !data.isEmpty
         else { continue }
-        guard model.selectedAgent?.id == agentID,
+        guard model.conversationKey == conversation,
           model.client?.baseURL == serverURL,
           model.client?.token == serverToken
         else { return }
@@ -166,14 +183,13 @@ extension Composer {
   private var draftField: some View {
     @Bindable var model = model
     return TextField(
-      agent.enabled
-        ? "Message \(agent.name)" : "\(agent.name) is paused. Enable it in its profile.",
+      target.placeholder,
       text: $model.draft, selection: $selection, axis: .vertical
     )
     .textFieldStyle(.plain)
     .lineLimit(1...8)
     .focused($focused)
-    .disabled(!agent.enabled)
+    .disabled(!target.enabled)
     .padding(.vertical, 7)
     .onChange(of: model.draft) { _, _ in
       selectedMention = 0
@@ -195,7 +211,7 @@ extension Composer {
         model.draft = text
         selection = TextSelection(insertionPoint: caret)
       } else if !acceptMention() {
-        model.sendMessage()
+        target.send()
       }
       return .handled
     }
@@ -242,11 +258,7 @@ extension Composer {
       range.lowerBound >= text.startIndex, range.upperBound <= text.endIndex {
       caret = NSRange(range, in: text)
     }
-    let bots = model.agents.filter {
-      $0.enabled && $0.id != agent.id && (agent.delegates ?? []).contains($0.id)
-        && (agent.tools ?? []).contains("delegate")
-    }
-    return MentionCompletion.find(in: text, selection: caret, bots: bots)
+    return MentionCompletion.find(in: text, selection: caret, bots: target.mentionable)
   }
 
   private func acceptMention(index: Int? = nil) -> Bool {

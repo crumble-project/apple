@@ -33,18 +33,11 @@ struct ProviderLoginView: View {
         }
         HStack {
             ProgressView().controlSize(.small)
-            Text(progress).foregroundStyle(.secondary)
+            Text(login.progressText).foregroundStyle(.secondary)
             Spacer()
             Button("Cancel Sign-In", role: .cancel) { model.cancelProviderLogin(login) }
                 .disabled(sending)
         }
-    }
-
-    private var progress: String {
-        for event in login.events.reversed() {
-            if case let .progress(message) = event { return message }
-        }
-        return login.prompt == nil ? "Waiting for the provider…" : "Waiting for your answer…"
     }
 
     private func authorization(url: URL, instructions: String?) -> some View {

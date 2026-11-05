@@ -44,15 +44,19 @@ public struct DesktopJob: Codable, Identifiable, Hashable, Sendable {
   public var conversationId: String
   public var status: String
   public var usage: JobUsage?
+  public var model: DesktopModel?
 
   public var id: String { name }
   public var isWorking: Bool { status == "working" }
 
-  public init(name: String, conversationId: String, status: String, usage: JobUsage? = nil) {
+  public init(
+    name: String, conversationId: String, status: String, usage: JobUsage? = nil, model: DesktopModel? = nil
+  ) {
     self.name = name
     self.conversationId = conversationId
     self.status = status
     self.usage = usage
+    self.model = model
   }
 
   /// The job a successful `desktop` tool result names; nil for status listings and other messages.
@@ -73,7 +77,8 @@ extension APIClient {
       try await $0.listDesktopJobs(.init(path: .init(id: agentID))).ok.body.json.jobs.map {
         DesktopJob(
           name: $0.name, conversationId: $0.conversationId, status: $0.status.rawValue,
-          usage: JobUsage(document: $0.usage))
+          usage: JobUsage(document: $0.usage),
+          model: $0.model.map { DesktopModel(provider: $0.provider, model: $0.model) })
       }
     }
   }

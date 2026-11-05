@@ -19,9 +19,19 @@ final class AppModel {
   private(set) var generation = 0
 
   var agents: [Agent] = []
+  var capabilities: ServerCapabilities?
   var route: Route?
+  var botDesktop: BotDesktopTarget?
   private(set) var selectedAgentID = ""
   var selectionVersion = 0
+
+  var groupChats: [GroupChat] = []
+  /// The open group chat; empty while a bot chat or nothing is open.
+  var selectedGroupID = ""
+  /// The open group's chat and members' activity, without its messages, which live in `messages`.
+  var groupSnapshot: GroupChatSnapshot?
+  var groupDraft: GroupDraft?
+  var groupStreamTask: Task<Void, Never>?
 
   var snapshot: ChatSnapshot?
   var messages: [Message] = []
@@ -29,6 +39,8 @@ final class AppModel {
   var oldestEntryID = ""
   var loadingOlder = false
   var expanded: Set<String> = []
+  /// The selected bot's jobs, refreshed when the chat shows job activity.
+  let jobBoard = JobBoard()
 
   var draft = ""
   var attachments: [PendingAttachment] = []
@@ -80,6 +92,9 @@ final class AppModel {
 
   var provider = "melious"
   var providerKey = ""
+  @ObservationIgnored lazy var providerLoginBoard = ProviderLoginBoard { [weak self] in
+    self?.handleProviderLogin($0)
+  }
 
   init(
     environment: [String: String] = ProcessInfo.processInfo.environment, loadKeychain: Bool = true
@@ -100,6 +115,7 @@ final class AppModel {
   }
 
   var selectedAgent: Agent? { agents.first { $0.id == selectedAgentID } }
+  var selectedGroup: GroupChat? { groupChats.first { $0.id == selectedGroupID } }
 
   func botState(_ agent: Agent) -> BotState {
     if !agent.enabled { return .sleeping }
@@ -190,6 +206,7 @@ final class AppModel {
     selectedAgentID = ""
     snapshot = nil
     messages = []
+    jobBoard.reset()
     if case .agent = route {
       if let next = agents.first { selectAgent(next.id) } else { route = nil }
     }
@@ -213,6 +230,9 @@ extension AppModel {
     mutationRevision += 1
     resetPendingMessages()
     agents = []
+    capabilities = nil
+    jobBoard.reset()
+    botDesktop = nil
     agentMemories = [:]
     sharedMemories = []
     sharedSkills = []
@@ -221,6 +241,7 @@ extension AppModel {
     mcpServers = []
     providers = []
     models = []
+    providerLoginBoard.reset()
     signingIn = nil
     agentDraft = nil
     memoryDraft = nil
@@ -228,6 +249,10 @@ extension AppModel {
     mcpDraft = nil
     skillDraft = nil
     snapshot = nil
+    leaveGroup()
+    if case .group = route { route = nil }
+    groupChats = []
+    groupDraft = nil
     messages = []
     client = candidate
     Notifier.shared.connectionChanged()

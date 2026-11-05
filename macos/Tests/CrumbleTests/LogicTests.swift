@@ -84,16 +84,6 @@ struct LogicTests {
             newRequestID().wholeMatch(of: /[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/) != nil)
     }
 
-    @Test func avatarSeedsAcceptLegacyValues() {
-        let cases = ["bot:violet": "violet", "critters:violet": "violet", "sparkles": "a1", "😀": "a1", "": "a1"]
-        for (avatar, seed) in cases {
-            #expect(agentAvatarSeed(Agent(id: "a1", avatar: avatar)) == seed)
-        }
-        let first = BotLook(seed: "agent-seed")
-        let second = BotLook(seed: "agent-seed")
-        #expect(first == second)
-    }
-
     @Test func chatHidesToolActivity() {
         let tool = Message(id: "a1:1:0", role: "assistant", blocks: .array([.object(["type": .string("toolCall")])]))
         let reply = Message(
