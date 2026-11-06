@@ -229,3 +229,43 @@ extension APIClientTests {
         #expect(model.draft == "Still typing")
     }
 }
+
+@MainActor @Test func aGroupKeepsItsDraftAcrossNavigation() {
+    let model = AppModel()
+    model.selectGroup("trip")
+    model.draft = "Pack light"
+    model.selectGroup("work")
+    #expect(model.draft.isEmpty)
+    model.draft = "Standup moved"
+    model.selectAgent("a1")
+    #expect(model.draft.isEmpty)
+    model.selectGroup("trip")
+    #expect(model.draft == "Pack light")
+    model.draft = ""
+    model.selectGroup("work")
+    #expect(model.draft == "Standup moved")
+    model.selectGroup("trip")
+    #expect(model.draft.isEmpty)
+}
+
+@MainActor @Test func onlyAnotherSendersNewMessageCountsAsAnArrival() throws {
+    let model = AppModel()
+    model.selectGroup("trip")
+    func snapshot(_ messages: [Message]) throws -> GroupChatSnapshot {
+        var snapshot = try JSONDecoder().decode(GroupChatSnapshot.self, from: Data(groupSnapshotFixture.utf8))
+        snapshot.messages = messages
+        return snapshot
+    }
+    let history = Message(id: "old", role: "assistant", content: .string("Earlier."))
+    let mine = Message(id: "mine", role: "user", content: .string("Hi"), requestId: "r1")
+    let answer = Message(id: "new", role: "assistant", content: .string("Hello."))
+
+    model.applyGroupSnapshot(try snapshot([history]))
+    #expect(model.groupArrivals == 0)
+    model.applyGroupSnapshot(try snapshot([history, mine]))
+    #expect(model.groupArrivals == 0)
+    model.applyGroupSnapshot(try snapshot([history, mine, answer]))
+    #expect(model.groupArrivals == 1)
+    model.applyGroupSnapshot(try snapshot([history, mine, answer]))
+    #expect(model.groupArrivals == 1)
+}

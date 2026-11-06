@@ -41,6 +41,16 @@ struct CrumbleApp: App {
   }
 }
 
+extension AppTheme {
+  fileprivate var interfaceStyle: UIUserInterfaceStyle {
+    switch self {
+    case .system: .unspecified
+    case .light: .light
+    case .dark: .dark
+    }
+  }
+}
+
 struct ContentView: View {
   @Environment(AppModel.self) private var model
   @State private var showingSettings = false
@@ -49,7 +59,7 @@ struct ContentView: View {
   var body: some View {
     @Bindable var model = model
     NavigationSplitView(preferredCompactColumn: $compactColumn) {
-      SidebarView(showingSettings: $showingSettings)
+      SidebarView(showingSettings: $showingSettings, compactColumn: $compactColumn)
         .navigationTitle("Crumble")
     } detail: {
       Group {
@@ -75,6 +85,12 @@ struct ContentView: View {
     }
     .onChange(of: model.route) { _, route in
       compactColumn = route == nil ? .sidebar : .detail
+    }
+    // On the window, because preferredColorScheme(nil) leaves an open sheet on its old appearance.
+    .onChange(of: model.themeBoard.theme, initial: true) { _, theme in
+      for case let scene as UIWindowScene in UIApplication.shared.connectedScenes {
+        scene.windows.forEach { $0.overrideUserInterfaceStyle = theme.interfaceStyle }
+      }
     }
     .fullScreenCover(item: $model.botDesktop) { BotDesktopView(agentID: $0.id) }
     .sheet(isPresented: $showingSettings) { SettingsView() }
@@ -155,6 +171,9 @@ struct SidebarView: View {
 
   @Environment(AppModel.self) private var model
   @Binding var showingSettings: Bool
+  @Binding var compactColumn: NavigationSplitViewColumn
+  @State private var search = ""
+  @State private var searching = false
 
   private struct WorkspaceDestination {
     let route: Route
@@ -167,6 +186,7 @@ struct SidebarView: View {
     .init(route: .skills, title: "Skills", symbol: "book.closed"),
     .init(route: .tasks, title: "Tasks", symbol: "calendar.badge.clock"),
     .init(route: .activity, title: "Activity", symbol: "waveform.path.ecg"),
+    .init(route: .avatars, title: "Avatars", symbol: "face.smiling"),
     .init(route: .judgeModel, title: JudgeModelSettings.title, symbol: JudgeModelSettings.symbol),
     .init(route: .visionModel, title: VisionModelSettings.title, symbol: VisionModelSettings.symbol),
     .init(route: .integrations, title: "Integrations", symbol: "powerplug"),
@@ -176,41 +196,88 @@ struct SidebarView: View {
 
   private static let connectedServices: [WorkspaceDestination] = [
     .init(route: .passwordManagers, title: "Password managers", symbol: "lock.rectangle.stack"),
+    .init(route: .credentials, title: "Credentials", symbol: "key"),
+    .init(route: .logins, title: "Logins", symbol: "person.badge.key"),
     .init(route: .webSearch, title: "Web search", symbol: "globe"),
     .init(route: .messageGateways, title: "Message gateways", symbol: "message"),
     .init(route: .eventRelay, title: "Event relay", symbol: "dot.radiowaves.left.and.right")
   ]
 
+  private func run(_ command: PaletteCommand) {
+    search = ""
+    searching = false
+    switch command {
+    case .open(let route):
+      model.navigate(to: route)
+      compactColumn = .detail
+    case .settings: showingSettings = true
+    case .newBot: model.createAgent()
+    case .newGroupChat: model.createGroup()
+    case .theme(let theme): model.chooseTheme(theme)
+    }
+  }
+
+  private func searchRow(_ item: PaletteItem) -> some View {
+    Button { run(item.command) } label: {
+      HStack(spacing: 12) {
+        if case .open(.agent(let id)) = item.command, let agent = model.agents.first(where: { $0.id == id }) {
+          BotAvatarView(agent: agent, size: 28, state: model.botState(agent)).accessibilityHidden(true)
+        } else {
+          Image(systemName: item.symbol).frame(width: 28).accessibilityHidden(true)
+        }
+        Text(item.title).lineLimit(1)
+        Spacer(minLength: 0)
+        if let detail = item.detail { Text(detail).font(.caption).foregroundStyle(.secondary) }
+      }
+    }
+    .foregroundStyle(.primary)
+  }
+
+  @ViewBuilder private var sidebarSections: some View {
+    Section("Agents") {
+      ForEach(model.agents) { agent in
+        agentRow(agent)
+      }
+      if model.agents.isEmpty {
+        Text(model.loading ? "Opening your workspace…" : "Your agents will appear here.")
+          .foregroundStyle(.secondary)
+        if model.client?.token.isEmpty != false {
+          Button("Connect to your server", systemImage: "network") { showingSettings = true }
+        } else {
+          Button("Create an Agent", systemImage: "plus") { model.createAgent() }
+        }
+      }
+    }
+    groupsSection
+    Section("Workspace") {
+      ForEach(Self.workspace.filter { $0.route != .users || model.adminBoard.isAdmin }, id: \.route) { item in
+        NavigationLink(value: item.route) { Label(item.title, systemImage: item.symbol) }
+      }
+    }
+    Section("Connected services") {
+      ForEach(Self.connectedServices, id: \.route) { item in
+        NavigationLink(value: item.route) { Label(item.title, systemImage: item.symbol) }
+      }
+    }
+    Section {
+      Button("Settings", systemImage: "gearshape") { showingSettings = true }
+    }
+  }
+
   var body: some View {
+    let results = model.commandPalette.matching(search)
     List(selection: Binding(get: { model.route }, set: { model.navigate(to: $0) })) {
-      Section("Agents") {
-        ForEach(model.agents) { agent in
-          agentRow(agent)
-        }
-        if model.agents.isEmpty {
-          Text(model.loading ? "Opening your workspace…" : "Your agents will appear here.")
-            .foregroundStyle(.secondary)
-          if model.client?.token.isEmpty != false {
-            Button("Connect to your server", systemImage: "network") { showingSettings = true }
-          } else {
-            Button("Create an Agent", systemImage: "plus") { model.createAgent() }
-          }
+      if search.isEmpty {
+        sidebarSections
+      } else {
+        ForEach(results) { section in
+          Section(section.title) { ForEach(section.items) { searchRow($0) } }
         }
       }
-      groupsSection
-      Section("Workspace") {
-        ForEach(Self.workspace.filter { $0.route != .users || model.adminBoard.isAdmin }, id: \.route) { item in
-          NavigationLink(value: item.route) { Label(item.title, systemImage: item.symbol) }
-        }
-      }
-      Section("Connected services") {
-        ForEach(Self.connectedServices, id: \.route) { item in
-          NavigationLink(value: item.route) { Label(item.title, systemImage: item.symbol) }
-        }
-      }
-      Section {
-        Button("Settings", systemImage: "gearshape") { showingSettings = true }
-      }
+    }
+    .searchable(text: $search, isPresented: $searching, prompt: "Search chats, pages, and settings")
+    .overlay {
+      if results.isEmpty { ContentUnavailableView.search(text: search) }
     }
     .refreshable { model.refresh() }
     .toolbar {

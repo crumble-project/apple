@@ -11,7 +11,7 @@ extension APIClient {
               type: $0._type == .oauth ? .oauth : .apiKey, label: $0.label, subscription: $0.subscription)
           },
           credentialType: $0.credentialType.flatMap { ProviderAuthType(rawValue: $0.rawValue) },
-          activeLoginId: $0.activeLoginId)
+          activeLoginId: $0.activeLoginId, apiKey: SecretStatus(wire: $0.apiKey))
       }
     }
   }
@@ -25,10 +25,11 @@ extension APIClient {
     }
   }
 
-  public func setProviderKey(_ provider: String, apiKey: String) async throws {
-    try await invoke {
-      _ = try await $0.putProviderKey(.init(
-        path: .init(provider: provider), body: .json(.init(value: apiKey)))).ok
+  /// The server reads a reference once to check it, so this can take longer than a plain save.
+  func setProviderKey(_ provider: String, secret: SecretInput) async throws {
+    let body: Operations.PutProviderKey.Input.Body.JsonPayload = try requestModel(SecretBody(secret))
+    try await invoke(timeout: 60) {
+      _ = try await $0.putProviderKey(.init(path: .init(provider: provider), body: .json(body))).ok
     }
   }
 
@@ -42,14 +43,14 @@ extension APIClient {
 
   public func createMCPServer(_ payload: [String: JSONValue]) async throws -> MCPServer {
     let body: Operations.CreateMcpServer.Input.Body.JsonPayload = try requestModel(payload)
-    return try await invoke(nullFields: Set(payload.filter { $0.value == .null }.keys)) {
+    return try await invoke(timeout: 60, nullFields: Set(payload.filter { $0.value == .null }.keys)) {
       try MCPServer(wire: await $0.createMcpServer(.init(body: .json(body))).created.body.json)
     }
   }
 
   public func updateMCPServer(_ id: String, patch: [String: JSONValue]) async throws -> MCPServer {
     let body: Operations.UpdateMcpServer.Input.Body.JsonPayload = try requestModel(patch)
-    return try await invoke {
+    return try await invoke(timeout: 60) {
       MCPServer(wire: try requestModel(required(try await $0.updateMcpServer(
         .init(path: .init(id: id), body: .json(body))).ok.body.json)) as Components.Schemas.McpServer)
     }

@@ -5,6 +5,7 @@ Crumble for macOS delivers local notifications from the server's `/v1/events` st
 ## Rules
 
 - **What notifies:** Completed bot chat replies, bot answers to coding/desktop job reports (titled with the job name), and group chat `@owner` mentions or first bot answers to an owner message—unless that chat is currently visible in the active main window.
+- **Sound:** A reply that waits for the owner plays the web's cue: `notice-approval.wav` for a held desktop action, `notice-credential.wav` for a credential or login request. Other replies use the system sound. `scripts/build-app.sh` copies both files from `resources/sounds` into the bundle.
 - **Deduplication:** Remembers the latest 512 event IDs per server across relaunches; newer replies from a bot replace its previous notification.
 - **Click action:** Opens the corresponding bot or group chat (and opens the bot desktop window for desktop job notifications), verifying that the notification matches the currently connected server.
 

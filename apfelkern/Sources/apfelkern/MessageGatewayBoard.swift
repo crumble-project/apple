@@ -98,6 +98,11 @@ public final class MessageGatewayBoard {
     return draft.isDirty && saving[draft.gatewayID] == nil
   }
 
+  public func resetDraft() {
+    draft?.reset()
+    saveError = ""
+  }
+
   public func saveDraft(bots: [Agent], client: APIClient) {
     guard canSave, var draft else { return }
     draft.attempted = true

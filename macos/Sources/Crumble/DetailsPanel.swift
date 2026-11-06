@@ -2,9 +2,10 @@ import apfelkern
 import BotAvatar
 import SwiftUI
 
-/// The inspector beside a chat: the bot's live portrait, its routines, and what it remembers.
+/// The inspector beside a chat: the bot's live portrait, its desktop, its routines, and what it remembers.
 struct DetailsPanel: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.openWindow) private var openWindow
     let agent: Agent
     @State private var tab = Tab.details
 
@@ -24,6 +25,7 @@ struct DetailsPanel: View {
                 }
                 switch tab {
                 case .details:
+                    desktopPreview
                     routines
                     modelSection
                 case .memory:
@@ -53,6 +55,17 @@ struct DetailsPanel: View {
         .padding(.top, 24)
         .padding(.bottom, 4)
         .frame(maxWidth: .infinity)
+    }
+
+    @ViewBuilder private var desktopPreview: some View {
+        if let client = model.client, agent.tools?.contains(DesktopJob.toolName) == true {
+            Section("Desktop") {
+                BotDesktopPreviewCard(preview: BotDesktopPreview(agentID: agent.id, client: client)) {
+                    openWindow(id: BotDesktopView.windowID, value: agent.id)
+                }
+                .id(agent.id)
+            }
+        }
     }
 
     private var routines: some View {

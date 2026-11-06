@@ -18,6 +18,10 @@ public protocol GroupChatHost: AnyObject, Sendable {
   var groupSnapshot: GroupChatSnapshot? { get set }
   var groupDraft: GroupDraft? { get set }
   var groupStreamTask: Task<Void, Never>? { get set }
+  /// What the owner typed in each group they left. Group IDs belong to one server, so a new connection clears it.
+  var groupComposerDrafts: [String: String] { get set }
+  /// Counts snapshots that brought a new message from someone else, for the rows' arrival animation.
+  var groupArrivals: Int { get set }
 
   var messages: [Message] { get set }
   var hasMore: Bool { get set }
@@ -69,6 +73,7 @@ extension GroupChatHost {
 
   /// Opens a group chat and follows its event stream.
   public func selectGroup(_ id: String) {
+    keepGroupDraft()
     leaveBotChat()
     stopGroupStream()
     selectionVersion += 1
@@ -81,7 +86,7 @@ extension GroupChatHost {
     oldestEntryID = ""
     loadingOlder = false
     replyTo = nil
-    draft = ""
+    draft = groupComposerDrafts[id] ?? ""
     attachments = []
     failedDraft = ""
     failedReplyTo = ""
@@ -108,9 +113,15 @@ extension GroupChatHost {
 
   /// Closes the open group chat, if any, so a bot chat or panel can take its place.
   public func leaveGroup() {
+    keepGroupDraft()
     stopGroupStream()
     selectedGroupID = ""
     groupSnapshot = nil
+  }
+
+  private func keepGroupDraft() {
+    guard !selectedGroupID.isEmpty else { return }
+    groupComposerDrafts[selectedGroupID] = draft.nilIfEmpty
   }
 
   public func stopGroupStream() {
@@ -123,8 +134,14 @@ extension GroupChatHost {
   public func applyGroupSnapshot(_ incoming: GroupChatSnapshot) {
     let key = GroupChat.deliveryKey(selectedGroupID)
     delivery.acknowledge(botID: key, requestIDs: Set(incoming.messages.compactMap(\.requestId)))
+    let known = Set(messages.map(\.id))
     messages = mergeMessages(messages.filter { $0.deliveryState == .confirmed }, incoming.messages)
     messages.append(contentsOf: delivery.messages(botID: key))
+    // The first snapshot is history, and the owner's own message is already on screen.
+    if groupSnapshot != nil,
+      messages.contains(where: { !known.contains($0.id) && !($0.role == "user" && $0.requestId != nil) }) {
+      groupArrivals += 1
+    }
     if let index = groupChats.firstIndex(where: { $0.id == incoming.groupChat.id }),
       !pendingMutations.contains("group:\(incoming.groupChat.id)") {
       groupChats[index] = incoming.groupChat

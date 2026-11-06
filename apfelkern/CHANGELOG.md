@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+- Add `AppTheme` and `ThemeBoard`, the account's System, Light, or Dark theme. The device keeps the theme so it applies before the account loads and while signed out, the account's theme replaces it once read, and a choice shows at once and comes back on failure.
+- Add `CommandPalette`, `PaletteSection`, `PaletteItem`, and `PaletteCommand`: the web's palette commands and a ranked `matching(_:)` search, for each app to show in its own surface.
+- Add `BotSecretBoard.page`, which gives the cross-bot Credentials and Logins pages their pill counts, waiting requests, and per-bot groups for a scope and search, and `startNew(_:choosingFrom:client:)`, whose draft sets `choosesBot`. `BotSecretDraft.agentID` is now settable for it.
+- `BotSecretDraft` refuses the credential names the contract reserves for the workspace and explains why in `nameError`. The list mirrors `credentialName`, which the OpenAPI document doesn't carry.
+- Add `ProviderKeyBoard`, the API key form for a provider. A typed key clears at once and comes back on failure; a password manager reference waits for the server. `ProviderStatus` gains `apiKey` and `savedLabel(managers:)`. `APIClient.setProviderKey` takes a value or a reference and is no longer public.
+- `MCPDraft.token` is a `SecretSourceDraft`, and `MCPServer` gains `token`. `MCPDraft(server:)`, `payload(name:url:)`, and `checksPasswordManager` let both apps send a value or a reference; a saved reference isn't sent again.
+- Add `ActivityBoard` and `ActivityKind`, which narrow the Activity feed by kind and bot and page with the server's cursor. `APIClient.activityFeed` takes `kind`, `agentID`, `cursor`, and `limit`, and `ActivityFeedResponse` gains `nextCursor`.
+- Add `AvatarBoard`, the standalone Avatars page, and `AvatarHost`. A save shows on the bot at once, rolls back on failure, says it saved only once the server confirms, and survives a bot list read that started before it.
+- Add `GatewayDraft.reset()` and `MessageGatewayBoard.resetDraft()`. `Route` gains `avatars`, `credentials`, `logins`, and `botSecretKind`.
+- `BotAvatar` gains `BrandLogoView`, which draws the provider, password manager, and gateway logos the web shows from `BrandLogoData.swift`, and `FilterPills`. `scripts/generate-brand-logos.py` regenerates the logos from the web's icon packages.
+
+- `ActivityEvent` gains `waitingFor`, and `NoticeKind` says what a reply notification asks of the owner and names its sound file.
+- Add `SourceCitations.byReply`, which lists the pages each bot chat reply's turn searched or read from its `web_search` and `web_extract` results.
+- `SourceCitations.split` removes only parentheses that held a citation, so a literal `()` in a reply stays.
+- `GroupChatHost` keeps a composer draft per group in `groupComposerDrafts` and counts new messages from others in `groupArrivals`. Hosts must add both and clear the drafts on a new connection.
+- Add `CodingJobItem.Tool.shownOutput`, the whole output of a step, and remove `tailLines`.
+- Add `AccountBoard`, which holds the sign-in and sign-up form, takes an `InviteLink` out of the server URL field, and signs out. `InviteLink` keeps its token out of descriptions and dumps.
+- Add `APIClient.signUp`, which sends an invite in the `x-crumble-invite` header, and `signOut`. `AccountSignInError.rejected` carries the server's reason for refusing a sign-in or sign-up. `send` and `call` take extra headers.
+- `ServerAccount` gains `name` and `email`, and `AdminBoard.sessionEnded` says the server no longer knows this session.
 - Add `LearnedChange`, `ChangeBoard`, and `APIClient.changes` and `revertChange`. The board pages newest first, narrows to one bot, and shows a revert as pending until the server records it. A failed revert rereads the shown changes, because it may still have reached the server, and a filter on a deleted bot goes back to every bot.
 - `APIClient.activityFeed` keeps skill and memory changes instead of dropping them. `ActivityEntry` gains `change` and `date`, and `agentId`, `agentName`, and `entryId` are optional because a change to the shared library has none of them.
 - Add `activityDays`, which groups a list by calendar day the way the web labels days.

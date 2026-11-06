@@ -32,9 +32,14 @@ public struct PushDevice: Hashable, Sendable {
 }
 
 extension APIClient {
-  public func activityFeed() async throws -> ActivityFeedResponse {
-    try await invoke {
-      let wire = try await $0.getActivityFeed(.init()).ok.body.json
+  public func activityFeed(
+    kind: ActivityKind? = nil, agentID: String? = nil, cursor: String? = nil, limit: Int? = nil
+  ) async throws -> ActivityFeedResponse {
+    let query = Operations.GetActivityFeed.Input.Query(
+      agentId: agentID, limit: limit,
+      kind: kind.flatMap { .init(rawValue: $0.rawValue) }, cursor: cursor)
+    return try await invoke {
+      let wire = try await $0.getActivityFeed(.init(query: query)).ok.body.json
       return ActivityFeedResponse(activities: try wire.activities.map { entry in
         if let change = entry.value2 {
           return ActivityEntry(
@@ -48,7 +53,7 @@ extension APIClient {
           entryId: operational.entryId, timestamp: operational.timestamp.flatMap(Int64.init(exactly:)),
           kind: operational.kind.rawValue,
           details: try operational.details.additionalProperties.mapValues { try JSONValue(wire: $0) })
-      }, hasMore: wire.hasMore)
+      }, hasMore: wire.hasMore, nextCursor: wire.nextCursor)
     }
   }
 

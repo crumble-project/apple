@@ -13,8 +13,6 @@ final class AppModel {
   /// Localhost works in the simulator. On a physical iPhone use the Mac's LAN address.
   var serverURL = "http://127.0.0.1:7337"
   var token = ""
-  var email = ""
-  var password = ""
   private(set) var client: APIClient?
   private(set) var generation = 0
 
@@ -32,6 +30,8 @@ final class AppModel {
   var groupSnapshot: GroupChatSnapshot?
   var groupDraft: GroupDraft?
   var groupStreamTask: Task<Void, Never>?
+  var groupComposerDrafts: [String: String] = [:]
+  var groupArrivals = 0
 
   var snapshot: ChatSnapshot?
   var messages: [Message] = []
@@ -47,8 +47,13 @@ final class AppModel {
   let gitHubAccountBoard = GitHubAccountBoard()
   let gitHubAppBoard = GitHubAppBoard()
   let adminBoard = AdminBoard()
+  let accountBoard = AccountBoard()
+  let themeBoard = ThemeBoard()
   let connectedServices = ConnectedServices()
   let changeBoard = ChangeBoard()
+  let activityBoard = ActivityBoard()
+  let avatarBoard = AvatarBoard()
+  let providerKeyBoard = ProviderKeyBoard()
   let botSkillBoard = BotSkillBoard()
   let sharedSkillBoard = SharedSkillBoard()
   let skillBulkBoard = SkillBulkBoard()
@@ -86,7 +91,6 @@ final class AppModel {
   var sharedMemories: [Memory] = []
   var schedules: [Schedule] = []
   var executions: [Execution] = []
-  var activities: [ActivityEntry] = []
   var mcpServers: [MCPServer] = []
   var providers: [ProviderStatus] = []
   var models: [ModelSummary] = []
@@ -95,13 +99,14 @@ final class AppModel {
   var memoryDraft: MemoryDraft?
   var taskDraft: TaskDraft?
   var mcpDraft: MCPDraft?
+  /// The open form's new password manager reference is with the server.
+  var isCheckingMCP = false
   var skillDraft: SkillDraft?
   /// The MCP server whose sign-in sheet is open.
   var signingIn: String?
   var confirmingDelete = false
 
   var provider = "melious"
-  var providerKey = ""
   @ObservationIgnored lazy var providerLoginBoard = ProviderLoginBoard { [weak self] in
     self?.handleProviderLogin($0)
   }
@@ -123,6 +128,8 @@ final class AppModel {
   init(client: APIClient) {
     self.client = client
   }
+
+  var isSignedIn: Bool { client?.token.isEmpty == false && !adminBoard.sessionEnded }
 
   var selectedAgent: Agent? { agents.first { $0.id == selectedAgentID } }
   var selectedGroup: GroupChat? { groupChats.first { $0.id == selectedGroupID } }
@@ -252,8 +259,12 @@ extension AppModel {
     gitHubAccountBoard.reset()
     gitHubAppBoard.reset()
     adminBoard.reset()
+    themeBoard.reset()
     connectedServices.reset()
     changeBoard.reset()
+    activityBoard.reset()
+    avatarBoard.reset()
+    providerKeyBoard.reset()
     botSkillBoard.reset()
     botDesktop = nil
     agentMemories = [:]
@@ -271,9 +282,11 @@ extension AppModel {
     memoryDraft = nil
     taskDraft = nil
     mcpDraft = nil
+    isCheckingMCP = false
     skillDraft = nil
     snapshot = nil
     leaveGroup()
+  groupComposerDrafts = [:]
     if case .group = route { route = nil }
     groupChats = []
     groupDraft = nil
@@ -290,63 +303,66 @@ extension AppModel {
     guard !savingConnection else { return }
     let rawURL = serverURL.trimmingCharacters(in: .whitespaces).trimmingTrailingSlashes
     let token = token.trimmingCharacters(in: .whitespaces)
-    guard let url = URL(string: rawURL), url.host() != nil,
-      ["http", "https"].contains(url.scheme ?? "")
-    else {
+    guard let url = URL(string: rawURL), url.host() != nil, ["http", "https"].contains(url.scheme ?? "") else {
       errorText = "Enter a valid server URL."
       return
     }
-    let email = email.trimmingCharacters(in: .whitespaces)
-    let password = password
-    guard !password.isEmpty || !token.isEmpty else {
-      errorText = "Enter your email and password."
+    let hasCredentials = !accountBoard.password.isEmpty
+    guard hasCredentials ? accountBoard.isComplete : !token.isEmpty else {
+      errorText = accountBoard.incompleteMessage
+      return
+    }
+    guard InviteLink(rawURL) == nil else {
+      errorText = "Sign out before you use an invite link."
       return
     }
     savingConnection = true
     errorText = ""
+    let generation = generation
     Task {
       defer { savingConnection = false }
       do {
-        let token = password.isEmpty
-          ? token : try await APIClient.signIn(baseURL: rawURL, email: email, password: password)
-        let candidate = APIClient(baseURL: rawURL, token: token)
+        let token = hasCredentials ? try await accountBoard.createSession(baseURL: rawURL) : token
+        let candidate = APIClient(baseURL: rawURL, token: token, session: client?.session ?? .shared)
         _ = try await candidate.agents()
+        // A sign-out that finished meanwhile must not bring this session back.
+        guard self.generation == generation else { return }
         try Keychain.write("server-token", value: token)
         try Keychain.write("server-url", value: rawURL)
         self.token = token
-        self.password = ""
+        accountBoard.finish()
         applyConnection(candidate)
         showNotice("Connected")
         refresh()
         followActivity()
       } catch {
+        guard self.generation == generation else { return }
         errorText = friendlyError(error)
       }
     }
   }
 
+  func signOut() {
+    guard let client, !accountBoard.isSigningOut else { return }
+    Task {
+      let outcome = await accountBoard.signOut(client: client) { await Notifier.shared.releaseConnection() }
+      Keychain.delete("server-token")
+      token = ""
+      applyConnection(APIClient(baseURL: client.baseURL, token: ""))
+      route = nil
+      showNotice(outcome.notice)
+    }
+  }
+
   func saveProviderKey() {
-    let provider = provider
-    let key = providerKey.trimmingCharacters(in: .whitespaces)
-    guard !key.isEmpty else {
-      errorText = "Enter an API key."
+    guard let client else {
+      errorText = "Connect to your server in Settings."
       return
     }
-    optimisticMutation(
-      key: "provider:\(provider)",
-      update: { [self] in
-        providerKey = ""
-      },
-      rollback: { [self] in
-        if self.provider == provider, providerKey.isEmpty { providerKey = key }
-      },
-      work: { client in
-        try await client.setProviderKey(provider, apiKey: key)
-        return { [self] in
-          showNotice("Provider key saved")
-          refreshProviders()
-        }
-      })
+    providerKeyBoard.save(client: client) { [weak self] in
+      self?.showNotice("Provider key saved")
+      self?.refreshProviders()
+    }
   }
 
   func removeProviderKey() {

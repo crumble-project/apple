@@ -7,16 +7,8 @@ struct ChangeList: View {
 
   private var board: ChangeBoard { model.changeBoard }
 
-  private var bot: Binding<String?> {
-    Binding(get: { board.botID }, set: { model.showChanges(botID: $0) })
-  }
-
   var body: some View {
     Section {
-      Picker("Bot", selection: bot) {
-        Text("All bots").tag(String?.none)
-        ForEach(model.agents) { Text($0.name).tag(String?.some($0.id)) }
-      }
       if let error = board.readError {
         Text(error).foregroundStyle(.red).textSelection(.enabled)
       }

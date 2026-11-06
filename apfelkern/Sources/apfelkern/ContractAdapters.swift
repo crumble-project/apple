@@ -118,7 +118,9 @@ extension Execution {
 
 extension MCPServer {
   init(wire: Components.Schemas.McpServer) {
-    self.init(id: wire.id, name: wire.name, url: wire.url, enabled: wire.enabled, agentId: wire.agentId)
+    self.init(
+      id: wire.id, name: wire.name, url: wire.url, enabled: wire.enabled, agentId: wire.agentId,
+      auth: wire.token.configured ? "token" : nil, token: SecretStatus(wire: wire.token))
   }
 
   init(wire: Components.Schemas.McpServerStatus) {

@@ -320,10 +320,10 @@ private struct CodingJobItemView: View {
     }
 }
 
-/// One tool call: what ran (a command or a file), and its output when that helps.
+/// One tool call: what ran (a command or a file). Click it to see the whole output.
 private struct CodingToolStep: View {
-    static let outputLines = 12
     let tool: CodingJobItem.Tool
+    @State private var open = false
 
     private var icon: String {
         switch tool.name {
@@ -347,14 +347,10 @@ private struct CodingToolStep: View {
         }
     }
 
-    private var shownOutput: (text: String, omitted: Int)? {
-        guard tool.name == "bash" || tool.isError else { return nil }
-        let tail = tailLines(tool.output, maxLines: Self.outputLines)
-        return tail.text.isEmpty ? nil : tail
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+    private var summary: some View {
+        Button {
+            open.toggle()
+        } label: {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Image(systemName: tool.isError ? "exclamationmark.triangle.fill" : icon)
                     .foregroundStyle(tool.isError ? .red : .secondary)
@@ -362,27 +358,36 @@ private struct CodingToolStep: View {
                 Text(verb).foregroundStyle(.secondary)
                 Text(tool.subject)
                     .font(.system(size: 12.5, design: .monospaced))
-                    .textSelection(.enabled)
-                    .lineLimit(4)
+                    .lineLimit(open ? nil : 4)
                 if !tool.finished { ProgressView().controlSize(.mini) }
+                Spacer(minLength: 0)
+                if tool.finished {
+                    Image(systemName: open ? "chevron.down" : "chevron.right")
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(.tertiary)
+                }
             }
             .font(.system(size: 12.5))
-            if let output = shownOutput {
-                VStack(alignment: .leading, spacing: 2) {
-                    if output.omitted > 0 {
-                        Text("\(output.omitted) earlier lines not shown").font(.caption).foregroundStyle(.tertiary)
-                    }
-                    Text(output.text)
-                        .font(.system(size: 12, design: .monospaced))
-                        .foregroundStyle(tool.isError ? Color.red : Color.primary)
-                        .textSelection(.enabled)
-                }
-                .padding(10)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.primary.opacity(0.05), in: .rect(cornerRadius: 10))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!tool.finished)
+        .accessibilityLabel("\(verb) \(tool.subject)\(tool.isError ? ", failed" : "")")
+        .accessibilityValue(open ? "Expanded" : "Collapsed")
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            summary
+            if open {
+                Text(tool.shownOutput)
+                    .font(.system(size: 12, design: .monospaced))
+                    .foregroundStyle(tool.isError ? Color.red : Color.primary)
+                    .textSelection(.enabled)
+                    .padding(10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.primary.opacity(0.05), in: .rect(cornerRadius: 10))
             }
         }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("\(verb) \(tool.subject)\(tool.isError ? ", failed" : "")")
     }
 }

@@ -2,6 +2,31 @@
 
 ## Unreleased
 
+- Add a **Theme** picker to Settings with **System**, **Light**, and **Dark**, as on the web. The theme is saved on your account, so it follows you between devices, and it applies at once; it comes back with the reason if the server refuses it.
+- The sidebar gains a search field with the web's command palette: find a bot, a group chat, or a page, create a bot or group chat, open Settings, or change the theme.
+- Add Credentials and Logins pages across every bot, with a pill per bot, search, and a bot picker for a new one.
+- Add an Avatars page with a bot selector, idle, working, and sleeping previews, and Save.
+- **Sign Out** stays off while **Connect** runs, and a connection that finishes after you signed out no longer brings the session back.
+- Provider API keys and MCP tokens can come from a connected password manager, and their forms link to connecting one. A new reference holds the form until the server has read it.
+- The Activity page has pills per kind, a bot filter that also covers Changes, and Show older activity.
+- The gateway sheet has Reset, and Add stays off for credential names reserved for the workspace.
+- Show provider, password manager, and gateway logos as on the web.
+- Fix MCP tokens, which were sent as a plain string the server refuses.
+- Show why a used event source can't be deleted under its name, since a disabled button has no tooltip on touch.
+
+- A reply that waits for you has its own notification sound: one for a held desktop action, another for a credential or login request, the same cues as on the web. A remote push still uses the system sound while the app isn't open, because the server names that sound.
+- A local notification now shows while the app is open on another chat. Its payload was missing fields, so it was dropped.
+- Bot chats show the pages a reply cited as source links, from what its turn searched or read, as group chats do. A literal `()` in a reply now stays in the text.
+- Bot chats show the emoji a bot reacted with on the message it answered.
+- Each group keeps what you typed while you visit other chats. A new connection clears these drafts, and closing the app loses them.
+- New messages in a group chat rise and fade in, unless **Reduce Motion** is on.
+- An expanded job step shows all of its output instead of the last 200 lines.
+- Create an account in **Settings**: **Create an Account** asks for your name, email, and password and shows the server's reason if it refuses, such as closed sign-up or a short password.
+- Accept an invite link by pasting it into **Server URL**. The link fills in its server, opens **Create Account**, and shows **Link added**. Links can't open the app directly, because that needs each server's domain compiled into it.
+- Add **Sign Out** to a new **Account** section in Settings, with your name and email. The app unregisters this device from push first, ends the session on the server, then clears it from this device. If the server can't confirm it, you're still signed out here and a notice says the session may stay active until it expires.
+- While signed in, Settings shows the account and the server address with **Connect**, instead of the email and password fields: sign out to change accounts. A session the server no longer knows brings the fields back.
+- A push registration whose session ended no longer blocks registering again.
+- Passkeys aren't available: an Apple app can only use passkeys for domains compiled into it, which can't include a self-hosted server. A passkey added on the web stays usable there.
 - The **Activity** page shows skill and memory changes, groups entries by day as on the web, and gains a **Changes** view you can narrow to one bot. Each change expands to its diff and a **Revert** button that asks first, as on the web. The revert shows as pending until the server records it, and a failed revert rereads the list because it may still have reached the server. A filter on a deleted bot goes back to **All bots**.
 - The **Event relay** page in the sidebar gains **Event sources**: add one to get its webhook address, shown once in a sheet that only **Done** closes, and delete one that no automation uses.
 - Add **Judge model** and **Vision model** pages, as on the web. Each lists the models your provider keys reach, says what the setting does now, and keeps a chosen model no key reaches as **(no key)**. A choice applies at once and comes back with the reason if the server refuses it.

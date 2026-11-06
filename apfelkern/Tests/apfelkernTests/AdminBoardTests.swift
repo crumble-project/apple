@@ -32,7 +32,7 @@ private func server(
     guard request.httpMethod == "GET" else { return writes(request) }
     read(path)
     if path.hasSuffix("/api/auth/get-session") {
-      return json(#"{"session":{"token":"made-up"},"user":{"id":"me","role":"\#(role)"}}"#)
+      return json(#"{"session":{"token":"made-up"},"user":{"id":"me","name":"Me","email":"me@example.com","role":"\#(role)"}}"#)
     }
     if path.hasSuffix("/admin/users") { return json(#"{"users":[\#(user("me", role: "admin")),\#(user("u2"))]}"#) }
     if path.hasSuffix("/admin/invites") {

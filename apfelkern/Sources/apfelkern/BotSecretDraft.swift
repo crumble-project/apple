@@ -69,6 +69,18 @@ public struct SecretSourceDraft: Sendable {
   }
 }
 
+extension SecretInput {
+  var json: JSONValue {
+    switch self {
+    case .value(let value): .object(["value": .string(value)])
+    case .reference(let manager, let reference):
+      .object([
+        "reference": .object(["passwordManager": .string(manager.rawValue), "reference": .string(reference)])
+      ])
+    }
+  }
+}
+
 extension SecretSourceDraft: CustomStringConvertible, CustomReflectable {
   public var description: String { "SecretSourceDraft(redacted)" }
   public var customMirror: Mirror { Mirror(self, children: []) }
@@ -78,7 +90,9 @@ extension SecretSourceDraft: CustomStringConvertible, CustomReflectable {
 public struct BotSecretDraft: Identifiable, Sendable {
   public let id = UUID()
   public let kind: BotSecretKind
-  public let agentID: String
+  /// Only a new one from the cross-bot pages can change it, through `choosesBot`.
+  public var agentID: String
+  public let choosesBot: Bool
   public let existing: BotSecret?
   public let request: BotSecretRequest?
   /// Credentials are environment variable names and logins are lowercase, as the server requires.
@@ -95,9 +109,13 @@ public struct BotSecretDraft: Identifiable, Sendable {
   public var usesItem = false
   public var item = ""
 
-  public init(kind: BotSecretKind, agentID: String, existing: BotSecret? = nil, request: BotSecretRequest? = nil) {
+  public init(
+    kind: BotSecretKind, agentID: String, choosesBot: Bool = false, existing: BotSecret? = nil,
+    request: BotSecretRequest? = nil
+  ) {
     self.kind = kind
     self.agentID = agentID
+    self.choosesBot = choosesBot
     self.existing = existing
     self.request = request
     name = existing?.name ?? request?.name ?? ""
@@ -137,10 +155,27 @@ public struct BotSecretDraft: Identifiable, Sendable {
 
   public var nameIsValid: Bool {
     switch kind {
-    case .credential: name.wholeMatch(of: /[A-Z_][A-Z0-9_]{0,63}/) != nil
+    case .credential: name.wholeMatch(of: /[A-Z_][A-Z0-9_]{0,63}/) != nil && !nameIsReserved
     case .login: name.wholeMatch(of: /[a-z0-9][a-z0-9._-]{0,63}/) != nil
     }
   }
+
+  /// The workspace, its shell, or the credential proxy depend on these. Mirrors the contract's
+  /// `credentialName`, which the OpenAPI document doesn't carry.
+  private static let reservedNames: Set<String> = [
+    "SSL_CERT_FILE", "GIT_SSL_CAINFO", "REQUESTS_CA_BUNDLE", "CURL_CA_BUNDLE", "NODE_EXTRA_CA_CERTS",
+    "NODE_USE_ENV_PROXY", "PATH", "HOME", "USER", "SHELL", "PWD", "TERM", "LANG", "HOSTNAME", "TMPDIR",
+    "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY", "NODE_OPTIONS", "SSL_CERT_DIR", "LD_PRELOAD",
+    "LD_LIBRARY_PATH"
+  ]
+
+  private var nameIsReserved: Bool {
+    kind == .credential
+      && (Self.reservedNames.contains(name) || name.hasPrefix("CRUMBLE_") || name.hasPrefix("GIT_CONFIG_"))
+  }
+
+  /// Why Add stays off for a name that otherwise looks right.
+  public var nameError: String? { nameIsReserved ? "This name is reserved for the workspace." : nil }
 
   var hostList: [String] {
     hosts.split(whereSeparator: { $0 == "," || $0.isWhitespace }).map { $0.lowercased() }

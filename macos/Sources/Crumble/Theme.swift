@@ -1,3 +1,4 @@
+import AppKit
 import apfelkern
 import BotAvatar
 import SwiftUI
@@ -18,6 +19,26 @@ extension Agent {
     /// The body color of the bot's avatar, for touches that should feel like the bot.
     var color: Color {
         avatar.bodyColor
+    }
+}
+
+extension AppTheme {
+    /// Nil follows the system, and the app's windows follow `NSApp.appearance`.
+    fileprivate var appearance: NSAppearance? {
+        switch self {
+        case .system: nil
+        case .light: NSAppearance(named: .aqua)
+        case .dark: NSAppearance(named: .darkAqua)
+        }
+    }
+}
+
+/// Set on each window that can be alone on screen, since a closed window's view doesn't update.
+struct FollowsTheme: ViewModifier {
+    let board: ThemeBoard
+
+    func body(content: Content) -> some View {
+        content.onChange(of: board.theme, initial: true) { _, theme in NSApp.appearance = theme.appearance }
     }
 }
 

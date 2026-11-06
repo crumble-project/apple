@@ -33,18 +33,20 @@ struct BotSecretsSection: View {
   }
 }
 
-private struct BotSecretRequestRow: View {
+struct BotSecretRequestRow: View {
   @Environment(AppModel.self) private var model
   let request: BotSecretRequest
   let kind: BotSecretKind
   let agentID: String
+  /// Who asks, on a page across every bot.
+  var botName: String?
 
   private var target: BotSecretTarget { BotSecretTarget(kind: kind, agentID: agentID, name: request.name) }
 
   var body: some View {
     VStack(alignment: .leading, spacing: 6) {
       Label {
-        Text("Asks for ").foregroundStyle(.secondary)
+        Text(botName.map { "\($0) asks for " } ?? "Asks for ").foregroundStyle(.secondary)
           + Text(request.name).fontDesign(kind == .credential ? .monospaced : .default).fontWeight(.medium)
       } icon: {
         Image(systemName: "bell")
@@ -68,7 +70,7 @@ private struct BotSecretRequestRow: View {
   }
 }
 
-private struct BotSecretRow: View {
+struct BotSecretRow: View {
   @Environment(AppModel.self) private var model
   let item: BotSecret
   let agentID: String

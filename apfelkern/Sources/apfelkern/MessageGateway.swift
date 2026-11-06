@@ -147,15 +147,21 @@ public struct GatewayDraft: Identifiable, Sendable {
     gatewayID = gateway.id
     label = gateway.label
     saved = gateway.config
+    reset()
+  }
+
+  public var isDirty: Bool { config != saved }
+
+  /// Back to the saved settings. Keeps `id`, so the open sheet stays open.
+  public mutating func reset() {
     enabled = saved.enabled
     defaultBotID = saved.defaultBotID
     ownerID = saved.ownerID ?? ""
     allowDirectMessages = saved.allowDirectMessages
     channels = saved.allowedChannelIDs.map { ChannelRow(value: $0) }
     aliases = saved.aliases.map { AliasRow(handle: $0.handle, botID: $0.botID) }
+    attempted = false
   }
-
-  public var isDirty: Bool { config != saved }
 
   public var ownerLabel: String { "Owner \(label) user ID" }
 

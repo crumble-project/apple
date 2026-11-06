@@ -365,6 +365,8 @@ public struct MCPServer: Codable, Identifiable, Hashable, Sendable {
   public var authenticated: Bool?
   /// How the server signs in: "oauth", "token", or "none".
   public var auth: String?
+  /// Whether a token is saved and where it's read from.
+  public var token: SecretStatus
 
   public init(
     id: String,
@@ -373,8 +375,10 @@ public struct MCPServer: Codable, Identifiable, Hashable, Sendable {
     enabled: Bool,
     agentId: String? = nil,
     authenticated: Bool? = nil,
-    auth: String? = nil
+    auth: String? = nil,
+    token: SecretStatus = SecretStatus(configured: false)
   ) {
+    self.token = token
     self.id = id
     self.name = name
     self.url = url

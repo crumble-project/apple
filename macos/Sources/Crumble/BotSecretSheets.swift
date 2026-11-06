@@ -16,6 +16,13 @@ private struct BotSecretSheet: View {
                     Section { Text(reason).foregroundStyle(.secondary) }
                 }
                 status
+                if draft.choosesBot {
+                    Section {
+                        Picker("For bot", selection: $draft.agentID) {
+                            ForEach(model.agents) { Text($0.name).tag($0.id) }
+                        }
+                    }
+                }
                 nameAndHosts
                 if draft.kind == .credential {
                     Section {
@@ -71,7 +78,11 @@ private struct BotSecretSheet: View {
             } header: {
                 Text("Name")
             } footer: {
-                Text(draft.nameNote).foregroundStyle(.secondary)
+                if let error = draft.nameError {
+                    Text(error).foregroundStyle(.red)
+                } else {
+                    Text(draft.nameNote).foregroundStyle(.secondary)
+                }
             }
             Section {
                 TextField("Hosts", text: $draft.hosts, prompt: Text(draft.hostsPlaceholder))
@@ -143,6 +154,8 @@ struct SecretSourceField: View {
     var concealed = true
     var valueNote: String?
     var placeholder: String?
+    /// Overrides every other prompt for a value, for forms where empty doesn't keep what's saved.
+    var prompt: String?
     @Environment(AppModel.self) private var model
     @State private var connecting = false
 
@@ -171,7 +184,7 @@ struct SecretSourceField: View {
         }
     }
 
-    private var valuePrompt: String { source.keepPlaceholder.nilIfEmpty ?? placeholder ?? label }
+    private var valuePrompt: String { prompt ?? source.keepPlaceholder.nilIfEmpty ?? placeholder ?? label }
 
     private var manager: Binding<PasswordManagerID?> {
         Binding(get: { source.manager }, set: { source.use($0) })

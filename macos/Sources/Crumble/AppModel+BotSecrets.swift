@@ -11,6 +11,9 @@ extension AppModel {
         await botSecretBoard.watch(client: client)
     }
 
+    /// The Settings window presents the board's sheets while it shows a cross-bot page.
+    var settingsShowsBotSecrets: Bool { workspaceRoute?.botSecretKind != nil }
+
     func loadBotSecrets(agentID: String) {
         guard let client else { return }
         botSecretBoard.refresh(agentID: agentID, client: client)
@@ -19,6 +22,21 @@ extension AppModel {
     func newBotSecret(_ kind: BotSecretKind, agentID: String) {
         guard let client else { return }
         botSecretBoard.startNew(kind, agentID: agentID, client: client)
+    }
+
+    /// With no `scope`, the sheet asks which bot it's for.
+    func newBotSecret(_ kind: BotSecretKind, scope: String?) {
+        guard let client else { return }
+        if let scope {
+            botSecretBoard.startNew(kind, agentID: scope, client: client)
+        } else {
+            botSecretBoard.startNew(kind, choosingFrom: agents, client: client)
+        }
+    }
+
+    func loadBotSecrets(_ kind: BotSecretKind) {
+        guard let client else { return }
+        for agent in agents { botSecretBoard.refresh(kind, agentID: agent.id, client: client) }
     }
 
     func editBotSecret(_ item: BotSecret, agentID: String) {

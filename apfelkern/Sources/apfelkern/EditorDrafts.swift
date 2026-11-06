@@ -3,8 +3,8 @@ import Foundation
 public enum Route: Hashable {
   case agent(String)
   case group(String)
-  case memory, skills, tasks, activity, judgeModel, visionModel, integrations, coding, users
-  case passwordManagers, webSearch, messageGateways, eventRelay
+  case memory, skills, tasks, activity, avatars, judgeModel, visionModel, integrations, coding, users
+  case passwordManagers, credentials, logins, webSearch, messageGateways, eventRelay
 
   public var title: String {
     switch self {
@@ -14,15 +14,27 @@ public enum Route: Hashable {
     case .skills: "Skills"
     case .tasks: "Tasks"
     case .activity: "Activity"
+    case .avatars: "Avatars"
     case .judgeModel: JudgeModelSettings.title
     case .visionModel: VisionModelSettings.title
     case .integrations: "Integrations"
     case .coding: "Coding"
     case .users: "Users"
     case .passwordManagers: "Password managers"
+    case .credentials: BotSecretKind.credential.title
+    case .logins: BotSecretKind.login.title
     case .webSearch: "Web search"
     case .messageGateways: "Message gateways"
     case .eventRelay: "Event relay"
+    }
+  }
+
+  /// The kind a cross-bot page lists, if this is one.
+  public var botSecretKind: BotSecretKind? {
+    switch self {
+    case .credentials: .credential
+    case .logins: .login
+    default: nil
     }
   }
 }
@@ -242,22 +254,49 @@ public struct MCPDraft: Identifiable, Sendable {
   public var agentID: String?
   public var name = ""
   public var url = ""
-  public var token = ""
+  public var token = SecretSourceDraft()
   public var enabled = true
+  private var hasSavedToken = false
 
   public init(
     serverID: String,
     agentID: String? = nil,
     name: String = "",
     url: String = "",
-    token: String = "",
     enabled: Bool = true
   ) {
     self.serverID = serverID
     self.agentID = agentID
     self.name = name
     self.url = url
-    self.token = token
     self.enabled = enabled
+  }
+
+  public init(server: MCPServer) {
+    self.init(
+      serverID: server.id, agentID: server.agentId, name: server.name, url: server.url, enabled: server.enabled)
+    token = SecretSourceDraft(saved: server.token)
+    hasSavedToken = server.auth == "token"
+  }
+
+  public var tokenPlaceholder: String { hasSavedToken ? "Replace the saved token" : "Optional" }
+
+  public var tokenNote: String {
+    "Sent as a bearer token. Leave it empty for servers that need no sign-in or use OAuth."
+  }
+
+  /// Whether a save sends a token: the saved reference isn't read again when other fields change.
+  public var changesToken: Bool { token.changedInput != nil }
+
+  /// The server reads a new reference before it answers, so the outcome depends on a password manager.
+  public var checksPasswordManager: Bool { token.changesReference }
+
+  /// The fields a save sends, with `name` and `url` already trimmed.
+  public func payload(name: String, url: String) -> [String: JSONValue] {
+    var payload: [String: JSONValue] = [
+      "name": .string(name), "url": .string(url), "enabled": .bool(enabled)
+    ]
+    if let input = token.changedInput { payload["token"] = input.json }
+    return payload
   }
 }

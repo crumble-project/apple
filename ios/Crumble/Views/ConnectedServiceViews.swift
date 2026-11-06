@@ -1,4 +1,5 @@
 import apfelkern
+import BotAvatar
 import SwiftUI
 
 struct PasswordManagersPanel: View {
@@ -61,6 +62,7 @@ private struct PasswordManagerRow: View {
 
   var body: some View {
     HStack {
+      BrandLogoView(.passwordManager(manager.id))
       VStack(alignment: .leading, spacing: 2) {
         Text(manager.name).fontWeight(.semibold)
         if inUse {

@@ -46,6 +46,56 @@ struct GroupChatSupportTests {
         #expect(draft.memberIDs == ["a3", "a2"])
     }
 
+    @Test func onlyParenthesesThatHeldACitationGoAway() {
+        let split = SourceCitations.split(
+            "Call `run()` or run() first (source: [source](https://example.com/guide)) and ( ) stays.",
+            sources: sources)
+        #expect(split.text == "Call `run()` or run() first and ( ) stays.")
+    }
+
+    @Test func aBotChatReplyListsThePagesItsTurnRead() {
+        let page: (String, String) -> JSONValue = { .object(["url": .string($0), "title": .string($1)]) }
+        let result: (String, [JSONValue], Bool) -> Message = { tool, pages, failed in
+            Message(
+                id: UUID().uuidString, role: "toolResult", toolName: tool, isError: failed,
+                toolDetails: .array(pages))
+        }
+        let messages = [
+            Message(id: "ask", role: "user", content: .string("Where?")),
+            result("web_search", [page("https://a.test", "A")], false),
+            result("web_extract", [.object(["url": .string("https://b.test"), "error": .string("Gone")])], false),
+            result("web_search", [page("https://failed.test", "Failed")], true),
+            result("memory_search", [page("https://other.test", "Other")], false),
+            Message(id: "first", role: "assistant", content: .string("Here.")),
+            result("web_extract", [page("https://c.test", "C")], false),
+            Message(id: "second", role: "assistant", content: .string("And here.")),
+            Message(id: "next", role: "user", content: .string("Thanks")),
+            Message(id: "third", role: "assistant", content: .string("Welcome."))
+        ]
+        let replies = SourceCitations.byReply(messages)
+        #expect(replies["first"] == [MessageSource(url: "https://a.test", title: "A")])
+        #expect(replies["second"]?.map(\.title) == ["A", "C"])
+        #expect(replies["third"] == nil)
+    }
+
+    @Test func noticeKindFollowsWhatTheReplyWaitsFor() {
+        func kind(_ waitingFor: String?) -> NoticeKind {
+            NoticeKind(ActivityEvent(type: "reply", agentId: "a", agentName: "A", waitingFor: waitingFor))
+        }
+        #expect(kind(nil) == .reply && kind(nil).soundFile == nil)
+        #expect(kind("approval").soundFile == "notice-approval.wav")
+        #expect(kind("credential").soundFile == "notice-credential.wav")
+        #expect(kind("login") == .credential)
+    }
+
+    @Test func aReplyEventKeepsWhatItWaitsFor() throws {
+        let event = ActivityEvent(
+            eventId: "e", serverId: "s", createdAt: "now", type: "reply", agentId: "a", agentName: "A",
+            origin: "owner", preview: "Key?", waitingFor: "login")
+        let decoded = try JSONDecoder().decode(ActivityEvent.self, from: JSONEncoder().encode(event))
+        #expect(decoded.waitingFor == "login")
+    }
+
     @Test func citationsOfReadPagesBecomeChipsOnce() {
         let split = SourceCitations.split(
             "Pack light ([source](https://example.com/guide), [source](https://EXAMPLE.com/guide/#top)). "

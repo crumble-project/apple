@@ -30,6 +30,8 @@ public struct ProviderStatus: Codable, Hashable, Sendable {
   public var credentialType: ProviderAuthType?
   /// A sign-in running on the server, to resume after reconnecting.
   public var activeLoginId: String?
+  /// Whether an API key is saved and where it's read from.
+  public var apiKey: SecretStatus
 
   public init(
     provider: String,
@@ -37,8 +39,10 @@ public struct ProviderStatus: Codable, Hashable, Sendable {
     configured: Bool,
     authMethods: [ProviderLoginMethod] = [],
     credentialType: ProviderAuthType? = nil,
-    activeLoginId: String? = nil
+    activeLoginId: String? = nil,
+    apiKey: SecretStatus = SecretStatus(configured: false)
   ) {
+    self.apiKey = apiKey
     self.provider = provider
     self.name = name
     self.configured = configured

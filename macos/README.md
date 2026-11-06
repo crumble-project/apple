@@ -1,6 +1,6 @@
 # Crumble for macOS
 
-Native SwiftUI macOS client for a Crumble server. Supports bot chats, group chats, coding jobs, live bot desktops with take-control, memories, skills, scheduled tasks, MCP integrations, GitHub Apps and machine accounts, password managers, web search, judge and vision models, message gateways, the event relay and event sources, reverting skill and memory changes, server administration, and provider account sign-in.
+Native SwiftUI macOS client for a Crumble server. Supports bot chats, group chats, coding jobs, live bot desktops with take-control, memories, skills, scheduled tasks, MCP integrations, GitHub Apps and machine accounts, credentials and logins across bots, avatars, password managers, web search, judge and vision models, message gateways, the event relay and event sources, reverting skill and memory changes, System, Light, and Dark themes, a command palette, server administration, account sign-up, invite links, and sign-out, and provider account sign-in.
 
 ## Requirements
 
@@ -13,7 +13,7 @@ Native SwiftUI macOS client for a Crumble server. Supports bot chats, group chat
 swift run Crumble
 ```
 
-Defaults to `http://127.0.0.1:7337`. Enter the server URL, email, and password in **Settings** (`⌘,`). The app signs in and stores the account session token in the Keychain (`ng.crumbli.mac` for release bundles, `ng.crumbli.mac.dev` for `swift run` and dev bundles), or override via environment variables:
+Defaults to `http://127.0.0.1:7337`. Enter the server URL, email, and password in **Settings** (`⌘,`), choose **Create an Account** to make one, or paste an invite link into **Server URL**. The app signs in and stores the account session token in the Keychain (`ng.crumbli.mac` for release bundles, `ng.crumbli.mac.dev` for `swift run` and dev bundles), or override via environment variables:
 
 ```bash
 CRUMBLE_URL="http://127.0.0.1:7338" CRUMBLE_TOKEN="REPLACE_WITH_TOKEN" swift run Crumble

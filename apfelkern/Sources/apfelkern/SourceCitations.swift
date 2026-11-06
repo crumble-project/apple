@@ -1,6 +1,6 @@
 import Foundation
 
-/// A page a bot searched or read in the turn that wrote a group message.
+/// A page a bot searched or read in the turn that wrote a message.
 public struct MessageSource: Codable, Hashable, Sendable {
   public var url: String
   public var title: String
@@ -26,6 +26,7 @@ public struct SourceChip: Hashable, Sendable {
 public enum SourceCitations {
   // A private-use character marks where a chip was; bot text never contains it.
   private static let slot = "\u{E000}"
+  private static let pageTools: Set<String> = ["web_search", "web_extract"]
 
   /// Removes `[source](url)` links to known pages, outside code, and returns those pages once each.
   public static func split(_ markdown: String, sources: [MessageSource]) -> (text: String, chips: [SourceChip]) {
@@ -44,6 +45,30 @@ public enum SourceCitations {
       return fenced ? line : take(from: line, known: known, chips: &chips)
     }
     return (lines.joined(separator: "\n"), chips.map(\.chip))
+  }
+
+  /// For each bot reply, the pages its turn searched or read; a turn starts at each message to the bot. A bot chat has
+  /// no `sources` on the wire, so they come from its tool results; a group chat's server stores them on the message.
+  public static func byReply(_ messages: [Message]) -> [String: [MessageSource]] {
+    var replies: [String: [MessageSource]] = [:]
+    var turn: [MessageSource] = []
+    for message in messages {
+      if message.role == "user" { turn = [] }
+      turn += pages(of: message)
+      if message.role == "assistant", !turn.isEmpty { replies[message.id] = turn }
+    }
+    return replies
+  }
+
+  /// A page that could not be read carries an error instead of a title.
+  private static func pages(of message: Message) -> [MessageSource] {
+    guard message.role == "toolResult", message.isError != true, pageTools.contains(message.toolName ?? ""),
+      case .array(let pages)? = message.toolDetails
+    else { return [] }
+    return pages.compactMap { page in
+      guard let url = page["url"]?.stringValue, let title = page["title"]?.stringValue else { return nil }
+      return MessageSource(url: url, title: title)
+    }
   }
 
   /// Ignores the fragment, a trailing slash, and the host's case, so a cited link matches the page that was read.
@@ -82,7 +107,8 @@ public enum SourceCitations {
     chips = found
     return String(marked)
       .replacing(#/\x{E000}[ \t]*(?:,|;|&|and)[ \t]*(?=\x{E000})/#, with: slot)
+      // Only parentheses that held a citation go: a literal `()` in the prose is the bot's own text.
+      .replacing(#/(?i)[ \t]*\((?:\s*sources?:?)?[\s\x{E000}]*\x{E000}\s*\)/#, with: "")
       .replacing(#/[ \t]*\x{E000}/#, with: "")
-      .replacing(#/(?i)[ \t]*\((?:\s*sources?:?)?\s*\)/#, with: "")
   }
 }

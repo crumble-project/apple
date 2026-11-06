@@ -20,12 +20,15 @@ struct CrumbleApp: App {
                 .environment(model)
                 .frame(minWidth: 860, minHeight: 560)
                 .task { model.start() }
+                .modifier(FollowsTheme(board: model.themeBoard))
         }
         .defaultSize(width: 1280, height: 820)
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("New Agent") { model.createAgent() }.keyboardShortcut("n")
                 Button("New Group Chat") { model.createGroup() }.keyboardShortcut("n", modifiers: [.command, .shift])
+                Divider()
+                CommandPaletteButton(model: model).keyboardShortcut("k")
             }
             CommandGroup(replacing: .appSettings) { SettingsButton().keyboardShortcut(",") }
         }
@@ -61,12 +64,15 @@ struct ContentView: View {
                 .overlay(alignment: .top) { ErrorBanner() }
                 .overlay(alignment: .bottom) { NoticeToast() }
         }
+        .overlay {
+            if model.commandPaletteOpen { CommandPaletteView() }
+        }
         .onAppear {
             model.notifier.openBotDesktop = { openWindow(id: BotDesktopView.windowID, value: $0) }
             model.notifier.openMainWindow = { openWindow(id: "main") }
         }
         .sheet(item: $model.agentDraft) { AgentEditorView(draft: sheetBinding($model.agentDraft, for: $0)) }
-        .botSecretSheets(active: model.agentDraft == nil)
+        .botSecretSheets(active: model.agentDraft == nil && !model.settingsShowsBotSecrets)
         .sheet(item: $model.jobHistory) { JobSheet(job: $0) }
         .sheet(item: $model.groupDraft) { GroupEditorView(draft: sheetBinding($model.groupDraft, for: $0)) }
     }

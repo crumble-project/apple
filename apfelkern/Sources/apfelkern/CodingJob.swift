@@ -108,6 +108,11 @@ public enum CodingJobItem: Identifiable, Hashable, Sendable {
     public var output: String
     public var isError: Bool
     public var finished: Bool
+
+    /// The whole output as an expanded step shows it.
+    public var shownOutput: String {
+      output.trimmingCharacters(in: .newlines).nilIfEmpty ?? "No output."
+    }
   }
 
   public var id: String {
@@ -179,12 +184,4 @@ public enum CodingJobItem: Identifiable, Hashable, Sendable {
             finished: true)))
     }
   }
-}
-
-/// The last `maxLines` lines of command output, and how many earlier lines were left out.
-public func tailLines(_ text: String, maxLines: Int) -> (text: String, omitted: Int) {
-  let trimmed = text.trimmingCharacters(in: .newlines)
-  let lines = trimmed.split(separator: "\n", omittingEmptySubsequences: false)
-  guard lines.count > maxLines else { return (trimmed, 0) }
-  return (lines.suffix(maxLines).joined(separator: "\n"), lines.count - maxLines)
 }

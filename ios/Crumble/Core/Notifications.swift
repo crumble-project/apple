@@ -1,4 +1,5 @@
 import apfelkern
+import AudioToolbox
 import Foundation
 import UIKit
 import UserNotifications
@@ -137,6 +138,13 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
     updatePresence()
   }
 
+  /// Unregisters this device while the session still works, before it's signed out.
+  func releaseConnection() async {
+    guard started else { return }
+    push.setConnection(nil)
+    await push.waitForSync()
+  }
+
   func setEnabled(_ enabled: Bool) {
     push.setEnabled(enabled)
     if enabled { refreshAuthorization(requestIfNeeded: true) }
@@ -207,19 +215,29 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
     let content = UNMutableNotificationContent()
     content.title = title
     content.body = body
-    content.sound = .default
-    var info: [String: Any] = [
-      "type": event.type, "agentId": event.agentId, "agentName": event.agentName,
-      "crumbleLocal": true, "localServerURL": model?.client?.baseURL ?? ""
-    ]
-    info["eventId"] = event.eventId
-    info["serverId"] = event.serverId
-    info["origin"] = event.origin
-    info["groupId"] = event.groupId
-    info["groupName"] = event.groupName
-    content.userInfo = info
+    content.sound = NoticeKind(event).soundFile.map { UNNotificationSound(named: .init($0)) } ?? .default
+    content.userInfo = Self.localPayload(event, serverURL: model?.client?.baseURL ?? "")
     let identifier = event.groupId.map { "reply-group-\($0)" } ?? "reply-\(event.agentId)"
     center.add(UNNotificationRequest(identifier: identifier, content: content, trigger: nil))
+  }
+
+  /// Carries every field `NotificationPayload` decodes, so a local notification shows and routes like a push.
+  nonisolated static func localPayload(_ event: ActivityEvent, serverURL: String) -> [AnyHashable: Any] {
+    var info: [AnyHashable: Any] = [
+      "type": event.type, "agentId": event.agentId, "agentName": event.agentName,
+      "crumbleLocal": true, "localServerURL": serverURL
+    ]
+    info["eventId"] = event.eventId
+    info["entryId"] = event.entryId
+    info["serverId"] = event.serverId
+    info["createdAt"] = event.createdAt
+    info["origin"] = event.origin
+    info["preview"] = event.preview
+    info["groupId"] = event.groupId
+    info["groupName"] = event.groupName
+    info["jobName"] = event.jobName
+    info["waitingFor"] = event.waitingFor
+    return info
   }
 
   private func presentation(for payload: NotificationPayload) -> UNNotificationPresentationOptions {
@@ -229,7 +247,19 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
     if !payload.local, !remember(event) { return [] }
     guard notification(for: event, in: NotificationContext(appActive: true, route: model?.route)) != nil
     else { return [] }
+    // A push names the system sound and only the server can change that, so while the app is open it plays the cue.
+    if !payload.local, let file = NoticeKind(event).soundFile {
+      playNoticeSound(file)
+      return [.banner]
+    }
     return [.banner, .sound]
+  }
+
+  private func playNoticeSound(_ file: String) {
+    guard let url = Bundle.main.url(forResource: file, withExtension: nil) else { return }
+    var sound: SystemSoundID = 0
+    guard AudioServicesCreateSystemSoundID(url as CFURL, &sound) == noErr else { return }
+    AudioServicesPlaySystemSoundWithCompletion(sound) { AudioServicesDisposeSystemSoundID(sound) }
   }
 
   nonisolated func userNotificationCenter(

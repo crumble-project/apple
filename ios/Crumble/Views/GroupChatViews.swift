@@ -60,6 +60,7 @@ extension View {
 
 struct GroupChatView: View {
   @Environment(AppModel.self) private var model
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   let group: GroupChat
 
   private var members: [Agent] {
@@ -72,8 +73,9 @@ struct GroupChatView: View {
       hasMore: model.hasMore)
     ScrollView {
       LazyVStack(spacing: 10) {
-        ForEach(rows) { GroupChatRowView(row: $0) }
+        ForEach(rows) { GroupChatRowView(row: $0).transition(.groupArrival) }
       }
+      .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: model.groupArrivals)
       .padding(.horizontal, 20)
       .padding(.vertical, 16)
     }
@@ -119,6 +121,13 @@ struct GroupChatView: View {
       stopHelp: "Stop every bot in this group",
       send: { model.sendGroupMessage() },
       stop: { model.stopGroup() })
+  }
+}
+
+extension AnyTransition {
+  /// A new message rises into place as it fades in, as on the web.
+  static var groupArrival: AnyTransition {
+    .asymmetric(insertion: .opacity.combined(with: .offset(y: 8)), removal: .identity)
   }
 }
 
@@ -236,14 +245,7 @@ struct GroupBotMessage: View {
     let reply = SourceCitations.split(message.text, sources: message.sources ?? [])
     return VStack(alignment: .leading, spacing: 6) {
       MarkdownText(text: reply.text).textSelection(.enabled)
-      ForEach(reply.chips, id: \.href) { chip in
-        if let url = URL(string: chip.href) {
-          Link(destination: url) {
-            Label(chip.title.nilIfEmpty ?? chip.href, systemImage: "link")
-              .font(.callout).lineLimit(1)
-          }
-        }
-      }
+      ForEach(reply.chips, id: \.href) { SourceChipLink(chip: $0) }
     }
     .bubble(owner: false)
     .fixedSize(horizontal: false, vertical: true)
@@ -256,6 +258,20 @@ struct GroupBotMessage: View {
     .contextMenu {
       Button("Reply") { model.replyTo = message }
       Button("Copy") { UIPasteboard.general.string = message.text }
+    }
+  }
+}
+
+/// A page the reply's turn read, opened in the browser.
+struct SourceChipLink: View {
+  let chip: SourceChip
+
+  var body: some View {
+    if let url = URL(string: chip.href) {
+      Link(destination: url) {
+        Label(chip.title.nilIfEmpty ?? chip.href, systemImage: "link")
+          .font(.callout).lineLimit(1)
+      }
     }
   }
 }

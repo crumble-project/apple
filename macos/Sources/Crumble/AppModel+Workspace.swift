@@ -1,6 +1,8 @@
 import apfelkern
 import Foundation
 
+extension AppModel: AvatarHost {}
+
 extension AppModel {
     // MARK: Workspace panels
 
@@ -15,6 +17,9 @@ extension AppModel {
         case .skills: reloadSkills()
         case .tasks: loadTasksPanel()
         case .activity: loadActivityPanel()
+        case .avatars: break
+        case .credentials, .logins:
+            if let kind = panel.botSecretKind { loadBotSecrets(kind) }
         case .integrations: loadIntegrationsPanel()
         case .coding:
             loadGitHubApps()
@@ -86,11 +91,22 @@ extension AppModel {
     }
 
     private func loadActivityFeed() {
-        request { client in
-            let feed = try await client.activityFeed()
-            return { [self] in activities = feed.activities }
-        }
+        if let client { activityBoard.refresh(client: client) }
     }
+
+    /// Both lists follow the page's filter; the Changes pill shows the board that tracks reverts.
+    func showActivity(kind: ActivityKind?, botID: String?) {
+        guard let client else { return }
+        activityBoard.show(kind: kind, botID: botID, client: client)
+        changeBoard.show(botID: botID, client: client)
+    }
+
+    func loadMoreActivity() {
+        guard let client else { return }
+        activityBoard.loadMore(client: client)
+    }
+
+    func saveAvatar() { avatarBoard.save(to: self) }
 
     func revertChange(_ change: LearnedChange) {
         guard let client else { return }
@@ -99,11 +115,6 @@ extension AppModel {
             self?.loadMemoryPanel()
             self?.reloadSkills()
         }
-    }
-
-    func showChanges(botID: String?) {
-        guard let client else { return }
-        changeBoard.show(botID: botID, client: client)
     }
 
     func loadMoreChanges() {

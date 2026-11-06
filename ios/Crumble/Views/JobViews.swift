@@ -309,10 +309,9 @@ private struct CodingJobItemView: View {
   }
 }
 
-/// One tool call: what ran (a command or a file). Tap it to see the output, which a phone has no
-/// room to show for every step.
+/// One tool call: what ran (a command or a file). Tap it to see the whole output, which a phone
+/// has no room to show for every step.
 private struct CodingToolStep: View {
-  static let outputLines = 200
   let tool: CodingJobItem.Tool
   @State private var open = false
 
@@ -337,8 +336,6 @@ private struct CodingToolStep: View {
     default: tool.name.capitalized
     }
   }
-
-  private var output: (text: String, omitted: Int) { tailLines(tool.output, maxLines: Self.outputLines) }
 
   private var summary: some View {
     Button {
@@ -367,18 +364,13 @@ private struct CodingToolStep: View {
     VStack(alignment: .leading, spacing: 6) {
       summary
       if open {
-        VStack(alignment: .leading, spacing: 2) {
-          if output.omitted > 0 {
-            Text("\(output.omitted) earlier lines not shown").font(.caption).foregroundStyle(.tertiary)
-          }
-          Text(output.text.isEmpty ? "No output." : output.text)
-            .font(.caption.monospaced())
-            .foregroundStyle(tool.isError ? Color.red : Color.primary)
-            .textSelection(.enabled)
-        }
-        .padding(10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.primary.opacity(0.05), in: .rect(cornerRadius: 10))
+        Text(tool.shownOutput)
+          .font(.caption.monospaced())
+          .foregroundStyle(tool.isError ? Color.red : Color.primary)
+          .textSelection(.enabled)
+          .padding(10)
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .background(Color.primary.opacity(0.05), in: .rect(cornerRadius: 10))
       }
     }
   }

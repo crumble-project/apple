@@ -3,6 +3,8 @@ import Foundation
 /// The signed-in account. The server names it only outside the `/v1` contract.
 public struct ServerAccount: Hashable, Sendable {
   public var id: String
+  public var name: String
+  public var email: String
   public var isAdmin: Bool
 }
 

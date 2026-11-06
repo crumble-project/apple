@@ -71,3 +71,18 @@ extension APIClientTests {
   router.queue(payload)
   #expect(router.resolve(serverID: "s1", serverURL: nil, agentIDs: ["a1"]) == .openDesktop("a1"))
 }
+
+@Test func aLocalNotificationDecodesLikeAPush() {
+  let event = ActivityEvent(
+    eventId: "e1", serverId: "s1", createdAt: ContractFixtures.timestamp, type: "reply", agentId: "a1",
+    agentName: "Desk", origin: "desktop", preview: "Approve?", jobName: "github", waitingFor: "approval")
+  let payload = NotificationPayload(userInfo: Notifier.localPayload(event, serverURL: "http://server"))
+  #expect(payload.event == event)
+  #expect(payload.matches(serverID: nil, serverURL: "http://server"))
+}
+
+@Test func theNoticeSoundsShipInTheAppBundle() {
+  for kind in [NoticeKind.approval, .credential] {
+    #expect(Bundle.main.url(forResource: kind.soundFile, withExtension: nil) != nil)
+  }
+}

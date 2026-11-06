@@ -44,10 +44,13 @@ private func decode(_ json: String) throws -> Message {
   #expect(read.subject == "a.swift" && !read.finished)
 }
 
-@Test func tailKeepsLastLines() {
-  let result = tailLines("1\n2\n3\n4\n", maxLines: 2)
-  #expect(result.text == "3\n4" && result.omitted == 2)
-  #expect(tailLines("1", maxLines: 2) == ("1", 0))
+@Test func shownOutputKeepsEveryLine() {
+  func tool(_ output: String) -> CodingJobItem.Tool {
+    CodingJobItem.Tool(id: "t", name: "bash", subject: "", output: output, isError: false, finished: true)
+  }
+  let lines = (1...500).map(String.init).joined(separator: "\n")
+  #expect(tool(lines + "\n\n").shownOutput == lines)
+  #expect(tool("\n").shownOutput == "No output.")
 }
 
 @Test func draftDefaultsCodingOff() {

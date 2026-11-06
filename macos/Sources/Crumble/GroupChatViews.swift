@@ -54,6 +54,7 @@ extension View {
 
 struct GroupChatView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let group: GroupChat
 
     private var members: [Agent] { group.memberIds.compactMap { id in model.agents.first { $0.id == id } } }
@@ -64,9 +65,12 @@ struct GroupChatView: View {
         ScrollView {
             LazyVStack(spacing: 0) {
                 ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                    GroupChatRowView(row: row).padding(.top, index > 0 ? 12 : 0)
+                    GroupChatRowView(row: row)
+                        .padding(.top, index > 0 ? 12 : 0)
+                        .transition(.groupArrival)
                 }
             }
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: model.groupArrivals)
             .frame(maxWidth: Palette.column)
             .padding(.horizontal, 28)
             .padding(.vertical, 20)
@@ -117,6 +121,13 @@ struct GroupChatView: View {
             stopHelp: "Stop every bot in this group",
             send: { model.sendGroupMessage() },
             stop: { model.stopGroup() })
+    }
+}
+
+extension AnyTransition {
+    /// A new message rises into place as it fades in, as on the web.
+    static var groupArrival: AnyTransition {
+        .asymmetric(insertion: .opacity.combined(with: .offset(y: 8)), removal: .identity)
     }
 }
 

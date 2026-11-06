@@ -94,7 +94,7 @@ extension GroupChatHost {
       },
       work: { client in
         try await client.deleteGroupChat(id)
-        return nil
+        return { [self] in groupComposerDrafts[id] = nil }
       })
   }
 }

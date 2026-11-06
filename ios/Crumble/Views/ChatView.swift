@@ -9,7 +9,7 @@ import UniformTypeIdentifiers
 enum ChatRow: Identifiable {
   case older
   case time(String, String)
-  case message(Message)
+  case message(Message, reactions: [String])
   case partial(String)
   case thinking
   case failure(String)
@@ -18,7 +18,7 @@ enum ChatRow: Identifiable {
     switch self {
     case .older: "older"
     case .time(let id, _): "time:" + id
-    case .message(let message): message.id
+    case .message(let message, _): message.id
     case .partial: "partial"
     case .thinking: "thinking"
     case .failure: "error"
@@ -28,14 +28,17 @@ enum ChatRow: Identifiable {
   static func rows(messages: [Message], snapshot: ChatSnapshot?, hasMore: Bool) -> [ChatRow] {
     var rows: [ChatRow] = hasMore ? [.older] : []
     var last: Int64 = 0
-    for message in messages where shownInChat(message) {
+    let reactions = Reaction.byMessage(messages)
+    let sources = SourceCitations.byReply(messages)
+    for var message in messages where shownInChat(message) {
       if let timestamp = message.timestamp, timestamp > 0 {
         if timestamp - last > 30 * 60 * 1000 {
           rows.append(.time(message.id, timeLabel(Date(timeIntervalSince1970: Double(timestamp) / 1000))))
         }
         last = timestamp
       }
-      rows.append(.message(message))
+      message.sources = sources[message.id]
+      rows.append(.message(message, reactions: reactions[message.id] ?? []))
     }
     if let snapshot {
       // Live generation text is intentionally withheld until the completed assistant
@@ -181,8 +184,8 @@ struct ChatRowView: View {
       }
     case .time(_, let label):
       Text(label).font(.caption).foregroundStyle(.secondary).padding(.top, 6)
-    case .message(let message):
-      MessageView(message: message)
+    case .message(let message, let reactions):
+      MessageView(message: message, reactions: reactions)
     case .partial(let text):
       HStack {
         MarkdownText(text: text).bubble(owner: false)

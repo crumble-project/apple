@@ -22,6 +22,13 @@ public enum BotSecretKind: String, CaseIterable, Hashable, Sendable {
 
   public var title: String { noun + "s" }
 
+  public var searchPrompt: String { "Search \(title.lowercased())" }
+
+  /// What the pills above the list choose between.
+  public var pillsLabel: String { "Whose \(title.lowercased())" }
+
+  public var noMatchText: String { "No \(title.lowercased()) match your search." }
+
   public var emptyText: String {
     switch self {
     case .credential: "None yet. The bot asks for one when a coding job needs it."
@@ -79,7 +86,7 @@ public enum BotSecretKind: String, CaseIterable, Hashable, Sendable {
   private static let useRetentionDays = 90
 }
 
-public enum PasswordManagerID: String, CaseIterable, Hashable, Sendable {
+public enum PasswordManagerID: String, CaseIterable, Codable, Hashable, Sendable {
   case onePassword = "1password"
   case bitwarden
 
@@ -114,7 +121,7 @@ public struct PasswordManager: Identifiable, Hashable, Sendable {
 }
 
 /// Where a saved secret is read from. The value itself never comes back from the server.
-public struct SecretStatus: Hashable, Sendable {
+public struct SecretStatus: Codable, Hashable, Sendable {
   public var configured: Bool
   public var passwordManager: PasswordManagerID?
   public var reference: String?

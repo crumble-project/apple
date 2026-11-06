@@ -120,6 +120,7 @@ struct MCPFormView: View {
     var body: some View {
         Form {
             SheetError()
+            ServiceSaveStatus(isSaving: model.isCheckingMCP, label: "Checking…", error: "")
             Section {
                 if draft.serverID.isEmpty {
                     Picker("Available to", selection: $draft.agentID) {
@@ -131,7 +132,6 @@ struct MCPFormView: View {
                 }
                 TextField("Name", text: $draft.name, prompt: Text("Required"))
                 TextField("HTTP URL", text: $draft.url, prompt: Text("https://"))
-                SecureField("Token", text: $draft.token, prompt: Text("Optional"))
                 Toggle("Enabled", isOn: $draft.enabled)
             } header: {
                 Text("MCP Server")
@@ -139,8 +139,14 @@ struct MCPFormView: View {
                 Text("Leave the token empty for servers that use OAuth, then choose Sign In in the list after saving.")
                     .foregroundStyle(.secondary)
             }
+            Section {
+                SecretSourceField(
+                    label: "Token", source: $draft.token, valueNote: draft.tokenNote,
+                    prompt: draft.tokenPlaceholder)
+            }
         }
         .formStyle(.grouped)
+        .disabled(model.isCheckingMCP)
         .frame(width: 460)
         .toolbar {
             SheetActions(

@@ -124,6 +124,7 @@ struct MCPFormView: View {
   private var serverForm: some View {
     Form {
       SheetError()
+      ServiceSaveStatus(isSaving: model.isCheckingMCP, label: "Checking…", error: "")
       Section {
         if draft.serverID.isEmpty {
           Picker("Available to", selection: $draft.agentID) {
@@ -139,7 +140,6 @@ struct MCPFormView: View {
           .keyboardType(.URL)
           .textInputAutocapitalization(.never)
           .autocorrectionDisabled()
-        SecureField("Token", text: $draft.token, prompt: Text("Token (optional)"))
         Toggle("Enabled", isOn: $draft.enabled)
       } header: {
         Text("MCP Server")
@@ -149,7 +149,13 @@ struct MCPFormView: View {
         )
         .foregroundStyle(.secondary)
       }
+      Section {
+        SecretSourceField(
+          label: "Token", source: $draft.token, valueNote: draft.tokenNote,
+          prompt: draft.tokenPlaceholder)
+      }
     }
+    .disabled(model.isCheckingMCP)
   }
 
   @Environment(AppModel.self) private var model
@@ -171,6 +177,7 @@ struct MCPFormView: View {
           }, onSave: model.saveMCP, saveDisabled: model.loading)
       }
     }
+    .interactiveDismissDisabled(model.isCheckingMCP)
   }
 }
 

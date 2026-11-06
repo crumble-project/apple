@@ -1,4 +1,5 @@
 import apfelkern
+import BotAvatar
 import SwiftUI
 
 struct MessageGatewaysPanel: View {
@@ -36,6 +37,7 @@ private struct GatewayRow: View {
 
     var body: some View {
         HStack {
+            BrandLogoView(.gateway(gateway.id))
             Text(gateway.label).fontWeight(.semibold)
             GatewayStatusText(gateway: gateway)
             Spacer()
@@ -75,6 +77,9 @@ private struct GatewaySheet: View {
                 connection
                 bots
                 access
+                Section {
+                    Button("Reset") { board.resetDraft() }.disabled(!draft.isDirty)
+                }
             }
             .formStyle(.grouped)
             .navigationTitle(draft.label)
@@ -95,6 +100,7 @@ private struct GatewaySheet: View {
         Section("Connection") {
             Toggle(isOn: $draft.enabled) {
                 HStack {
+                    BrandLogoView(.gateway(draft.gatewayID))
                     Text(draft.label)
                     if let gateway { GatewayStatusText(gateway: gateway) }
                 }

@@ -24,13 +24,15 @@ enum ChatRow: Identifiable {
         var rows: [ChatRow] = hasMore ? [.older] : []
         var last: Int64 = 0
         let reactions = Reaction.byMessage(messages)
-        for message in messages where shownInChat(message) {
+        let sources = SourceCitations.byReply(messages)
+        for var message in messages where shownInChat(message) {
             if let timestamp = message.timestamp, timestamp > 0 {
                 if timestamp - last > 30 * 60 * 1000 {
                     rows.append(.time(message.id, timeLabel(Date(timeIntervalSince1970: Double(timestamp) / 1000))))
                 }
                 last = timestamp
             }
+            message.sources = sources[message.id]
             rows.append(.message(message, reactions: reactions[message.id] ?? []))
         }
         if let snapshot {

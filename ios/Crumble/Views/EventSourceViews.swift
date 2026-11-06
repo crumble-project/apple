@@ -46,6 +46,10 @@ private struct EventSourceRow: View {
           Text(source.name).fontWeight(.semibold).lineLimit(1)
           Text("(\(source.usedByLabel))").foregroundStyle(.secondary)
         }
+        // Touch has no tooltip, so the reason Delete is off stays on screen.
+        if !source.canDelete {
+          Text(source.deleteNote).font(.caption).foregroundStyle(.secondary)
+        }
         if let error {
           Text(error).font(.caption).foregroundStyle(.red).textSelection(.enabled)
         }

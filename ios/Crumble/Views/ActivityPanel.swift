@@ -1,38 +1,54 @@
 import apfelkern
+import BotAvatar
 import SwiftUI
-
-private enum ActivityFilter: String, CaseIterable {
-  case all = "All", changes = "Changes"
-}
 
 struct ActivityPanel: View {
   @Environment(AppModel.self) private var model
-  @State private var filter = ActivityFilter.all
+
+  private var board: ActivityBoard { model.activityBoard }
+
+  private var kind: Binding<ActivityKind?> {
+    Binding(get: { board.kind }, set: { model.showActivity(kind: $0, botID: board.botID) })
+  }
+
+  private var bot: Binding<String?> {
+    Binding(get: { board.botID }, set: { model.showActivity(kind: board.kind, botID: $0) })
+  }
+
+  private var pills: [FilterPill<ActivityKind?>] {
+    [FilterPill(value: nil, label: "All")]
+      + ActivityKind.allCases.map { FilterPill(value: $0, label: $0.label, symbol: $0.symbol) }
+  }
 
   var body: some View {
     Form {
       Section {
-        Picker("Show", selection: $filter) {
-          ForEach(ActivityFilter.allCases, id: \.self) { Text($0.rawValue) }
+        FilterPills(label: "Kind of activity", pills: pills, selection: kind)
+        Picker("Bot", selection: bot) {
+          Text("All bots").tag(String?.none)
+          ForEach(model.agents) { Text($0.name).tag(String?.some($0.id)) }
         }
-        .pickerStyle(.segmented)
-        .labelsHidden()
       }
-      switch filter {
-      case .all: everything
-      case .changes: ChangeList()
+      if board.kind == .change {
+        ChangeList()
+      } else {
+        feed
       }
     }
     .formStyle(.grouped)
   }
 
-  @ViewBuilder private var everything: some View {
-    if model.activities.isEmpty {
-      ContentUnavailableView(
-        "No Activity", systemImage: "waveform.path.ecg",
-        description: Text("Tool calls, bot messages, and skill and memory changes will appear here."))
+  @ViewBuilder private var feed: some View {
+    if let error = board.readError {
+      Text(error).foregroundStyle(.red).textSelection(.enabled)
     }
-    ForEach(activityDays(model.activities, date: \.date)) { day in
+    if !board.isLoaded, board.readError == nil {
+      ProgressView()
+    } else if board.isLoaded, board.entries.isEmpty, !board.hasMore {
+      ContentUnavailableView(
+        "No Activity", systemImage: "waveform.path.ecg", description: Text(board.emptyText))
+    }
+    ForEach(activityDays(board.entries, date: \.date)) { day in
       Section(day.label) {
         ForEach(day.items) { activity in
           if let change = activity.change {
@@ -41,6 +57,12 @@ struct ActivityPanel: View {
             row(activity)
           }
         }
+      }
+    }
+    if board.hasMore {
+      Section {
+        Button(board.isLoadingMore ? "Loading…" : "Show older activity") { model.loadMoreActivity() }
+          .disabled(board.isLoadingMore)
       }
     }
   }

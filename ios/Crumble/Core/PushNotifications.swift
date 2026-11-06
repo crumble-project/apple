@@ -177,6 +177,10 @@ final class PushController {
         try await api.unregisterPush(old.installationID)
         cleanup.removeAll { $0 == old }
         persist()
+      } catch let error as APIError where error.statusCode == 401 {
+        // A session that ended can never unregister, and pending cleanup blocks the next registration.
+        cleanup.removeAll { $0 == old }
+        persist()
       } catch { /* Keep the old credential in Keychain and retry on the next heartbeat/launch. */ }
       guard version == revision else { return false }
     }

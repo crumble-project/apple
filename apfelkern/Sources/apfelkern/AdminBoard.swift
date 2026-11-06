@@ -74,6 +74,9 @@ public final class AdminBoard {
 
   public var isAdmin: Bool { account?.isAdmin == true }
 
+  /// The server answered and doesn't know this session, so the owner has to sign in again.
+  public var sessionEnded: Bool { isAccountLoaded && account == nil }
+
   public var users: [AdminUser] {
     loadedUsers.filter { !removing.contains($0.id) }.map { user in
       var shown = user

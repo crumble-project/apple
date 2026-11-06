@@ -7,12 +7,15 @@ private enum SettingsPage: String, CaseIterable, Identifiable {
     case skills = "Skills"
     case tasks = "Tasks"
     case activity = "Activity"
+    case avatars = "Avatars"
     case judgeModel = "Judge model"
     case visionModel = "Vision model"
     case integrations = "Integrations"
     case coding = "Coding"
     case users = "Users"
     case passwordManagers = "Password managers"
+    case credentials = "Credentials"
+    case logins = "Logins"
     case webSearch = "Web search"
     case messageGateways = "Message gateways"
     case eventRelay = "Event relay"
@@ -26,12 +29,15 @@ private enum SettingsPage: String, CaseIterable, Identifiable {
         case .skills: .skills
         case .tasks: .tasks
         case .activity: .activity
+        case .avatars: .avatars
         case .judgeModel: .judgeModel
         case .visionModel: .visionModel
         case .integrations: .integrations
         case .coding: .coding
         case .users: .users
         case .passwordManagers: .passwordManagers
+        case .credentials: .credentials
+        case .logins: .logins
         case .webSearch: .webSearch
         case .messageGateways: .messageGateways
         case .eventRelay: .eventRelay
@@ -45,19 +51,30 @@ private enum SettingsPage: String, CaseIterable, Identifiable {
         case .skills: "book.closed"
         case .tasks: "calendar.badge.clock"
         case .activity: "waveform.path.ecg"
+        case .avatars: "face.smiling"
         case .judgeModel: JudgeModelSettings.symbol
         case .visionModel: VisionModelSettings.symbol
         case .integrations: "powerplug"
         case .coding: "chevron.left.forwardslash.chevron.right"
         case .users: "person.2"
         case .passwordManagers: "lock.rectangle.stack"
+        case .credentials: "key"
+        case .logins: "person.badge.key"
         case .webSearch: "globe"
         case .messageGateways: "message"
         case .eventRelay: "dot.radiowaves.left.and.right"
         }
     }
 
-    static let connectedServices: [SettingsPage] = [.passwordManagers, .webSearch, .messageGateways, .eventRelay]
+    static let connectedServices: [SettingsPage] = [
+        .passwordManagers, .credentials, .logins, .webSearch, .messageGateways, .eventRelay
+    ]
+}
+
+/// Where the command palette sends the Settings window.
+enum SettingsTarget: Equatable {
+    case general
+    case page(Route)
 }
 
 struct SettingsView: View {
@@ -94,12 +111,22 @@ struct SettingsView: View {
             .overlay(alignment: .bottom) { NoticeToast() }
         }
         .frame(minWidth: 760, minHeight: 560)
+        .modifier(FollowsTheme(board: model.themeBoard))
         .onChange(of: selection) { _, _ in loadSelection() }
+        .onChange(of: model.settingsTarget, initial: true) { _, target in
+            switch target {
+            case .general: selection = .general
+            case .page(let route): selection = SettingsPage.allCases.first { $0.route == route }
+            case nil: return
+            }
+            model.settingsTarget = nil
+        }
         .onAppear { loadSelection() }
         .onDisappear { model.workspaceRoute = nil }
         .sheet(item: $model.memoryDraft) { MemoryFormView(draft: sheetBinding($model.memoryDraft, for: $0)) }
         .sheet(item: $model.taskDraft) { TaskFormView(draft: sheetBinding($model.taskDraft, for: $0)) }
         .sheet(item: $model.mcpDraft) { MCPFormView(draft: sheetBinding($model.mcpDraft, for: $0)) }
+        .botSecretSheets(active: model.settingsShowsBotSecrets && model.agentDraft == nil)
         .machineAccountSheet()
         .adminSheets()
         .messageGatewaySheet()

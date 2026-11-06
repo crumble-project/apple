@@ -117,11 +117,14 @@ struct MessageView: View {
     }
   }
 
-  @ViewBuilder private var incomingMessageContent: some View {
-    MarkdownText(text: message.text)
-      .textSelection(.enabled)
-      .bubble(owner: false)
-      .contextMenu { menu }
+  private var incomingMessageContent: some View {
+    let reply = SourceCitations.split(message.text, sources: message.sources ?? [])
+    return VStack(alignment: .leading, spacing: 6) {
+      MarkdownText(text: reply.text).textSelection(.enabled)
+      ForEach(reply.chips, id: \.href) { SourceChipLink(chip: $0) }
+    }
+    .bubble(owner: false)
+    .contextMenu { menu }
   }
 
   @ViewBuilder private var replyButton: some View {
