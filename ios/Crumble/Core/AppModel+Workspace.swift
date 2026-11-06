@@ -15,7 +15,7 @@ extension AppModel {
     case .memory:
       loadMemoryOverview()
     case .skills:
-      loadSkillOverview()
+      reloadSkills()
     case .tasks:
       let mutationVersion = mutationRevision
       request { client in
@@ -32,23 +32,10 @@ extension AppModel {
       }
     case .integrations:
       loadIntegrationOverview()
+      loadGitHubApps()
+      loadGitHubAccounts()
     case .agent, .group:
       break
-    }
-  }
-
-  private func loadSkillOverview() {
-    let mutationVersion = mutationRevision
-    request { client in
-      async let bots = client.agents()
-      async let skills = client.sharedSkills()
-      let (loadedBots, loadedSkills) = try await (bots, skills)
-      return { [self] in
-        for agent in loadedBots { botSkillBoard.refresh(agentID: agent.id, client: client) }
-        guard mutationRevision == mutationVersion, pendingMutations.isEmpty else { return }
-        agents = loadedBots
-        sharedSkills = loadedSkills
-      }
     }
   }
 

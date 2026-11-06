@@ -243,29 +243,45 @@ public struct Memory: Codable, Identifiable, Hashable, Sendable {
   }
 }
 
-/// A shared skill: bundled defaults apply to every bot; library entries are opt-in.
+/// A shared skill: bundled defaults apply to every bot; library entries are opt-in. An installed
+/// skill has an `origin` and is read-only: the owner updates it from upstream or makes a copy.
 public struct SharedSkill: Codable, Identifiable, Hashable, Sendable {
   public var id: String
   public var name: String
+  public var description: String
   public var instructions: String
   public var source: String?
   public var path: String?
+  public var origin: SkillOrigin?
+  public var update: SkillUpdate?
 
   public var isDefault: Bool { source == "bundled" }
+  public var isInstalled: Bool { origin != nil }
 
   public init(
     id: String,
     name: String,
     instructions: String,
     source: String? = nil,
-    path: String? = nil
+    path: String? = nil,
+    description: String = "",
+    origin: SkillOrigin? = nil,
+    update: SkillUpdate? = nil
   ) {
     self.id = id
     self.name = name
     self.instructions = instructions
     self.source = source
     self.path = path
+    self.description = description
+    self.origin = origin
+    self.update = update
   }
+
+  /// The first line of the instructions, without Markdown heading marks.
+  public var glimpse: String { skillGlimpse(instructions) }
+  /// What a row says about the skill: its description, or else the start of its instructions.
+  public var summary: String { description.isEmpty ? glimpse : description }
 }
 
 public struct Schedule: Codable, Identifiable, Hashable, Sendable {

@@ -16,6 +16,15 @@ struct PanelView: View {
                     case .memory:
                         Button("New Memory", systemImage: "plus") { model.openMemoryForm("", agentID: nil) }
                     case .skills:
+                        if model.skillCatalog.installed {
+                            Button("Check for Updates", systemImage: "arrow.triangle.2.circlepath") {
+                                model.checkSkillUpdates()
+                            }
+                            .disabled(model.sharedSkillBoard.checking)
+                        }
+                        Button("Install from GitHub", systemImage: "square.and.arrow.down") {
+                            model.openSkillInstall()
+                        }
                         Button("New Skill", systemImage: "plus") { model.openSkillForm("") }
                     case .tasks:
                         Button("New Task", systemImage: "plus") { model.openTaskForm("") }.disabled(

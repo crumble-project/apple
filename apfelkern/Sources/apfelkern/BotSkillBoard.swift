@@ -132,6 +132,14 @@ public final class BotSkillBoard {
       })
   }
 
+  /// Takes skills a bulk action already deleted out of the lists, ignoring reads that predate it.
+  func forget(_ skillIDs: Set<String>) {
+    for agentID in lists.keys {
+      lists[agentID]?.removeAll { skillIDs.contains($0.id) }
+      settledReads[agentID] = reads[agentID, default: 0]
+    }
+  }
+
   private func replace(_ skillID: String, agentID: String, with skill: BotSkill) {
     guard let index = lists[agentID]?.firstIndex(where: { $0.id == skillID }) else { return }
     lists[agentID]?[index] = skill

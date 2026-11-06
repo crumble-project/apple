@@ -38,12 +38,4 @@ extension APIClient {
       _ = try await $0.deleteAgentSkill(.init(path: .init(id: agentID, skillId: skillID))).noContent
     }
   }
-
-  /// Changes one bot's use of one shared skill, so it can't undo another client's assignment.
-  public func assignSharedSkill(_ skillID: String, agentID: String, assigned: Bool) async throws {
-    try await invoke {
-      _ = try await $0.assignSkillBot(.init(
-        path: .init(id: skillID), body: .json(.init(assigned: assigned, botId: agentID)))).ok
-    }
-  }
 }

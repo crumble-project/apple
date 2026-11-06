@@ -136,12 +136,13 @@ private struct BotSecretSheet: View {
 }
 
 /// One secret: typed here, or read from a connected password manager.
-private struct SecretSourceField: View {
+struct SecretSourceField: View {
     let label: String
     @Binding var source: SecretSourceDraft
     let managers: [PasswordManager]
     var concealed = true
     var valueNote: String?
+    var placeholder: String?
 
     var body: some View {
         if !managers.isEmpty, source.manager == nil || managers.contains(where: { $0.id == source.manager }) {
@@ -157,6 +158,8 @@ private struct SecretSourceField: View {
             .foregroundStyle(.secondary)
     }
 
+    private var valuePrompt: String { source.keepPlaceholder.nilIfEmpty ?? placeholder ?? label }
+
     private var manager: Binding<PasswordManagerID?> {
         Binding(get: { source.manager }, set: { source.use($0) })
     }
@@ -168,11 +171,11 @@ private struct SecretSourceField: View {
                 .autocorrectionDisabled()
                 .fontDesign(.monospaced)
         } else if concealed {
-            SecureField(label, text: $source.value, prompt: Text(source.keepPlaceholder.nilIfEmpty ?? label))
+            SecureField(label, text: $source.value, prompt: Text(valuePrompt))
                 .accessibilityLabel(label)
                 .privacySensitive()
         } else {
-            TextField(label, text: $source.value, prompt: Text(source.keepPlaceholder.nilIfEmpty ?? label))
+            TextField(label, text: $source.value, prompt: Text(valuePrompt))
                 .accessibilityLabel(label)
                 .autocorrectionDisabled()
                 .privacySensitive()

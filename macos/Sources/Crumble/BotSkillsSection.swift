@@ -7,6 +7,8 @@ struct BotSkillsSection: View {
     let title: String
     let agentID: String
     let agentName: String
+    /// Set on the Skills page, which filters and selects skills.
+    var catalog: SkillCatalog?
 
     private var board: BotSkillBoard { model.botSkillBoard }
 
@@ -23,18 +25,35 @@ struct BotSkillsSection: View {
                 // Bots can join the list while it is open, and nothing else reads theirs.
                 ProgressView().controlSize(.small)
                     .task(id: agentID) { model.loadBotSkills(agentID: agentID) }
-            } else if board.isLoaded(agentID: agentID), board.skills(agentID: agentID).isEmpty {
-                Text("No skills of its own yet.").foregroundStyle(.secondary)
+            } else if board.isLoaded(agentID: agentID), let note = emptyNote {
+                Text(note).foregroundStyle(.secondary)
             }
-            ForEach(board.skills(agentID: agentID)) { skill in
-                BotSkillRow(skill: skill, agentName: agentName)
+            ForEach(shown) { skill in
+                BotSkillRow(skill: skill, agentName: agentName, selectable: catalog != nil)
             }
             Button("New Skill", systemImage: "plus") { model.openPersonalSkillForm(agentID: agentID) }
         } header: {
-            Text(title)
+            HStack {
+                Text(title)
+                Spacer()
+                if catalog != nil {
+                    SkillSelectBox(ids: shown.map(\.id), label: "Select all \(agentName) skills", title: "Select all")
+                }
+            }
         } footer: {
             Text("Only \(agentName) has these.").foregroundStyle(.secondary)
         }
+    }
+
+    private var shown: [BotSkill] {
+        let skills = board.skills(agentID: agentID)
+        guard let catalog else { return skills }
+        return skills.filter(catalog.matches).filter { !model.skillBulkBoard.hidden.contains($0.id) }
+    }
+
+    private var emptyNote: String? {
+        guard shown.isEmpty else { return nil }
+        return board.skills(agentID: agentID).isEmpty ? "No skills of its own yet." : "No skills match your search."
     }
 }
 
@@ -42,6 +61,7 @@ private struct BotSkillRow: View {
     @Environment(AppModel.self) private var model
     let skill: BotSkill
     let agentName: String
+    let selectable: Bool
     @State private var deleting = false
 
     var body: some View {
@@ -51,6 +71,7 @@ private struct BotSkillRow: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         } label: {
             HStack {
+                if selectable { SkillSelectBox(ids: [skill.id], label: "Select \(skill.name) (\(agentName))") }
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
                         Text(skill.name).fontWeight(.semibold)
@@ -102,7 +123,7 @@ struct SharedSkillToggles: View {
                     )
                     .disabled(
                         skill.id.hasPrefix("pending-")
-                            || model.pendingMutations.contains("agent-shared-skills:\(agentID)"))
+                          || model.isChangingAssignment(skillID: skill.id, agentID: agentID))
                 }
             } header: {
                 Text("Shared Skills")

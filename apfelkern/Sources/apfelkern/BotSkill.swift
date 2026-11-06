@@ -23,9 +23,11 @@ public struct BotSkill: Identifiable, Hashable, Sendable {
   }
 
   /// The first line of the instructions, without Markdown heading marks.
-  public var glimpse: String {
-    instructions.split(whereSeparator: \.isNewline)
-      .map { $0.drop { $0 == "#" }.trimmingCharacters(in: .whitespaces) }
-      .first { !$0.isEmpty } ?? "No instructions."
-  }
+  public var glimpse: String { skillGlimpse(instructions) }
+}
+
+func skillGlimpse(_ instructions: String) -> String {
+  instructions.split(whereSeparator: \.isNewline)
+    .map { $0.drop { $0 == "#" }.trimmingCharacters(in: .whitespaces) }
+    .first { !$0.isEmpty } ?? "No instructions."
 }

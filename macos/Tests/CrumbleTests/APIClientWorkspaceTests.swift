@@ -116,4 +116,48 @@ extension APIClientTests {
         #expect(model.agents[0].sharedSkills == [])
         #expect(model.errorText.contains("busy"))
     }
+
+    @MainActor @Test func failedSharedSkillDeleteRestoresTheBotsThatUsedIt() async throws {
+        let client = StubProtocol.client { request in
+            guard request.httpMethod == "GET" else { return (500, #"{"error":"busy"}"#) }
+            return (200, #"[{"id":"s1","name":"Lint","instructions":"Check","source":"shared","#
+                + #""createdAt":"2026-11-05T10:00:00Z","updatedAt":"2026-11-05T10:00:00Z"}]"#)
+        }
+        let model = AppModel(client: client)
+        model.sharedSkills = [SharedSkill(id: "s1", name: "Lint", instructions: "Check")]
+        model.agents = [Agent(id: "a1", name: "Atlas", sharedSkills: ["s1"])]
+        model.deleteSharedSkill("s1")
+        #expect(model.sharedSkills.isEmpty)
+        #expect(model.agents[0].sharedSkills == [])
+        while !model.sharedSkillBoard.pending.isEmpty { try await Task.sleep(for: .milliseconds(5)) }
+        #expect(model.sharedSkills.map(\.id) == ["s1"])
+        #expect(model.agents[0].sharedSkills == ["s1"])
+        #expect(model.sharedSkillBoard.error?.contains("busy") == true)
+        model.sharedSkillBoard.reset()
+    }
+
+    @MainActor @Test func aNewSharedSkillIsAssignedToItsUsedByBotsOnceSaved() async throws {
+        let saved = #"{"id":"s2","name":"Lint","instructions":"Check","createdAt":"2026-11-05T10:00:00Z","#
+            + #""updatedAt":"2026-11-05T10:00:00Z"}"#
+        let client = StubProtocol.client { request in
+            switch (request.httpMethod, request.url?.path) {
+            case ("POST", "/v1/skills"): (201, saved)
+            case ("POST", "/v1/skills/s2/assignment"): (200, #"{"skipped":false}"#)
+            default: (200, "[]")
+            }
+        }
+        let model = AppModel(client: client)
+        model.agents = [Agent(id: "a1", name: "Atlas", sharedSkills: [])]
+        model.openSkillForm("")
+        model.skillDraft?.name = "Lint"
+        model.skillDraft?.instructions = "Check"
+        model.skillDraft?.usedBy = ["a1"]
+        model.saveSkill()
+        #expect(model.skillDraft == nil)
+        while !model.sharedSkillBoard.pending.isEmpty || model.loading {
+            try await Task.sleep(for: .milliseconds(5))
+        }
+        #expect(model.agents[0].sharedSkills == ["s2"])
+        model.sharedSkillBoard.reset()
+    }
 }

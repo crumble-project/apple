@@ -184,19 +184,38 @@ struct SkillFormView: View {
       Form {
         SheetError()
         Section {
+          if draft.skillID.isEmpty {
+            Picker(
+              "Available to",
+              selection: Binding(
+                get: { draft.agentID },
+                set: {
+                  draft.agentID = $0
+                  if $0 != nil { draft.usedBy = [] }
+                })
+            ) {
+              Text("Every bot (shared)").tag(String?.none)
+              ForEach(model.agents) { agent in
+                Text(agent.name).tag(Optional(agent.id))
+              }
+            }
+          }
           TextField("Skill name", text: $draft.name, prompt: Text("Skill name"))
             .accessibilityLabel(draft.agentID == nil ? "Shared skill name" : "Bot skill name")
+            .limited($draft.name, by: SkillLimits.name)
           TextEditor(text: $draft.instructions).frame(minHeight: 120)
+            .limited($draft.instructions, by: SkillLimits.instructions)
         } header: {
           Text(draft.agentID == nil ? "Shared Skill" : "Bot Skill")
         } footer: {
           Text(
             draft.agentID == nil
-              ? "Enable this shared skill for bots from the Skills workspace."
+              ? "Bots that use this skill follow these instructions."
               : "This skill belongs to the selected bot and runs in its chat."
           )
             .foregroundStyle(.secondary)
         }
+        if draft.agentID == nil { SkillUsedBySection(selected: $draft.usedBy) }
       }
       .formStyle(.grouped)
       .navigationTitle(draft.agentID == nil ? "Shared Skill" : "Bot Skill")

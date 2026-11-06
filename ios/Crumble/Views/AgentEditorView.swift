@@ -298,6 +298,7 @@ extension AgentEditorView {
             TextField("Skill name", text: $skill.name, prompt: Text("Skill name"))
               .labelsHidden()
               .fontWeight(.semibold)
+              .limited($skill.name, by: SkillLimits.name)
             Button("Remove Skill", systemImage: "xmark") {
               draft.skills.removeAll { $0.id == skill.id }
             }
@@ -311,6 +312,7 @@ extension AgentEditorView {
           .labelsHidden()
           .lineLimit(2...10)
           .foregroundStyle(.secondary)
+          .limited($skill.instructions, by: SkillLimits.instructions)
         }
       }
       Button("Add Skill…") { draft.skills.append(Skill()) }

@@ -1,6 +1,6 @@
 # Crumble for macOS
 
-Native SwiftUI macOS client for a Crumble server. Supports bot chats, group chats, coding jobs, live bot desktops with take-control, memories, skills, scheduled tasks, MCP integrations, and provider account sign-in.
+Native SwiftUI macOS client for a Crumble server. Supports bot chats, group chats, coding jobs, live bot desktops with take-control, memories, skills, scheduled tasks, MCP integrations, GitHub Apps and machine accounts, and provider account sign-in.
 
 ## Requirements
 

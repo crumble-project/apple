@@ -28,14 +28,12 @@ extension AppModel {
   private func loadEditorData(provider: String) {
     models = []
     let revision = mutationRevision
+    if let client { sharedSkillBoard.refresh(client: client) }
     request { client in
-      async let servers = client.mcpServers()
-      async let skills = client.sharedSkills()
-      let (loadedServers, loadedSkills) = try await (servers, skills)
+      let loadedServers = try await client.mcpServers()
       return { [self] in
         guard mutationRevision == revision, pendingMutations.isEmpty else { return }
         mcpServers = loadedServers
-        sharedSkills = loadedSkills
       }
     }
     loadProviders()

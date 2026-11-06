@@ -63,7 +63,7 @@ public struct SecretSourceDraft: Sendable {
     if case .reference? = changedInput { true } else { false }
   }
 
-  fileprivate mutating func clear() {
+  mutating func clear() {
     value = ""
     reference = ""
   }

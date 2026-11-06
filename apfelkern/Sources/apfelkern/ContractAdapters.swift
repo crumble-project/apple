@@ -81,17 +81,19 @@ extension Memory {
 
 extension SharedSkill {
   init(wire: Components.Schemas.Skill) {
-    self.init(id: wire.id, name: wire.name, instructions: wire.instructions)
+    self.init(id: wire.id, name: wire.name, instructions: wire.instructions, source: "shared")
   }
 
   init(wire: Components.Schemas.ListedSkill) {
     switch wire {
     case .case1(let value):
       self.init(wire: value.value1)
-      source = value.value2.source.rawValue
+      description = value.value2.description ?? ""
+      origin = value.value2.origin.map(SkillOrigin.init(wire:))
+      update = value.value2.update.map(SkillUpdate.init(wire:))
     case .case2(let value):
       self.init(id: value.id, name: value.name, instructions: value.instructions,
-                source: value.source.rawValue, path: value.path)
+                source: value.source.rawValue, path: value.path, description: value.description ?? "")
     }
   }
 }

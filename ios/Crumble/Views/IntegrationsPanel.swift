@@ -9,6 +9,8 @@ struct IntegrationsPanel: View {
   var body: some View {
     Form {
       sharedSection
+      GitHubAppsSection()
+      MachineAccountsSection()
       ForEach(model.agents) { agent in
         Section {
           let own = model.mcpServers.filter { $0.agentId == agent.id }

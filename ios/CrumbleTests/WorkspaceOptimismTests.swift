@@ -5,6 +5,16 @@ import Testing
 @testable import Crumble
 
 extension APIClientTests {
+  @MainActor @Test func deletingTheSelectedBotLeavesServerWideGitHubBoardsAlone() throws {
+    let client = StubProtocol.client { _ in (200, "{}") }
+    let model = AppModel(client: client)
+    model.gitHubAppBoard.startNew()
+    model.gitHubAccountBoard.startNew(client: client)
+    model.clearDeletedSelection()
+    #expect(model.gitHubAppBoard.creation != nil)
+    #expect(model.gitHubAccountBoard.draft != nil)
+  }
+
   @MainActor @Test func savingTheEditorLeavesSkillsAndAssignmentsAlone() async throws {
     let model = AppModel(
       client: StubProtocol.client { _ in (200, ContractFixtures.json(ContractFixtures.agent("a1").value1)) })

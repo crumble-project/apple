@@ -162,16 +162,19 @@ struct SkillFormView: View {
             Section {
                 scopeField
                 TextField("Name", text: $draft.name, prompt: Text("Required"))
+                    .limited($draft.name, by: SkillLimits.name)
                 TextEditor(text: $draft.instructions).frame(minHeight: 120)
+                    .limited($draft.instructions, by: SkillLimits.instructions)
             } header: {
                 Text(draft.personal ? "Bot Skill" : "Shared Skill")
             } footer: {
                 Text(
                     draft.personal
                         ? "This bot follows these instructions in every chat."
-                        : "Bots that turn this skill on in their profile follow these instructions."
+                        : "Bots that use this skill follow these instructions."
                 ).foregroundStyle(.secondary)
             }
+            if !draft.personal { SkillUsedBySection(selected: $draft.usedBy) }
         }
         .formStyle(.grouped)
         .frame(width: 460)
@@ -193,6 +196,7 @@ struct SkillFormView: View {
                     set: {
                         draft.agentID = $0
                         draft.personal = $0 != nil
+                        if $0 != nil { draft.usedBy = [] }
                     })
             ) {
                 Text("Every bot (shared)").tag(String?.none)

@@ -18,6 +18,17 @@ struct PanelView: View {
               model.openMemoryForm("", agentID: nil)
             }
           case .skills:
+            Menu("Skill Sources", systemImage: "square.and.arrow.down") {
+              Button("Install from GitHub", systemImage: "square.and.arrow.down") {
+                model.openSkillInstall()
+              }
+              if model.skillCatalog.installed {
+                Button("Check for Updates", systemImage: "arrow.triangle.2.circlepath") {
+                  model.checkSkillUpdates()
+                }
+                .disabled(model.sharedSkillBoard.checking)
+              }
+            }
             Button("New Shared Skill", systemImage: "plus") { model.openSkillForm("") }
           case .tasks:
             Button("New Task", systemImage: "plus") { model.openTaskForm("") }.disabled(

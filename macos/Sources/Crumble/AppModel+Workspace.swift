@@ -12,10 +12,13 @@ extension AppModel {
         skillDraft = nil
         switch panel {
         case .memory: loadMemoryPanel()
-        case .skills: loadSkillsPanel()
+        case .skills: reloadSkills()
         case .tasks: loadTasksPanel()
         case .activity: loadActivityPanel()
-        case .integrations: loadIntegrationsPanel()
+        case .integrations:
+            loadIntegrationsPanel()
+            loadGitHubApps()
+            loadGitHubAccounts()
         case .agent, .group:
             break
         }
@@ -58,21 +61,6 @@ extension AppModel {
                 agents = bots
                 sharedMemories = sharedItems
                 agentMemories = personal
-            }
-        }
-    }
-
-    private func loadSkillsPanel() {
-        let mutationVersion = mutationRevision
-        request { client in
-            async let bots = client.agents()
-            async let skills = client.sharedSkills()
-            let (loadedBots, loadedSkills) = try await (bots, skills)
-            return { [self] in
-                for agent in loadedBots { botSkillBoard.refresh(agentID: agent.id, client: client) }
-                guard mutationRevision == mutationVersion, pendingMutations.isEmpty else { return }
-                agents = loadedBots
-                sharedSkills = loadedSkills
             }
         }
     }

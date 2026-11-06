@@ -1,6 +1,6 @@
 import Foundation
 
-private struct SecretBody: Encodable {
+struct SecretBody: Encodable {
   struct Reference: Encodable {
     var passwordManager: String
     var reference: String

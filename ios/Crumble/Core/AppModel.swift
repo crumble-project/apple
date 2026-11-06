@@ -44,7 +44,11 @@ final class AppModel {
   let heldActionBoard = HeldActionBoard()
   let botRequestBoard = BotRequestBoard()
   let botSecretBoard = BotSecretBoard()
+  let gitHubAccountBoard = GitHubAccountBoard()
+  let gitHubAppBoard = GitHubAppBoard()
   let botSkillBoard = BotSkillBoard()
+  let sharedSkillBoard = SharedSkillBoard()
+  let skillBulkBoard = SkillBulkBoard()
 
   var draft = ""
   var attachments: [PendingAttachment] = []
@@ -77,7 +81,6 @@ final class AppModel {
   var agentMemories: [String: [Memory]] = [:]
   var memoryLoadVersion = 0
   var sharedMemories: [Memory] = []
-  var sharedSkills: [SharedSkill] = []
   var schedules: [Schedule] = []
   var executions: [Execution] = []
   var activities: [ActivityEntry] = []
@@ -243,11 +246,14 @@ extension AppModel {
     heldActionBoard.reset()
     botRequestBoard.reset()
     botSecretBoard.reset()
+    gitHubAccountBoard.reset()
+    gitHubAppBoard.reset()
     botSkillBoard.reset()
     botDesktop = nil
     agentMemories = [:]
     sharedMemories = []
-    sharedSkills = []
+    sharedSkillBoard.reset()
+    skillBulkBoard.reset()
     schedules = []
     executions = []
     mcpServers = []

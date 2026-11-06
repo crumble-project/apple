@@ -27,6 +27,8 @@ struct IntegrationsPanel: View {
                     can use the same service with different accounts.
                     """).foregroundStyle(.secondary)
             }
+            GitHubAppsSection()
+            MachineAccountsSection()
         }
         .formStyle(.grouped)
     }
