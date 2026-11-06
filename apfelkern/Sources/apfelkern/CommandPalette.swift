@@ -3,7 +3,6 @@ import Foundation
 /// What choosing a palette item does. Each app decides how to open a page or its settings.
 public enum PaletteCommand: Hashable {
   case open(Route)
-  /// General settings, which also hold the provider keys the web lists on their own page.
   case settings
   case newBot
   case newGroupChat
@@ -74,7 +73,7 @@ public struct CommandPalette {
     }
     let workspace: [PaletteItem] = [
       .init(page: .memory, symbol: "brain"),
-      .init(page: .tasks, symbol: "calendar.badge.clock", terms: ["Automations"]),
+      .init(page: .automations, symbol: "calendar.badge.clock", terms: ["Tasks", "Schedules"]),
       .init(page: .activity, symbol: "waveform.path.ecg")
     ]
     let themes = AppTheme.allCases.map { option in
@@ -96,8 +95,7 @@ public struct CommandPalette {
     let title = "Settings"
     var items: [PaletteItem] = [
       .init(id: "general", title: "General", symbol: "gearshape", command: .settings, terms: ["Settings General"]),
-      .init(id: "providers", title: "Providers", symbol: "key.radiowaves.forward", command: .settings,
-            terms: ["Settings Providers"]),
+      .init(page: .providers, symbol: "key.radiowaves.forward", section: title),
       .init(page: .passwordManagers, symbol: "lock.rectangle.stack", section: title),
       .init(page: .webSearch, symbol: "globe", section: title),
       .init(page: .credentials, symbol: "key", section: title),

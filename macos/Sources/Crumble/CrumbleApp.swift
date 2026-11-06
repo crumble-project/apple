@@ -18,6 +18,7 @@ struct CrumbleApp: App {
         Window("Crumble", id: "main") {
             ContentView()
                 .environment(model)
+                .environment(\.diagramServer, URL(string: model.serverURL))
                 .frame(minWidth: 860, minHeight: 560)
                 .task { model.start() }
                 .modifier(FollowsTheme(board: model.themeBoard))
@@ -71,8 +72,16 @@ struct ContentView: View {
             model.notifier.openBotDesktop = { openWindow(id: BotDesktopView.windowID, value: $0) }
             model.notifier.openMainWindow = { openWindow(id: "main") }
         }
+        .onChange(of: model.route) { model.markChatSeen() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            model.markChatSeen()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didChangeOcclusionStateNotification)) { _ in
+            model.markChatSeen()
+        }
         .sheet(item: $model.agentDraft) { AgentEditorView(draft: sheetBinding($model.agentDraft, for: $0)) }
         .botSecretSheets(active: model.agentDraft == nil && !model.settingsShowsBotSecrets)
+        .automationSheet(active: model.agentDraft == nil && !model.settingsShowsAutomations)
         .sheet(item: $model.jobHistory) { JobSheet(job: $0) }
         .sheet(item: $model.groupDraft) { GroupEditorView(draft: sheetBinding($model.groupDraft, for: $0)) }
     }
@@ -271,7 +280,7 @@ struct ErrorBanner: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        if !model.errorText.isEmpty, model.agentDraft == nil, model.memoryDraft == nil, model.taskDraft == nil,
+        if !model.errorText.isEmpty, model.agentDraft == nil, model.memoryDraft == nil, model.automationBoard.draft == nil,
             model.mcpDraft == nil,
             model.skillDraft == nil {
             HStack(alignment: .firstTextBaseline, spacing: 8) {

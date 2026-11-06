@@ -99,7 +99,7 @@ public struct LearnedChange: Identifiable, Hashable, Sendable {
     return outcome + " The revert is recorded, so you can undo it too."
   }
 
-  public var createdDate: Date? { taskRunDate(createdAt) }
+  public var createdDate: Date? { automationRunDate(createdAt) }
 
   private func actorLabel(_ botName: String?) -> String {
     switch actor {

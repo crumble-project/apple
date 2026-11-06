@@ -5,15 +5,23 @@ public struct MessageOrigin: Codable, Hashable, Sendable {
   public var kind: String
   public var name: String?
   public var agentId: String?
+  /// On an owner message sent through a message gateway: the gateway's ID.
+  public var via: String?
+  /// On an event automation's message: the event source that started it.
+  public var source: String?
 
   public init(
     kind: String,
     name: String? = nil,
-    agentId: String? = nil
+    agentId: String? = nil,
+    via: String? = nil,
+    source: String? = nil
   ) {
     self.kind = kind
     self.name = name
     self.agentId = agentId
+    self.via = via
+    self.source = source
   }
 }
 

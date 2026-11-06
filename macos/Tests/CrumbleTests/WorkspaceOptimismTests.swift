@@ -64,23 +64,6 @@ extension APIClientTests {
         #expect(model.errorText.contains("busy"))
     }
 
-    @MainActor @Test func failedRoutineToggleFlipsBack() async throws {
-        let client = StubProtocol.client { request in
-            request.httpMethod == "PATCH" ? (500, #"{"error":"busy"}"#) : (404, "")
-        }
-        let model = AppModel(client: client)
-        model.schedules = [
-            Schedule(id: "s1", agentId: "a1", name: "Morning", cron: "0 8 * * *", prompt: "Hi", enabled: true),
-            Schedule(id: "s2", agentId: "a1", name: "Evening", cron: "0 18 * * *", prompt: "Bye", enabled: true)
-        ]
-
-        model.setScheduleEnabled("s1", false)
-        #expect(model.schedules.map(\.enabled) == [false, true])
-        while model.loading { try await Task.sleep(for: .milliseconds(5)) }
-        #expect(model.schedules.map(\.enabled) == [true, true])
-        #expect(model.errorText.contains("busy"))
-    }
-
     @MainActor @Test func aLateBotListKeepsASavedAvatar() async throws {
         let (client, controller) = ControlledDeliveryProtocol.client()
         let model = AppModel(client: client)

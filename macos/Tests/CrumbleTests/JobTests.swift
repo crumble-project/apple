@@ -212,6 +212,6 @@ extension APIClientTests {
         let report = Message(
             id: "a1:2:0", role: "user", content: .string("Please log in"),
             origin: MessageOrigin(kind: "desktop", name: "github"))
-        #expect(!ChatRow.shownInChat(report))
+        #expect(!shownInChat(report))
     }
 }

@@ -144,7 +144,7 @@ struct APIClientTests {
             """#.utf8)
         let message = try JSONDecoder().decode(Message.self, from: data)
         #expect(message.attachments?.first?.isImage == true)
-        #expect(ChatRow.shownInChat(message))
+        #expect(shownInChat(message))
     }
 
     @MainActor @Test func failedSendsKeepTheirAttachments() async throws {
@@ -199,48 +199,6 @@ struct APIClientTests {
     @Test func scheduleRunUnwrapsTheEnvelope() async throws {
         let client = StubProtocol.client { _ in (202, #"{"admitted":true,"result":{"id":"e1","status":"pending"}}"#) }
         #expect(try await client.runSchedule("s1").id == "e1")
-    }
-
-    @MainActor @Test func taskPickersPreserveTheInstantAndSubmitOnlyTheSelectedMode() async throws {
-        let response =
-            #"""
-            {"id":"s1","agentId":"a1","name":"Greeting","prompt":"Say hi","enabled":true,
-             "timezone":"Europe/Berlin","runAt":"2026-10-18T10:10:00Z"}
-            """#
-        let client = StubProtocol.client { request in
-            (200, request.httpMethod == "PATCH" ? scheduleFixture(response) : "[]")
-        }
-        let model = AppModel(client: client)
-        model.agents = [Agent(id: "a1", name: "Atlas")]
-        let schedule = try JSONDecoder().decode(Schedule.self, from: Data(response.utf8))
-        for repeats in [false, true] {
-            model.schedules = [schedule]
-            model.openTaskForm("s1")
-            let draft = try #require(model.taskDraft)
-            #expect(!draft.repeats)
-            var calendar = Calendar(identifier: .gregorian)
-            calendar.timeZone = try #require(TimeZone(identifier: draft.timezone))
-            #expect(calendar.component(.hour, from: draft.runDate) == 12)
-            #expect(calendar.component(.minute, from: draft.runDate) == 10)
-            model.taskDraft?.repeats = repeats
-            model.saveTask()
-            for _ in 0..<100 {
-                if !model.loading { break }
-                try await Task.sleep(for: .milliseconds(10))
-            }
-            #expect(!model.loading)
-            #expect(model.errorText.isEmpty)
-            let request = try #require(StubProtocol.requests.last { $0.httpMethod == "PATCH" })
-            let data = try #require(request.httpBody)
-            let payload = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
-            if repeats {
-                #expect(payload["cron"] as? String == "0 9 * * *")
-                #expect(payload["runAt"] is NSNull)
-            } else {
-                #expect(taskRunDate(payload["runAt"] as? String ?? "") == draft.runDate)
-                #expect(payload["cron"] is NSNull)
-            }
-        }
     }
 
     @Test func chatEventsDeliverSnapshotsThenReportClosing() async throws {

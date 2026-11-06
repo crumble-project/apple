@@ -172,19 +172,23 @@ public struct ModelSummary: Codable, Hashable, Sendable {
   public var name: String?
   public var contextWindow: Int?
   public var reasoning: Bool?
+  /// Lowest first; a bot's level outside them runs at the nearest one.
+  public var thinkingLevels: [ThinkingLevel]
 
   public init(
     provider: String,
     id: String,
     name: String? = nil,
     contextWindow: Int? = nil,
-    reasoning: Bool? = nil
+    reasoning: Bool? = nil,
+    thinkingLevels: [ThinkingLevel] = []
   ) {
     self.provider = provider
     self.id = id
     self.name = name
     self.contextWindow = contextWindow
     self.reasoning = reasoning
+    self.thinkingLevels = thinkingLevels
   }
 }
 
@@ -207,7 +211,7 @@ public struct Skill: Codable, Hashable, Sendable, Identifiable {
   }
 }
 
-/// Where a memory was saved: the owner's bot chat, the owner directly, a scheduled task, another bot, or a group chat.
+/// Where a memory was saved: the owner's bot chat, the owner directly, an automation, another bot, or a group chat.
 public struct MemorySource: Codable, Hashable, Sendable {
   public var kind: String
   /// The task, bot, or group chat, as named when the memory was saved.
@@ -232,6 +236,8 @@ public struct Memory: Codable, Identifiable, Hashable, Sendable {
   public var id: String
   public var content: String
   public var createdAt: String?
+  /// Nil until the server has saved it.
+  public var updatedAt: String?
   /// Nil for memories saved before sources were recorded.
   public var source: MemorySource?
 
@@ -239,11 +245,13 @@ public struct Memory: Codable, Identifiable, Hashable, Sendable {
     id: String,
     content: String,
     createdAt: String? = nil,
+    updatedAt: String? = nil,
     source: MemorySource? = nil
   ) {
     self.id = id
     self.content = content
     self.createdAt = createdAt
+    self.updatedAt = updatedAt
     self.source = source
   }
 }
@@ -289,16 +297,27 @@ public struct SharedSkill: Codable, Identifiable, Hashable, Sendable {
   public var summary: String { description.isEmpty ? glimpse : description }
 }
 
+public enum ScheduleKind: String, Codable, Hashable, Sendable {
+  case prompt, script
+}
+
 public struct Schedule: Codable, Identifiable, Hashable, Sendable {
   public var id: String
   public var agentId: String
   public var name: String
   public var cron: String?
   public var prompt: String
+  public var kind: ScheduleKind
+  public var command: String?
+  public var timeoutSeconds: Int
+  public var notify: Bool
   public var timezone: String?
   public var runAt: String?
+  /// The event source whose events start this automation; set instead of `cron` and `runAt`.
+  public var eventSourceId: String?
   public var enabled: Bool
-  /// The bot that saved this task. Nil when the owner saved it.
+  public var nextRunAt: String?
+  /// The bot that saved this automation. Nil when the owner saved it.
   public var createdByAgentId: String?
 
   public init(
@@ -307,9 +326,15 @@ public struct Schedule: Codable, Identifiable, Hashable, Sendable {
     name: String,
     cron: String? = nil,
     prompt: String,
+    kind: ScheduleKind = .prompt,
+    command: String? = nil,
+    timeoutSeconds: Int = AutomationLimits.defaultTimeoutSeconds,
+    notify: Bool = true,
     timezone: String? = nil,
     runAt: String? = nil,
+    eventSourceId: String? = nil,
     enabled: Bool,
+    nextRunAt: String? = nil,
     createdByAgentId: String? = nil
   ) {
     self.id = id
@@ -317,9 +342,15 @@ public struct Schedule: Codable, Identifiable, Hashable, Sendable {
     self.name = name
     self.cron = cron
     self.prompt = prompt
+    self.kind = kind
+    self.command = command
+    self.timeoutSeconds = timeoutSeconds
+    self.notify = notify
     self.timezone = timezone
     self.runAt = runAt
+    self.eventSourceId = eventSourceId
     self.enabled = enabled
+    self.nextRunAt = nextRunAt
     self.createdByAgentId = createdByAgentId
   }
 }
@@ -328,6 +359,8 @@ public struct Execution: Codable, Identifiable, Hashable, Sendable {
   public var id: String
   public var agentId: String?
   public var conversationId: String?
+  /// The automation that started this run. Nil for an ordinary chat turn.
+  public var scheduleId: String?
   public var status: String?
   public var prompt: String?
   public var error: String?
@@ -338,6 +371,7 @@ public struct Execution: Codable, Identifiable, Hashable, Sendable {
     id: String,
     agentId: String? = nil,
     conversationId: String? = nil,
+    scheduleId: String? = nil,
     status: String? = nil,
     prompt: String? = nil,
     error: String? = nil,
@@ -347,6 +381,7 @@ public struct Execution: Codable, Identifiable, Hashable, Sendable {
     self.id = id
     self.agentId = agentId
     self.conversationId = conversationId
+    self.scheduleId = scheduleId
     self.status = status
     self.prompt = prompt
     self.error = error
@@ -367,6 +402,10 @@ public struct MCPServer: Codable, Identifiable, Hashable, Sendable {
   public var auth: String?
   /// Whether a token is saved and where it's read from.
   public var token: SecretStatus
+  /// The owner's OAuth app, for servers whose sign-in can't register Crumble.
+  public var oauthClientId: String?
+  /// Write-only: the server reports where the secret lives, never the secret.
+  public var oauthClientSecret: SecretStatus
 
   public init(
     id: String,
@@ -376,9 +415,13 @@ public struct MCPServer: Codable, Identifiable, Hashable, Sendable {
     agentId: String? = nil,
     authenticated: Bool? = nil,
     auth: String? = nil,
-    token: SecretStatus = SecretStatus(configured: false)
+    token: SecretStatus = SecretStatus(configured: false),
+    oauthClientId: String? = nil,
+    oauthClientSecret: SecretStatus = SecretStatus(configured: false)
   ) {
     self.token = token
+    self.oauthClientId = oauthClientId
+    self.oauthClientSecret = oauthClientSecret
     self.id = id
     self.name = name
     self.url = url
@@ -386,6 +429,15 @@ public struct MCPServer: Codable, Identifiable, Hashable, Sendable {
     self.agentId = agentId
     self.authenticated = authenticated
     self.auth = auth
+  }
+}
+
+extension MCPServer {
+  /// The Integrations search: a trimmed query against the name or address, as on the web.
+  public func matches(_ query: String) -> Bool {
+    let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
+    return needle.isEmpty || name.localizedCaseInsensitiveContains(needle)
+      || url.localizedCaseInsensitiveContains(needle)
   }
 }
 

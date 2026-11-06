@@ -3,7 +3,7 @@ import Observation
 
 /// Saves through the app's pending mutations, so a bot list read before the save can't undo it.
 @MainActor
-public protocol AvatarHost: AnyObject {
+public protocol BotListHost: AnyObject {
   var agents: [Agent] { get set }
 
   func optimisticMutation(
@@ -56,7 +56,7 @@ public final class AvatarBoard {
 
   /// A write can't be cancelled, so a second waits for it: they could land out of order. The error
   /// stays on this page, so a failure settles inside `work` instead of raising the app's banner.
-  public func save(to host: some AvatarHost) {
+  public func save(to host: some BotListHost) {
     guard canSave, let bot = host.agents.first(where: { $0.id == botID }) else { return }
     let id = bot.id
     let previous = bot.avatar

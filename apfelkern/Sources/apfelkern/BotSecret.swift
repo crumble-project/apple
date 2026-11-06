@@ -160,7 +160,7 @@ public struct BotSecret: Identifiable, Hashable, Sendable {
   public func lastUse(now: Date = .now) -> String {
     if let lastError { return lastError }
     let used = kind == .credential ? "Used" : "Filled"
-    guard let date = lastUsedAt.flatMap(taskRunDate) else {
+    guard let date = lastUsedAt.flatMap(automationRunDate) else {
       return kind == .credential ? "Never used" : "Never filled"
     }
     let formatter = RelativeDateTimeFormatter()

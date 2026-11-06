@@ -1,7 +1,7 @@
 import apfelkern
 import Foundation
 
-extension AppModel: AvatarHost {}
+extension AppModel: BotListHost {}
 
 extension AppModel {
     // MARK: Workspace panels
@@ -9,13 +9,13 @@ extension AppModel {
     func openPanel(_ panel: Route) {
         workspaceRoute = panel
         memoryDraft = nil
-        taskDraft = nil
+        automationBoard.closeUnchangedDraft()
         mcpDraft = nil
         skillDraft = nil
         switch panel {
         case .memory: loadMemoryPanel()
         case .skills: reloadSkills()
-        case .tasks: loadTasksPanel()
+        case .automations: loadAutomationsPanel()
         case .activity: loadActivityPanel()
         case .avatars: break
         case .credentials, .logins:
@@ -26,6 +26,9 @@ extension AppModel {
             loadGitHubAccounts()
             loadAdmin()
         case .users: loadAdmin()
+        case .providers:
+            loadProviders()
+            loadPasswordManagers()
         case .passwordManagers, .webSearch, .judgeModel, .visionModel, .messageGateways, .eventRelay:
             loadConnectedServices(panel)
         case .agent, .group:
@@ -33,16 +36,17 @@ extension AppModel {
         }
     }
 
-    /// Routines and memories for the details panel beside a bot's chat.
+    /// Automations and memories for the details panel beside a bot's chat.
     func loadAgentDetails(_ agentID: String) {
+        if let client {
+            automationBoard.refresh(client: client)
+            connectedServices.eventSources.refresh(client: client)
+        }
         let mutationVersion = mutationRevision
         request { client in
-            async let schedules = client.schedules()
-            async let memories = client.memories(agentID)
-            let (loadedSchedules, loadedMemories) = try await (schedules, memories)
+            let loadedMemories = try await client.memories(agentID)
             return { [self] in
                 guard mutationRevision == mutationVersion, pendingMutations.isEmpty else { return }
-                self.schedules = loadedSchedules
                 agentMemories[agentID] = loadedMemories
             }
         }
@@ -70,17 +74,6 @@ extension AppModel {
                 agents = bots
                 sharedMemories = sharedItems
                 agentMemories = personal
-            }
-        }
-    }
-
-    private func loadTasksPanel() {
-        let mutationVersion = mutationRevision
-        request { client in
-            let items = try await client.schedules()
-            return { [self] in
-                guard mutationRevision == mutationVersion, pendingMutations.isEmpty else { return }
-                schedules = items
             }
         }
     }

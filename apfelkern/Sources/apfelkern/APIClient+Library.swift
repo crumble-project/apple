@@ -82,4 +82,11 @@ extension APIClient {
   public func executions() async throws -> [Execution] {
     try await invoke { try await $0.listExecutions(.init()).ok.body.json.map(Execution.init(wire:)) }
   }
+
+  public func scriptRuns(_ scheduleID: String, limit: Int = 20) async throws -> [ScriptRun] {
+    try await invoke {
+      try await $0.listScriptRuns(.init(path: .init(id: scheduleID), query: .init(limit: limit)))
+        .ok.body.json.map(ScriptRun.init(wire:))
+    }
+  }
 }

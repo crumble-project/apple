@@ -2,6 +2,33 @@
 
 ## Unreleased
 
+- Add `UnreadCounts`, the web's unread count for the app badges: finished replies the owner hasn't seen, by chat.
+- Add `Passkey`, `PasskeyBoard`, and `BotAvatar`'s `PasskeysSection`: list, rename, and remove passkeys with the session token through `/api/auth/passkey/*`. A rename or removal shows at once and comes back on failure, and a later successful read clears the error. Adding and signing in with a passkey stay on the web, because they need WebAuthn at the server's own address.
+- `MCPServer` gains `oauthClientId` and `oauthClientSecret`. `MCPDraft` gains `clientID`, `clientSecret`, `changesOAuthApp`, `oauthAppNote(callback:)`, and `applyingOAuthApp(to:)`. The secret is write-only, and clearing the client ID clears it too. `updateMCPServer` sends explicit nulls.
+- `ProviderStatus` gains `externalAuth`, `displayName`, and `statusLabel(managers:)`. Add `ProviderExternalAuth` and `providers(_:matching:)`. `BotAvatar` gains `ProviderList`.
+- Add `Route.providers`. The command palette opens it instead of general settings.
+- `Memory` gains `updatedAt`. Add `ageLabel(_:now:)`, `memoryLine(_:now:)`, `memorySourceSymbol(_:)`, `searchMatches(of:in:)`, and `MCPServer.matches(_:)`. `BotAvatar` gains `HighlightedText` and `MemorySourceLine`.
+- Add `AutomationBoard`, which holds automations, their drafts, and their run history for both apps: saving, pausing, and deleting apply at once and undo on failure.
+- `AutomationBoard.saveDraft(client:failed:)` gives a refused save back as the draft with `saveError`, after any open sheet closes. `closeUnchangedDraft()` closes for navigation and keeps a draft showing an error. `schedules(on:)` leaves out finished one-time automations, as the web's details list does.
+- `BotAvatar`'s `AutomationFormSections` caps the prompt and the command at `AutomationLimits`.
+- Add `AutomationDraft`, which replaces `TaskDraft` and `validateTask`. It round-trips every field of an automation, so saving a script or event automation keeps its command and trigger.
+- Add `Recurrence`, `AutomationWhen`, and `CronExpression`, the recurrence builder and the next-run preview. The preview reads five-field crons with lists, ranges, steps, and names, and says when it can't tell.
+- Add `listedAutomations(_:)`, `nextRunLabel(_:now:)`, `humanRun(_:zone:now:)`, `automationTiming(_:sources:)`, and `canRunScripts(_:capabilities:)`.
+- `Schedule` gains `kind`, `command`, `timeoutSeconds`, `notify`, `eventSourceId`, and `nextRunAt`, and `Execution` gains `scheduleId`. Add `ScriptRun`, `AutomationRun`, and `APIClient.scriptRuns(_:limit:)`.
+- `cadence(_:sources:now:)` names event sources, monthly schedules, and weekday lists, and reads one-time runs in the automation's zone.
+- `Route.tasks` is now `Route.automations`, and `taskRunDate(_:)` is now `automationRunDate(_:)`. Labels say automation instead of task.
+- `BotAvatar` gains `AutomationsPage` and `AutomationFormSections`.
+- Add `ThinkingLevel` and `ReasoningBoard`, the reasoning control in a bot chat's composer: levels come from the model's `thinkingLevels`, a saved level outside them clamps as on the web, and a choice shows at once and rolls back if the server refuses. `ModelSummary` gains `thinkingLevels`, `ComposerTarget` gains `bot`, and `BotAvatar` gains `ReasoningControl`.
+- `AvatarHost` is now `BotListHost`, because the reasoning control saves through it too.
+- Add `Agent.mentionableBots(in:)`, the web's rule for who `@` completes in a bot chat: every other enabled bot, once the bot has the delegate tool.
+- `AgentDraft` gains `toolsCreateBots`, for the `create_bots` tool.
+- Add `PasteContent`, which decides whether a paste attaches files, for both composers.
+- `cadence(_:now:)` and `memorySourceLabel(_:)` move here from the macOS app.
+- Add `Working`, the bot's activity during a turn with the web's labels, read from a snapshot and its messages.
+- `noticeTitle(_:)` covers automation, credential, and bot messages, as the web's notices do.
+- Add `JobFailure`, `noticeTitle(_:)`, `gatewayLabel(_:)`, `Message.isDesktopScreenshot`, and a shared `shownInChat(_:)`, which replaces each app's copy and keeps desktop screenshots. `MessageOrigin` gains `via` and `source`.
+- Move `MarkdownBlock` here from the apps, with tables on both and a `diagram` case for Mermaid fences.
+- `BotAvatar` gains `DisplayView`, `ChartView`, `DisplayTable`, `MarkdownText`, `JobFailureCard`, `GatewayOriginLabel`, the `jumpToLatest()` modifier, and `diagramServer`, the environment value naming the server whose Pele module draws Mermaid diagrams.
 - Add `AppTheme` and `ThemeBoard`, the account's System, Light, or Dark theme. The device keeps the theme so it applies before the account loads and while signed out, the account's theme replaces it once read, and a choice shows at once and comes back on failure.
 - Add `CommandPalette`, `PaletteSection`, `PaletteItem`, and `PaletteCommand`: the web's palette commands and a ranked `matching(_:)` search, for each app to show in its own surface.
 - Add `BotSecretBoard.page`, which gives the cross-bot Credentials and Logins pages their pill counts, waiting requests, and per-bot groups for a scope and search, and `startNew(_:choosingFrom:client:)`, whose draft sets `choosesBot`. `BotSecretDraft.agentID` is now settable for it.
@@ -9,7 +36,7 @@
 - Add `ProviderKeyBoard`, the API key form for a provider. A typed key clears at once and comes back on failure; a password manager reference waits for the server. `ProviderStatus` gains `apiKey` and `savedLabel(managers:)`. `APIClient.setProviderKey` takes a value or a reference and is no longer public.
 - `MCPDraft.token` is a `SecretSourceDraft`, and `MCPServer` gains `token`. `MCPDraft(server:)`, `payload(name:url:)`, and `checksPasswordManager` let both apps send a value or a reference; a saved reference isn't sent again.
 - Add `ActivityBoard` and `ActivityKind`, which narrow the Activity feed by kind and bot and page with the server's cursor. `APIClient.activityFeed` takes `kind`, `agentID`, `cursor`, and `limit`, and `ActivityFeedResponse` gains `nextCursor`.
-- Add `AvatarBoard`, the standalone Avatars page, and `AvatarHost`. A save shows on the bot at once, rolls back on failure, says it saved only once the server confirms, and survives a bot list read that started before it.
+- Add `AvatarBoard`, the standalone Avatars page, and `BotListHost`. A save shows on the bot at once, rolls back on failure, says it saved only once the server confirms, and survives a bot list read that started before it.
 - Add `GatewayDraft.reset()` and `MessageGatewayBoard.resetDraft()`. `Route` gains `avatars`, `credentials`, `logins`, and `botSecretKind`.
 - `BotAvatar` gains `BrandLogoView`, which draws the provider, password manager, and gateway logos the web shows from `BrandLogoData.swift`, and `FilterPills`. `scripts/generate-brand-logos.py` regenerates the logos from the web's icon packages.
 

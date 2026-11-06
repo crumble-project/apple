@@ -31,12 +31,13 @@ extension AppModel {
         var provisional = MCPServer(
             id: provisionalID, name: name, url: rawURL, enabled: form.enabled, agentId: form.agentID,
             authenticated: false, auth: form.changesToken ? "token" : "none",
-            token: old?.token ?? SecretStatus(configured: false))
+            token: old?.token ?? SecretStatus(configured: false),
+            oauthClientSecret: old?.oauthClientSecret ?? SecretStatus(configured: false))
         if let old, !form.changesToken, old.url == rawURL {
             provisional.authenticated = old.authenticated
             provisional.auth = old.auth
         }
-        persistMCP(form, provisional: provisional, payload: payload)
+        persistMCP(form, provisional: form.applyingOAuthApp(to: provisional), payload: payload)
     }
 
     /// A new reference's outcome is the password manager's: the server reads it before it answers, so

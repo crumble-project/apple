@@ -18,6 +18,14 @@ public func mentionQuery(in text: String, selection: NSRange) -> (range: NSRange
   return (NSRange(location: mention.location, length: selection.location - mention.location), query)
 }
 
+extension Agent {
+  /// The bots `@` completes in this bot's chat: every other enabled bot, once this one may message bots.
+  public func mentionableBots(in bots: [Agent]) -> [Agent] {
+    guard tools?.contains("delegate") == true else { return [] }
+    return bots.filter { $0.enabled && $0.id != id }
+  }
+}
+
 /// Inline completion stays separate from the editable draft.
 public struct MentionCompletion {
   public let range: NSRange

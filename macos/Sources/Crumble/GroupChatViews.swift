@@ -78,6 +78,7 @@ struct GroupChatView: View {
         }
         .defaultScrollAnchor(.bottom)
         .defaultScrollAnchor(.bottom, for: .sizeChanges)
+        .jumpToLatest()
         .scrollEdgeEffectStyle(.soft, for: .all)
         .overlay {
             if rows.isEmpty {

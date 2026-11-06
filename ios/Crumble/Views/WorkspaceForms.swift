@@ -1,4 +1,5 @@
 import apfelkern
+import BotAvatar
 import SwiftUI
 
 /// The Cancel and Save buttons of a form sheet.
@@ -51,70 +52,35 @@ struct MemoryFormView: View {
   }
 }
 
-struct TaskFormView: View {
-  private var scheduleSection: some View {
-    Section {
-      Picker("Frequency", selection: $draft.repeats) {
-        Text("Run once").tag(false)
-        Text("Repeat").tag(true)
-      }
-      if draft.repeats {
-        TextField("Cron expression", text: $draft.cron, prompt: Text("0 9 * * 1-5"))
-          .textInputAutocapitalization(.never)
-          .autocorrectionDisabled()
-      } else {
-        DatePicker("Date", selection: $draft.runDate, displayedComponents: .date)
-        DatePicker("Time", selection: $draft.runDate, displayedComponents: .hourAndMinute)
-          .datePickerStyle(.compact)
-      }
-      TextField("Time zone", text: $draft.timezone, prompt: Text("UTC"))
-        .textInputAutocapitalization(.never)
-        .autocorrectionDisabled()
-    } header: {
-      Text("Schedule")
-    } footer: {
-      Text(
-        draft.repeats
-          ? "The cron expression runs in the selected time zone."
-          : "Date and time are shown in the selected time zone."
-      ).foregroundStyle(.secondary)
-    }
-    .environment(\.timeZone, TimeZone(identifier: draft.timezone) ?? .current)
-  }
-
+struct AutomationFormView: View {
   @Environment(AppModel.self) private var model
-  @Environment(\.dismiss) private var dismiss
-  @Binding var draft: TaskDraft
+  @Binding var draft: AutomationDraft
 
   var body: some View {
     NavigationStack {
       Form {
-        SheetError()
-        Section("Task") {
-          Picker("Runs on", selection: $draft.agentID) {
-            ForEach(model.agents) { agent in
-              Text(agent.name).tag(agent.id)
-            }
+        let error = model.automationBoard.saveError
+        if !error.isEmpty {
+          Section {
+            Label(error, systemImage: "exclamationmark.triangle.fill")
+              .foregroundStyle(.red).textSelection(.enabled)
           }
-          TextField("Task name", text: $draft.name, prompt: Text("Task name"))
-            .accessibilityLabel("Task name")
-          Toggle("Enabled", isOn: $draft.enabled)
         }
-        Section("Prompt") {
-          TextEditor(text: $draft.prompt).frame(minHeight: 80)
-        }
-        scheduleSection
+        AutomationFormSections(
+          draft: $draft, agents: model.agents, capabilities: model.capabilities,
+          sources: model.connectedServices.eventSources.sources,
+          sourcesLoaded: model.connectedServices.eventSources.isLoaded,
+          openEventRelay: {
+            model.automationBoard.closeDraft()
+            model.openPanel(.eventRelay)
+          })
       }
       .formStyle(.grouped)
-      .navigationTitle("Task")
+      .navigationTitle(draft.isNew ? "New Automation" : "Edit Automation")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         SheetActions(
-          onCancel: {
-            model.errorText = ""
-            model.taskDraft = nil
-            dismiss()
-          }, onSave: model.saveTask, saveDisabled: model.loading)
+          onCancel: model.automationBoard.closeDraft, onSave: model.saveAutomation, saveDisabled: false)
       }
     }
   }
@@ -153,6 +119,22 @@ struct MCPFormView: View {
         SecretSourceField(
           label: "Token", source: $draft.token, valueNote: draft.tokenNote,
           prompt: draft.tokenPlaceholder)
+      }
+      Section {
+        TextField("Client ID", text: $draft.clientID, prompt: Text("Client ID, optional"))
+          .textInputAutocapitalization(.never)
+          .autocorrectionDisabled()
+        SecretSourceField(
+          label: "Client secret", source: $draft.clientSecret, valueNote: draft.clientSecretNote,
+          prompt: draft.clientSecretPlaceholder
+        )
+        .disabled(!draft.hasClientID)
+      } header: {
+        Text("OAuth App")
+      } footer: {
+        Text(MCPDraft.oauthAppNote(callback: AppModel.oauthRedirectURI))
+          .foregroundStyle(.secondary)
+          .textSelection(.enabled)
       }
     }
     .disabled(model.isCheckingMCP)

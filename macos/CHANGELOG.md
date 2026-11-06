@@ -2,6 +2,32 @@
 
 ## Unreleased
 
+- A new **Providers** page lists every provider with its status, set-up providers first, and has a search field. Choose a provider to open its key and sign-in form, which moved here from general settings.
+- A provider a command-line tool signs in to, such as Claude Code, shows **Signed in**, **Not signed in**, **Not installed**, or **Unavailable**, and its menu copies the sign-in or sign-out command to run on the server's machine.
+- **Integrations** has a search field for names and addresses.
+- An MCP server's form has **OAuth App** fields for a client ID and client secret, for servers such as GitHub whose sign-in can't register Crumble. The secret is write-only.
+- A memory shows where it came from and how long ago it changed, and a search highlights its matches.
+- **Passkeys** in settings lists the account's passkeys, with **Rename** and **Remove**. Add a passkey on the web.
+- The Dock icon shows how many replies you haven't seen, as the web's tab title does. Opening a chat clears its replies.
+- **Tasks** is now **Automations**, in the sidebar, the bot editor, chat labels, memory sources, and the bot's details, as `bot/GLOSSARY.md` and the web name it.
+- Automations are one list across bots with **All**, **Active**, **Paused**, and **Completed** filter pills. Each row shows its kind, readable timing, next run, and status, and its menu has **Run Now**, **Edit**, **Pause** or **Resume**, and **Delete**, which asks first.
+- Create and edit script automations, with a command, a timeout, and whether results go to the chat. The Script tab appears for a bot with coding on a server that runs jobs.
+- Saving an automation closes its sheet at once. If the server refuses the save, a notice says so and the sheet comes back with what you typed and the reason, after any sheet you've opened since closes. It opens on the main window when Settings has closed or moved to another page.
+- The editor stops at the server's limits on a prompt and a command, as on the web.
+- Run an automation when an event arrives at an event source, from the new **Time** and **Event** tabs.
+- The editor builds repeating schedules from presets (every hour, day, weekday, week, or month) with a **Custom (cron)** choice, and previews the next run.
+- The **Runs** tab lists chat and script runs together. A chat run opens its bot's chat and a script run opens its output.
+- Fix editing a script or event automation: a script could not be saved at all, and saving an event automation replaced its trigger with a run time an hour away.
+- The composer has a reasoning level control beside the message field. It offers the levels the bot's model takes, shows the level turns actually run at, and hides when the model takes fewer than two. A change shows at once and comes back if the server refuses it.
+- Press `⌘V` in the composer to attach copied images and files. **Edit > Paste** still pastes text only.
+- `@` in a bot chat completes every other enabled bot once the bot can message other bots, as on the web, instead of only its allowed bots.
+- The bot editor has a **Create bots** capability.
+- A chat shows desktop screenshots inline, and a failed job as a card that opens the job.
+- Prompts from automations, bot requests, other bots, and credentials collapse into a notice row you can expand, as on the web.
+- An owner message that came through a message gateway says **Sent from Discord**.
+- Mermaid diagrams in replies draw inline with the server's Pele module, in a web view, on every diagram type the web supports. A diagram that can't be drawn shows as code.
+- A jump-to-latest button appears when you scroll up in a chat or group chat.
+- The working row says what the bot is doing: **Thinking**, **Writing**, **Searching**, **Remembering**, **Using tools**, or **Retrying**.
 - Add a **Theme** picker to **General** in Settings with **System**, **Light**, and **Dark**, as on the web. The theme is saved on your account, so it follows you between devices, and it applies at once; it comes back with the reason if the server refuses it.
 - Add a command palette, as on the web: press `⌘K` or choose **File > Search…** to jump to a bot, a group chat, or a page, create a bot or group chat, open a part of Settings, or change the theme. Use the arrow keys and Return, or Esc to close it.
 - Add Credentials and Logins pages across every bot, with a pill per bot, search, and a bot picker for a new one.

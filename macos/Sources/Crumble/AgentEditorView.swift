@@ -65,7 +65,7 @@ struct AgentEditorView: View {
         .confirmationDialog("Delete agent?", isPresented: $model.confirmingDelete) {
             Button("Delete", role: .destructive) { model.deleteSelected() }
         } message: {
-            Text("The agent, its chat, memories and tasks will be removed.")
+            Text("The agent, its chat, memories and automations will be removed.")
         }
     }
 
@@ -162,8 +162,8 @@ struct AgentEditorView: View {
             }
             if draft.toolsWeb { webSearchProviderPicker.padding(.leading, 16) }
             Toggle(isOn: $draft.toolsSchedule) {
-                Text("Schedule tasks")
-                Text("Saves one-time and recurring tasks for itself or a bot it can message.")
+                Text("Schedule automations")
+                Text("Saves one-time and recurring automations for itself or a bot it can message.")
             }
             Toggle(isOn: $draft.toolsDelegate) {
                 Text("Message other bots")
@@ -179,6 +179,10 @@ struct AgentEditorView: View {
                 Text("Writes a short script that calls its tools, so many tool calls take one step.")
             }
             workspaceToggles
+            Toggle(isOn: $draft.toolsCreateBots) {
+                Text("Create bots")
+                Text("Asks you to approve new bots.")
+            }
         }
     }
 

@@ -1,19 +1,18 @@
 import apfelkern
+import BotAvatar
 import PhotosUI
 import SwiftUI
 import UniformTypeIdentifiers
 
 extension ComposerTarget {
-  /// A bot chat: mentions complete to the bots the bot may message.
+  /// A bot chat: mentions complete to every other enabled bot, and the composer sets its reasoning.
   @MainActor static func chat(_ agent: Agent, model: AppModel) -> ComposerTarget {
     ComposerTarget(
       placeholder: agent.enabled
         ? "Message \(agent.name)" : "\(agent.name) is paused. Enable it in its profile.",
       enabled: agent.enabled,
-      mentionable: model.agents.filter {
-        $0.enabled && $0.id != agent.id && (agent.delegates ?? []).contains($0.id)
-          && (agent.tools ?? []).contains("delegate")
-      },
+      mentionable: agent.mentionableBots(in: model.agents),
+      bot: agent,
       running: model.snapshot?.isRunning == true,
       stopHelp: "Stop the current run",
       send: { model.sendMessage() },
@@ -26,8 +25,7 @@ struct Composer: View {
   static let height: CGFloat = 44
   @Environment(AppModel.self) private var model
   let target: ComposerTarget
-  @FocusState private var focused: Bool
-  @State private var selection: TextSelection?
+  @State private var selection: NSRange?
   @State private var selectedMention = 0
   @State private var dismissedMention = false
   @State private var importing = false
@@ -112,6 +110,11 @@ extension Composer {
     .help("Attach images or text files")
   }
 
+  private var canSend: Bool {
+    target.enabled
+      && (!model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !model.attachments.isEmpty)
+  }
+
   @ViewBuilder private var sendControl: some View {
     if target.running {
       Button {
@@ -126,7 +129,8 @@ extension Composer {
       .glassEffect(.regular.interactive(), in: .circle)
       .accessibilityLabel("Stop")
       .help(target.stopHelp)
-    } else {
+    }
+    if !target.running || canSend {
       Button {
         target.send()
       } label: {
@@ -137,42 +141,47 @@ extension Composer {
       }
       .buttonStyle(.plain)
       .glassEffect(.regular.interactive(), in: .circle)
-      .disabled(
-        !target.enabled
-          || (model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            && model.attachments.isEmpty)
-      )
+      .disabled(!canSend)
       .accessibilityLabel("Send")
     }
   }
 
   private func importPhotos(_ items: [PhotosPickerItem]) {
+    photoItems = []
+    importAttachments(items) { item in
+      guard let data = try await item.loadTransferable(type: Data.self), !data.isEmpty else { return nil }
+      let ext = item.supportedContentTypes.first?.preferredFilenameExtension ?? "jpg"
+      let url = FileManager.default.temporaryDirectory
+        .appendingPathComponent("crumble-photo-\(UUID().uuidString)")
+        .appendingPathExtension(ext)
+      try data.write(to: url, options: [.atomic])
+      defer { try? FileManager.default.removeItem(at: url) }
+      return try loadAttachment(from: url)
+    }
+  }
+
+  /// Files arrive after a delay, so each lands only in the conversation it was meant for.
+  private func importAttachments<Item>(
+    _ items: [Item], load: @escaping @MainActor (Item) async throws -> PendingAttachment?
+  ) {
     guard !items.isEmpty else { return }
     let conversation = model.conversationKey
     let serverURL = model.client?.baseURL
     let serverToken = model.client?.token
-    photoItems = []
     Task {
       for item in items {
-        guard let data = try? await item.loadTransferable(type: Data.self),
-          !data.isEmpty
-        else { continue }
-        guard model.conversationKey == conversation,
-          model.client?.baseURL == serverURL,
-          model.client?.token == serverToken
-        else { return }
-        guard model.attachments.count < AttachmentLimits.count else {
-          model.errorText = "A message can carry up to \(AttachmentLimits.count) files."
-          return
-        }
-        let ext = item.supportedContentTypes.first?.preferredFilenameExtension ?? "jpg"
-        let url = FileManager.default.temporaryDirectory
-          .appendingPathComponent("crumble-photo-\(UUID().uuidString)")
-          .appendingPathExtension(ext)
         do {
-          try data.write(to: url, options: [.atomic])
-          defer { try? FileManager.default.removeItem(at: url) }
-          model.attachments.append(try loadAttachment(from: url))
+          let attachment = try await load(item)
+          guard model.conversationKey == conversation,
+            model.client?.baseURL == serverURL,
+            model.client?.token == serverToken
+          else { return }
+          guard let attachment else { continue }
+          guard model.attachments.count < AttachmentLimits.count else {
+            model.errorText = "A message can carry up to \(AttachmentLimits.count) files."
+            return
+          }
+          model.attachments.append(attachment)
         } catch {
           model.errorText = error.localizedDescription
         }
@@ -182,39 +191,84 @@ extension Composer {
 
   private var draftField: some View {
     @Bindable var model = model
-    return TextField(
-      target.placeholder,
-      text: $model.draft, selection: $selection, axis: .vertical
+    return ComposerTextView(
+      text: $model.draft, selection: $selection, label: target.placeholder, enabled: target.enabled,
+      onKey: handleKey,
+      onPaste: { importAttachments($0, load: pastedAttachment) }
     )
-    .textFieldStyle(.plain)
-    .lineLimit(1...8)
-    .focused($focused)
-    .disabled(!target.enabled)
+    .overlay(alignment: .topLeading) {
+      if model.draft.isEmpty {
+        Text(target.placeholder)
+          .foregroundStyle(.placeholder)
+          .lineLimit(1)
+          .allowsHitTesting(false)
+          .accessibilityHidden(true)
+      }
+    }
     .padding(.vertical, 7)
     .onChange(of: model.draft) { _, _ in
       selectedMention = 0
       dismissedMention = false
     }
-    .onKeyPress(.tab) { acceptMention() ? .handled : .ignored }
-    .onKeyPress(.escape) {
-      guard completion != nil, !dismissedMention else { return .ignored }
-      dismissedMention = true
-      return .handled
-    }
-    .onKeyPress(.downArrow) { cycleMention(by: 1) }
-    .onKeyPress(.upArrow) { cycleMention(by: -1) }
-    .onKeyPress(.return, phases: .down) { press in
-      if press.modifiers.contains(.shift) || press.modifiers.contains(.option) {
-        var range: Range<String.Index>?
-        if case .selection(let selected)? = selection?.indices { range = selected }
-        let (text, caret) = insertingNewline(into: model.draft, replacing: range)
-        model.draft = text
-        selection = TextSelection(insertionPoint: caret)
-      } else if !acceptMention() {
-        target.send()
+  }
+
+  private var messageRow: some View {
+    HStack(alignment: .bottom, spacing: 8) {
+      draftField
+      if let bot = target.bot {
+        ReasoningControl(board: model.reasoningBoard, bot: bot, client: model.client) {
+          model.reasoningBoard.choose($0, for: bot.id, host: model)
+        }
+        .padding(.bottom, 10)
       }
-      return .handled
     }
+  }
+
+  private func handleKey(_ key: ComposerKey) -> Bool {
+    switch key {
+    case .send:
+      if !acceptMention() { target.send() }
+      return true
+    case .tab:
+      return acceptMention()
+    case .escape:
+      guard completion != nil, !dismissedMention else { return false }
+      dismissedMention = true
+      return true
+    case .arrowUp:
+      return cycleMention(by: -1)
+    case .arrowDown:
+      return cycleMention(by: 1)
+    }
+  }
+
+  nonisolated private static func attachment(
+    at url: URL?, error: (any Error)?
+  ) -> Result<PendingAttachment, any Error> {
+    Result {
+      guard let url else { throw error ?? CocoaError(.fileReadUnknown) }
+      return try loadAttachment(from: url)
+    }
+  }
+
+  /// Reads an item as a file; the file exists only during the callback.
+  private func pastedAttachment(_ provider: NSItemProvider) async throws -> PendingAttachment? {
+    if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
+      return try await withCheckedThrowingContinuation { continuation in
+        _ = provider.loadObject(ofClass: URL.self) { url, error in
+          continuation.resume(with: Self.attachment(at: url, error: error))
+        }
+      }
+    }
+    guard let type = PasteContent.fileType(in: provider.registeredTypeIdentifiers) else { return nil }
+    var attachment = try await withCheckedThrowingContinuation { continuation in
+      _ = provider.loadFileRepresentation(forTypeIdentifier: type.identifier) { url, error in
+        continuation.resume(with: Self.attachment(at: url, error: error))
+      }
+    }
+    let name = provider.suggestedName ?? (type.conforms(to: .image) ? "Pasted image" : "Pasted file")
+    attachment.name = (name as NSString).deletingPathExtension + "." + (attachment.name as NSString).pathExtension
+    return attachment
   }
 
   private var messageField: some View {
@@ -229,7 +283,7 @@ extension Composer {
           .padding(.top, 8)
         }
       }
-      draftField
+      messageRow
       if let completion, !dismissedMention {
         ScrollView(.horizontal, showsIndicators: false) {
           HStack(spacing: 6) {
@@ -253,11 +307,8 @@ extension Composer {
 
   private var completion: MentionCompletion? {
     let text = model.draft
-    var caret = NSRange(location: (text as NSString).length, length: 0)
-    if case .selection(let range)? = selection?.indices,
-      range.lowerBound >= text.startIndex, range.upperBound <= text.endIndex {
-      caret = NSRange(range, in: text)
-    }
+    let end = NSRange(location: (text as NSString).length, length: 0)
+    let caret = selection.flatMap { $0.upperBound <= end.location ? $0 : nil } ?? end
     return MentionCompletion.find(in: text, selection: caret, bots: target.mentionable)
   }
 
@@ -267,13 +318,13 @@ extension Composer {
     else { return false }
     let bot = completion.bots[min(index ?? selectedMention, completion.bots.count - 1)]
     model.draft.replaceSubrange(range, with: "@" + bot.name + " ")
-    selection = TextSelection(insertionPoint: model.draft.endIndex)
+    selection = nil
     return true
   }
 
-  private func cycleMention(by direction: Int) -> KeyPress.Result {
-    guard !dismissedMention, let completion else { return .ignored }
+  private func cycleMention(by direction: Int) -> Bool {
+    guard !dismissedMention, let completion else { return false }
     selectedMention = (selectedMention + direction + completion.bots.count) % completion.bots.count
-    return .handled
+    return true
   }
 }

@@ -5,7 +5,7 @@ private enum SettingsPage: String, CaseIterable, Identifiable {
     case general = "General"
     case memory = "Memory"
     case skills = "Skills"
-    case tasks = "Tasks"
+    case automations = "Automations"
     case activity = "Activity"
     case avatars = "Avatars"
     case judgeModel = "Judge model"
@@ -13,6 +13,7 @@ private enum SettingsPage: String, CaseIterable, Identifiable {
     case integrations = "Integrations"
     case coding = "Coding"
     case users = "Users"
+    case providers = "Providers"
     case passwordManagers = "Password managers"
     case credentials = "Credentials"
     case logins = "Logins"
@@ -27,7 +28,7 @@ private enum SettingsPage: String, CaseIterable, Identifiable {
         case .general: nil
         case .memory: .memory
         case .skills: .skills
-        case .tasks: .tasks
+        case .automations: .automations
         case .activity: .activity
         case .avatars: .avatars
         case .judgeModel: .judgeModel
@@ -35,6 +36,7 @@ private enum SettingsPage: String, CaseIterable, Identifiable {
         case .integrations: .integrations
         case .coding: .coding
         case .users: .users
+        case .providers: .providers
         case .passwordManagers: .passwordManagers
         case .credentials: .credentials
         case .logins: .logins
@@ -49,7 +51,7 @@ private enum SettingsPage: String, CaseIterable, Identifiable {
         case .general: "gearshape"
         case .memory: "brain"
         case .skills: "book.closed"
-        case .tasks: "calendar.badge.clock"
+        case .automations: "calendar.badge.clock"
         case .activity: "waveform.path.ecg"
         case .avatars: "face.smiling"
         case .judgeModel: JudgeModelSettings.symbol
@@ -57,6 +59,7 @@ private enum SettingsPage: String, CaseIterable, Identifiable {
         case .integrations: "powerplug"
         case .coding: "chevron.left.forwardslash.chevron.right"
         case .users: "person.2"
+        case .providers: "key.radiowaves.forward"
         case .passwordManagers: "lock.rectangle.stack"
         case .credentials: "key"
         case .logins: "person.badge.key"
@@ -67,7 +70,7 @@ private enum SettingsPage: String, CaseIterable, Identifiable {
     }
 
     static let connectedServices: [SettingsPage] = [
-        .passwordManagers, .credentials, .logins, .webSearch, .messageGateways, .eventRelay
+        .providers, .passwordManagers, .credentials, .logins, .webSearch, .messageGateways, .eventRelay
     ]
 }
 
@@ -124,7 +127,7 @@ struct SettingsView: View {
         .onAppear { loadSelection() }
         .onDisappear { model.workspaceRoute = nil }
         .sheet(item: $model.memoryDraft) { MemoryFormView(draft: sheetBinding($model.memoryDraft, for: $0)) }
-        .sheet(item: $model.taskDraft) { TaskFormView(draft: sheetBinding($model.taskDraft, for: $0)) }
+        .automationSheet(active: model.settingsShowsAutomations)
         .sheet(item: $model.mcpDraft) { MCPFormView(draft: sheetBinding($model.mcpDraft, for: $0)) }
         .botSecretSheets(active: model.settingsShowsBotSecrets && model.agentDraft == nil)
         .machineAccountSheet()

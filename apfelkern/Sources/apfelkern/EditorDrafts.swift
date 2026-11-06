@@ -3,8 +3,8 @@ import Foundation
 public enum Route: Hashable {
   case agent(String)
   case group(String)
-  case memory, skills, tasks, activity, avatars, judgeModel, visionModel, integrations, coding, users
-  case passwordManagers, credentials, logins, webSearch, messageGateways, eventRelay
+  case memory, skills, automations, activity, avatars, judgeModel, visionModel, integrations, coding, users
+  case providers, passwordManagers, credentials, logins, webSearch, messageGateways, eventRelay
 
   public var title: String {
     switch self {
@@ -12,7 +12,7 @@ public enum Route: Hashable {
     case .group: "Group Chat"
     case .memory: "Memory"
     case .skills: "Skills"
-    case .tasks: "Tasks"
+    case .automations: "Automations"
     case .activity: "Activity"
     case .avatars: "Avatars"
     case .judgeModel: JudgeModelSettings.title
@@ -20,6 +20,7 @@ public enum Route: Hashable {
     case .integrations: "Integrations"
     case .coding: "Coding"
     case .users: "Users"
+    case .providers: "Providers"
     case .passwordManagers: "Password managers"
     case .credentials: BotSecretKind.credential.title
     case .logins: BotSecretKind.login.title
@@ -62,6 +63,7 @@ public struct AgentDraft: Identifiable, Sendable {
   public var toolsCodemode = true
   public var toolsCoding = false
   public var toolsDesktop = false
+  public var toolsCreateBots = false
   /// The desktop job model's provider and model; both empty means the bot's own model.
   public var desktopProvider = ""
   public var desktopModel = ""
@@ -94,6 +96,7 @@ public struct AgentDraft: Identifiable, Sendable {
     toolsCodemode: Bool = true,
     toolsCoding: Bool = false,
     toolsDesktop: Bool = false,
+    toolsCreateBots: Bool = false,
     desktopProvider: String = "",
     desktopModel: String = "",
     sharedMemory: Bool = false,
@@ -122,6 +125,7 @@ public struct AgentDraft: Identifiable, Sendable {
     self.toolsCodemode = toolsCodemode
     self.toolsCoding = toolsCoding
     self.toolsDesktop = toolsDesktop
+    self.toolsCreateBots = toolsCreateBots
     self.desktopProvider = desktopProvider
     self.desktopModel = desktopModel
     self.sharedMemory = sharedMemory
@@ -154,6 +158,7 @@ public struct AgentDraft: Identifiable, Sendable {
     toolsCodemode = tools.contains("codemode")
     toolsCoding = tools.contains("coding")
     toolsDesktop = tools.contains(DesktopJob.toolName)
+    toolsCreateBots = tools.contains("create_bots")
     desktopProvider = agent.desktopModel?.provider ?? ""
     desktopModel = agent.desktopModel?.model ?? ""
     skills = agent.skills ?? []
@@ -179,7 +184,8 @@ public struct AgentDraft: Identifiable, Sendable {
   public func tools(keeping stored: [String]) -> [String] {
     let toggles = [
       ("memory", toolsMemory), ("web", toolsWeb), ("delegate", toolsDelegate), ("schedule", toolsSchedule),
-      ("codemode", toolsCodemode), ("coding", toolsCoding), (DesktopJob.toolName, toolsDesktop)
+      ("codemode", toolsCodemode), ("coding", toolsCoding), (DesktopJob.toolName, toolsDesktop),
+      ("create_bots", toolsCreateBots)
     ]
     let toggled = Set(toggles.map(\.0))
     return toggles.filter(\.1).map(\.0) + stored.filter { !toggled.contains($0) }
@@ -211,42 +217,6 @@ public struct MemoryDraft: Identifiable, Sendable {
   }
 }
 
-public struct TaskDraft: Identifiable, Sendable {
-  public let id = UUID()
-  public var scheduleID: String
-  public var agentID: String
-  public var name = ""
-  public var prompt = ""
-  public var repeats = false
-  public var cron = "0 9 * * *"
-  public var runDate =
-    Calendar.current.date(bySetting: .second, value: 0, of: Date().addingTimeInterval(3600)) ?? .now
-  public var timezone = TimeZone.current.identifier
-  public var enabled = true
-
-  public init(
-    scheduleID: String,
-    agentID: String,
-    name: String = "",
-    prompt: String = "",
-    repeats: Bool = false,
-    cron: String = "0 9 * * *",
-    runDate: Date = Calendar.current.date(bySetting: .second, value: 0, of: Date().addingTimeInterval(3600)) ?? .now,
-    timezone: String = TimeZone.current.identifier,
-    enabled: Bool = true
-  ) {
-    self.scheduleID = scheduleID
-    self.agentID = agentID
-    self.name = name
-    self.prompt = prompt
-    self.repeats = repeats
-    self.cron = cron
-    self.runDate = runDate
-    self.timezone = timezone
-    self.enabled = enabled
-  }
-}
-
 public struct MCPDraft: Identifiable, Sendable {
   public let id = UUID()
   public var serverID: String
@@ -256,7 +226,11 @@ public struct MCPDraft: Identifiable, Sendable {
   public var url = ""
   public var token = SecretSourceDraft()
   public var enabled = true
+  /// The owner's OAuth app; empty lets the server register Crumble itself.
+  public var clientID = ""
+  public var clientSecret = SecretSourceDraft()
   private var hasSavedToken = false
+  private var savedClientID: String?
 
   public init(
     serverID: String,
@@ -277,6 +251,9 @@ public struct MCPDraft: Identifiable, Sendable {
       serverID: server.id, agentID: server.agentId, name: server.name, url: server.url, enabled: server.enabled)
     token = SecretSourceDraft(saved: server.token)
     hasSavedToken = server.auth == "token"
+    clientID = server.oauthClientId ?? ""
+    clientSecret = SecretSourceDraft(saved: server.oauthClientSecret)
+    savedClientID = server.oauthClientId
   }
 
   public var tokenPlaceholder: String { hasSavedToken ? "Replace the saved token" : "Optional" }
@@ -288,15 +265,69 @@ public struct MCPDraft: Identifiable, Sendable {
   /// Whether a save sends a token: the saved reference isn't read again when other fields change.
   public var changesToken: Bool { token.changedInput != nil }
 
-  /// The server reads a new reference before it answers, so the outcome depends on a password manager.
-  public var checksPasswordManager: Bool { token.changesReference }
+  public var hasClientID: Bool { !trimmedClientID.isEmpty }
 
-  /// The fields a save sends, with `name` and `url` already trimmed.
+  private var trimmedClientID: String { clientID.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+  public var clientSecretPlaceholder: String {
+    clientSecret.saved?.configured == true ? "Replace the saved secret" : "Client secret, optional"
+  }
+
+  public var clientSecretNote: String {
+    "Stored encrypted and never shown again. Changing the app signs the server out."
+  }
+
+  /// `callback` is the address this app's sign-in returns to, which the OAuth app has to list.
+  public static func oauthAppNote(callback: String) -> String {
+    "Only for servers whose sign-in can't register Crumble, such as GitHub's. Register an OAuth app there "
+      + "with the callback URL \(callback) and enter its client ID and secret."
+  }
+
+  private var sendsClientSecret: SecretInput? { hasClientID ? clientSecret.changedInput : nil }
+
+  /// The server signs out of a server whose OAuth app changes, so a save shouldn't look signed in.
+  public var changesOAuthApp: Bool {
+    trimmedClientID.nilIfEmpty != savedClientID || sendsClientSecret != nil
+  }
+
+  /// The server reads a new reference before it answers, so the outcome depends on a password manager.
+  public var checksPasswordManager: Bool {
+    if token.changesReference { return true }
+    if case .reference? = sendsClientSecret { return true }
+    return false
+  }
+
+  /// The fields a save sends, with `name` and `url` already trimmed. Clearing the client ID clears
+  /// its secret too, because a secret means nothing without the app it belongs to.
   public func payload(name: String, url: String) -> [String: JSONValue] {
     var payload: [String: JSONValue] = [
       "name": .string(name), "url": .string(url), "enabled": .bool(enabled)
     ]
     if let input = token.changedInput { payload["token"] = input.json }
+    if hasClientID {
+      payload["oauthClientId"] = .string(trimmedClientID)
+    } else if savedClientID != nil {
+      payload["oauthClientId"] = .null
+    }
+    if let input = sendsClientSecret {
+      payload["oauthClientSecret"] = input.json
+    } else if !hasClientID, clientSecret.saved?.configured == true {
+      payload["oauthClientSecret"] = .null
+    }
     return payload
+  }
+
+  /// `server` as this draft will leave it, to show until the server answers. The secret stays out.
+  public func applyingOAuthApp(to server: MCPServer) -> MCPServer {
+    var server = server
+    server.oauthClientId = trimmedClientID.nilIfEmpty
+    server.oauthClientSecret = !hasClientID
+      ? SecretStatus(configured: false)
+      : SecretStatus(configured: sendsClientSecret != nil || clientSecret.saved?.configured == true)
+    if changesOAuthApp, server.auth == "oauth" {
+      server.authenticated = false
+      server.auth = "none"
+    }
+    return server
   }
 }

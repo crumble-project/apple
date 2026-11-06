@@ -15,16 +15,21 @@ struct CrumbleApp: App {
     WindowGroup {
       ContentView()
         .environment(model)
+        .environment(\.diagramServer, URL(string: model.serverURL))
         .task {
           guard !started else { return }
           started = true
           Notifier.shared.start(model: model)
+          model.showUnreadBadge()
           if model.client?.token.isEmpty == false {
             model.refresh()
             model.followActivity()
           }
         }
-        .onChange(of: model.route) { _, _ in Notifier.shared.updatePresence() }
+        .onChange(of: model.route) { _, _ in
+          Notifier.shared.updatePresence()
+          model.markChatSeen()
+        }
         .onChange(of: scenePhase) { _, phase in
           guard started else { return }
           if phase == .background {
@@ -34,6 +39,7 @@ struct CrumbleApp: App {
           if phase == .active {
             Notifier.shared.refreshAuthorization()
             Notifier.shared.updatePresence(active: true)
+            model.markChatSeen()
             if model.client?.token.isEmpty == false { model.resumeStreams() }
           }
         }
@@ -53,8 +59,15 @@ extension AppTheme {
 
 struct ContentView: View {
   @Environment(AppModel.self) private var model
-  @State private var showingSettings = false
   @State private var compactColumn: NavigationSplitViewColumn = .sidebar
+  @State private var showingSettings = false
+
+  private var automationDraft: Binding<AutomationDraft?> {
+    let board = model.automationBoard
+    return Binding(
+      get: { board.draft },
+      set: { if $0 == nil { board.closeDraft() } else { board.draft = $0 } })
+  }
 
   var body: some View {
     @Bindable var model = model
@@ -101,7 +114,7 @@ struct ContentView: View {
     .sheet(item: $model.memoryDraft) {
       MemoryFormView(draft: sheetBinding($model.memoryDraft, for: $0))
     }
-    .sheet(item: $model.taskDraft) { TaskFormView(draft: sheetBinding($model.taskDraft, for: $0)) }
+    .sheet(item: automationDraft) { AutomationFormView(draft: sheetBinding(automationDraft, for: $0)) }
     .sheet(item: $model.mcpDraft) { MCPFormView(draft: sheetBinding($model.mcpDraft, for: $0)) }
     .machineAccountSheet()
     .adminSheets()
@@ -184,7 +197,7 @@ struct SidebarView: View {
   private static let workspace: [WorkspaceDestination] = [
     .init(route: .memory, title: "Memory", symbol: "brain"),
     .init(route: .skills, title: "Skills", symbol: "book.closed"),
-    .init(route: .tasks, title: "Tasks", symbol: "calendar.badge.clock"),
+    .init(route: .automations, title: "Automations", symbol: "calendar.badge.clock"),
     .init(route: .activity, title: "Activity", symbol: "waveform.path.ecg"),
     .init(route: .avatars, title: "Avatars", symbol: "face.smiling"),
     .init(route: .judgeModel, title: JudgeModelSettings.title, symbol: JudgeModelSettings.symbol),
@@ -195,6 +208,7 @@ struct SidebarView: View {
   ]
 
   private static let connectedServices: [WorkspaceDestination] = [
+    .init(route: .providers, title: "Providers", symbol: "key.radiowaves.forward"),
     .init(route: .passwordManagers, title: "Password managers", symbol: "lock.rectangle.stack"),
     .init(route: .credentials, title: "Credentials", symbol: "key"),
     .init(route: .logins, title: "Logins", symbol: "person.badge.key"),
@@ -344,7 +358,7 @@ struct ErrorBanner: View {
   @Environment(AppModel.self) private var model
   var body: some View {
     if !model.errorText.isEmpty, model.agentDraft == nil, model.memoryDraft == nil,
-      model.taskDraft == nil, model.mcpDraft == nil, model.skillDraft == nil, model.groupDraft == nil {
+      model.automationBoard.draft == nil, model.mcpDraft == nil, model.skillDraft == nil, model.groupDraft == nil {
       HStack(alignment: .top, spacing: 8) {
         Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.red)
         Text(model.errorText).font(.callout).textSelection(.enabled)

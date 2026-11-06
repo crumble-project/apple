@@ -28,6 +28,11 @@ struct LogicTests {
     model.handleActivity(
       ActivityEvent(type: "chat-preview", agentId: "a2", agentName: "Beacon", lastMessage: ""))
     #expect(model.agents[1].lastMessage?.isEmpty == true)
+    #expect(model.unread.total == 0)
+    model.handleActivity(ActivityEvent(type: "reply", agentId: "a2", agentName: "Beacon", origin: "chat", preview: "Hi"))
+    #expect(model.unread.total == 1)
+    model.handleActivity(ActivityEvent(type: "reply", agentId: "a2", agentName: "Beacon", origin: "bot", preview: "Hi"))
+    #expect(model.unread.total == 1)
   }
 
   @Test func sseRejectsSnapshotsWithoutAgent() throws {
@@ -48,27 +53,11 @@ struct LogicTests {
     #expect(merged[1].text == "updated")
   }
 
-  @Test func tasksNeedExactlyOneScheduleMode() {
-    #expect(validateTask(name: "", prompt: "", cron: "", runAt: "") != nil)
-    #expect(
-      validateTask(
-        name: "Daily", prompt: "Check inbox", cron: "0 9 * * *", runAt: "2026-10-18T09:00:00Z")
-        != nil)
-    #expect(validateTask(name: "Daily", prompt: "Check inbox", cron: "0 9 * * *", runAt: "") == nil)
-    #expect(
-      validateTask(name: "Once", prompt: "Check inbox", cron: "", runAt: "2026-10-18T09:00:00Z")
-        == nil)
-    #expect(validateTask(name: "Once", prompt: "Check inbox", cron: "", runAt: "tomorrow") != nil)
-  }
-
-  @Test func taskRunAtPreservesExplicitOffsetInstant() throws {
-    #expect(taskRunDate("2026-10-18T12:10:00+02:00") == taskRunDate("2026-10-18T10:10:00Z"))
-    let fractional = try #require(taskRunDate("2026-10-18T12:10:00.123Z"))
-    let whole = try #require(taskRunDate("2026-10-18T12:10:00Z"))
+  @Test func automationRunAtPreservesExplicitOffsetInstant() throws {
+    #expect(automationRunDate("2026-10-18T12:10:00+02:00") == automationRunDate("2026-10-18T10:10:00Z"))
+    let fractional = try #require(automationRunDate("2026-10-18T12:10:00.123Z"))
+    let whole = try #require(automationRunDate("2026-10-18T12:10:00Z"))
     #expect(abs(fractional.timeIntervalSince(whole) - 0.123) < 0.000001)
-    #expect(
-      validateTask(name: "Task", prompt: "Hi", cron: "0 9 * * *", runAt: "", timezone: "Not/AZone")
-        != nil)
   }
 
   @Test func requestIDsAreUUIDs() {
@@ -83,8 +72,8 @@ struct LogicTests {
     let reply = Message(
       id: "a1:1:1", role: "assistant", content: .string("Hi"),
       blocks: .array([.object(["type": .string("text"), "text": .string("Hi")])]))
-    #expect(!ChatRow.shownInChat(tool))
-    #expect(ChatRow.shownInChat(reply))
+    #expect(!shownInChat(tool))
+    #expect(shownInChat(reply))
   }
 
   @Test func shiftReturnInsertsANewlineAtTheCaret() throws {
@@ -222,5 +211,60 @@ struct LogicTests {
           .init(marker: "•", text: "14:30 Call", indent: 0)
         ]), .code("code")
       ])
+  }
+}
+
+/// UIKit has no public way to make a key press.
+private final class StubKey: UIKey {
+  override var keyCode: UIKeyboardHIDUsage { .keyboardReturnOrEnter }
+  override var modifierFlags: UIKeyModifierFlags { [] }
+}
+
+private final class StubPress: UIPress {
+  override var key: UIKey? { StubKey() }
+}
+
+@MainActor
+struct ComposerTextViewTests {
+  private func composing() -> PastingTextView {
+    let view = PastingTextView()
+    view.setMarkedText("nihon", selectedRange: NSRange(location: 5, length: 0))
+    return view
+  }
+
+  @Test func returnSendsWhenNothingIsComposing() {
+    let view = PastingTextView()
+    var keys: [ComposerKey] = []
+    view.onKey = {
+      keys.append($0)
+      return true
+    }
+    view.pressesBegan([StubPress()], with: nil)
+    #expect(keys == [.send])
+  }
+
+  @Test func returnConfirmsACompositionInsteadOfSending() {
+    let view = composing()
+    #expect(view.markedTextRange != nil)
+    var keys: [ComposerKey] = []
+    view.onKey = {
+      keys.append($0)
+      return true
+    }
+    view.pressesBegan([StubPress()], with: nil)
+    #expect(keys.isEmpty)
+  }
+
+  @Test func emptyingTheDraftEndsAComposition() {
+    let view = composing()
+    view.show("", selection: nil)
+    #expect(view.markedTextRange == nil)
+    #expect(view.text.isEmpty)
+  }
+
+  @Test func anUpdateLeavesACompositionAlone() {
+    let view = composing()
+    view.show("nihon", selection: nil)
+    #expect(view.markedTextRange != nil)
   }
 }

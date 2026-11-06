@@ -130,6 +130,18 @@ struct NotificationTests {
         #expect(posted.requests.isEmpty)
     }
 
+    @Test func aReplyOffScreenCountsAsUnreadUntilTheConnectionChanges() throws {
+        let posted = Posted()
+        let model = AppModel(client: APIClient(baseURL: "http://notify.test", token: ""))
+        model.notifier = try notifier(posted)
+        model.handleActivity(reply("delegated", origin: "bot"))
+        #expect(model.unread.total == 0)
+        model.handleActivity(reply("finished"))
+        #expect(model.unread.total == 1)
+        model.applyConnection(APIClient(baseURL: "http://other.test", token: ""))
+        #expect(model.unread.total == 0)
+    }
+
     @Test func botOriginAndVisibleChatStayQuietButHiddenWindowNotifies() throws {
         let posted = Posted()
         let model = AppModel(client: APIClient(baseURL: "http://notify.test", token: ""))

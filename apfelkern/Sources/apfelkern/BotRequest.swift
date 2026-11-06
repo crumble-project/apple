@@ -40,7 +40,7 @@ public struct BotRequest: Identifiable, Hashable, Sendable {
 
   private static let capabilityNames = [
     "memory": "Memory", "web": "Web search", "delegate": "Message other bots", "coding": "Coding",
-    DesktopJob.toolName: "Bot desktop", "create_bots": "Create bots", "schedule": "Schedule tasks",
+    DesktopJob.toolName: "Bot desktop", "create_bots": "Create bots", "schedule": "Schedule automations",
     "codemode": "Code mode"
   ]
 

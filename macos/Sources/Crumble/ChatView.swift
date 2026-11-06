@@ -43,29 +43,6 @@ enum ChatRow: Identifiable {
         }
         return rows
     }
-
-    /// Keeps the conversation itself: owner and agent text, context events, and visuals the agent
-    /// showed, not thinking, tool calls, or other tool results.
-    static func shownInChat(_ message: Message) -> Bool {
-        switch message.role {
-        case "toolResult":
-            return DisplayComponent(message: message) != nil || Job(message: message) != nil
-                || BotRequest(message: message) != nil || BotSecretAsk(message: message) != nil
-        case "user":
-            guard !JobKind.isReport(message) else { return false }
-            return !message.text.isEmpty || !(message.attachments ?? []).isEmpty
-        case "event":
-            return !message.text.isEmpty
-        case "assistant":
-            guard case .array(let blocks)? = message.blocks else { return !contentText(message.blocks).isEmpty }
-            return blocks.contains {
-                $0["type"]?.stringValue == "text"
-                    && !($0["text"]?.stringValue ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            }
-        default:
-            return false
-        }
-    }
 }
 
 extension ChatRow {
@@ -105,6 +82,7 @@ struct ChatView: View {
         }
         .defaultScrollAnchor(.bottom)
         .defaultScrollAnchor(.bottom, for: .sizeChanges)
+        .jumpToLatest()
         .scrollEdgeEffectStyle(.soft, for: .all)
         .overlay {
             if rows.isEmpty { EmptyChatView(agent: agent) }
@@ -197,21 +175,27 @@ struct ChatRowView: View {
         case .message(let message, let reactions):
             MessageView(message: message, reactions: reactions)
         case .thinking:
-            HStack {
+            let label = Working(snapshot: model.snapshot, messages: model.messages).label + "…"
+            HStack(spacing: 10) {
                 TypingDots()
                     .padding(.horizontal, 15)
                     .padding(.vertical, 14)
                     .background(Palette.bubble, in: .rect(cornerRadius: 18))
+                Text(label).font(.system(size: 13)).foregroundStyle(.secondary)
                 Spacer()
             }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Working…")
+            .accessibilityLabel(label)
         case .failure(let error):
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("The agent couldn’t finish").font(.system(size: 14, weight: .medium))
                     Text(error).font(.system(size: 13)).foregroundStyle(.red).textSelection(.enabled)
-                    Button("Provider Settings…") { openWindow(id: SettingsButton.windowID) }.padding(.top, 4)
+                    Button("Provider Settings…") {
+                        model.settingsTarget = .page(.providers)
+                        openWindow(id: SettingsButton.windowID)
+                    }
+                    .padding(.top, 4)
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 11)

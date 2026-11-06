@@ -11,7 +11,12 @@ extension APIClient {
               type: $0._type == .oauth ? .oauth : .apiKey, label: $0.label, subscription: $0.subscription)
           },
           credentialType: $0.credentialType.flatMap { ProviderAuthType(rawValue: $0.rawValue) },
-          activeLoginId: $0.activeLoginId, apiKey: SecretStatus(wire: $0.apiKey))
+          activeLoginId: $0.activeLoginId, apiKey: SecretStatus(wire: $0.apiKey),
+          externalAuth: $0.externalAuth.map {
+            ProviderExternalAuth(
+              status: ProviderExternalAuth.Status(rawValue: $0.status.rawValue) ?? .error,
+              signInCommand: $0.signInCommand, signOutCommand: $0.signOutCommand, message: $0.message)
+          })
       }
     }
   }
@@ -20,7 +25,8 @@ extension APIClient {
     try await invoke {
       try await $0.listModels(.init(query: .init(provider: provider))).ok.body.json.map {
         ModelSummary(provider: $0.provider, id: $0.id, name: $0.name,
-                     contextWindow: Int(exactly: $0.contextWindow), reasoning: $0.reasoning)
+                     contextWindow: Int(exactly: $0.contextWindow), reasoning: $0.reasoning,
+                     thinkingLevels: $0.thinkingLevels.compactMap { ThinkingLevel(rawValue: $0.rawValue) })
       }
     }
   }
@@ -50,7 +56,7 @@ extension APIClient {
 
   public func updateMCPServer(_ id: String, patch: [String: JSONValue]) async throws -> MCPServer {
     let body: Operations.UpdateMcpServer.Input.Body.JsonPayload = try requestModel(patch)
-    return try await invoke(timeout: 60) {
+    return try await invoke(timeout: 60, nullFields: Set(patch.filter { $0.value == .null }.keys)) {
       MCPServer(wire: try requestModel(required(try await $0.updateMcpServer(
         .init(path: .init(id: id), body: .json(body))).ok.body.json)) as Components.Schemas.McpServer)
     }

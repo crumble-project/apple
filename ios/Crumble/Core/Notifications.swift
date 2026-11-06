@@ -154,12 +154,14 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
     guard started else { return }
     Task {
       var settings = await center.notificationSettings()
-      if push.enabled, requestIfNeeded, settings.authorizationStatus == .notDetermined {
-        _ = try? await center.requestAuthorization(options: [.alert, .sound])
+      // Also for installs that allowed notifications before the app used badges.
+      if push.enabled, requestIfNeeded, settings.authorizationStatus != .denied, settings.badgeSetting != .enabled {
+        _ = try? await center.requestAuthorization(options: [.alert, .sound, .badge])
         settings = await center.notificationSettings()
       }
       let authorized = [.authorized, .provisional, .ephemeral].contains(settings.authorizationStatus)
       push.setAuthorized(authorized)
+      push.setBadgesOff(authorized && settings.badgeSetting != .enabled)
       if authorized, push.enabled { UIApplication.shared.registerForRemoteNotifications() }
     }
   }

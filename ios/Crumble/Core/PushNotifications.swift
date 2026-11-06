@@ -27,6 +27,8 @@ final class PushController {
   static let shared = PushController()
   private(set) var enabled: Bool
   private(set) var authorized = false
+  /// iOS doesn't ask again once notifications are allowed, so only the owner can turn badges on.
+  private(set) var badgesOff = false
   private var authorizationKnown = false
   private(set) var serverID: String?
   private(set) var remoteDelivery = false
@@ -111,6 +113,10 @@ final class PushController {
     authorizationKnown = true
     if !value { remoteDelivery = false }
     changed()
+  }
+
+  func setBadgesOff(_ value: Bool) {
+    badgesOff = value
   }
 
   func receivedToken(_ token: Data) {

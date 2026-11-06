@@ -1,6 +1,6 @@
 # Crumble for iOS
 
-Native SwiftUI client for iPhone and iPad, sharing [`../apfelkern`](../apfelkern/README.md) with the macOS app. Supports bot chats, group chats, coding jobs, memories, skills, scheduled tasks, MCP integrations, GitHub Apps and machine accounts, credentials and logins across bots, avatars, password managers, web search, judge and vision models, message gateways, the event relay and event sources, reverting skill and memory changes, System, Light, and Dark themes, command search, server administration, account sign-up, invite links, and sign-out, provider account sign-in, and live bot desktops with take-control by touch.
+Native SwiftUI client for iPhone and iPad, sharing [`../apfelkern`](../apfelkern/README.md) with the macOS app. Supports bot chats, group chats, coding jobs, memories, skills, automations with script and event triggers and run history, MCP integrations, GitHub Apps and machine accounts, credentials and logins across bots, avatars, password managers, web search, judge and vision models, message gateways, the event relay and event sources, reverting skill and memory changes, System, Light, and Dark themes, command search, server administration, account sign-up, invite links, sign-out, passkey management, a Providers page with command-line sign-in status, unread badges, provider account sign-in, and live bot desktops with take-control by touch.
 
 ## Requirements
 

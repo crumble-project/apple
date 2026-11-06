@@ -69,10 +69,10 @@ private func learned(_ text: String) throws -> LearnedChange {
   var calendar = Calendar(identifier: .gregorian)
   calendar.timeZone = try #require(TimeZone(identifier: "UTC"))
   calendar.locale = Locale(identifier: "en_US")
-  let now = try #require(taskRunDate("2026-11-05T12:00:00Z"))
+  let now = try #require(automationRunDate("2026-11-05T12:00:00Z"))
   let dated = ["2026-11-05T01:00:00Z", "2026-11-04T23:00:00Z", "2026-11-05T02:00:00Z", "2026-11-01T02:00:00Z",
                "2025-03-01T02:00:00Z"]
-  let days = activityDays(dated + ["never"], date: taskRunDate, now: now, calendar: calendar)
+  let days = activityDays(dated + ["never"], date: automationRunDate, now: now, calendar: calendar)
   #expect(days.count == 5)
   #expect(days[0].label == "Today")
   #expect(days[0].items.count == 2)

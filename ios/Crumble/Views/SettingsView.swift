@@ -2,13 +2,7 @@ import apfelkern
 import BotAvatar
 import SwiftUI
 
-/// Server connection, provider API keys, and provider account sign-ins.
-/// What the provider key form follows.
-private struct ProviderKeySource: Equatable {
-  var provider: String
-  var status: ProviderStatus?
-}
-
+/// Server connection, theme, notifications, and passkeys.
 struct SettingsView: View {
   @ViewBuilder private var serverSection: some View {
     if model.isSignedIn {
@@ -136,106 +130,15 @@ struct SettingsView: View {
         get: { PushController.shared.enabled },
         set: { Notifier.shared.setEnabled($0) }))
       Text(PushController.shared.status).font(.footnote).foregroundStyle(.secondary)
+      if PushController.shared.badgesOff {
+        Text("Turn on Badges in iOS Settings to count unread replies on the app icon.")
+          .font(.footnote).foregroundStyle(.secondary)
+      }
       Button("Open iOS Notification Settings") {
         if let url = URL(string: UIApplication.openNotificationSettingsURLString) {
           UIApplication.shared.open(url)
         }
       }
-    }
-  }
-
-  @ViewBuilder private var providerPicker: some View {
-    @Bindable var model = model
-    if model.providers.isEmpty {
-      TextField("Provider", text: $model.provider, prompt: Text("melious"))
-        .textInputAutocapitalization(.never)
-        .autocorrectionDisabled()
-    } else {
-      Picker(selection: $model.provider) {
-        ForEach(model.providers, id: \.provider) { Text($0.provider).tag($0.provider) }
-      } label: {
-        Label {
-          Text("Provider")
-        } icon: {
-          BrandLogoView(.provider(
-            id: model.provider,
-            name: model.providers.first { $0.provider == model.provider }?.name ?? model.provider))
-        }
-      }
-    }
-  }
-
-  private var providerSection: some View {
-    @Bindable var model = model
-    let configured = model.providers.filter(\.configured).map(\.provider)
-    let status = model.providers.first { $0.provider == model.provider }
-    let key = model.providerKeyBoard
-    let busy = model.pendingMutations.contains("provider:\(model.provider)") || key.isSaving
-    let offersKey = status.map { $0.authMethods.contains { $0.type == .apiKey } } ?? true
-    let accountMethods = status?.authMethods.filter { $0.type == .oauth } ?? []
-    return Section {
-      if model.client?.token.isEmpty != false {
-        Text("Save a server connection above before managing provider keys.")
-          .foregroundStyle(.secondary)
-      }
-      providerPicker
-      if let saved = status?.savedLabel(managers: model.connectedServices.passwordManagers.managers) {
-        LabeledContent("Saved", value: saved)
-      }
-      if offersKey {
-        SecretSourceField(
-          label: "Provider API key", source: Bindable(key).source, prompt: "Provider API key")
-      }
-      if !key.saveError.isEmpty {
-        Text(key.saveError).font(.footnote).foregroundStyle(.red).textSelection(.enabled)
-      }
-      HStack {
-        if offersKey { Button("Save Key") { model.saveProviderKey() }.disabled(!key.canSave) }
-        Button(status?.credentialType == .oauth ? "Sign Out" : "Remove Key", role: .destructive) {
-          model.removeProviderKey()
-        }
-        if busy {
-          ProgressView()
-          Text("Updating key…").foregroundStyle(.secondary)
-        }
-      }
-      .disabled(busy)
-      providerLogin(accountMethods)
-    } header: {
-      Text("Providers")
-    } footer: {
-      Text(
-        (configured.isEmpty ? "" : "Configured: " + configured.joined(separator: ", ") + ". ")
-          + "Keys and account sign-ins are stored encrypted on your server and shared by its bots."
-      )
-      .foregroundStyle(.secondary)
-    }
-    .disabled(model.client?.token.isEmpty != false)
-    .task(id: ProviderKeySource(provider: model.provider, status: status)) {
-      key.show(provider: model.provider, status: status)
-    }
-  }
-
-  @ViewBuilder
-  private func providerLogin(_ methods: [ProviderLoginMethod]) -> some View {
-    let provider = model.provider
-    if let login = model.providerLogins[provider] {
-      ProviderLoginView(login: login).id(login.id)
-    } else if !methods.isEmpty {
-      let starting = model.providerLoginRequests.contains(provider)
-      ForEach(methods, id: \.label) { method in
-        Button(method.label) { model.startProviderLogin(provider, method: method.type) }
-      }
-      .disabled(starting)
-      if starting {
-        HStack {
-          ProgressView()
-          Text("Starting sign-in…").foregroundStyle(.secondary)
-        }
-      }
-    }
-    if let outcome = model.providerLoginOutcomes[provider] {
-      Text(outcome).foregroundStyle(.red)
     }
   }
 
@@ -248,9 +151,11 @@ struct SettingsView: View {
       Form {
         SheetError()
         serverSection
+        if model.isSignedIn {
+          PasskeysSection(board: model.passkeyBoard, client: model.client)
+        }
         themeSection
         notificationsSection
-        providerSection
       }
       .formStyle(.grouped)
       .navigationTitle("Settings")
@@ -260,12 +165,7 @@ struct SettingsView: View {
           Button("Done") { dismiss() }
         }
       }
-      .onChange(of: model.client?.token) { _, token in
-        if token?.isEmpty == false { model.loadProviders() }
-      }
-      .onAppear {
-        if model.client?.token.isEmpty == false { model.loadProviders() }
-      }
+      .task(id: model.client?.token) { model.loadPasskeys() }
     }
   }
 }

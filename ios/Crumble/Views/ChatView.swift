@@ -48,36 +48,13 @@ enum ChatRow: Identifiable {
     }
     return rows
   }
-
-  /// Keeps the conversation itself: owner and agent text, context events, and job cards, not
-  /// thinking, tool calls, or other tool results.
-  static func shownInChat(_ message: Message) -> Bool {
-    switch message.role {
-    case "toolResult":
-      return Job(message: message) != nil || BotRequest(message: message) != nil
-        || BotSecretAsk(message: message) != nil
-    case "user":
-      guard !JobKind.isReport(message) else { return false }
-      return !message.text.isEmpty || !(message.attachments ?? []).isEmpty
-    case "event":
-      return !message.text.isEmpty
-    case "assistant":
-      guard case .array(let blocks)? = message.blocks else {
-        return !contentText(message.blocks).isEmpty
-      }
-      return blocks.contains {
-        $0["type"]?.stringValue == "text"
-          && !($0["text"]?.stringValue ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-            .isEmpty
-      }
-    default:
-      return false
-    }
-  }
 }
 
 struct ChatView: View {
   @Environment(AppModel.self) private var model
+  @Environment(\.horizontalSizeClass) private var sizeClass
+  @State private var showsDetails = false
+  @State private var afterDetails: (() -> Void)?
   let agent: Agent
 
   var body: some View {
@@ -94,6 +71,7 @@ struct ChatView: View {
     }
     .defaultScrollAnchor(.bottom)
     .defaultScrollAnchor(.bottom, for: .sizeChanges)
+    .jumpToLatest()
     .overlay {
       if rows.isEmpty { EmptyChatView(agent: agent) }
     }
@@ -107,26 +85,7 @@ struct ChatView: View {
     .navigationTitle(agent.name)
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {
-      ToolbarItem(placement: .principal) {
-        HStack(spacing: 8) {
-          BotAvatarView(agent: agent, size: 28, state: model.botState(agent), live: true)
-          Button {
-            model.openEditor()
-          } label: {
-            VStack(alignment: .leading, spacing: 2) {
-              Text(agent.name).font(.headline).lineLimit(1)
-              if !subtitle.isEmpty {
-                Text(subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(1)
-              }
-            }
-            .frame(minHeight: 44, alignment: .leading)
-            .contentShape(Rectangle())
-          }
-          .buttonStyle(.plain)
-          .accessibilityLabel("Open \(agent.name) profile")
-          .accessibilityValue(subtitle)
-        }
-      }
+      ToolbarItem(placement: .principal) { profileButton }
       .sharedBackgroundVisibility(.hidden)
       if agent.tools?.contains(DesktopJob.toolName) == true {
         ToolbarItem(placement: .primaryAction) {
@@ -135,7 +94,47 @@ struct ChatView: View {
           }
         }
       }
+      ToolbarItem(placement: .primaryAction) {
+        Button("Details", systemImage: "sidebar.trailing") { showsDetails.toggle() }
+          .help(showsDetails ? "Hide Details" : "Show Details")
+      }
     }
+    .inspector(isPresented: $showsDetails) {
+      DetailsPanel(agent: agent, leave: leaveDetails)
+        .inspectorColumnWidth(min: 260, ideal: 300, max: 400)
+        .onDisappear {
+          afterDetails?()
+          afterDetails = nil
+        }
+    }
+  }
+
+  private var profileButton: some View {
+    HStack(spacing: 8) {
+      BotAvatarView(agent: agent, size: 28, state: model.botState(agent), live: true)
+      Button {
+        model.openEditor()
+      } label: {
+        VStack(alignment: .leading, spacing: 2) {
+          Text(agent.name).font(.headline).lineLimit(1)
+          if !subtitle.isEmpty {
+            Text(subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+          }
+        }
+        .frame(minHeight: 44, alignment: .leading)
+        .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .accessibilityLabel("Open \(agent.name) profile")
+      .accessibilityValue(subtitle)
+    }
+  }
+
+  /// On a phone the panel is a sheet, and the app's sheets can't open over it until it has gone.
+  private func leaveDetails(_ action: @escaping () -> Void) {
+    guard sizeClass == .compact else { return action() }
+    afterDetails = action
+    showsDetails = false
   }
 
   private var subtitle: String {
@@ -194,7 +193,9 @@ struct ChatRowView: View {
     case .thinking:
       HStack(spacing: 8) {
         BotAvatarView(agent: agent, size: 24, state: .working, live: true)
-        Text("\(agent.name) is working…").font(.callout).foregroundStyle(.secondary)
+        Text(Working(snapshot: model.snapshot, messages: model.messages).label + "…")
+          .font(.callout)
+          .foregroundStyle(.secondary)
         Spacer()
       }
     case .failure(let error):
@@ -202,7 +203,7 @@ struct ChatRowView: View {
         VStack(alignment: .leading, spacing: 8) {
           Text("The agent couldn’t finish").font(.headline)
           Text(error).font(.callout).foregroundStyle(.red).textSelection(.enabled)
-          Button("Provider Settings…") { model.route = .integrations }
+          Button("Provider Settings…") { model.openProviderSettings() }
         }
         .padding(14)
         .background(.red.opacity(0.08), in: .rect(cornerRadius: 12))

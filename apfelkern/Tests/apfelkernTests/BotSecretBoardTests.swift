@@ -552,7 +552,7 @@ private func ready(_ board: BotSecretBoard, name: String = "ACME_TOKEN", client:
   var item = BotSecret(kind: .login, name: "github", hosts: [])
   #expect(item.lastUse() == "Never filled")
   item.lastUsedAt = made
-  let day = try #require(taskRunDate(made)?.addingTimeInterval(86400))
+  let day = try #require(automationRunDate(made)?.addingTimeInterval(86400))
   #expect(item.lastUse(now: day) == "Filled yesterday")
   item.lastError = "Locked"
   #expect(item.lastUse() == "Locked")

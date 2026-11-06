@@ -60,9 +60,11 @@ struct ContractTransport: ClientTransport {
     guard !nullFields.isEmpty else { return }
     let allowed: Set<String>
     switch operationID {
-    case Operations.UpdateSchedule.id, Operations.CreateSchedule.id: allowed = ["cron", "runAt"]
+    case Operations.UpdateSchedule.id, Operations.CreateSchedule.id:
+      allowed = ["cron", "runAt", "eventSourceId", "command"]
     case Operations.PutPushPresence.id: allowed = ["agentId"]
     case Operations.CreateMcpServer.id: allowed = ["agentId"]
+    case Operations.UpdateMcpServer.id: allowed = ["oauthClientId", "oauthClientSecret"]
     case Operations.UpdateAgent.id: allowed = ["desktopModel", "webSearchProvider"]
     case Operations.SaveAgentLogin.id: allowed = ["fields.one_time_code"]
     case Operations.UpdateServerSettings.id: allowed = ["codingImage"]

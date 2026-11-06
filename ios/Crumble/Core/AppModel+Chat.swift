@@ -1,6 +1,7 @@
 import apfelkern
 import Foundation
 import UIKit
+import UserNotifications
 
 extension AppModel {
   // MARK: Agents and chat
@@ -238,7 +239,18 @@ extension AppModel {
     let context = NotificationContext(
       appActive: UIApplication.shared.applicationState == .active, route: route)
     guard let note = notification(for: event, in: context) else { return }
+    unread.add(event)
     Notifier.shared.post(event, title: note.title, body: note.body)
+  }
+
+  /// The chat on screen counts as read, as the web marks it when its tab shows it.
+  func markChatSeen() {
+    if UIApplication.shared.applicationState == .active { unread.markSeen(route) }
+  }
+
+  /// A badge outlives the app, so launch clears what the last run left.
+  func showUnreadBadge() {
+    UNUserNotificationCenter.current().setBadgeCount(unread.total) { _ in }
   }
 
   func loadOlder() {

@@ -229,7 +229,7 @@ struct APIClientTests {
         """#
           .utf8))
     #expect(message.attachments?.first?.isImage == true)
-    #expect(ChatRow.shownInChat(message))
+    #expect(shownInChat(message))
   }
 
   @Test func errorsCarryStatusAndBody() async throws {

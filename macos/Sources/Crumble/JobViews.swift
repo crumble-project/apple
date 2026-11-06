@@ -1,4 +1,5 @@
 import apfelkern
+import BotAvatar
 import SwiftUI
 
 /// A job a bot started, in the chat: its kind, name, and whether it is still working.

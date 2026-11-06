@@ -41,7 +41,7 @@ struct AgentEditorView: View {
     .confirmationDialog("Delete agent?", isPresented: $model.confirmingDelete) {
       Button("Delete", role: .destructive) { model.deleteSelected() }
     } message: {
-      Text("The agent, its chat, memories and tasks will be removed.")
+      Text("The agent, its chat, memories and automations will be removed.")
     }
   }
 }
@@ -264,7 +264,7 @@ extension AgentEditorView {
         Text("Searches the web and reads pages.")
       }
       if draft.toolsWeb { webSearchProviderPicker.padding(.leading, 16) }
-      Toggle("Schedule tasks", isOn: $draft.toolsSchedule)
+      Toggle("Schedule automations", isOn: $draft.toolsSchedule)
       Toggle("Message other bots", isOn: $draft.toolsDelegate)
       if draft.toolsDelegate {
         ForEach(model.agents.filter { $0.id != draft.agentID }) { agent in
@@ -285,6 +285,10 @@ extension AgentEditorView {
         }
         if draft.toolsDesktop { desktopModelFields.padding(.leading, 16) }
       }
+      Toggle(isOn: $draft.toolsCreateBots) {
+        Text("Create bots")
+        Text("Asks you to approve new bots.")
+      }
     } header: {
       Text("Capabilities")
     } footer: {
@@ -292,9 +296,9 @@ extension AgentEditorView {
         """
         Memory lets the agent keep notes between chats; with shared memory it also recalls and keeps \
         notes every bot using \
-        shared memory sees. Schedule tasks lets it save one-time and recurring tasks for itself, or for \
+        shared memory sees. Schedule automations lets it save one-time and recurring automations for itself, or for \
         a bot it is allowed \
-        to message. Each task runs in that bot’s chat. When Message other bots is enabled, it can ask \
+        to message. Each automation runs in that bot’s chat. When Message other bots is enabled, it can ask \
         the permitted bots \
         you select and relay their answers; bounded task delegation remains supported. Code mode has the agent write a \
         short script that calls its tools, so many tool calls take one step. Enabled tools run directly using the \

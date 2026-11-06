@@ -51,9 +51,15 @@ final class AppModel {
   let themeBoard = ThemeBoard()
   let connectedServices = ConnectedServices()
   let changeBoard = ChangeBoard()
+  let automationBoard = AutomationBoard()
   let activityBoard = ActivityBoard()
   let avatarBoard = AvatarBoard()
+  let reasoningBoard = ReasoningBoard()
   let providerKeyBoard = ProviderKeyBoard()
+  let passkeyBoard = PasskeyBoard()
+  var unread = UnreadCounts() {
+    didSet { if unread != oldValue { showUnreadBadge() } }
+  }
   let botSkillBoard = BotSkillBoard()
   let sharedSkillBoard = SharedSkillBoard()
   let skillBulkBoard = SkillBulkBoard()
@@ -89,7 +95,6 @@ final class AppModel {
   var agentMemories: [String: [Memory]] = [:]
   var memoryLoadVersion = 0
   var sharedMemories: [Memory] = []
-  var schedules: [Schedule] = []
   var executions: [Execution] = []
   var mcpServers: [MCPServer] = []
   var providers: [ProviderStatus] = []
@@ -97,7 +102,6 @@ final class AppModel {
 
   var agentDraft: AgentDraft?
   var memoryDraft: MemoryDraft?
-  var taskDraft: TaskDraft?
   var mcpDraft: MCPDraft?
   /// The open form's new password manager reference is with the server.
   var isCheckingMCP = false
@@ -265,22 +269,24 @@ extension AppModel {
     activityBoard.reset()
     avatarBoard.reset()
     providerKeyBoard.reset()
+    passkeyBoard.reset()
+    unread.clear()
     botSkillBoard.reset()
     botDesktop = nil
     agentMemories = [:]
     sharedMemories = []
     sharedSkillBoard.reset()
     skillBulkBoard.reset()
-    schedules = []
     executions = []
     mcpServers = []
     providers = []
     models = []
+    reasoningBoard.reset()
     providerLoginBoard.reset()
     signingIn = nil
     agentDraft = nil
     memoryDraft = nil
-    taskDraft = nil
+    automationBoard.reset()
     mcpDraft = nil
     isCheckingMCP = false
     skillDraft = nil

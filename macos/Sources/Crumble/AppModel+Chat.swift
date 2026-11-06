@@ -1,6 +1,7 @@
 import apfelkern
 import AppKit
 import Foundation
+import UniformTypeIdentifiers
 
 extension AppModel {
     // MARK: Agents and chat
@@ -208,7 +209,13 @@ extension AppModel {
         }
         let context = NotificationContext(windowOnScreen: mainWindowOnScreen(), route: route)
         guard let client, let note = notification(for: event, in: context) else { return }
+        unread.add(event)
         notifier.post(event, title: note.title, body: note.body, serverURL: client.baseURL)
+    }
+
+    /// The chat on screen counts as read, as the web marks it when its tab shows it.
+    func markChatSeen() {
+        if mainWindowOnScreen() { unread.markSeen(route) }
     }
 
     /// Restarts every server stream after wake or a network change. Chat streams resend a snapshot
@@ -286,6 +293,43 @@ extension AppModel {
             } catch {
                 errorText = error.localizedDescription
             }
+        }
+    }
+
+    /// Attaches the clipboard's files and images, leaving a clipboard of text for the field. True when it attached.
+    @discardableResult
+    func pasteAttachments(from pasteboard: NSPasteboard) -> Bool {
+        let identifiers = (pasteboard.pasteboardItems ?? []).flatMap { $0.types.map(\.rawValue) }
+        guard
+            PasteContent.attachesFiles(
+                identifiers: identifiers, hasText: pasteboard.string(forType: .string) != nil)
+        else { return false }
+        let files = pasteboard.readObjects(
+            forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
+        if !files.isEmpty {
+            addAttachments(files)
+            return true
+        }
+        for item in pasteboard.pasteboardItems ?? [] {
+            guard let type = PasteContent.fileType(in: item.types.map(\.rawValue)),
+                let data = item.data(forType: NSPasteboard.PasteboardType(type.identifier))
+            else { continue }
+            addPastedFile(data, type: type)
+        }
+        return true
+    }
+
+    private func addPastedFile(_ data: Data, type: UTType) {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        do {
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            let name = type.conforms(to: .image) ? "Pasted image" : "Pasted file"
+            let url = folder.appendingPathComponent(name, conformingTo: type)
+            try data.write(to: url)
+            addAttachments([url])
+        } catch {
+            errorText = error.localizedDescription
         }
     }
 

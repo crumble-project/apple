@@ -1,4 +1,5 @@
 import apfelkern
+import BotAvatar
 import SwiftUI
 
 private struct SheetActions: ToolbarContent {
@@ -54,62 +55,59 @@ struct MemoryFormView: View {
     }
 }
 
-struct TaskFormView: View {
+struct AutomationFormView: View {
     @Environment(AppModel.self) private var model
-    @Binding var draft: TaskDraft
+    @Environment(\.openWindow) private var openWindow
+    @Binding var draft: AutomationDraft
 
     var body: some View {
         Form {
-            SheetError()
-            Section("Task") {
-                Picker("Runs on", selection: $draft.agentID) {
-                    ForEach(model.agents) { agent in
-                        Text(agent.name).tag(agent.id)
-                    }
+            let error = model.automationBoard.saveError
+            if !error.isEmpty {
+                Section {
+                    Label(error, systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.red)
+                        .textSelection(.enabled)
                 }
-                TextField("Name", text: $draft.name, prompt: Text("Required"))
-                Toggle("Enabled", isOn: $draft.enabled)
             }
-            Section("Prompt") {
-                TextEditor(text: $draft.prompt).frame(minHeight: 80)
-            }
-            scheduleSection
+            AutomationFormSections(
+                draft: $draft, agents: model.agents, capabilities: model.capabilities,
+                sources: model.connectedServices.eventSources.sources,
+                sourcesLoaded: model.connectedServices.eventSources.isLoaded,
+                openEventRelay: {
+                    model.automationBoard.closeDraft()
+                    model.settingsTarget = .page(.eventRelay)
+                    openWindow(id: SettingsButton.windowID)
+                })
         }
         .formStyle(.grouped)
-        .frame(width: 480)
+        .frame(width: 480, height: 560)
         .toolbar {
             SheetActions(
-                onCancel: {
-                    model.errorText = ""
-                    model.taskDraft = nil
-                }, onSave: model.saveTask, saveDisabled: model.loading)
+                onCancel: model.automationBoard.closeDraft, onSave: model.saveAutomation, saveDisabled: false)
         }
     }
+}
 
-    private var scheduleSection: some View {
-        Section {
-            Picker("Frequency", selection: $draft.repeats) {
-                Text("Run once").tag(false)
-                Text("Repeat").tag(true)
-            }
-            if draft.repeats {
-                TextField("Cron expression", text: $draft.cron, prompt: Text("0 9 * * 1-5"))
-            } else {
-                DatePicker("Date", selection: $draft.runDate, displayedComponents: .date)
-                DatePicker("Time", selection: $draft.runDate, displayedComponents: .hourAndMinute)
-                    .datePickerStyle(.stepperField)
-            }
-            TextField("Time zone", text: $draft.timezone, prompt: Text("UTC"))
-        } header: {
-            Text("Schedule")
-        } footer: {
-            Text(
-                draft.repeats
-                    ? "The cron expression runs in the selected time zone."
-                    : "Date and time are shown in the selected time zone."
-            ).foregroundStyle(.secondary)
-        }
-        .environment(\.timeZone, TimeZone(identifier: draft.timezone) ?? .current)
+private struct AutomationSheet: ViewModifier {
+    @Environment(AppModel.self) private var model
+    let active: Bool
+
+    private var draft: Binding<AutomationDraft?> {
+        let board = model.automationBoard
+        return Binding(
+            get: { active ? board.draft : nil },
+            set: { if $0 == nil { board.closeDraft() } else { board.draft = $0 } })
+    }
+
+    func body(content: Content) -> some View {
+        content.sheet(item: draft) { AutomationFormView(draft: sheetBinding(draft, for: $0)) }
+    }
+}
+
+extension View {
+    func automationSheet(active: Bool) -> some View {
+        modifier(AutomationSheet(active: active))
     }
 }
 
@@ -143,6 +141,21 @@ struct MCPFormView: View {
                 SecretSourceField(
                     label: "Token", source: $draft.token, valueNote: draft.tokenNote,
                     prompt: draft.tokenPlaceholder)
+            }
+            Section {
+                TextField("Client ID", text: $draft.clientID, prompt: Text("Optional"))
+                    .autocorrectionDisabled()
+                SecretSourceField(
+                    label: "Client secret", source: $draft.clientSecret, valueNote: draft.clientSecretNote,
+                    prompt: draft.clientSecretPlaceholder
+                )
+                .disabled(!draft.hasClientID)
+            } header: {
+                Text("OAuth App")
+            } footer: {
+                Text(MCPDraft.oauthAppNote(callback: AppModel.oauthRedirectURI))
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
             }
         }
         .formStyle(.grouped)

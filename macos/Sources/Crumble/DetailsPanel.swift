@@ -2,7 +2,7 @@ import apfelkern
 import BotAvatar
 import SwiftUI
 
-/// The inspector beside a chat: the bot's live portrait, its desktop, its routines, and what it remembers.
+/// The inspector beside a chat: the bot's live portrait, its desktop, its automations, and what it remembers.
 struct DetailsPanel: View {
     @Environment(AppModel.self) private var model
     @Environment(\.openWindow) private var openWindow
@@ -26,7 +26,7 @@ struct DetailsPanel: View {
                 switch tab {
                 case .details:
                     desktopPreview
-                    routines
+                    automations
                     modelSection
                 case .memory:
                     memories
@@ -68,23 +68,25 @@ struct DetailsPanel: View {
         }
     }
 
-    private var routines: some View {
-        let items = model.schedules.filter { $0.agentId == agent.id }
-        return Section("Routines") {
+    private var automations: some View {
+        let board = model.automationBoard
+        let items = board.schedules(on: agent.id)
+        return Section("Automations") {
             if items.isEmpty {
-                Text("No routines yet").foregroundStyle(.secondary)
+                Text("No automations yet").foregroundStyle(.secondary)
             }
             ForEach(items) { schedule in
                 Toggle(
                     isOn: Binding(
                         get: { schedule.enabled },
-                        set: { model.setScheduleEnabled(schedule.id, $0) })
+                        set: { model.setAutomationEnabled(schedule, $0) })
                 ) {
                     Text(schedule.name)
-                    Text(cadence(schedule))
+                    Text(automationTiming(schedule, sources: model.connectedServices.eventSources.sources))
+                    if let error = board.errors[schedule.id] { Text(error).foregroundStyle(.red) }
                 }
                 .toggleStyle(.switch)
-                .disabled(schedule.id.hasPrefix("pending-"))
+                .disabled(board.isPending(schedule.id))
             }
         }
     }
@@ -117,46 +119,4 @@ struct DetailsPanel: View {
             }
         }
     }
-}
-
-/// How often a routine runs, in words for the cron shapes people use; others show their expression.
-func cadence(_ schedule: Schedule, now: Date = .now) -> String {
-    guard let cron = schedule.cron?.nilIfEmpty else {
-        guard let runAt = schedule.runAt, let date = taskRunDate(runAt) else { return "Once" }
-        let when = date.formatted(.dateTime.month(.abbreviated).day().hour().minute())
-        return date > now ? "Once, \(when)" : "Ran \(when)"
-    }
-    return cronPhrase(cron, timezone: schedule.timezone)
-}
-
-/// A cron expression in words for the shapes people use, or the expression itself.
-private func cronPhrase(_ cron: String, timezone: String?) -> String {
-    let fields = cron.split(separator: " ").map(String.init)
-    guard fields.count == 5 else { return cron }
-    let (minute, hour, day, month, weekday) = (fields[0], fields[1], fields[2], fields[3], fields[4])
-    if minute.hasPrefix("*/"), [hour, day, month, weekday] == ["*", "*", "*", "*"] {
-        return "Every \(minute.dropFirst(2)) minutes"
-    }
-    if hour == "*", [day, month, weekday] == ["*", "*", "*"], let minute = Int(minute) {
-        return "Every hour at :" + String(format: "%02d", minute)
-    }
-    guard let hourValue = Int(hour), let minuteValue = Int(minute), day == "*", month == "*",
-        let time = Calendar.current.date(from: DateComponents(hour: hourValue, minute: minuteValue))
-    else { return cron }
-    let names = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-    let days: String
-    switch weekday {
-    case "*": days = "Every day"
-    case "1-5", "MON-FRI": days = "Weekdays"
-    case "0,6", "6,0", "SAT,SUN": days = "Weekends"
-    default:
-        guard let index = Int(weekday), (0...7).contains(index) else { return cron }
-        days = "Every " + names[index % 7]
-    }
-    let phrase = "\(days) at \(time.formatted(date: .omitted, time: .shortened))"
-    // Cron times are in the routine's own zone; name it when that isn't this Mac's.
-    if let zone = timezone?.nilIfEmpty, zone != TimeZone.current.identifier {
-        return phrase + " (\(zone))"
-    }
-    return phrase
 }

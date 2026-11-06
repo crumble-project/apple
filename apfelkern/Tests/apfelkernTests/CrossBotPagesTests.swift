@@ -270,7 +270,7 @@ private func providerStatus(_ apiKey: SecretStatus = SecretStatus(configured: fa
   #expect(typed.payload(name: "A", url: "https://a.example")["token"] == .object(["value": .string("made-up")]))
 }
 
-@MainActor private final class AvatarStubHost: AvatarHost {
+@MainActor final class AvatarStubHost: BotListHost {
   var agents: [Agent]
   var pending: Set<String> = []
   var errorText = ""

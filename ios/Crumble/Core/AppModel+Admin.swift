@@ -17,6 +17,11 @@ extension AppModel {
       isSignedIn: isSignedIn, theme: themeBoard.theme)
   }
 
+  func loadPasskeys() {
+    guard let client, isSignedIn else { return }
+    passkeyBoard.refresh(client: client)
+  }
+
   func loadAdmin() {
     guard let client else { return }
     adminBoard.refresh(client: client)

@@ -37,7 +37,9 @@ extension Message {
       id: wire.id, entryId: wire.entryId, role: wire.role, content: .string(wire.content),
       blocks: try wire.blocks.map { try JSONValue(wire: $0) }, kind: wire.kind,
       replyTo: wire.replyTo, replyPreview: wire.replyPreview,
-      origin: wire.origin.map { MessageOrigin(kind: $0.kind, name: $0.name, agentId: $0.agentId) },
+      origin: wire.origin.map {
+        MessageOrigin(kind: $0.kind, name: $0.name, agentId: $0.agentId, via: $0.via, source: $0.source)
+      },
       communication: wire.communication.map {
         BotCommunication(executionId: $0.executionId, fromAgentId: $0.fromAgentId,
                          fromName: $0.fromName, toAgentId: $0.toAgentId, toName: $0.toName,
@@ -73,7 +75,7 @@ extension ChatHistoryResponse {
 extension Memory {
   init(wire: Components.Schemas.Memory) {
     self.init(
-      id: wire.id, content: wire.content, createdAt: wire.createdAt,
+      id: wire.id, content: wire.content, createdAt: wire.createdAt, updatedAt: wire.updatedAt,
       source: wire.source.map {
         MemorySource(kind: $0.kind.rawValue, name: $0.name, scheduleId: $0.scheduleId,
                      agentId: $0.agentId, groupId: $0.groupId)
@@ -103,15 +105,47 @@ extension SharedSkill {
 extension Schedule {
   init(wire: Components.Schemas.Schedule) {
     self.init(id: wire.id, agentId: wire.agentId, name: wire.name, cron: wire.cron,
-              prompt: wire.prompt, timezone: wire.timezone, runAt: wire.runAt, enabled: wire.enabled,
-              createdByAgentId: wire.createdByAgentId)
+              prompt: wire.prompt, kind: ScheduleKind(wire: wire.kind), command: wire.command,
+              timeoutSeconds: wire.timeoutSeconds, notify: wire.notify, timezone: wire.timezone,
+              runAt: wire.runAt, eventSourceId: wire.eventSourceId, enabled: wire.enabled,
+              nextRunAt: wire.nextRunAt, createdByAgentId: wire.createdByAgentId)
+  }
+}
+
+extension ScheduleKind {
+  init(wire: Components.Schemas.Schedule.KindPayload) {
+    switch wire {
+    case .prompt: self = .prompt
+    case .script: self = .script
+    }
+  }
+}
+
+extension ScriptRun {
+  init(wire: Components.Schemas.ScriptRun) {
+    self.init(id: wire.id, scheduleId: wire.scheduleId, agentId: wire.agentId, command: wire.command,
+              status: ScriptRunStatus(wire: wire.status), exitCode: wire.exitCode, output: wire.output,
+              droppedBytes: wire.droppedBytes, error: wire.error, startedAt: wire.startedAt,
+              finishedAt: wire.finishedAt)
+  }
+}
+
+extension ScriptRunStatus {
+  init(wire: Components.Schemas.ScriptRun.StatusPayload) {
+    switch wire {
+    case .running: self = .running
+    case .succeeded: self = .succeeded
+    case .failed: self = .failed
+    case .timedOut: self = .timedOut
+    case .interrupted: self = .interrupted
+    }
   }
 }
 
 extension Execution {
   init(wire: Components.Schemas.Execution) {
     self.init(id: wire.id, agentId: wire.agentId, conversationId: wire.conversationId,
-              status: wire.status.rawValue, prompt: wire.prompt, error: wire.error,
+              scheduleId: wire.scheduleId, status: wire.status.rawValue, prompt: wire.prompt, error: wire.error,
               createdAt: wire.createdAt, updatedAt: wire.updatedAt)
   }
 }
@@ -120,7 +154,8 @@ extension MCPServer {
   init(wire: Components.Schemas.McpServer) {
     self.init(
       id: wire.id, name: wire.name, url: wire.url, enabled: wire.enabled, agentId: wire.agentId,
-      auth: wire.token.configured ? "token" : nil, token: SecretStatus(wire: wire.token))
+      auth: wire.token.configured ? "token" : nil, token: SecretStatus(wire: wire.token),
+      oauthClientId: wire.oauthClientId, oauthClientSecret: SecretStatus(wire: wire.oauthClientSecret))
   }
 
   init(wire: Components.Schemas.McpServerStatus) {

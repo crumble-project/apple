@@ -61,7 +61,7 @@ private let groupSnapshotFixture = """
 @Test func memorySourcesReadAsPlainLabels() {
     #expect(memorySourceLabel(nil) == nil)
     #expect(memorySourceLabel(MemorySource(kind: "group", name: "Trip", groupId: "trip")) == "From the group chat Trip")
-    #expect(memorySourceLabel(MemorySource(kind: "task", name: "Morning brief")) == "From the task Morning brief")
+    #expect(memorySourceLabel(MemorySource(kind: "task", name: "Morning brief")) == "From the automation Morning brief")
     #expect(memorySourceLabel(MemorySource(kind: "owner")) == "Added by you")
 }
 

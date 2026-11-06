@@ -1,4 +1,5 @@
 import apfelkern
+import BotAvatar
 import SwiftUI
 import UIKit
 
@@ -27,11 +28,23 @@ struct MessageView: View {
           HeldActionCard(held: held, title: message.text)
           Spacer(minLength: 24)
         }
+      } else if let failure = JobFailure(message: message) {
+        HStack {
+          JobFailureCard(failure: failure) { model.openJob(failure.kind, failure.name) }
+          Spacer(minLength: 24)
+        }
       } else {
         EventView(message: message)
       }
     case "toolResult":
-      if let job = Job(message: message) {
+      if let component = DisplayComponent(message: message) {
+        DisplayView(component: component).frame(maxWidth: .infinity, alignment: .leading)
+      } else if message.isDesktopScreenshot {
+        HStack {
+          DesktopScreenshotCard(message: message)
+          Spacer(minLength: 24)
+        }
+      } else if let job = Job(message: message) {
         HStack {
           JobCard(job: model.job(job))
           Spacer(minLength: 24)
@@ -48,13 +61,17 @@ struct MessageView: View {
         }
       }
     case "user":
-      HStack(spacing: 6) {
-        Spacer(minLength: 60)
-        ViewThatFits(in: .horizontal) {
-          sentMessageContent.fixedSize(horizontal: true, vertical: false)
-          sentMessageContent.frame(maxWidth: 520, alignment: .trailing)
+      if let notice = noticeTitle(message) {
+        EventView(message: message, title: notice)
+      } else {
+        HStack(spacing: 6) {
+          Spacer(minLength: 60)
+          ViewThatFits(in: .horizontal) {
+            sentMessageContent.fixedSize(horizontal: true, vertical: false)
+            sentMessageContent.frame(maxWidth: 520, alignment: .trailing)
+          }
+          replyButton
         }
-        replyButton
       }
     default:
       HStack(spacing: 6) {
@@ -74,14 +91,7 @@ struct MessageView: View {
   @ViewBuilder private var sentMessageContent: some View {
     VStack(alignment: .trailing, spacing: 4) {
       if !owner {
-        if message.origin?.kind == "bot" {
-          Label(messageLabel(message), systemImage: "person.2.fill")
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 6)
-        } else {
-          Text(messageLabel(message)).font(.caption).foregroundStyle(.secondary).padding(.horizontal, 6)
-        }
+        Text(messageLabel(message)).font(.caption).foregroundStyle(.secondary).padding(.horizontal, 6)
       }
       ReplyQuote(message: message)
       SentAttachments(message: message)
@@ -96,6 +106,7 @@ struct MessageView: View {
           .padding(.bottom, reactions.isEmpty ? 0 : 14)
       }
       deliveryStatus
+      if let via = message.origin?.via { GatewayOriginLabel(id: via) }
     }
   }
 
@@ -218,6 +229,7 @@ struct BotMessageView: View {
 struct EventView: View {
   @Environment(AppModel.self) private var model
   let message: Message
+  var title: String?
 
   var body: some View {
     @Bindable var model = model
@@ -228,9 +240,14 @@ struct EventView: View {
       }
     )
     DisclosureGroup(
-      message.kind == "reset" ? "Context reset" : "Earlier messages summarized", isExpanded: open
+      title ?? (message.kind == "reset" ? "Context reset" : "Earlier messages summarized"),
+      isExpanded: open
     ) {
-      Text(message.text).font(.callout).foregroundStyle(.secondary).textSelection(.enabled)
+      MarkdownText(text: message.text)
+        .font(.callout)
+        .foregroundStyle(.secondary)
+        .textSelection(.enabled)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
     .font(.callout)
     .frame(maxWidth: 560)

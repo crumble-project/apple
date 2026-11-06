@@ -5,18 +5,21 @@ import SwiftUI
 struct IntegrationsPanel: View {
     @Environment(AppModel.self) private var model
     @Environment(\.webAuthenticationSession) private var webAuthenticationSession
+    @State private var query = ""
 
     var body: some View {
+        let shown = model.mcpServers.filter { $0.matches(query) }
         Form {
             Section {
-                if model.mcpServers.isEmpty {
-                    Text("No MCP servers yet.").foregroundStyle(.secondary)
+                if shown.isEmpty {
+                    Text(model.mcpServers.isEmpty ? "No MCP servers yet." : "No MCP servers match your search.")
+                        .foregroundStyle(.secondary)
                 }
-                ForEach(model.mcpServers.filter { $0.agentId == nil }) { server in
+                ForEach(shown.filter { $0.agentId == nil }) { server in
                     row(server)
                 }
                 ForEach(model.agents) { agent in
-                    ForEach(model.mcpServers.filter { $0.agentId == agent.id }) { server in
+                    ForEach(shown.filter { $0.agentId == agent.id }) { server in
                         row(server)
                     }
                 }
@@ -29,6 +32,7 @@ struct IntegrationsPanel: View {
             }
         }
         .formStyle(.grouped)
+        .searchable(text: $query, placement: .toolbar, prompt: "Search MCP servers")
     }
 
     private func row(_ server: MCPServer) -> some View {

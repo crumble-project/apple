@@ -57,28 +57,8 @@ public func oauthResult(from callback: URL) throws -> OAuthResult {
   return OAuthResult(code: code, state: state, iss: value("iss"))
 }
 
-public func validateTask(
-  name: String, prompt: String, cron: String, runAt: String,
-  timezone: String = TimeZone.current.identifier
-) -> String? {
-  if name.trimmingCharacters(in: .whitespaces).isEmpty
-    || prompt.trimmingCharacters(in: .whitespaces).isEmpty {
-    return "Task name and prompt are required."
-  }
-  if cron.isEmpty == runAt.isEmpty {
-    return "Choose either a recurring cron or a one-time run time."
-  }
-  if TimeZone(identifier: timezone) == nil {
-    return "Choose a valid time zone."
-  }
-  if !runAt.isEmpty, taskRunDate(runAt) == nil {
-    return "Choose a valid date and time."
-  }
-  return nil
-}
-
 /// Server timestamps are absolute instants; the date picker displays them in its time zone.
-public func taskRunDate(_ value: String) -> Date? {
+public func automationRunDate(_ value: String) -> Date? {
   let parser = ISO8601DateFormatter()
   parser.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
   if let date = parser.date(from: value) { return date }
@@ -135,5 +115,67 @@ public extension String {
     var value = self
     while value.hasSuffix("/") { value.removeLast() }
     return value
+  }
+}
+
+/// How long ago, in the largest unit that fits, as the web's `agoInLargestUnit`.
+public func ageLabel(_ date: Date, now: Date = .now) -> String {
+  let steps: [(Double, (Int) -> DateComponents)] = [
+    (60, { DateComponents(minute: $0) }), (60, { DateComponents(hour: $0) }), (24, { DateComponents(day: $0) }),
+    (7, { DateComponents(weekOfMonth: $0) }), (4.35, { DateComponents(month: $0) }), (12, { DateComponents(year: $0) })
+  ]
+  var value = date.timeIntervalSince(now)
+  var components = DateComponents(minute: 0)
+  for (size, unit) in steps {
+    if abs(value) < size { break }
+    value /= size
+    components = unit(Int(value.rounded()))
+  }
+  let formatter = RelativeDateTimeFormatter()
+  formatter.dateTimeStyle = .named
+  return formatter.localizedString(from: components)
+}
+
+/// The line under a memory: where it came from and how long ago it changed.
+public func memoryLine(_ memory: Memory, now: Date = .now) -> String? {
+  let age = memory.updatedAt.flatMap(automationRunDate).map { ageLabel($0, now: now) }
+  return [memorySourceLabel(memory.source), age].compactMap(\.self).joined(separator: " · ").nilIfEmpty
+}
+
+public func memorySourceSymbol(_ source: MemorySource?) -> String? {
+  switch source?.kind {
+  case "chat": "message"
+  case "owner": "person"
+  case "task": "calendar.badge.clock"
+  case "bot": "cpu"
+  case "group": "person.2"
+  default: nil
+  }
+}
+
+/// Every case-insensitive match of a trimmed search in `text`, without overlaps.
+public func searchMatches(of query: String, in text: String) -> [Range<String.Index>] {
+  let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
+  guard !needle.isEmpty else { return [] }
+  var matches: [Range<String.Index>] = []
+  var start = text.startIndex
+  while let match = text.range(of: needle, options: .caseInsensitive, range: start..<text.endIndex, locale: .current) {
+    matches.append(match)
+    start = match.upperBound
+  }
+  return matches
+}
+
+/// Where a memory was saved, for the line under it; nil for memories saved before sources were recorded.
+public func memorySourceLabel(_ source: MemorySource?) -> String? {
+  guard let source else { return nil }
+  let name = source.name?.nilIfEmpty
+  switch source.kind {
+  case "chat": return "From the bot chat"
+  case "owner": return "Added by you"
+  case "task": return name.map { "From the automation \($0)" } ?? "From an automation"
+  case "bot": return name.map { "From a request by \($0)" } ?? "From another bot"
+  case "group": return name.map { "From the group chat \($0)" } ?? "From a group chat"
+  default: return nil
   }
 }

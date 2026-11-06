@@ -128,10 +128,10 @@ extension APIClientTests {
 
     model.selectGroup("trip")
     await waitFor { model.groupSnapshot != nil }
-    model.openPanel(.tasks)
+    model.openPanel(.automations)
     #expect(model.selectedGroupID.isEmpty)
     #expect(model.groupStreamTask == nil)
-    #expect(model.route == .tasks)
+    #expect(model.route == .automations)
     model.navigate(to: .group("trip"))
     #expect(model.selectedGroupID == "trip")
     model.leaveGroup()

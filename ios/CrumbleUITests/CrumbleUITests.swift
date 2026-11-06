@@ -41,7 +41,7 @@ final class CrumbleUITests: XCTestCase {
     XCTAssertTrue(app.buttons["Create"].exists)
     app.buttons["Cancel"].tap()
 
-    for title in ["Memory", "Skills", "Tasks", "Activity", "Integrations"] {
+    for title in ["Memory", "Skills", "Automations", "Activity", "Integrations"] {
       app.buttons[title].firstMatch.tap()
       XCTAssertTrue(app.navigationBars[title].waitForExistence(timeout: 5))
       let action: String? =

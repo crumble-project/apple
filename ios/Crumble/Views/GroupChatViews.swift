@@ -81,6 +81,7 @@ struct GroupChatView: View {
     }
     .defaultScrollAnchor(.bottom)
     .defaultScrollAnchor(.bottom, for: .sizeChanges)
+    .jumpToLatest()
     .overlay {
       if rows.isEmpty {
         if model.groupSnapshot == nil {

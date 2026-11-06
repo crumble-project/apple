@@ -89,7 +89,7 @@ extension APIClientTests {
       toolDetails: .object(["name": .string("fix"), "status": .string("working")]))
     let report = Message(
       id: "2", role: "user", content: .string("Done"), origin: MessageOrigin(kind: "coding", name: "fix"))
-    #expect(ChatRow.shownInChat(started))
-    #expect(!ChatRow.shownInChat(report))
+    #expect(shownInChat(started))
+    #expect(!shownInChat(report))
   }
 }

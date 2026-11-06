@@ -68,7 +68,7 @@ private func titles(_ sections: [PaletteSection], in section: String) -> [String
 }
 
 @Test func theGlossaryWordFindsTheAppsPage() {
-  #expect(palette().matching("automations").first?.items.first?.command == .open(.tasks))
+  #expect(palette().matching("automations").first?.items.first?.command == .open(.automations))
 }
 
 @Test func lettersInOrderMatchAndCaseAndAccentsDont() {
