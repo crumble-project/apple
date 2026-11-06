@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- The app now reads like Messages. The root is one list of bots and group chats, the latest first, with large portraits, two lines of the latest message, a date, an unread dot, and search and compose at the bottom. A phone opens on this list rather than the first chat.
+- **Settings** opens from the top corner and holds the account, theme, notifications, every workspace page, and every connected service. The list no longer has these sections.
+- Chats have a centered portrait over the name, blue and gray bubbles with a tail on the last of a run, tighter spacing, and a typing bubble. Tapping the header opens the bot's details, which hold its desktop and, on a phone, its reasoning level.
+- The composer's send button sits inside the field and appears when there is something to send. A reply starts with a swipe across a message or a long press, and a swipe from the screen's edge goes back.
+- A failed turn is a small line under the conversation, and reactions sit on a bubble's top corner.
 - A new **Providers** page lists every provider with its status, set-up providers first, and has a search field. Choose a provider to open its key and sign-in form, which moved here from general settings.
 - A provider a command-line tool signs in to, such as Claude Code, shows **Signed in**, **Not signed in**, **Not installed**, or **Unavailable**, and its menu copies the sign-in or sign-out command to run on the server's machine.
 - **Integrations** has a search field for names and addresses.

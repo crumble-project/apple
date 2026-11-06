@@ -1,6 +1,6 @@
 import Foundation
 
-public enum Route: Hashable {
+public enum Route: Hashable, Sendable {
   case agent(String)
   case group(String)
   case memory, skills, automations, activity, avatars, judgeModel, visionModel, integrations, coding, users

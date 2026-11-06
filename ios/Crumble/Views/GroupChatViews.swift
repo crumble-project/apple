@@ -2,7 +2,7 @@ import apfelkern
 import BotAvatar
 import SwiftUI
 
-/// A group in the sidebar: its members' avatars overlapping, its name, and who is in it.
+/// A group in the conversation list: its members' avatars overlapping, its name, and its latest message.
 struct GroupRow: View {
   @Environment(AppModel.self) private var model
   let group: GroupChat
@@ -13,23 +13,18 @@ struct GroupRow: View {
   }
 
   var body: some View {
-    NavigationLink(value: Route.group(group.id)) {
-      HStack(spacing: 12) {
-        ZStack(alignment: .topLeading) {
-          ForEach(Array(members.prefix(2).enumerated()), id: \.element.id) { index, agent in
-            BotAvatarView(agent: agent, size: 30, state: .idle)
-              .offset(x: CGFloat(index) * 14, y: CGFloat(index) * 14)
-          }
-        }
-        .frame(width: 44, height: 44, alignment: .topLeading)
-        .accessibilityHidden(true)
-        VStack(alignment: .leading, spacing: 4) {
-          Text(group.name).font(.headline).lineLimit(1)
-          Text(members.map(\.name).formatted(.list(type: .and)))
-            .font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
+    let summary = model.conversationSummaries[.group(group.id)]
+    ConversationRow(
+      route: .group(group.id), title: group.name,
+      preview: summary.flatMap { preview($0.preview).nilIfEmpty }
+        ?? members.map(\.name).formatted(.list(type: .and))
+    ) {
+      ZStack(alignment: .topLeading) {
+        ForEach(Array(members.prefix(2).enumerated()), id: \.element.id) { index, agent in
+          BotAvatarView(agent: agent, size: 38, state: .idle)
+            .offset(x: CGFloat(index) * 18, y: CGFloat(index) * 18)
         }
       }
-      .padding(.vertical, 4)
     }
     .disabled(model.pendingMutations.contains("group:\(group.id)") || group.id.hasPrefix("local:"))
     .contextMenu {
@@ -58,9 +53,19 @@ extension View {
   }
 }
 
+extension GroupChatRow {
+  /// Who a bubble is from, so each bot's run reads apart from the next.
+  var bubbleSender: String? {
+    guard case .message(let message, _) = self else { return nil }
+    if message.role != "user" { return message.origin?.agentId ?? message.origin?.name ?? "bot" }
+    return noticeTitle(message) == nil ? "owner" : nil
+  }
+}
+
 struct GroupChatView: View {
   @Environment(AppModel.self) private var model
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.horizontalSizeClass) private var sizeClass
   let group: GroupChat
 
   private var members: [Agent] {
@@ -71,17 +76,23 @@ struct GroupChatView: View {
     let rows = GroupChatRow.rows(
       messages: model.messages, snapshot: model.groupSnapshot, agents: model.agents,
       hasMore: model.hasMore)
+    let places = BubblePlace.places(rows, sender: \.bubbleSender)
     ScrollView {
-      LazyVStack(spacing: 10) {
-        ForEach(rows) { GroupChatRowView(row: $0).transition(.groupArrival) }
+      LazyVStack(spacing: 0) {
+        ForEach(Array(zip(rows, places)), id: \.0.id) { row, place in
+          GroupChatRowView(row: row, place: place)
+            .padding(.top, place.gap)
+            .transition(.groupArrival)
+        }
       }
       .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: model.groupArrivals)
-      .padding(.horizontal, 20)
-      .padding(.vertical, 16)
+      .padding(.horizontal, 12)
+      .padding(.vertical, 12)
     }
     .defaultScrollAnchor(.bottom)
     .defaultScrollAnchor(.bottom, for: .sizeChanges)
     .jumpToLatest()
+    .keepsContentSwipe()
     .overlay {
       if rows.isEmpty {
         if model.groupSnapshot == nil {
@@ -107,8 +118,10 @@ struct GroupChatView: View {
     .toolbar {
       ToolbarItem(placement: .principal) { GroupMembersStrip(group: group) }
         .sharedBackgroundVisibility(.hidden)
-      ToolbarItem(placement: .primaryAction) {
-        Button("Edit Group", systemImage: "pencil") { model.editGroup(group) }
+      if sizeClass != .compact {
+        ToolbarItem(placement: .primaryAction) {
+          Button("Edit Group", systemImage: "pencil") { model.editGroup(group) }
+        }
       }
     }
   }
@@ -132,32 +145,46 @@ extension AnyTransition {
   }
 }
 
-/// The group's name over its members, showing what each is doing: answering, waiting, or disabled.
+/// The members over the group's name, showing what each is doing: answering, waiting, or disabled.
+/// Tapping opens the group, as Messages' header does.
 struct GroupMembersStrip: View {
   @Environment(AppModel.self) private var model
   let group: GroupChat
 
   var body: some View {
-    VStack(spacing: 2) {
-      Text(group.name).font(.headline).lineLimit(1)
-      HStack(spacing: 2) {
-        ForEach(group.memberIds, id: \.self) { id in
-          if let agent = model.agents.first(where: { $0.id == id }) {
-            let status = model.groupSnapshot?.activity.member(id)?.status ?? .idle
-            BotAvatarView(agent: agent, size: 18, state: status == .running ? .working : .idle)
-              .opacity(status == .disabled ? 0.4 : 1)
-              .accessibilityElement()
-              .accessibilityLabel(status.label(for: agent.name))
+    Button {
+      model.editGroup(group)
+    } label: {
+      VStack(spacing: 1) {
+        HStack(spacing: -8) {
+          ForEach(group.memberIds.prefix(4), id: \.self) { id in
+            if let agent = model.agents.first(where: { $0.id == id }) {
+              let status = model.groupSnapshot?.activity.member(id)?.status ?? .idle
+              BotAvatarView(agent: agent, size: 30, state: status == .running ? .working : .idle)
+                .opacity(status == .disabled ? 0.4 : 1)
+                .accessibilityElement()
+                .accessibilityLabel(status.label(for: agent.name))
+            }
           }
         }
+        HStack(spacing: 2) {
+          Text(group.name).font(.caption2.weight(.medium)).lineLimit(1)
+          Image(systemName: "chevron.right")
+            .font(.system(size: 7, weight: .bold))
+            .foregroundStyle(.tertiary)
+        }
       }
+      .contentShape(Rectangle())
     }
+    .buttonStyle(.plain)
+    .accessibilityHint("Edit Group")
   }
 }
 
 struct GroupChatRowView: View {
   @Environment(AppModel.self) private var model
   let row: GroupChatRow
+  var place = BubblePlace()
 
   var body: some View {
     switch row {
@@ -168,33 +195,25 @@ struct GroupChatRowView: View {
         Button("Load Earlier Messages") { model.loadOlder() }
       }
     case .time(_, let label):
-      Text(label).font(.caption).foregroundStyle(.secondary).padding(.top, 6)
+      ChatTimeLabel(text: label)
     case .message(let message, let reactions):
       if message.role == "user" {
-        MessageView(message: message, reactions: reactions.map(\.emoji))
+        MessageView(message: message, reactions: reactions.map(\.emoji), place: place)
       } else {
-        GroupBotMessage(message: message, reactions: reactions)
+        GroupBotMessage(message: message, reactions: reactions, place: place)
       }
     case .working(let agents):
       HStack(spacing: 8) {
-        HStack(spacing: -6) {
-          ForEach(agents) { BotAvatarView(agent: $0, size: 24, state: .working, live: true) }
+        HStack(spacing: -8) {
+          ForEach(agents) { BotAvatarView(agent: $0, size: 28, state: .working, live: true) }
         }
+        TypingBubble()
         Text("\(agents.map(\.name).formatted(.list(type: .and))) answering…")
-          .font(.callout).foregroundStyle(.secondary)
-        Spacer()
-      }
-    case .failure(_, let name, let error):
-      HStack {
-        VStack(alignment: .leading, spacing: 8) {
-          Text("\(name) couldn’t finish").font(.headline)
-          Text(error).font(.callout).foregroundStyle(.red).textSelection(.enabled)
-        }
-        .padding(14)
-        .background(.red.opacity(0.08), in: .rect(cornerRadius: 12))
-        .frame(maxWidth: 560, alignment: .leading)
+          .font(.caption).foregroundStyle(.secondary).lineLimit(1)
         Spacer(minLength: 0)
       }
+    case .failure(_, let name, let error):
+      ChatFailureRow(title: "\(name) couldn’t finish", error: error)
     case .paused:
       Label(
         "The bots are waiting for you. Your next message lets them continue.",
@@ -212,25 +231,25 @@ struct GroupBotMessage: View {
   @Environment(AppModel.self) private var model
   let message: Message
   var reactions: [Reaction.Mark] = []
+  var place = BubblePlace()
 
   private var sender: Agent? { model.agents.first { $0.id == message.origin?.agentId } }
 
   var body: some View {
-    HStack(alignment: .top, spacing: 8) {
-      avatar
-      VStack(alignment: .leading, spacing: 4) {
-        Text(message.origin?.name ?? sender?.name ?? "A bot")
-          .font(.caption.weight(.medium))
-          .foregroundStyle(sender?.avatar.bodyColor ?? .secondary)
+    HStack(alignment: .bottom, spacing: 4) {
+      avatar.opacity(place.endsRun ? 1 : 0)
+      VStack(alignment: .leading, spacing: 2) {
+        if place.startsRun {
+          Text(message.origin?.name ?? sender?.name ?? "A bot")
+            .font(.caption2.weight(.medium))
+            .foregroundStyle(sender?.avatar.bodyColor ?? .secondary)
+            .padding(.leading, 12 + BubbleShape.tailWidth)
+        }
         bubble
       }
-      Button("Reply", systemImage: "arrowshape.turn.up.left") { model.replyTo = message }
-        .labelStyle(.iconOnly)
-        .buttonStyle(.borderless)
-        .foregroundStyle(.secondary)
-        .padding(.top, 20)
-      Spacer(minLength: 24)
+      Spacer(minLength: 32)
     }
+    .swipeToReply { model.replyTo = message }
   }
 
   @ViewBuilder private var avatar: some View {
@@ -248,14 +267,14 @@ struct GroupBotMessage: View {
       MarkdownText(text: reply.text).textSelection(.enabled)
       ForEach(reply.chips, id: \.href) { SourceChipLink(chip: $0) }
     }
-    .bubble(owner: false)
+    .bubble(owner: false, tail: place.endsRun)
     .fixedSize(horizontal: false, vertical: true)
-    .overlay(alignment: .bottomTrailing) {
+    .overlay(alignment: .topTrailing) {
       if !reactions.isEmpty {
-        ReactionBadge(reactions: reactions.map(\.emoji)).offset(x: 8, y: 16)
+        ReactionBadge(reactions: reactions.map(\.emoji)).offset(x: 8, y: -14)
       }
     }
-    .padding(.bottom, reactions.isEmpty ? 0 : 14)
+    .padding(.top, reactions.isEmpty ? 0 : 14)
     .contextMenu {
       Button("Reply") { model.replyTo = message }
       Button("Copy") { UIPasteboard.general.string = message.text }

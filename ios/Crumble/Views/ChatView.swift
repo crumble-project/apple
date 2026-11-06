@@ -50,6 +50,15 @@ enum ChatRow: Identifiable {
   }
 }
 
+extension ChatRow {
+  /// Who a bubble is from, so messages in a row from one sender read as a run.
+  var bubbleSender: String? {
+    guard case .message(let message, _) = self else { return nil }
+    if message.role == "assistant" { return "bot" }
+    return message.role == "user" && noticeTitle(message) == nil ? "owner" : nil
+  }
+}
+
 struct ChatView: View {
   @Environment(AppModel.self) private var model
   @Environment(\.horizontalSizeClass) private var sizeClass
@@ -60,18 +69,20 @@ struct ChatView: View {
   var body: some View {
     let rows = ChatRow.rows(
       messages: model.messages, snapshot: model.snapshot, hasMore: model.hasMore)
+    let places = BubblePlace.places(rows, sender: \.bubbleSender)
     ScrollView {
-      LazyVStack(spacing: 10) {
-        ForEach(rows) { row in
-          ChatRowView(agent: agent, row: row)
+      LazyVStack(spacing: 0) {
+        ForEach(Array(zip(rows, places)), id: \.0.id) { row, place in
+          ChatRowView(agent: agent, row: row, place: place).padding(.top, place.gap)
         }
       }
-      .padding(.horizontal, 20)
-      .padding(.vertical, 16)
+      .padding(.horizontal, 12)
+      .padding(.vertical, 12)
     }
     .defaultScrollAnchor(.bottom)
     .defaultScrollAnchor(.bottom, for: .sizeChanges)
     .jumpToLatest()
+    .keepsContentSwipe()
     .overlay {
       if rows.isEmpty { EmptyChatView(agent: agent) }
     }
@@ -87,16 +98,18 @@ struct ChatView: View {
     .toolbar {
       ToolbarItem(placement: .principal) { profileButton }
       .sharedBackgroundVisibility(.hidden)
-      if agent.tools?.contains(DesktopJob.toolName) == true {
-        ToolbarItem(placement: .primaryAction) {
-          Button("Bot Desktop", systemImage: "display") {
-            model.botDesktop = BotDesktopTarget(id: agent.id)
+      if sizeClass != .compact {
+        if agent.tools?.contains(DesktopJob.toolName) == true {
+          ToolbarItem(placement: .primaryAction) {
+            Button("Bot Desktop", systemImage: "display") {
+              model.botDesktop = BotDesktopTarget(id: agent.id)
+            }
           }
         }
-      }
-      ToolbarItem(placement: .primaryAction) {
-        Button("Details", systemImage: "sidebar.trailing") { showsDetails.toggle() }
-          .help(showsDetails ? "Hide Details" : "Show Details")
+        ToolbarItem(placement: .primaryAction) {
+          Button("Details", systemImage: "sidebar.trailing") { showsDetails.toggle() }
+            .help(showsDetails ? "Hide Details" : "Show Details")
+        }
       }
     }
     .inspector(isPresented: $showsDetails) {
@@ -109,25 +122,25 @@ struct ChatView: View {
     }
   }
 
+  /// The bot's portrait over its name, as Messages heads a conversation. Tapping opens its details.
   private var profileButton: some View {
-    HStack(spacing: 8) {
-      BotAvatarView(agent: agent, size: 28, state: model.botState(agent), live: true)
-      Button {
-        model.openEditor()
-      } label: {
-        VStack(alignment: .leading, spacing: 2) {
-          Text(agent.name).font(.headline).lineLimit(1)
-          if !subtitle.isEmpty {
-            Text(subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(1)
-          }
+    Button {
+      showsDetails = true
+    } label: {
+      VStack(spacing: 1) {
+        BotAvatarView(agent: agent, size: 36, state: model.botState(agent), live: true)
+        HStack(spacing: 2) {
+          Text(agent.name).font(.caption2.weight(.medium)).lineLimit(1)
+          Image(systemName: "chevron.right")
+            .font(.system(size: 7, weight: .bold))
+            .foregroundStyle(.tertiary)
         }
-        .frame(minHeight: 44, alignment: .leading)
-        .contentShape(Rectangle())
       }
-      .buttonStyle(.plain)
-      .accessibilityLabel("Open \(agent.name) profile")
-      .accessibilityValue(subtitle)
+      .contentShape(Rectangle())
     }
+    .buttonStyle(.plain)
+    .accessibilityLabel("Open \(agent.name) details")
+    .accessibilityValue(subtitle)
   }
 
   /// On a phone the panel is a sheet, and the app's sheets can't open over it until it has gone.
@@ -172,6 +185,7 @@ struct ChatRowView: View {
   @Environment(AppModel.self) private var model
   let agent: Agent
   let row: ChatRow
+  var place = BubblePlace()
 
   var body: some View {
     switch row {
@@ -182,34 +196,62 @@ struct ChatRowView: View {
         Button("Load Earlier Messages") { model.loadOlder() }
       }
     case .time(_, let label):
-      Text(label).font(.caption).foregroundStyle(.secondary).padding(.top, 6)
+      ChatTimeLabel(text: label)
     case .message(let message, let reactions):
-      MessageView(message: message, reactions: reactions)
+      MessageView(message: message, reactions: reactions, place: place)
     case .partial(let text):
       HStack {
         MarkdownText(text: text).bubble(owner: false)
-        Spacer(minLength: 60)
+        Spacer(minLength: 44)
       }
     case .thinking:
       HStack(spacing: 8) {
-        BotAvatarView(agent: agent, size: 24, state: .working, live: true)
+        TypingBubble()
         Text(Working(snapshot: model.snapshot, messages: model.messages).label + "…")
-          .font(.callout)
+          .font(.caption)
           .foregroundStyle(.secondary)
         Spacer()
       }
     case .failure(let error):
-      HStack {
-        VStack(alignment: .leading, spacing: 8) {
-          Text("The agent couldn’t finish").font(.headline)
-          Text(error).font(.callout).foregroundStyle(.red).textSelection(.enabled)
-          Button("Provider Settings…") { model.openProviderSettings() }
-        }
-        .padding(14)
-        .background(.red.opacity(0.08), in: .rect(cornerRadius: 12))
-        .frame(maxWidth: 560, alignment: .leading)
-        Spacer(minLength: 0)
-      }
+      ChatFailureRow(title: "The agent couldn’t finish", error: error) { model.openProviderSettings() }
     }
+  }
+}
+
+/// The centered time above a stretch of conversation.
+struct ChatTimeLabel: View {
+  let text: String
+
+  var body: some View {
+    Text(text)
+      .font(.caption.weight(.medium))
+      .foregroundStyle(.secondary)
+      .frame(maxWidth: .infinity)
+      .padding(.top, 8)
+  }
+}
+
+/// A failed turn, as quiet as Messages' "Not Delivered".
+struct ChatFailureRow: View {
+  let title: String
+  let error: String
+  var openSettings: (() -> Void)?
+
+  var body: some View {
+    HStack(alignment: .firstTextBaseline, spacing: 6) {
+      Image(systemName: "exclamationmark.circle.fill")
+        .foregroundStyle(.red)
+        .accessibilityHidden(true)
+      VStack(alignment: .leading, spacing: 2) {
+        Text(title).fontWeight(.medium)
+        Text(error).foregroundStyle(.secondary).textSelection(.enabled)
+        if let openSettings {
+          Button("Provider Settings…", action: openSettings).buttonStyle(.borderless)
+        }
+      }
+      Spacer(minLength: 44)
+    }
+    .font(.footnote)
+    .padding(.leading, BubbleShape.tailWidth + 6)
   }
 }

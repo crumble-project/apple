@@ -22,8 +22,9 @@ extension ComposerTarget {
 
 struct Composer: View {
   /// The height of the message field and the attach button beside it.
-  static let height: CGFloat = 44
+  static let height: CGFloat = 36
   @Environment(AppModel.self) private var model
+  @Environment(\.horizontalSizeClass) private var sizeClass
   let target: ComposerTarget
   @State private var selection: NSRange?
   @State private var selectedMention = 0
@@ -52,8 +53,8 @@ struct Composer: View {
       }
       controls
     }
-    .padding(.horizontal, 20)
-    .padding(.bottom, 14)
+    .padding(.horizontal, 12)
+    .padding(.bottom, 6)
     .fileImporter(
       isPresented: $importing, allowedContentTypes: [.image, .text, .sourceCode, .json, .xml],
       allowsMultipleSelection: true
@@ -79,7 +80,6 @@ extension Composer {
     HStack(alignment: .bottom, spacing: 8) {
       attachmentMenu
       messageField
-      sendControl
     }
   }
 
@@ -99,9 +99,9 @@ extension Composer {
       }
     } label: {
       Image(systemName: "plus")
-        .font(.system(size: 16, weight: .medium))
+        .font(.system(size: 17, weight: .medium))
         .frame(width: Composer.height, height: Composer.height)
-        .contentShape(.circle)
+        .contentShape(.circle.inset(by: -4))
     }
     .buttonStyle(.plain)
     .glassEffect(.regular.interactive(), in: .circle)
@@ -115,35 +115,30 @@ extension Composer {
       && (!model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !model.attachments.isEmpty)
   }
 
-  @ViewBuilder private var sendControl: some View {
+  /// Inside the field, as in Messages: nothing until there is something to send or stop.
+  @ViewBuilder private var fieldActions: some View {
     if target.running {
-      Button {
-        target.stop()
-      } label: {
-        Image(systemName: "stop.fill")
-          .font(.system(size: 16, weight: .medium))
-          .frame(width: Composer.height, height: Composer.height)
-          .contentShape(.circle)
-      }
-      .buttonStyle(.plain)
-      .glassEffect(.regular.interactive(), in: .circle)
-      .accessibilityLabel("Stop")
-      .help(target.stopHelp)
+      fieldButton("Stop", symbol: "stop.circle.fill", color: .secondary, action: target.stop)
+        .help(target.stopHelp)
     }
-    if !target.running || canSend {
-      Button {
-        target.send()
-      } label: {
-        Image(systemName: "arrow.up")
-          .font(.system(size: 16, weight: .bold))
-          .frame(width: Composer.height, height: Composer.height)
-          .contentShape(.circle)
-      }
-      .buttonStyle(.plain)
-      .glassEffect(.regular.interactive(), in: .circle)
-      .disabled(!canSend)
-      .accessibilityLabel("Send")
+    if canSend {
+      fieldButton("Send", symbol: "arrow.up.circle.fill", color: Color(.systemBlue), action: target.send)
     }
+  }
+
+  private func fieldButton(
+    _ title: String, symbol: String, color: Color, action: @escaping () -> Void
+  ) -> some View {
+    Button(action: action) {
+      Image(systemName: symbol)
+        .font(.system(size: 28))
+        .symbolRenderingMode(.palette)
+        .foregroundStyle(.white, color)
+        .frame(height: Composer.height)
+        .contentShape(.circle)
+    }
+    .buttonStyle(.plain)
+    .accessibilityLabel(title)
   }
 
   private func importPhotos(_ items: [PhotosPickerItem]) {
@@ -205,7 +200,7 @@ extension Composer {
           .accessibilityHidden(true)
       }
     }
-    .padding(.vertical, 7)
+    .padding(.vertical, 6)
     .onChange(of: model.draft) { _, _ in
       selectedMention = 0
       dismissedMention = false
@@ -215,12 +210,14 @@ extension Composer {
   private var messageRow: some View {
     HStack(alignment: .bottom, spacing: 8) {
       draftField
-      if let bot = target.bot {
+      // A phone's field stays clear; there, reasoning sits in the bot's details.
+      if sizeClass != .compact, let bot = target.bot {
         ReasoningControl(board: model.reasoningBoard, bot: bot, client: model.client) {
           model.reasoningBoard.choose($0, for: bot.id, host: model)
         }
-        .padding(.bottom, 10)
+        .padding(.bottom, 8)
       }
+      fieldActions
     }
   }
 
@@ -298,9 +295,8 @@ extension Composer {
         }
       }
     }
-    .padding(.leading, 14)
-    .padding(.trailing, 14)
-    .padding(.vertical, 4)
+    .padding(.leading, 12)
+    .padding(.trailing, 4)
     .frame(minHeight: Composer.height)
     .glassEffect(.regular, in: .rect(cornerRadius: Composer.height / 2))
   }

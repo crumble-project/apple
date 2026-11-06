@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add `ConversationSummary`, `orderedConversations(_:date:)`, `conversationDateLabel(_:now:calendar:)`, `Route.isChat`, and `UnreadCounts.count(_:)` for a Messages-style conversation list. The contract's lists carry no message time, so a summary comes from each chat's history. `Route` is `Sendable`.
 - Add `UnreadCounts`, the web's unread count for the app badges: finished replies the owner hasn't seen, by chat.
 - Add `Passkey`, `PasskeyBoard`, and `BotAvatar`'s `PasskeysSection`: list, rename, and remove passkeys with the session token through `/api/auth/passkey/*`. A rename or removal shows at once and comes back on failure, and a later successful read clears the error. Adding and signing in with a passkey stay on the web, because they need WebAuthn at the server's own address.
 - `MCPServer` gains `oauthClientId` and `oauthClientSecret`. `MCPDraft` gains `clientID`, `clientSecret`, `changesOAuthApp`, `oauthAppNote(callback:)`, and `applyingOAuthApp(to:)`. The secret is write-only, and clearing the client ID clears it too. `updateMCPServer` sends explicit nulls.

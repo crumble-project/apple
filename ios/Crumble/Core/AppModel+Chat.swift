@@ -16,8 +16,14 @@ extension AppModel {
         loadCapabilities()
         loadAccount()
         loadGroupChats()
+        loadConversationSummaries()
         // An open group chat stays open; the bot list only refreshes.
         guard selectedGroupID.isEmpty else {
+          Notifier.shared.routePendingTap()
+          return
+        }
+        // A phone opens on the conversation list, so only a chat already open reloads.
+        if UIDevice.current.userInterfaceIdiom == .phone, !agents.isEmpty, !isBotChatOpen {
           Notifier.shared.routePendingTap()
           return
         }
@@ -48,13 +54,22 @@ extension AppModel {
     }
   }
 
+  var isBotChatOpen: Bool {
+    if case .agent = route { true } else { false }
+  }
+
   func navigate(to route: Route?) {
     guard let route else { return }
     switch route {
     case .agent(let id):
-      if id != selectedAgentID || self.route != route { selectAgent(id) }
+      // Back in the chat it just left, the stream is still following it.
+      if id == selectedAgentID, selectedGroupID.isEmpty, snapshot != nil {
+        self.route = route
+      } else {
+        selectAgent(id)
+      }
     case .group(let id):
-      if id != selectedGroupID || self.route != route { selectGroup(id) }
+      if id == selectedGroupID, groupSnapshot != nil { self.route = route } else { selectGroup(id) }
     default:
       openPanel(route)
     }
@@ -234,8 +249,11 @@ extension AppModel {
     if event.type == "chat-preview", let lastMessage = event.lastMessage,
       delivery.preview(botID: event.agentId) == nil,
       let index = agents.firstIndex(where: { $0.id == event.agentId }) {
+      // Every reconnection replays the previews, so only a changed one means the chat moved.
+      if agents[index].lastMessage != lastMessage { noteConversationMoved(.agent(event.agentId), preview: lastMessage) }
       agents[index].lastMessage = lastMessage
     }
+    if event.type == "reply", let group = event.groupId { noteConversationMoved(.group(group), preview: event.preview) }
     let context = NotificationContext(
       appActive: UIApplication.shared.applicationState == .active, route: route)
     guard let note = notification(for: event, in: context) else { return }

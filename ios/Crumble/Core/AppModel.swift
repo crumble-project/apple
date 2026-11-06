@@ -23,6 +23,7 @@ final class AppModel {
   private(set) var selectedAgentID = ""
   var selectionVersion = 0
 
+  var conversationSummaries: [Route: ConversationSummary] = [:]
   var groupChats: [GroupChat] = []
   /// The open group chat; empty while a bot chat or nothing is open.
   var selectedGroupID = ""
@@ -233,7 +234,11 @@ final class AppModel {
     botSecretBoard.reset()
     botSkillBoard.reset()
     if case .agent = route {
-      if let next = agents.first { selectAgent(next.id) } else { route = nil }
+      if UIDevice.current.userInterfaceIdiom != .phone, let next = agents.first {
+        selectAgent(next.id)
+      } else {
+        route = nil
+      }
     }
   }
   func updateSelectedAgent(_ id: String) {

@@ -9,6 +9,8 @@ public struct UnreadCounts: Equatable {
 
   public var total: Int { chats.values.reduce(0, +) }
 
+  public func count(_ route: Route) -> Int { chats[route] ?? 0 }
+
   public var badgeLabel: String? { total > 0 ? String(total) : nil }
 
   /// Call for a reply that isn't on screen; a bot's answer to a bot doesn't count.

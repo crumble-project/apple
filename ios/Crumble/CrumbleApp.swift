@@ -57,10 +57,32 @@ extension AppTheme {
   }
 }
 
+/// A phone's navigation stack: the conversation list, then Settings or a chat, then a page.
+enum PhonePage: Hashable {
+  case settings
+  case route(Route)
+
+  var route: Route? {
+    if case .route(let route) = self { route } else { nil }
+  }
+
+  /// The stack that shows `route`. A page opened from a chat or Settings returns there, and one
+  /// opened from nowhere, like a notification, returns through Settings.
+  static func path(from current: [PhonePage], to route: Route?) -> [PhonePage] {
+    guard let route else { return current.last == .settings ? current : [] }
+    if let index = current.firstIndex(of: .route(route)) { return Array(current[...index]) }
+    if route.isChat { return [.route(route)] }
+    var path = current.isEmpty ? [.settings] : current
+    if path.last?.route?.isChat == false { path.removeLast() }
+    return path + [.route(route)]
+  }
+}
+
 struct ContentView: View {
   @Environment(AppModel.self) private var model
-  @State private var compactColumn: NavigationSplitViewColumn = .sidebar
-  @State private var showingSettings = false
+  @Environment(\.horizontalSizeClass) private var sizeClass
+  @State private var path: [PhonePage] = []
+  @State private var showingPadSettings = false
 
   private var automationDraft: Binding<AutomationDraft?> {
     let board = model.automationBoard
@@ -69,35 +91,90 @@ struct ContentView: View {
       set: { if $0 == nil { board.closeDraft() } else { board.draft = $0 } })
   }
 
-  var body: some View {
-    @Bindable var model = model
-    NavigationSplitView(preferredCompactColumn: $compactColumn) {
-      SidebarView(showingSettings: $showingSettings, compactColumn: $compactColumn)
-        .navigationTitle("Crumble")
-    } detail: {
-      Group {
-        switch model.route {
-        case .group?:
-          if let group = model.selectedGroup {
-            GroupChatView(group: group)
-          } else {
-            ProgressView()
-          }
-        case .agent?, nil:
-          if let agent = model.selectedAgent {
-            ChatView(agent: agent)
-          } else {
-            WelcomeView(showingSettings: $showingSettings)
-          }
-        case let panel?:
-          PanelView(panel: panel)
+  private var showingSettings: Binding<Bool> {
+    if sizeClass == .compact {
+      Binding(
+        get: { path.contains(.settings) },
+        set: { path = $0 ? [.settings] : [] })
+    } else {
+      $showingPadSettings
+    }
+  }
+
+  private var conversationList: some View {
+    ConversationListView(showingSettings: showingSettings)
+  }
+
+  private func routePage(_ route: Route?) -> some View {
+    Group {
+      switch route {
+      case .group(let id)?:
+        if let group = model.groupChats.first(where: { $0.id == id }) {
+          GroupChatView(group: group)
+        } else {
+          ProgressView()
+        }
+      case .agent(let id)?:
+        if let agent = model.agents.first(where: { $0.id == id }) {
+          ChatView(agent: agent)
+        } else {
+          WelcomeView(showingSettings: showingSettings)
+        }
+      case let panel?:
+        PanelView(panel: panel)
+      case nil:
+        if let agent = model.selectedAgent {
+          ChatView(agent: agent)
+        } else {
+          WelcomeView(showingSettings: showingSettings)
         }
       }
-      .overlay(alignment: .top) { ErrorBanner() }
-      .overlay(alignment: .bottom) { NoticeToast() }
+    }
+  }
+
+  private var phoneRoot: some View {
+    NavigationStack(path: $path) {
+      conversationList
+        .showsBanners()
+        .navigationDestination(for: PhonePage.self) { page in
+          Group {
+            if let route = page.route { routePage(route) } else { SettingsView() }
+          }
+          .showsBanners()
+        }
     }
     .onChange(of: model.route) { _, route in
-      compactColumn = route == nil ? .sidebar : .detail
+      path = PhonePage.path(from: path, to: route)
+    }
+    .onChange(of: path) { _, pages in
+      let route = pages.last?.route
+      guard route != model.route else { return }
+      if route == nil { model.route = nil } else { model.navigate(to: route) }
+    }
+  }
+
+  private var padRoot: some View {
+    NavigationSplitView {
+      conversationList
+    } detail: {
+      Group {
+        if showingPadSettings {
+          NavigationStack {
+            SettingsView { showingPadSettings = false }
+          }
+        } else {
+          routePage(model.route)
+        }
+      }
+      .showsBanners()
+    }
+    .onChange(of: model.route) { showingPadSettings = false }
+  }
+
+  var body: some View {
+    @Bindable var model = model
+    Group {
+      if sizeClass == .compact { phoneRoot } else { padRoot }
     }
     // On the window, because preferredColorScheme(nil) leaves an open sheet on its old appearance.
     .onChange(of: model.themeBoard.theme, initial: true) { _, theme in
@@ -105,8 +182,8 @@ struct ContentView: View {
         scene.windows.forEach { $0.overrideUserInterfaceStyle = theme.interfaceStyle }
       }
     }
+    .onChange(of: model.route) { old, _ in model.noteChatLeft(old) }
     .fullScreenCover(item: $model.botDesktop) { BotDesktopView(agentID: $0.id) }
-    .sheet(isPresented: $showingSettings) { SettingsView() }
     .sheet(item: $model.agentDraft) {
       AgentEditorView(draft: sheetBinding($model.agentDraft, for: $0))
     }
@@ -141,193 +218,6 @@ func sheetBinding<Draft: Identifiable & Sendable>(_ source: Binding<Draft?>, for
     })
 }
 
-struct SidebarView: View {
-  private var groupsSection: some View {
-    Section {
-      ForEach(model.groupChats) { GroupRow(group: $0) }
-      if model.groupChats.isEmpty {
-        Text(
-          model.agents.count < GroupDraft.memberRange.lowerBound
-            ? "Create two bots to start a group chat" : "No group chats yet"
-        )
-        .foregroundStyle(.secondary)
-      }
-    } header: {
-      HStack {
-        Text("Group Chats")
-        Spacer()
-        Button("New Group Chat", systemImage: "plus") { model.createGroup() }
-          .labelStyle(.iconOnly)
-          .disabled(model.agents.count < GroupDraft.memberRange.lowerBound)
-      }
-    }
-  }
-
-  private func agentRow(_ agent: Agent) -> some View {
-    NavigationLink(value: Route.agent(agent.id)) {
-      HStack(spacing: 12) {
-        BotAvatarView(agent: agent, size: 44, state: model.botState(agent))
-          .accessibilityHidden(true)
-        VStack(alignment: .leading, spacing: 4) {
-          HStack {
-            Text(agent.name).font(.headline).lineLimit(1)
-            if !agent.enabled { Text("Paused").font(.caption).foregroundStyle(.secondary) }
-          }
-          Text(preview(agent.lastMessage ?? "").nilIfEmpty ?? "No messages yet")
-            .font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
-        }
-      }
-      .padding(.vertical, 4)
-    }
-    .disabled(model.pendingMutations.contains("agent:\(agent.id)"))
-  }
-
-  @Environment(AppModel.self) private var model
-  @Binding var showingSettings: Bool
-  @Binding var compactColumn: NavigationSplitViewColumn
-  @State private var search = ""
-  @State private var searching = false
-
-  private struct WorkspaceDestination {
-    let route: Route
-    let title: String
-    let symbol: String
-  }
-
-  private static let workspace: [WorkspaceDestination] = [
-    .init(route: .memory, title: "Memory", symbol: "brain"),
-    .init(route: .skills, title: "Skills", symbol: "book.closed"),
-    .init(route: .automations, title: "Automations", symbol: "calendar.badge.clock"),
-    .init(route: .activity, title: "Activity", symbol: "waveform.path.ecg"),
-    .init(route: .avatars, title: "Avatars", symbol: "face.smiling"),
-    .init(route: .judgeModel, title: JudgeModelSettings.title, symbol: JudgeModelSettings.symbol),
-    .init(route: .visionModel, title: VisionModelSettings.title, symbol: VisionModelSettings.symbol),
-    .init(route: .integrations, title: "Integrations", symbol: "powerplug"),
-    .init(route: .coding, title: "Coding", symbol: "chevron.left.forwardslash.chevron.right"),
-    .init(route: .users, title: "Users", symbol: "person.2")
-  ]
-
-  private static let connectedServices: [WorkspaceDestination] = [
-    .init(route: .providers, title: "Providers", symbol: "key.radiowaves.forward"),
-    .init(route: .passwordManagers, title: "Password managers", symbol: "lock.rectangle.stack"),
-    .init(route: .credentials, title: "Credentials", symbol: "key"),
-    .init(route: .logins, title: "Logins", symbol: "person.badge.key"),
-    .init(route: .webSearch, title: "Web search", symbol: "globe"),
-    .init(route: .messageGateways, title: "Message gateways", symbol: "message"),
-    .init(route: .eventRelay, title: "Event relay", symbol: "dot.radiowaves.left.and.right")
-  ]
-
-  private func run(_ command: PaletteCommand) {
-    search = ""
-    searching = false
-    switch command {
-    case .open(let route):
-      model.navigate(to: route)
-      compactColumn = .detail
-    case .settings: showingSettings = true
-    case .newBot: model.createAgent()
-    case .newGroupChat: model.createGroup()
-    case .theme(let theme): model.chooseTheme(theme)
-    }
-  }
-
-  private func searchRow(_ item: PaletteItem) -> some View {
-    Button { run(item.command) } label: {
-      HStack(spacing: 12) {
-        if case .open(.agent(let id)) = item.command, let agent = model.agents.first(where: { $0.id == id }) {
-          BotAvatarView(agent: agent, size: 28, state: model.botState(agent)).accessibilityHidden(true)
-        } else {
-          Image(systemName: item.symbol).frame(width: 28).accessibilityHidden(true)
-        }
-        Text(item.title).lineLimit(1)
-        Spacer(minLength: 0)
-        if let detail = item.detail { Text(detail).font(.caption).foregroundStyle(.secondary) }
-      }
-    }
-    .foregroundStyle(.primary)
-  }
-
-  @ViewBuilder private var sidebarSections: some View {
-    Section("Agents") {
-      ForEach(model.agents) { agent in
-        agentRow(agent)
-      }
-      if model.agents.isEmpty {
-        Text(model.loading ? "Opening your workspace…" : "Your agents will appear here.")
-          .foregroundStyle(.secondary)
-        if model.client?.token.isEmpty != false {
-          Button("Connect to your server", systemImage: "network") { showingSettings = true }
-        } else {
-          Button("Create an Agent", systemImage: "plus") { model.createAgent() }
-        }
-      }
-    }
-    groupsSection
-    Section("Workspace") {
-      ForEach(Self.workspace.filter { $0.route != .users || model.adminBoard.isAdmin }, id: \.route) { item in
-        NavigationLink(value: item.route) { Label(item.title, systemImage: item.symbol) }
-      }
-    }
-    Section("Connected services") {
-      ForEach(Self.connectedServices, id: \.route) { item in
-        NavigationLink(value: item.route) { Label(item.title, systemImage: item.symbol) }
-      }
-    }
-    Section {
-      Button("Settings", systemImage: "gearshape") { showingSettings = true }
-    }
-  }
-
-  var body: some View {
-    let results = model.commandPalette.matching(search)
-    List(selection: Binding(get: { model.route }, set: { model.navigate(to: $0) })) {
-      if search.isEmpty {
-        sidebarSections
-      } else {
-        ForEach(results) { section in
-          Section(section.title) { ForEach(section.items) { searchRow($0) } }
-        }
-      }
-    }
-    .searchable(text: $search, isPresented: $searching, prompt: "Search chats, pages, and settings")
-    .overlay {
-      if results.isEmpty { ContentUnavailableView.search(text: search) }
-    }
-    .refreshable { model.refresh() }
-    .toolbar {
-      ToolbarItem(placement: .largeTitle) {
-        HStack(spacing: 10) {
-          Text("Crumble").font(.largeTitle.bold())
-          ConnectionStatus()
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .combine)
-      }
-      .sharedBackgroundVisibility(.hidden)
-      ToolbarItem(placement: .primaryAction) {
-        Button("New Agent", systemImage: "square.and.pencil") { model.createAgent() }
-          .disabled(model.client?.token.isEmpty != false)
-      }
-    }
-  }
-}
-
-struct ConnectionStatus: View {
-  @Environment(AppModel.self) private var model
-
-  var body: some View {
-    let (status, color): (String, Color) =
-      if model.client?.token.isEmpty != false {
-        ("Connect in Settings", .secondary)
-      } else if !model.errorText.isEmpty || !model.streamStatus.isEmpty {
-        ("Connection needs attention", .orange)
-      } else if model.loading { ("Syncing…", .secondary) } else { ("Connected", .green) }
-    Circle().fill(color).frame(width: 8, height: 8)
-      .accessibilityLabel(status)
-      .help(status)
-  }
-}
-
 struct WelcomeView: View {
   @Environment(AppModel.self) private var model
   @Binding var showingSettings: Bool
@@ -351,6 +241,14 @@ struct WelcomeView: View {
         }
       }
     }
+  }
+}
+
+extension View {
+  /// On a page rather than around its stack, where the banner would cover the toolbar's buttons.
+  func showsBanners() -> some View {
+    overlay(alignment: .top) { ErrorBanner() }
+      .overlay(alignment: .bottom) { NoticeToast() }
   }
 }
 

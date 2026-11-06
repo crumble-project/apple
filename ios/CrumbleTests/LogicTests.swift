@@ -224,6 +224,41 @@ private final class StubPress: UIPress {
   override var key: UIKey? { StubKey() }
 }
 
+struct PhoneNavigationTests {
+  private let chat = PhonePage.route(.agent("a"))
+
+  @Test func aChatOpensFromTheList() {
+    #expect(PhonePage.path(from: [], to: .agent("a")) == [chat])
+  }
+
+  @Test func aPageFromAChatReturnsToIt() {
+    #expect(PhonePage.path(from: [chat], to: .providers) == [chat, .route(.providers)])
+  }
+
+  @Test func aPageFromNowhereReturnsThroughSettings() {
+    #expect(PhonePage.path(from: [], to: .memory) == [.settings, .route(.memory)])
+  }
+
+  @Test func oneSettingsPageReplacesAnother() {
+    #expect(PhonePage.path(from: [.settings, .route(.memory)], to: .skills) == [.settings, .route(.skills)])
+  }
+
+  @Test func aChatReplacesWhateverWasOpen() {
+    #expect(PhonePage.path(from: [.settings, .route(.memory)], to: .agent("a")) == [chat])
+  }
+
+  @Test func leavingARouteKeepsSettingsOpen() {
+    #expect(PhonePage.path(from: [.settings], to: nil) == [.settings])
+    #expect(PhonePage.path(from: [chat], to: nil).isEmpty)
+  }
+
+  @Test func aRunEndsWhereTheSenderChanges() {
+    let places = BubblePlace.places(["a", "a", nil, "a", "b"]) { $0 }
+    #expect(places.map(\.startsRun) == [true, false, true, true, true])
+    #expect(places.map(\.endsRun) == [false, true, true, true, true])
+  }
+}
+
 @MainActor
 struct ComposerTextViewTests {
   private func composing() -> PastingTextView {

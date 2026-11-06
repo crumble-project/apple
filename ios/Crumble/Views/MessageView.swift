@@ -7,6 +7,7 @@ struct MessageView: View {
   @Environment(AppModel.self) private var model
   let message: Message
   var reactions: [String] = []
+  var place = BubblePlace()
 
   private var replyable: Bool {
     !(message.entryId ?? "").isEmpty && (message.role == "user" || message.role == "assistant")
@@ -64,17 +65,17 @@ struct MessageView: View {
       if let notice = noticeTitle(message) {
         EventView(message: message, title: notice)
       } else {
-        HStack(spacing: 6) {
-          Spacer(minLength: 60)
+        HStack(spacing: 0) {
+          Spacer(minLength: 56)
           ViewThatFits(in: .horizontal) {
             sentMessageContent.fixedSize(horizontal: true, vertical: false)
             sentMessageContent.frame(maxWidth: 520, alignment: .trailing)
           }
-          replyButton
         }
+        .swipeToReply(enabled: replyable) { model.replyTo = message }
       }
     default:
-      HStack(spacing: 6) {
+      HStack(spacing: 0) {
         ViewThatFits(in: .horizontal) {
           incomingMessageContent.fixedSize(horizontal: true, vertical: false)
           incomingMessageContent
@@ -82,9 +83,9 @@ struct MessageView: View {
             .fixedSize(horizontal: false, vertical: true)
             .layoutPriority(1)
         }
-        replyButton
-        Spacer(minLength: 60)
+        Spacer(minLength: 44)
       }
+      .swipeToReply(enabled: replyable) { model.replyTo = message }
     }
   }
 
@@ -98,12 +99,12 @@ struct MessageView: View {
       if !message.text.isEmpty {
         Text(message.text)
           .textSelection(.enabled)
-          .bubble(owner: owner)
+          .bubble(owner: owner, tail: place.endsRun)
           .contextMenu { menu }
-          .overlay(alignment: .bottomLeading) {
-            if !reactions.isEmpty { ReactionBadge(reactions: reactions).offset(x: -8, y: 16) }
+          .overlay(alignment: .topLeading) {
+            if !reactions.isEmpty { ReactionBadge(reactions: reactions).offset(x: -8, y: -14) }
           }
-          .padding(.bottom, reactions.isEmpty ? 0 : 14)
+          .padding(.top, reactions.isEmpty ? 0 : 14)
       }
       deliveryStatus
       if let via = message.origin?.via { GatewayOriginLabel(id: via) }
@@ -134,19 +135,8 @@ struct MessageView: View {
       MarkdownText(text: reply.text).textSelection(.enabled)
       ForEach(reply.chips, id: \.href) { SourceChipLink(chip: $0) }
     }
-    .bubble(owner: false)
+    .bubble(owner: false, tail: place.endsRun)
     .contextMenu { menu }
-  }
-
-  @ViewBuilder private var replyButton: some View {
-    if replyable {
-      Button("Reply", systemImage: "arrowshape.turn.up.left") { model.replyTo = message }
-        .labelStyle(.iconOnly)
-        .buttonStyle(.borderless)
-        .foregroundStyle(.secondary)
-        .opacity(1)
-        .help("Reply")
-    }
   }
 
   @ViewBuilder private var menu: some View {

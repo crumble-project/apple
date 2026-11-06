@@ -5,6 +5,7 @@ import SwiftUI
 /// The inspector beside a chat: the bot's live portrait, its desktop, its automations, and what it remembers.
 struct DetailsPanel: View {
   @Environment(AppModel.self) private var model
+  @Environment(\.horizontalSizeClass) private var sizeClass
   let agent: Agent
   /// Opens a page that covers the panel, which a phone must close first.
   let leave: (@escaping () -> Void) -> Void
@@ -95,6 +96,13 @@ struct DetailsPanel: View {
       LabeledContent("Model", value: agent.model?.nilIfEmpty ?? "Default")
       if let provider = agent.provider?.nilIfEmpty {
         LabeledContent("Provider", value: provider)
+      }
+      if sizeClass == .compact {
+        LabeledContent("Reasoning") {
+          ReasoningControl(board: model.reasoningBoard, bot: agent, client: model.client) {
+            model.reasoningBoard.choose($0, for: agent.id, host: model)
+          }
+        }
       }
     }
   }
