@@ -1,7 +1,7 @@
 import apfelkern
 import SwiftUI
 
-/// The Machine accounts section of the Integrations page.
+/// The Machine accounts section of the Coding page.
 struct MachineAccountsSection: View {
   @Environment(AppModel.self) private var model
 

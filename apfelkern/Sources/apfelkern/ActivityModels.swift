@@ -12,15 +12,19 @@ public struct ActivityFeedResponse: Sendable {
 
 public struct ActivityEntry: Identifiable, Hashable, Sendable {
   public var id: String
-  public var agentId: String
-  public var agentName: String
-  public var entryId: String
+  /// Nil for a change to the shared library.
+  public var agentId: String?
+  public var agentName: String?
+  public var entryId: String?
   public var timestamp: Int64?
   public var kind: String
   public var details: [String: JSONValue]
+  /// Set for a skill or memory change, whose `kind` is `change` and `details` are empty.
+  public var change: LearnedChange?
 
-  public init(id: String, agentId: String, agentName: String, entryId: String,
-              timestamp: Int64? = nil, kind: String, details: [String: JSONValue]) {
+  public init(id: String, agentId: String?, agentName: String?, entryId: String?,
+              timestamp: Int64? = nil, kind: String, details: [String: JSONValue],
+              change: LearnedChange? = nil) {
     self.id = id
     self.agentId = agentId
     self.agentName = agentName
@@ -28,7 +32,10 @@ public struct ActivityEntry: Identifiable, Hashable, Sendable {
     self.timestamp = timestamp
     self.kind = kind
     self.details = details
+    self.change = change
   }
+
+  public var date: Date? { timestamp.map { Date(timeIntervalSince1970: Double($0) / 1000) } }
 }
 
 public struct ActivityEvent: Codable, Hashable, Sendable {

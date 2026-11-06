@@ -74,6 +74,8 @@ public struct Agent: Codable, Identifiable, Hashable, Sendable {
   public var provider: String?
   public var model: String?
   public var tools: [String]?
+  /// Nil uses the account default.
+  public var webSearchProvider: WebSearchProvider?
   public var delegates: [String]?
   public var skills: [Skill]?
   public var sharedSkills: [String]?
@@ -88,6 +90,7 @@ public struct Agent: Codable, Identifiable, Hashable, Sendable {
     id: String = "", name: String = "", description: String? = nil, instructions: String? = nil,
     avatar: BotAvatarDefinition? = nil,
     enabled: Bool = true, provider: String? = nil, model: String? = nil, tools: [String]? = nil,
+    webSearchProvider: WebSearchProvider? = nil,
     delegates: [String]? = nil, skills: [Skill]? = nil, sharedSkills: [String]? = nil,
     sharedMemory: Bool? = nil,
     mcpServers: [String]? = nil, inference: Inference? = nil, desktopModel: DesktopModel? = nil,
@@ -102,6 +105,7 @@ public struct Agent: Codable, Identifiable, Hashable, Sendable {
     self.provider = provider
     self.model = model
     self.tools = tools
+    self.webSearchProvider = webSearchProvider
     self.delegates = delegates
     self.skills = skills
     self.sharedSkills = sharedSkills
@@ -123,6 +127,7 @@ public struct Agent: Codable, Identifiable, Hashable, Sendable {
     provider = try container.decodeIfPresent(String.self, forKey: .provider)
     model = try container.decodeIfPresent(String.self, forKey: .model)
     tools = try container.decodeIfPresent([String].self, forKey: .tools)
+    webSearchProvider = try container.decodeIfPresent(WebSearchProvider.self, forKey: .webSearchProvider)
     delegates = try container.decodeIfPresent([String].self, forKey: .delegates)
     skills = try container.decodeIfPresent([Skill].self, forKey: .skills)
     sharedSkills = try container.decodeIfPresent([String].self, forKey: .sharedSkills)

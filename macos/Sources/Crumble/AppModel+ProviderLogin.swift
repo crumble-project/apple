@@ -34,9 +34,9 @@ extension AppModel {
         case let .signedIn(provider):
             let name = providers.first { $0.provider == provider }?.name ?? provider
             showNotice("Signed in to \(name)")
-            loadProviders()
+            refreshProviders()
         case .providersChanged:
-            loadProviders()
+            refreshProviders()
         case let .failed(message):
             errorText = message
         }

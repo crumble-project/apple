@@ -85,6 +85,20 @@ private func stop(_ board: ProviderLoginBoard) async throws {
   })
 }
 
+@MainActor @Test func aSignInThatFailsStillRereadsProviders() async throws {
+  let log = EventLog()
+  try await withClient(handler: { request in
+    if request.httpMethod == "POST" { return started() }
+    return session("expired")
+  }, test: { client in
+    let board = board(log)
+    board.start("openai", method: .oauth, client: client)
+    try await wait { !log.events.isEmpty }
+    #expect(log.events == ["providersChanged"])
+    try await stop(board)
+  })
+}
+
 @MainActor @Test func signInThatEndsOnTheServerSaysWhy() async throws {
   let responses = Mutex([
     session("failed", failure: #"{"code":"provider_failure","message":"Denied"}"#),

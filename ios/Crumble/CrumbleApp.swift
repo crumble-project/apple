@@ -1,6 +1,7 @@
 import apfelkern
 import BotAvatar
 import SwiftUI
+import UniformTypeIdentifiers
 
 @main
 struct CrumbleApp: App {
@@ -87,11 +88,19 @@ struct ContentView: View {
     .sheet(item: $model.taskDraft) { TaskFormView(draft: sheetBinding($model.taskDraft, for: $0)) }
     .sheet(item: $model.mcpDraft) { MCPFormView(draft: sheetBinding($model.mcpDraft, for: $0)) }
     .machineAccountSheet()
+    .adminSheets()
+    .messageGatewaySheet()
+    .pluginSettingSheet(active: model.connectedServices.gateways.draft == nil)
     .gitHubAppSheets()
     .skillSheet(active: model.agentDraft == nil)
     .sheet(item: $model.jobHistory) { JobSheet(job: $0) }
     .sheet(item: $model.groupDraft) { GroupEditorView(draft: sheetBinding($model.groupDraft, for: $0)) }
   }
+}
+
+/// For credentials. Universal Clipboard would hand the text to the owner's other devices.
+func copyLocally(_ text: String) {
+  UIPasteboard.general.setItems([[UTType.plainText.identifier: text]], options: [.localOnly: true])
 }
 
 func sheetBinding<Draft: Identifiable & Sendable>(_ source: Binding<Draft?>, for item: Draft)
@@ -158,7 +167,18 @@ struct SidebarView: View {
     .init(route: .skills, title: "Skills", symbol: "book.closed"),
     .init(route: .tasks, title: "Tasks", symbol: "calendar.badge.clock"),
     .init(route: .activity, title: "Activity", symbol: "waveform.path.ecg"),
-    .init(route: .integrations, title: "Integrations", symbol: "powerplug")
+    .init(route: .judgeModel, title: JudgeModelSettings.title, symbol: JudgeModelSettings.symbol),
+    .init(route: .visionModel, title: VisionModelSettings.title, symbol: VisionModelSettings.symbol),
+    .init(route: .integrations, title: "Integrations", symbol: "powerplug"),
+    .init(route: .coding, title: "Coding", symbol: "chevron.left.forwardslash.chevron.right"),
+    .init(route: .users, title: "Users", symbol: "person.2")
+  ]
+
+  private static let connectedServices: [WorkspaceDestination] = [
+    .init(route: .passwordManagers, title: "Password managers", symbol: "lock.rectangle.stack"),
+    .init(route: .webSearch, title: "Web search", symbol: "globe"),
+    .init(route: .messageGateways, title: "Message gateways", symbol: "message"),
+    .init(route: .eventRelay, title: "Event relay", symbol: "dot.radiowaves.left.and.right")
   ]
 
   var body: some View {
@@ -179,7 +199,12 @@ struct SidebarView: View {
       }
       groupsSection
       Section("Workspace") {
-        ForEach(Self.workspace, id: \.route) { item in
+        ForEach(Self.workspace.filter { $0.route != .users || model.adminBoard.isAdmin }, id: \.route) { item in
+          NavigationLink(value: item.route) { Label(item.title, systemImage: item.symbol) }
+        }
+      }
+      Section("Connected services") {
+        ForEach(Self.connectedServices, id: \.route) { item in
           NavigationLink(value: item.route) { Label(item.title, systemImage: item.symbol) }
         }
       }

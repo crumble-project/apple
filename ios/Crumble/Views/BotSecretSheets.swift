@@ -142,23 +142,36 @@ private struct BotSecretSheet: View {
 struct SecretSourceField: View {
   let label: String
   @Binding var source: SecretSourceDraft
-  let managers: [PasswordManager]
+  var managers: [PasswordManager] = []
   var concealed = true
   var valueNote: String?
   var placeholder: String?
+  @Environment(AppModel.self) private var model
+  @State private var connecting = false
+
+  /// The board's answer wins once it has one: a password manager connected from here shows at once.
+  private var available: [PasswordManager] {
+    model.connectedServices.passwordManagers.connected(knownUntilLoaded: managers)
+  }
 
   var body: some View {
-    if !managers.isEmpty, source.manager == nil || managers.contains(where: { $0.id == source.manager }) {
+    if !available.isEmpty, source.manager == nil || available.contains(where: { $0.id == source.manager }) {
       Picker("Where \(label.lowercased()) comes from", selection: manager) {
         Text("Crumble").tag(PasswordManagerID?.none)
-        ForEach(managers) { Text($0.name).tag(Optional($0.id)) }
+        ForEach(available) { Text($0.name).tag(Optional($0.id)) }
       }
       .pickerStyle(.segmented)
     }
-    field
-    Text(source.note(managers: managers, valueNote: valueNote))
+    field.task { model.loadPasswordManagers() }
+    Text(source.note(managers: available, valueNote: valueNote))
       .font(.footnote)
       .foregroundStyle(.secondary)
+    if available.isEmpty, source.manager == nil {
+      Button("Connect a password manager") { connecting = true }
+        .buttonStyle(.borderless)
+        .font(.footnote)
+        .sheet(isPresented: $connecting) { PasswordManagersSheet() }
+    }
   }
 
   private var valuePrompt: String { source.keepPlaceholder.nilIfEmpty ?? placeholder ?? label }

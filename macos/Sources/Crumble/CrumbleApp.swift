@@ -82,6 +82,13 @@ struct ContentView: View {
     }
 }
 
+/// For credentials. The concealed type asks clipboard managers not to keep the text in their history.
+func copyConcealed(_ text: String) {
+    NSPasteboard.general.clearContents()
+    NSPasteboard.general.setString(text, forType: .string)
+    NSPasteboard.general.setString("", forType: .init("org.nspasteboard.ConcealedType"))
+}
+
 /// Binds a sheet to the draft it edits. A closing sheet still redraws after Cancel or Save clears
 /// the draft, so reads fall back to the sheet's own item and writes to a cleared draft are dropped.
 func sheetBinding<Draft: Identifiable & Sendable>(_ source: Binding<Draft?>, for item: Draft) -> Binding<Draft> {

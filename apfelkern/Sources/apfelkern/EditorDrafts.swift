@@ -3,7 +3,8 @@ import Foundation
 public enum Route: Hashable {
   case agent(String)
   case group(String)
-  case memory, skills, tasks, activity, integrations
+  case memory, skills, tasks, activity, judgeModel, visionModel, integrations, coding, users
+  case passwordManagers, webSearch, messageGateways, eventRelay
 
   public var title: String {
     switch self {
@@ -13,7 +14,15 @@ public enum Route: Hashable {
     case .skills: "Skills"
     case .tasks: "Tasks"
     case .activity: "Activity"
+    case .judgeModel: JudgeModelSettings.title
+    case .visionModel: VisionModelSettings.title
     case .integrations: "Integrations"
+    case .coding: "Coding"
+    case .users: "Users"
+    case .passwordManagers: "Password managers"
+    case .webSearch: "Web search"
+    case .messageGateways: "Message gateways"
+    case .eventRelay: "Event relay"
     }
   }
 }
@@ -33,6 +42,9 @@ public struct AgentDraft: Identifiable, Sendable {
   public var temperature = ""
   public var maxOutput = ""
   public var toolsMemory = true
+  public var toolsWeb = true
+  /// Nil uses the account default.
+  public var webSearchProvider: WebSearchProvider?
   public var toolsDelegate = true
   public var toolsSchedule = true
   public var toolsCodemode = true
@@ -63,6 +75,8 @@ public struct AgentDraft: Identifiable, Sendable {
     temperature: String = "",
     maxOutput: String = "",
     toolsMemory: Bool = true,
+    toolsWeb: Bool = true,
+    webSearchProvider: WebSearchProvider? = nil,
     toolsDelegate: Bool = true,
     toolsSchedule: Bool = true,
     toolsCodemode: Bool = true,
@@ -89,6 +103,8 @@ public struct AgentDraft: Identifiable, Sendable {
     self.temperature = temperature
     self.maxOutput = maxOutput
     self.toolsMemory = toolsMemory
+    self.toolsWeb = toolsWeb
+    self.webSearchProvider = webSearchProvider
     self.toolsDelegate = toolsDelegate
     self.toolsSchedule = toolsSchedule
     self.toolsCodemode = toolsCodemode
@@ -119,6 +135,8 @@ public struct AgentDraft: Identifiable, Sendable {
     }
     let tools = agent.tools ?? []
     toolsMemory = tools.contains("memory")
+    toolsWeb = tools.contains("web")
+    webSearchProvider = agent.webSearchProvider
     toolsDelegate = tools.contains("delegate")
     toolsSchedule = tools.contains("schedule")
     toolsCodemode = tools.contains("codemode")
@@ -148,7 +166,7 @@ public struct AgentDraft: Identifiable, Sendable {
   /// The bot's tools after saving: the toggles, plus the `stored` tools set elsewhere that have no toggle.
   public func tools(keeping stored: [String]) -> [String] {
     let toggles = [
-      ("memory", toolsMemory), ("delegate", toolsDelegate), ("schedule", toolsSchedule),
+      ("memory", toolsMemory), ("web", toolsWeb), ("delegate", toolsDelegate), ("schedule", toolsSchedule),
       ("codemode", toolsCodemode), ("coding", toolsCoding), (DesktopJob.toolName, toolsDesktop)
     ]
     let toggled = Set(toggles.map(\.0))

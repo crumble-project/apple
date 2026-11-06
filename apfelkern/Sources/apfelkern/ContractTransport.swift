@@ -63,8 +63,13 @@ struct ContractTransport: ClientTransport {
     case Operations.UpdateSchedule.id, Operations.CreateSchedule.id: allowed = ["cron", "runAt"]
     case Operations.PutPushPresence.id: allowed = ["agentId"]
     case Operations.CreateMcpServer.id: allowed = ["agentId"]
-    case Operations.UpdateAgent.id: allowed = ["desktopModel"]
+    case Operations.UpdateAgent.id: allowed = ["desktopModel", "webSearchProvider"]
     case Operations.SaveAgentLogin.id: allowed = ["fields.one_time_code"]
+    case Operations.UpdateServerSettings.id: allowed = ["codingImage"]
+    case Operations.UpdateMessageGateway.id: allowed = ["defaultBotId", "ownerId"]
+    case Operations.UpdateEventRelay.id: allowed = ["url"]
+    case Operations.UpdateJudgeModel.id: allowed = ["judgeModel"]
+    case Operations.UpdateVisionModel.id: allowed = ["visionModel"]
     default: allowed = []
     }
     guard nullFields.isSubset(of: allowed), let body = request.httpBody,

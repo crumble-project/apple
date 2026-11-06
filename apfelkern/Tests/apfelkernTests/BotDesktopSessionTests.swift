@@ -273,9 +273,9 @@ private func settle() async {
 
 @Test func savingKeepsToolsTheEditorHasNoToggleFor() {
   var draft = AgentDraft(isNew: false, agentID: "a1", toolsDelegate: false, toolsCodemode: false, toolsDesktop: true)
-  #expect(draft.tools(keeping: ["desktop", "future"]) == ["memory", "schedule", "desktop", "future"])
+  #expect(draft.tools(keeping: ["desktop", "future"]) == ["memory", "web", "schedule", "desktop", "future"])
   draft.toolsDesktop = false
-  #expect(draft.tools(keeping: ["desktop", "future"]) == ["memory", "schedule", "future"])
+  #expect(draft.tools(keeping: ["desktop", "future"]) == ["memory", "web", "schedule", "future"])
 }
 
 @Test func aDesktopModelNeedsBothProviderAndModel() {

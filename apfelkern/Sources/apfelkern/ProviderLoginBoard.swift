@@ -7,7 +7,7 @@ import Observation
 public final class ProviderLoginBoard {
   public enum Event: Sendable {
     case signedIn(provider: String)
-    /// The server's provider list may have changed.
+    /// The server's providers, and so the models they reach, may have changed.
     case providersChanged
     case failed(String)
   }
@@ -110,8 +110,10 @@ public final class ProviderLoginBoard {
       onEvent(.signedIn(provider: provider))
     case .failed:
       end(login, outcome: login.failure ?? "Sign-in failed. Try again.")
+      onEvent(.providersChanged)
     case .expired:
       end(login, outcome: "Sign-in expired. Start again.")
+      onEvent(.providersChanged)
     case .cancelled:
       end(login, outcome: nil)
       onEvent(.providersChanged)

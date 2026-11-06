@@ -50,6 +50,13 @@ extension AppModel {
     }
   }
 
+  /// Providers changed, so what they list and reach did too, as the web's `refreshProviders`.
+  func refreshProviders() {
+    loadProviders()
+    if let provider = agentDraft?.provider { loadModels(provider) }
+    if let client { connectedServices.refreshModelChoices(client: client) }
+  }
+
   func loadModels(_ provider: String) {
     request { client in
       let models = try await client.models(provider: provider)
@@ -134,6 +141,7 @@ extension AppModel {
       model: draft.model.nilIfEmpty,
       tools: draft.tools(
         keeping: draft.botRequest?.proposal.tools ?? agents.first { $0.id == draft.agentID }?.tools ?? []),
+      webSearchProvider: draft.webSearchProvider,
       delegates: delegates, skills: saved?.skills ?? draft.skills,
       sharedSkills: saved?.sharedSkills ?? shared, sharedMemory: draft.sharedMemory, mcpServers: servers,
       inference: inference, desktopModel: draft.desktopModelChoice)
@@ -198,6 +206,8 @@ extension AppModel {
         "avatar": try JSONValue(encoding: draft.avatar),
         "enabled": .bool(draft.enabled),
         "tools": .array((input.tools ?? []).map(JSONValue.string)),
+        // Null puts the bot back on the account default.
+        "webSearchProvider": input.webSearchProvider.map { .string($0.rawValue) } ?? .null,
         "sharedMemory": .bool(draft.sharedMemory),
         "mcpServers": .array((input.mcpServers ?? []).map(JSONValue.string)),
         "delegates": .array((input.delegates ?? []).map(JSONValue.string)),

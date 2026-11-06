@@ -56,6 +56,7 @@ public struct BotRequest: Identifiable, Hashable, Sendable {
     edited["provider"] = bot.provider.map(JSONValue.string)
     edited["model"] = bot.model.map(JSONValue.string)
     edited["tools"] = try JSONValue(encoding: bot.tools ?? [])
+    edited["webSearchProvider"] = bot.webSearchProvider.map { .string($0.rawValue) }
     edited["skills"] = try JSONValue(encoding: bot.skills ?? [])
     edited["sharedMemory"] = bot.sharedMemory.map(JSONValue.bool)
     edited["mcpServers"] = try JSONValue(encoding: bot.mcpServers ?? [])

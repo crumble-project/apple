@@ -13,6 +13,7 @@ extension AppModel {
                 guard mutationRevision == revision, pendingMutations.isEmpty else { return }
                 self.agents = agents
                 loadCapabilities()
+                loadAccount()
                 loadGroupChats()
                 // An open group chat stays open; the bot list only refreshes.
                 guard selectedGroupID.isEmpty else { return }

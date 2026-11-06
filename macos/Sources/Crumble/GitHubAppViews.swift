@@ -2,7 +2,7 @@ import AppKit
 import apfelkern
 import SwiftUI
 
-/// The GitHub Apps section of the Integrations page.
+/// The GitHub Apps section of the Coding page.
 struct GitHubAppsSection: View {
     @Environment(AppModel.self) private var model
 

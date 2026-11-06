@@ -22,7 +22,7 @@ func skillDiffLines(name: String, description: String, instructions: String, doc
   }
 }
 
-private func lines(_ text: String) -> [String] {
+func lines(_ text: String) -> [String] {
   text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
 }
 

@@ -259,7 +259,7 @@ struct SkillUpdateSheet: View {
     }
 }
 
-private struct SkillDiffView: View {
+struct SkillDiffView: View {
     let lines: [SkillDiffLine]
 
     var body: some View {

@@ -212,6 +212,14 @@ private func showing(_ request: BotRequest, client: APIClient) async throws -> B
   })
 }
 
+@Test func anEditedProposalCanGoBackToTheDefaultWebSearchProvider() throws {
+  let request = try #require(BotRequest(message: try toolResult()))
+  #expect(request.proposal.webSearchProvider == .exa)
+  var edited = request.proposal
+  edited.webSearchProvider = nil
+  #expect(try request.proposal(editedTo: edited)["webSearchProvider"] == nil)
+}
+
 @MainActor @Test func approvingAsProposedSendsNoProposal() async throws {
   let bodies = Mutex<[Data?]>([])
   try await withClient(handler: { request in

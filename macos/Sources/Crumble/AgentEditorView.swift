@@ -156,6 +156,11 @@ struct AgentEditorView: View {
                 }
                 .padding(.leading, 16)
             }
+            Toggle(isOn: $draft.toolsWeb) {
+                Text("Web search")
+                Text("Searches the web and reads pages.")
+            }
+            if draft.toolsWeb { webSearchProviderPicker.padding(.leading, 16) }
             Toggle(isOn: $draft.toolsSchedule) {
                 Text("Schedule tasks")
                 Text("Saves one-time and recurring tasks for itself or a bot it can message.")
@@ -190,6 +195,16 @@ struct AgentEditorView: View {
                 Text("Its own desktop with a browser, operated by desktop jobs. You can watch and take control.")
             }
             if draft.toolsDesktop { desktopModelFields.padding(.leading, 16) }
+        }
+    }
+
+    private var webSearchProviderPicker: some View {
+        Picker(selection: $draft.webSearchProvider) {
+            Text("Account default").tag(WebSearchProvider?.none)
+            ForEach(WebSearchProvider.allCases) { Text($0.name).tag(WebSearchProvider?.some($0)) }
+        } label: {
+            Text("Web search provider")
+            Text("Manage the default and Exa key in Settings → Web search.")
         }
     }
 

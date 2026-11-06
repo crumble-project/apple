@@ -46,6 +46,9 @@ final class AppModel {
   let botSecretBoard = BotSecretBoard()
   let gitHubAccountBoard = GitHubAccountBoard()
   let gitHubAppBoard = GitHubAppBoard()
+  let adminBoard = AdminBoard()
+  let connectedServices = ConnectedServices()
+  let changeBoard = ChangeBoard()
   let botSkillBoard = BotSkillBoard()
   let sharedSkillBoard = SharedSkillBoard()
   let skillBulkBoard = SkillBulkBoard()
@@ -248,6 +251,9 @@ extension AppModel {
     botSecretBoard.reset()
     gitHubAccountBoard.reset()
     gitHubAppBoard.reset()
+    adminBoard.reset()
+    connectedServices.reset()
+    changeBoard.reset()
     botSkillBoard.reset()
     botDesktop = nil
     agentMemories = [:]
@@ -338,7 +344,7 @@ extension AppModel {
         try await client.setProviderKey(provider, apiKey: key)
         return { [self] in
           showNotice("Provider key saved")
-          loadProviders()
+          refreshProviders()
         }
       })
   }
@@ -351,7 +357,7 @@ extension AppModel {
         try await client.deleteProviderKey(provider)
         return { [self] in
           showNotice("Provider key removed")
-          loadProviders()
+          refreshProviders()
         }
       })
   }

@@ -2,7 +2,8 @@ import apfelkern
 import AuthenticationServices
 import SwiftUI
 
-/// The workspace pages: memory, skills, tasks, activity, and integrations.
+/// The workspace pages: memory, skills, tasks, activity, integrations, coding, users, and
+/// connected services.
 struct PanelView: View {
   @Environment(AppModel.self) private var model
   let panel: Route
@@ -52,6 +53,14 @@ struct PanelView: View {
     case .tasks: TasksPanel()
     case .activity: ActivityPanel()
     case .integrations: IntegrationsPanel()
+    case .coding: CodingPanel()
+    case .users: UsersPanel()
+    case .passwordManagers: PasswordManagersPanel()
+    case .webSearch: WebSearchPanel()
+    case .judgeModel: ModelSettingPanel(board: model.connectedServices.judgeModel)
+    case .visionModel: ModelSettingPanel(board: model.connectedServices.visionModel)
+    case .messageGateways: MessageGatewaysPanel()
+    case .eventRelay: EventRelayPanel()
     case .agent, .group: EmptyView()
     }
   }

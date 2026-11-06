@@ -26,17 +26,47 @@ extension AppModel {
         }
       }
     case .activity:
-      request { client in
-        let feed = try await client.activityFeed()
-        return { [self] in activities = feed.activities }
-      }
+      loadActivityFeed()
+      if let client { changeBoard.refresh(client: client) }
     case .integrations:
       loadIntegrationOverview()
+    case .coding:
       loadGitHubApps()
       loadGitHubAccounts()
+      loadAdmin()
+    case .users:
+      loadAdmin()
+    case .passwordManagers, .webSearch, .judgeModel, .visionModel, .messageGateways, .eventRelay:
+      loadConnectedServices(panel)
     case .agent, .group:
       break
     }
+  }
+
+  private func loadActivityFeed() {
+    request { client in
+      let feed = try await client.activityFeed()
+      return { [self] in activities = feed.activities }
+    }
+  }
+
+  func revertChange(_ change: LearnedChange) {
+    guard let client else { return }
+    changeBoard.revert(change, client: client) { [weak self] in
+      self?.loadActivityFeed()
+      self?.loadMemoryOverview()
+      self?.reloadSkills()
+    }
+  }
+
+  func showChanges(botID: String?) {
+    guard let client else { return }
+    changeBoard.show(botID: botID, client: client)
+  }
+
+  func loadMoreChanges() {
+    guard let client else { return }
+    changeBoard.loadMore(client: client)
   }
 
   private func loadIntegrationOverview() {

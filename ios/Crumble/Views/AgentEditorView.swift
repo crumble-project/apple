@@ -243,12 +243,27 @@ extension AgentEditorView {
     }
   }
 
+  private var webSearchProviderPicker: some View {
+    Picker(selection: $draft.webSearchProvider) {
+      Text("Account default").tag(WebSearchProvider?.none)
+      ForEach(WebSearchProvider.allCases) { Text($0.name).tag(WebSearchProvider?.some($0)) }
+    } label: {
+      Text("Web search provider")
+      Text("Manage the default and Exa key in Settings → Web search.")
+    }
+  }
+
   private var capabilitiesSection: some View {
     Section {
       Toggle("Memory", isOn: $draft.toolsMemory)
       if draft.toolsMemory {
         Toggle("Use shared memory", isOn: $draft.sharedMemory).padding(.leading, 16)
       }
+      Toggle(isOn: $draft.toolsWeb) {
+        Text("Web search")
+        Text("Searches the web and reads pages.")
+      }
+      if draft.toolsWeb { webSearchProviderPicker.padding(.leading, 16) }
       Toggle("Schedule tasks", isOn: $draft.toolsSchedule)
       Toggle("Message other bots", isOn: $draft.toolsDelegate)
       if draft.toolsDelegate {

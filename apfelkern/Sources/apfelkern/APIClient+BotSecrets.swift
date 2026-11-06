@@ -143,14 +143,4 @@ extension APIClient {
       }
     }
   }
-
-  public func passwordManagers() async throws -> [PasswordManager] {
-    try await invoke {
-      try await $0.listPasswordManagers(.init()).ok.body.json.passwordManagers.compactMap { manager in
-        PasswordManagerID(rawValue: manager.id.rawValue).map {
-          PasswordManager(id: $0, name: manager.name, connected: manager.connected)
-        }
-      }
-    }
-  }
 }
