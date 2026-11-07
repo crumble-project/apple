@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- The app uses the Crumble icon, as on Android and the website.
 - The app's bundle ID is now `ng.crumbli.ios`, matching the Android and macOS apps. Keychain items and the sign-in callback follow it, so it installs as a new app and you sign in again.
 - The bot form shows the portrait with a pencil, and the avatar editor opens in a popover instead of filling the form, as on the web.
 - Unsent text stays with its chat, including across launches.
