@@ -172,8 +172,8 @@ struct APIClientTests {
     #expect(start.authorizationUrl?.hasPrefix("https://auth.example.com/") == true)
     let sent = try #require(String(data: StubProtocol.requests.last?.httpBody ?? Data(), encoding: .utf8))
     #expect(
-      sent.contains("dev.crumble.ios:\\/oauth\\/callback")
-        || sent.contains("dev.crumble.ios:/oauth/callback"))
+      sent.contains("ng.crumbli.ios:\\/oauth\\/callback")
+        || sent.contains("ng.crumbli.ios:/oauth/callback"))
     let server = try await client.finishMCPSignIn(
       "s1", code: "c", state: "x", iss: "https://auth.example.com")
     #expect(server.auth == "oauth")

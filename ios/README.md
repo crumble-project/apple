@@ -25,6 +25,6 @@ swiftlint lint            # Lint Swift sources
 
 ## Push notifications
 
-Without APNs configuration, the app posts local notifications while connected to `/v1/events`. For remote APNs delivery while suspended or terminated, sign the `dev.crumble-project.ios` App ID with Push Notifications enabled and configure `CRUMBLE_APNS_*` on the server (see `bot/docs/native-push.md`).
+Without APNs configuration, the app posts local notifications while connected to `/v1/events`. For remote APNs delivery while suspended or terminated, sign the `ng.crumbli.ios` App ID with Push Notifications enabled and configure `CRUMBLE_APNS_*` on the server (see `bot/docs/native-push.md`).
 
 A reply that waits for the owner plays the web's approval or credential cue. A remote push uses the system sound until the app is open, because the server sets that sound in the APNs payload.
