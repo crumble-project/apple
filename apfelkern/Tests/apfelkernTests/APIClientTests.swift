@@ -59,11 +59,13 @@ import Testing
 }
 
 @Test func generatedMessagesRetainAttachmentTimeoutAndBody() async throws {
+  let requests = Mutex(0)
   let execution = #"""
     {"id":"run","agentId":"bot","conversationId":"chat","scheduleId":null,"submissionId":null,
      "requestId":"request","prompt":"hello","status":"pending","error":null,"createdAt":"now","updatedAt":"now"}
     """#
   try await withClient(handler: { request in
+    requests.withLock { $0 += 1 }
     #expect(request.timeoutInterval == 120)
     #expect(request.httpMethod == "POST")
     #expect(request.url?.path == "/prefix/v1/agents/bot/messages")
@@ -77,6 +79,7 @@ import Testing
     try await client.sendChatMessage("bot", content: "hello", requestID: "request", replyTo: "",
       attachments: [.init(name: "a.png", mimeType: "image/png", data: "AQI=")], timezone: "Europe/Berlin")
   }
+  #expect(requests.withLock { $0 } == 1)
 }
 
 @Test func nullableGeneratedResourceFailsWithoutFabricatingAnAgent() async throws {
@@ -86,7 +89,9 @@ import Testing
 }
 
 @Test func generatedPushOperationsRetainPresenceTimeout() async throws {
+  let requests = Mutex(0)
   try await withClient(handler: { request in
+    requests.withLock { $0 += 1 }
     #expect(request.timeoutInterval == 3)
     #expect(request.httpMethod == "PUT")
     #expect(request.url?.path == "/prefix/v1/push/devices/installation/presence")
@@ -96,6 +101,7 @@ import Testing
   }) { client in
     try await client.pushPresence("installation", active: true, agentId: nil, timeout: 3)
   }
+  #expect(requests.withLock { $0 } == 1)
 }
 
 @Test func generatedSchedulePatchPreservesExplicitNullAndDate() async throws {
@@ -198,7 +204,9 @@ private let groupSnapshot = #"""
   """#
 
 @Test func groupMessagesCarryReplyAndAttachments() async throws {
+  let requests = Mutex(0)
   try await withClient(handler: { request in
+    requests.withLock { $0 += 1 }
     #expect(request.httpMethod == "POST")
     #expect(request.url?.path == "/prefix/v1/group-chats/trip/messages")
     #expect(request.timeoutInterval == 120)
@@ -213,6 +221,7 @@ private let groupSnapshot = #"""
       "trip", content: "Route attached", requestID: "request", replyTo: "trip:3",
       attachments: [.init(name: "map.png", mimeType: "image/png", data: "AQI=")])
   }
+  #expect(requests.withLock { $0 } == 1)
 }
 
 @Test func groupSnapshotsDecodeActivityAndReactions() async throws {

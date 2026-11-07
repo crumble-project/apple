@@ -10,6 +10,8 @@ struct BotChatDeliveryTests {
             content: "hello", replyTo: "a1:4", attachments: [image], replyPreview: "earlier")
         let row = delivery.stage(send, botID: "a1", requestID: "request")
         #expect(row.id == "local:request")
+        #expect(row.content == .string("hello"))
+        #expect(delivery.messages(botID: "a1").map(\.content) == [.string("hello")])
         #expect(row.requestId == "request")
         #expect(row.deliveryState == .sending)
         #expect(row.replyTo == "a1:4")
