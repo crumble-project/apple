@@ -20,6 +20,51 @@ public struct ProviderLoginMethod: Codable, Hashable, Sendable {
   }
 }
 
+/// A provider a command-line tool signs in to on the server's machine. Crumble can't sign in for it,
+/// so the page shows its state and the command to run there.
+public struct ProviderExternalAuth: Codable, Hashable, Sendable {
+  public enum Status: String, Codable, Sendable {
+    case signedIn = "signed_in"
+    case signedOut = "signed_out"
+    case cliMissing = "cli_missing"
+    case error
+  }
+
+  public var status: Status
+  public var signInCommand: String?
+  public var signOutCommand: String?
+  public var message: String?
+
+  public init(
+    status: Status, signInCommand: String? = nil, signOutCommand: String? = nil, message: String? = nil
+  ) {
+    self.status = status
+    self.signInCommand = signInCommand
+    self.signOutCommand = signOutCommand
+    self.message = message
+  }
+
+  public var statusLabel: String {
+    switch status {
+    case .signedIn: "Signed in"
+    case .signedOut: "Not signed in"
+    case .cliMissing: "Not installed"
+    case .error: "Unavailable"
+    }
+  }
+
+  /// What to copy next: the way out once signed in, otherwise the way in.
+  public var copyAction: (label: String, command: String)? {
+    guard status != .cliMissing else { return nil }
+    return status == .signedIn
+      ? signOutCommand.map { ("Copy Sign-Out Command", $0) }
+      : signInCommand.map { ("Copy Sign-In Command", $0) }
+  }
+
+  /// Why the provider can't be used, when signing in wouldn't fix it.
+  public var problem: String? { status == .cliMissing || status == .error ? message : nil }
+}
+
 public struct ProviderStatus: Codable, Hashable, Sendable {
   public var provider: String
   public var name: String?
@@ -30,6 +75,10 @@ public struct ProviderStatus: Codable, Hashable, Sendable {
   public var credentialType: ProviderAuthType?
   /// A sign-in running on the server, to resume after reconnecting.
   public var activeLoginId: String?
+  /// Whether an API key is saved and where it's read from.
+  public var apiKey: SecretStatus
+  /// Set for a provider a command-line tool signs in to; it takes no key or account sign-in here.
+  public var externalAuth: ProviderExternalAuth?
 
   public init(
     provider: String,
@@ -37,8 +86,12 @@ public struct ProviderStatus: Codable, Hashable, Sendable {
     configured: Bool,
     authMethods: [ProviderLoginMethod] = [],
     credentialType: ProviderAuthType? = nil,
-    activeLoginId: String? = nil
+    activeLoginId: String? = nil,
+    apiKey: SecretStatus = SecretStatus(configured: false),
+    externalAuth: ProviderExternalAuth? = nil
   ) {
+    self.apiKey = apiKey
+    self.externalAuth = externalAuth
     self.provider = provider
     self.name = name
     self.configured = configured
@@ -109,6 +162,14 @@ public struct ProviderLogin: Identifiable, Hashable, Sendable {
       case .info, .progress: false
       }
     }
+  }
+
+  /// The latest progress the provider reported, or what the sign-in waits on.
+  public var progressText: String {
+    for event in events.reversed() {
+      if case let .progress(message) = event { return message }
+    }
+    return prompt == nil ? "Waiting for the provider…" : "Waiting for your answer…"
   }
 
   init(wire: Components.Schemas.ProviderLoginSession) {

@@ -3,7 +3,7 @@ import Security
 
 /// Generic passwords stored in the iOS app's own keychain access group.
 enum Keychain {
-  static let service = "dev.crumble.ios"
+  static let service = "ng.crumbli.ios"
 
   private static func query(_ account: String) -> [String: Any] {
     [
@@ -34,6 +34,10 @@ enum Keychain {
     } else {
       try check(status)
     }
+  }
+
+  static func delete(_ account: String) {
+    SecItemDelete(query(account) as CFDictionary)
   }
 
   private static func check(_ status: OSStatus) throws {

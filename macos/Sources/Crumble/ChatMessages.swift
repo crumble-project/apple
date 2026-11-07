@@ -1,5 +1,6 @@
 import apfelkern
 import AppKit
+import BotAvatar
 import SwiftUI
 
 struct MessageView: View {
@@ -17,27 +18,61 @@ struct MessageView: View {
         case "event":
             if message.kind == "bot-message" {
                 BotMessageView(message: message)
+            } else if message.kind == JobQuestionEvent.messageKind, let question = message.jobQuestion {
+                HStack {
+                    JobQuestionCard(question: question, text: message.text)
+                    Spacer(minLength: 56)
+                }
+            } else if message.kind == HeldActionEvent.messageKind, let held = message.heldAction {
+                HStack {
+                    HeldActionCard(held: held, title: message.text)
+                    Spacer(minLength: 56)
+                }
+            } else if let failure = JobFailure(message: message) {
+                HStack {
+                    JobFailureCard(failure: failure) { model.openJob(failure.kind, failure.name) }
+                    Spacer(minLength: 56)
+                }
             } else {
                 EventView(message: message)
             }
         case "user":
-            // Without a width cap, bubbles hug their text and the actions sit right beside them; the
-            // spacer keeps long ones clear of the other side.
-            HStack(alignment: .center, spacing: 6) {
-                Spacer(minLength: 56)
-                actions
-                sentMessageContent
+            if let notice = noticeTitle(message) {
+                EventView(message: message, title: notice)
+            } else {
+                // Without a width cap, bubbles hug their text and the actions sit right beside them; the
+                // spacer keeps long ones clear of the other side.
+                HStack(alignment: .center, spacing: 6) {
+                    Spacer(minLength: 56)
+                    actions
+                    sentMessageContent
+                }
+                .onHover { hovered = $0 }
             }
-            .onHover { hovered = $0 }
         case "toolResult":
             if let component = DisplayComponent(message: message) {
                 HStack {
-                    DisplayView(component: component)
+                    DisplayView(component: component, maxWidth: Palette.column - 96)
+                    Spacer(minLength: 56)
+                }
+            } else if message.isDesktopScreenshot {
+                HStack {
+                    DesktopScreenshotCard(message: message)
                     Spacer(minLength: 56)
                 }
             } else if let job = Job(message: message) {
                 HStack {
                     JobCard(job: model.job(job))
+                    Spacer(minLength: 56)
+                }
+            } else if let request = BotRequest(message: message) {
+                HStack {
+                    BotRequestCard(request: request)
+                    Spacer(minLength: 56)
+                }
+            } else if let ask = BotSecretAsk(message: message) {
+                HStack {
+                    BotSecretRequestCard(ask: ask)
                     Spacer(minLength: 56)
                 }
             }
@@ -47,14 +82,18 @@ struct MessageView: View {
     }
 
     private var receivedMessage: some View {
-        HStack(alignment: .center, spacing: 6) {
-            MarkdownText(text: message.text)
-                .font(Palette.messageFont)
-                .lineSpacing(Palette.messageLineSpacing)
-                .textSelection(.enabled)
-                .bubble(owner: false)
-                .fixedSize(horizontal: false, vertical: true)
-                .contextMenu { menu }
+        let reply = SourceCitations.split(message.text, sources: message.sources ?? [])
+        return HStack(alignment: .center, spacing: 6) {
+            VStack(alignment: .leading, spacing: 6) {
+                MarkdownText(text: reply.text)
+                    .font(Palette.messageFont)
+                    .lineSpacing(Palette.messageLineSpacing)
+                    .textSelection(.enabled)
+                ForEach(reply.chips, id: \.href) { SourceChipLink(chip: $0) }
+            }
+            .bubble(owner: false)
+            .fixedSize(horizontal: false, vertical: true)
+            .contextMenu { menu }
             actions
             Spacer(minLength: 56)
         }
@@ -82,6 +121,7 @@ struct MessageView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             deliveryStatus
+            if let via = message.origin?.via { GatewayOriginLabel(id: via) }
         }
     }
 
@@ -104,14 +144,7 @@ struct MessageView: View {
 
     @ViewBuilder private var originLabel: some View {
         if !owner {
-            if message.origin?.kind == "bot" {
-                Label(messageLabel(message), systemImage: "person.2.fill")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 4)
-            } else {
-                Text(messageLabel(message)).font(.system(size: 12)).foregroundStyle(.secondary).padding(.horizontal, 4)
-            }
+            Text(messageLabel(message)).font(.system(size: 12)).foregroundStyle(.secondary).padding(.horizontal, 4)
         }
     }
 
@@ -236,6 +269,7 @@ struct BotMessageView: View {
 struct EventView: View {
     @Environment(AppModel.self) private var model
     let message: Message
+    var title: String?
 
     var body: some View {
         @Bindable var model = model
@@ -243,8 +277,14 @@ struct EventView: View {
             get: { model.expanded.contains(message.id) },
             set: { if $0 { model.expanded.insert(message.id) } else { model.expanded.remove(message.id) } }
         )
-        DisclosureGroup(message.kind == "reset" ? "Context reset" : "Earlier messages summarized", isExpanded: open) {
-            Text(message.text).font(.callout).foregroundStyle(.secondary).textSelection(.enabled)
+        DisclosureGroup(
+            title ?? (message.kind == "reset" ? "Context reset" : "Earlier messages summarized"), isExpanded: open
+        ) {
+            MarkdownText(text: message.text)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
         .font(.callout)
         .frame(maxWidth: 560)

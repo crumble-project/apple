@@ -1,30 +1,17 @@
 import apfelkern
 import AppKit
+import BotAvatar
 import SwiftUI
 
-/// What the composer writes to: a bot chat or a group chat.
-struct ComposerTarget {
-    var placeholder: String
-    var enabled: Bool
-    /// Bots that `@` completes.
-    var mentionable: [Agent]
-    var running: Bool
-    var stopHelp: String
-    var send: @MainActor () -> Void
-    var stop: @MainActor () -> Void
-}
-
 extension ComposerTarget {
-    /// A bot chat: mentions complete to the bots the bot may message.
+    /// A bot chat: mentions complete to every other enabled bot, and the composer sets its reasoning.
     @MainActor static func chat(_ agent: Agent, model: AppModel) -> ComposerTarget {
         ComposerTarget(
             placeholder: agent.enabled
                 ? "Message \(agent.name)" : "\(agent.name) is paused. Enable it in its profile.",
             enabled: agent.enabled,
-            mentionable: model.agents.filter {
-                $0.enabled && $0.id != agent.id && (agent.delegates ?? []).contains($0.id)
-                    && (agent.tools ?? []).contains("delegate")
-            },
+            mentionable: agent.mentionableBots(in: model.agents),
+            bot: agent,
             running: model.snapshot?.isRunning == true,
             stopHelp: "Stop the current run",
             send: { model.sendMessage() },
@@ -36,8 +23,10 @@ struct Composer: View {
     /// The height of the message field and the attach button beside it.
     static let height: CGFloat = 32
     @Environment(AppModel.self) private var model
+    @Environment(\.controlActiveState) private var windowState
     let target: ComposerTarget
     @FocusState private var focused: Bool
+    @State private var pasteMonitor: PasteMonitor?
     @State private var selection: TextSelection?
     @State private var selectedMention = 0
     @State private var dismissedMention = false
@@ -64,6 +53,10 @@ struct Composer: View {
             model.addAttachments(urls)
             return true
         }
+        .onChange(of: focused && target.enabled && windowState == .key, initial: true) { _, accepts in
+            pasteMonitor = accepts ? PasteMonitor(model: model) : nil
+        }
+        .onDisappear { pasteMonitor = nil }
     }
 
     @ViewBuilder private var replyPreview: some View {
@@ -140,7 +133,7 @@ struct Composer: View {
     private var messageField: some View {
         VStack(alignment: .leading, spacing: 6) {
             pendingAttachments
-            messageInput
+            messageRow
         }
         .padding(.leading, 14)
         .padding(.trailing, 14)
@@ -158,6 +151,17 @@ struct Composer: View {
                     }
                 }
                 .padding(.top, 8)
+            }
+        }
+    }
+
+    private var messageRow: some View {
+        HStack(alignment: .lastTextBaseline, spacing: 8) {
+            messageInput
+            if let bot = target.bot {
+                ReasoningControl(board: model.reasoningBoard, bot: bot, client: model.client) {
+                    model.reasoningBoard.choose($0, for: bot.id, host: model)
+                }
             }
         }
     }
@@ -250,6 +254,29 @@ struct Composer: View {
         guard !dismissedMention, let completion else { return .ignored }
         selectedMention = (selectedMention + direction + completion.bots.count) % completion.bots.count
         return .handled
+    }
+}
+
+/// The field editor takes Paste before SwiftUI's paste commands see it, so ⌘V is caught on its way there
+/// while the composer has focus. It lives as long as this object.
+@MainActor
+final class PasteMonitor {
+    private var monitor: Any?
+
+    init(model: AppModel, pasteboard: NSPasteboard = .general) {
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            guard Self.isPaste(event) else { return event }
+            return MainActor.assumeIsolated { model.pasteAttachments(from: pasteboard) } ? nil : event
+        }
+    }
+
+    nonisolated static func isPaste(_ event: NSEvent) -> Bool {
+        event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command
+            && event.charactersIgnoringModifiers == "v"
+    }
+
+    isolated deinit {
+        if let monitor { NSEvent.removeMonitor(monitor) }
     }
 }
 

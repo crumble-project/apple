@@ -1,6 +1,7 @@
 import apfelkern
 import Foundation
 import UIKit
+import UserNotifications
 
 extension AppModel {
   // MARK: Agents and chat
@@ -12,6 +13,20 @@ extension AppModel {
       return { [self] in
         guard mutationRevision == revision, pendingMutations.isEmpty else { return }
         self.agents = agents
+        loadCapabilities()
+        loadAccount()
+        loadGroupChats()
+        loadConversationSummaries()
+        // An open group chat stays open; the bot list only refreshes.
+        guard selectedGroupID.isEmpty else {
+          Notifier.shared.routePendingTap()
+          return
+        }
+        // A phone opens on the conversation list, so only a chat already open reloads.
+        if UIDevice.current.userInterfaceIdiom == .phone, !agents.isEmpty, !isBotChatOpen {
+          Notifier.shared.routePendingTap()
+          return
+        }
         var chosen = selectedAgentID
         if !agents.contains(where: { $0.id == chosen }) { chosen = agents.first?.id ?? "" }
         if chosen.isEmpty {
@@ -27,11 +42,34 @@ extension AppModel {
     }
   }
 
+  /// Reloads the bot list when a bot may have appeared, leaving the open chat alone.
+  func reconcileAgents() {
+    guard let client else { return }
+    let generation = generation
+    let revision = mutationRevision
+    Task {
+      guard let agents = try? await client.agents(), self.generation == generation,
+        mutationRevision == revision, pendingMutations.isEmpty else { return }
+      self.agents = agents
+    }
+  }
+
+  var isBotChatOpen: Bool {
+    if case .agent = route { true } else { false }
+  }
+
   func navigate(to route: Route?) {
     guard let route else { return }
     switch route {
     case .agent(let id):
-      if id != selectedAgentID || self.route != route { selectAgent(id) }
+      // Back in the chat it just left, the stream is still following it.
+      if id == selectedAgentID, selectedGroupID.isEmpty, snapshot != nil {
+        self.route = route
+      } else {
+        selectAgent(id)
+      }
+    case .group(let id):
+      if id == selectedGroupID, groupSnapshot != nil { self.route = route } else { selectGroup(id) }
     default:
       openPanel(route)
     }
@@ -39,6 +77,7 @@ extension AppModel {
 
   /// Opens the bot's one continuous chat and follows its event stream.
   func selectAgent(_ id: String) {
+    leaveGroup()
     cancelStream()
     selectionVersion += 1
     let version = selectionVersion
@@ -51,7 +90,11 @@ extension AppModel {
     oldestEntryID = ""
     loadingOlder = false
     replyTo = nil
-    draft = ""
+    jobBoard.select(id)
+    heldActionBoard.select(id)
+    botRequestBoard.select(id)
+    botSecretBoard.select(id)
+    draft = composerDrafts[id] ?? ""
     attachments = []
     failedDraft = ""
     failedReplyTo = ""
@@ -83,6 +126,10 @@ extension AppModel {
     let local = delivery.messages(botID: selectedAgentID)
     messages = mergeMessages(messages.filter { $0.deliveryState == .confirmed }, incomingMessages)
     messages.append(contentsOf: local)
+    refreshJobsIfChanged()
+    refreshHeldActionsIfChanged()
+    refreshBotRequestsIfChanged()
+    refreshBotSecretsIfChanged()
     var snapshot = incoming
     snapshot.messages = nil
     self.snapshot = snapshot
@@ -100,6 +147,7 @@ extension AppModel {
   func suspendStreams() {
     streamsSuspended = true
     cancelStream()
+    stopGroupStream()
     activityVersion += 1
     activityTask?.cancel()
     activityTask = nil
@@ -112,6 +160,8 @@ extension AppModel {
     // Be safe when scene phase notifications arrive more than once.
     cancelStream()
     followActivity()
+    loadGroupChats()
+    reconnectGroupStream()
     guard client != nil, !selectedAgentID.isEmpty else {
       if agents.isEmpty, route == nil { refresh() }
       return
@@ -199,15 +249,30 @@ extension AppModel {
     if event.type == "chat-preview", let lastMessage = event.lastMessage,
       delivery.preview(botID: event.agentId) == nil,
       let index = agents.firstIndex(where: { $0.id == event.agentId }) {
+      // Every reconnection replays the previews, so only a changed one means the chat moved.
+      if agents[index].lastMessage != lastMessage { noteConversationMoved(.agent(event.agentId), preview: lastMessage) }
       agents[index].lastMessage = lastMessage
     }
+    if event.type == "reply", let group = event.groupId { noteConversationMoved(.group(group), preview: event.preview) }
     let context = NotificationContext(
       appActive: UIApplication.shared.applicationState == .active, route: route)
     guard let note = notification(for: event, in: context) else { return }
+    unread.add(event)
     Notifier.shared.post(event, title: note.title, body: note.body)
   }
 
+  /// The chat on screen counts as read, as the web marks it when its tab shows it.
+  func markChatSeen() {
+    if UIApplication.shared.applicationState == .active { unread.markSeen(route) }
+  }
+
+  /// A badge outlives the app, so launch clears what the last run left.
+  func showUnreadBadge() {
+    UNUserNotificationCenter.current().setBadgeCount(unread.total) { _ in }
+  }
+
   func loadOlder() {
+    guard selectedGroupID.isEmpty else { return loadOlderGroupMessages() }
     guard !loadingOlder, hasMore, !oldestEntryID.isEmpty else { return }
     let id = selectedAgentID
     let before = oldestEntryID
@@ -220,6 +285,9 @@ extension AppModel {
           guard selectionVersion == version else { return }
           loadingOlder = false
           messages = mergeMessages(messages, page.messages ?? [])
+          refreshHeldActionsIfChanged()
+          refreshBotRequestsIfChanged()
+          refreshBotSecretsIfChanged()
           hasMore = page.hasMore ?? false
           oldestEntryID = page.oldestEntryId ?? ""
         }

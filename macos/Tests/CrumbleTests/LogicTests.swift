@@ -62,21 +62,11 @@ struct LogicTests {
         #expect(merged[1].text == "updated")
     }
 
-    @Test func tasksNeedExactlyOneScheduleMode() {
-        #expect(validateTask(name: "", prompt: "", cron: "", runAt: "") != nil)
-        #expect(
-            validateTask(name: "Daily", prompt: "Check inbox", cron: "0 9 * * *", runAt: "2026-10-18T09:00:00Z") != nil)
-        #expect(validateTask(name: "Daily", prompt: "Check inbox", cron: "0 9 * * *", runAt: "") == nil)
-        #expect(validateTask(name: "Once", prompt: "Check inbox", cron: "", runAt: "2026-10-18T09:00:00Z") == nil)
-        #expect(validateTask(name: "Once", prompt: "Check inbox", cron: "", runAt: "tomorrow") != nil)
-    }
-
-    @Test func taskRunAtPreservesExplicitOffsetInstant() throws {
-        #expect(taskRunDate("2026-10-18T12:10:00+02:00") == taskRunDate("2026-10-18T10:10:00Z"))
-        let fractional = try #require(taskRunDate("2026-10-18T12:10:00.123Z"))
-        let whole = try #require(taskRunDate("2026-10-18T12:10:00Z"))
+    @Test func automationRunAtPreservesExplicitOffsetInstant() throws {
+        #expect(automationRunDate("2026-10-18T12:10:00+02:00") == automationRunDate("2026-10-18T10:10:00Z"))
+        let fractional = try #require(automationRunDate("2026-10-18T12:10:00.123Z"))
+        let whole = try #require(automationRunDate("2026-10-18T12:10:00Z"))
         #expect(abs(fractional.timeIntervalSince(whole) - 0.123) < 0.000001)
-        #expect(validateTask(name: "Task", prompt: "Hi", cron: "0 9 * * *", runAt: "", timezone: "Not/AZone") != nil)
     }
 
     @Test func requestIDsAreVersion4UUIDs() {
@@ -84,23 +74,13 @@ struct LogicTests {
             newRequestID().wholeMatch(of: /[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/) != nil)
     }
 
-    @Test func avatarSeedsAcceptLegacyValues() {
-        let cases = ["bot:violet": "violet", "critters:violet": "violet", "sparkles": "a1", "😀": "a1", "": "a1"]
-        for (avatar, seed) in cases {
-            #expect(agentAvatarSeed(Agent(id: "a1", avatar: avatar)) == seed)
-        }
-        let first = BotLook(seed: "agent-seed")
-        let second = BotLook(seed: "agent-seed")
-        #expect(first == second)
-    }
-
     @Test func chatHidesToolActivity() {
         let tool = Message(id: "a1:1:0", role: "assistant", blocks: .array([.object(["type": .string("toolCall")])]))
         let reply = Message(
             id: "a1:1:1", role: "assistant", content: .string("Hi"),
             blocks: .array([.object(["type": .string("text"), "text": .string("Hi")])]))
-        #expect(!ChatRow.shownInChat(tool))
-        #expect(ChatRow.shownInChat(reply))
+        #expect(!shownInChat(tool))
+        #expect(shownInChat(reply))
     }
 
     @MainActor @Test func cancelledSheetDraftStaysReadable() throws {

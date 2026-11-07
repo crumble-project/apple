@@ -1,4 +1,5 @@
 import apfelkern
+import BotAvatar
 import SwiftUI
 
 struct MemoryPanel: View {
@@ -149,9 +150,12 @@ struct MemoryPanel: View {
 
   private func row(_ memory: Memory, agentID: String?) -> some View {
     HStack(alignment: .firstTextBaseline) {
-      Text(memory.content)
-        .textSelection(.enabled)
-        .frame(maxWidth: .infinity, alignment: .leading)
+      VStack(alignment: .leading, spacing: 2) {
+        HighlightedText(memory.content, query: query)
+          .textSelection(.enabled)
+        MemorySourceLine(memory: memory)
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
       Menu {
         Button("Edit") { model.openMemoryForm(memory.id, agentID: agentID) }
         Button("Delete", role: .destructive) {

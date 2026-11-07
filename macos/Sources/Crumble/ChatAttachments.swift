@@ -68,6 +68,32 @@ struct SentAttachments: View {
     }
 }
 
+/// A screenshot of the bot desktop a bot took in the chat.
+struct DesktopScreenshotCard: View {
+    @Environment(AppModel.self) private var model
+    let message: Message
+
+    var body: some View {
+        Group {
+            if let image = model.attachmentImage(message: message, index: 0) {
+                Image(nsImage: image).resizable().scaledToFit()
+            } else {
+                RoundedRectangle(cornerRadius: 14).fill(Color.primary.opacity(0.06))
+                    .frame(width: 320, height: 200)
+                    .overlay { ProgressView().controlSize(.small) }
+            }
+        }
+        .frame(maxWidth: Palette.column - 96, maxHeight: 512)
+        .clipShape(.rect(cornerRadius: 14))
+        .accessibilityLabel("Desktop screenshot")
+        .task {
+            if let entryID = message.entryId {
+                await model.loadAttachmentImage(entryID: entryID, index: 0)
+            }
+        }
+    }
+}
+
 struct FileLabel: View {
     let name: String
 

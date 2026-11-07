@@ -172,8 +172,8 @@ struct APIClientTests {
     #expect(start.authorizationUrl?.hasPrefix("https://auth.example.com/") == true)
     let sent = try #require(String(data: StubProtocol.requests.last?.httpBody ?? Data(), encoding: .utf8))
     #expect(
-      sent.contains("dev.crumble.ios:\\/oauth\\/callback")
-        || sent.contains("dev.crumble.ios:/oauth/callback"))
+      sent.contains("ng.crumbli.ios:\\/oauth\\/callback")
+        || sent.contains("ng.crumbli.ios:/oauth/callback"))
     let server = try await client.finishMCPSignIn(
       "s1", code: "c", state: "x", iss: "https://auth.example.com")
     #expect(server.auth == "oauth")
@@ -229,7 +229,7 @@ struct APIClientTests {
         """#
           .utf8))
     #expect(message.attachments?.first?.isImage == true)
-    #expect(ChatRow.shownInChat(message))
+    #expect(shownInChat(message))
   }
 
   @Test func errorsCarryStatusAndBody() async throws {
@@ -239,7 +239,7 @@ struct APIClientTests {
       Issue.record("expected an error")
     } catch let error as APIError {
       #expect(error.statusCode == 401 && error.body == "bad token")
-      #expect(friendlyError(error) == "Authentication failed. Check the server token in Settings.")
+      #expect(friendlyError(error) == "Your session has ended. Sign in again in Settings.")
     }
   }
 

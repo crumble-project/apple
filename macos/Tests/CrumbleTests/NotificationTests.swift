@@ -107,12 +107,39 @@ struct NotificationTests {
         #expect(posted.requests.first?.content.userInfo["serverURL"] as? String == "http://a")
     }
 
+    @Test func aReplyThatWaitsForTheOwnerPostsItsOwnSound() throws {
+        let posted = Posted()
+        let notifier = try notifier(posted)
+        var approval = reply("e1", origin: "desktop")
+        approval.waitingFor = "approval"
+        var login = reply("e2", agent: "a2")
+        login.waitingFor = "login"
+        notifier.post(approval, title: "Atlas", body: "Hold", serverURL: "http://a")
+        notifier.post(login, title: "Atlas", body: "Sign in", serverURL: "http://a")
+        notifier.post(reply("e3", agent: "a3"), title: "Atlas", body: "Done", serverURL: "http://a")
+        #expect(posted.requests[0].content.sound == UNNotificationSound(named: .init("notice-approval.wav")))
+        #expect(posted.requests[1].content.sound == UNNotificationSound(named: .init("notice-credential.wav")))
+        #expect(posted.requests[2].content.sound == .default)
+    }
+
     @Test func disabledNotificationsAndUnbundledBuildsPostNothing() throws {
         let posted = Posted()
         try notifier(posted, enabled: false).post(reply("e1"), title: "Atlas", body: "Done", serverURL: "http://a")
         Notifier(canDeliver: false, deliver: { posted.requests.append($0) })
             .post(reply("e2"), title: "Atlas", body: "Done", serverURL: "http://a")
         #expect(posted.requests.isEmpty)
+    }
+
+    @Test func aReplyOffScreenCountsAsUnreadUntilTheConnectionChanges() throws {
+        let posted = Posted()
+        let model = AppModel(client: APIClient(baseURL: "http://notify.test", token: ""))
+        model.notifier = try notifier(posted)
+        model.handleActivity(reply("delegated", origin: "bot"))
+        #expect(model.unread.total == 0)
+        model.handleActivity(reply("finished"))
+        #expect(model.unread.total == 1)
+        model.applyConnection(APIClient(baseURL: "http://other.test", token: ""))
+        #expect(model.unread.total == 0)
     }
 
     @Test func botOriginAndVisibleChatStayQuietButHiddenWindowNotifies() throws {

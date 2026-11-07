@@ -32,14 +32,28 @@ public struct PushDevice: Hashable, Sendable {
 }
 
 extension APIClient {
-  public func activityFeed() async throws -> ActivityFeedResponse {
-    try await invoke {
-      let wire = try await $0.getActivityFeed(.init()).ok.body.json
-      return ActivityFeedResponse(activities: try wire.activities.compactMap(\.value1).map {
-        ActivityEntry(id: $0.id, agentId: $0.agentId, agentName: $0.agentName, entryId: $0.entryId,
-                      timestamp: $0.timestamp.flatMap(Int64.init(exactly:)), kind: $0.kind.rawValue,
-                      details: try $0.details.additionalProperties.mapValues { try JSONValue(wire: $0) })
-      }, hasMore: wire.hasMore)
+  public func activityFeed(
+    kind: ActivityKind? = nil, agentID: String? = nil, cursor: String? = nil, limit: Int? = nil
+  ) async throws -> ActivityFeedResponse {
+    let query = Operations.GetActivityFeed.Input.Query(
+      agentId: agentID, limit: limit,
+      kind: kind.flatMap { .init(rawValue: $0.rawValue) }, cursor: cursor)
+    return try await invoke {
+      let wire = try await $0.getActivityFeed(.init(query: query)).ok.body.json
+      return ActivityFeedResponse(activities: try wire.activities.map { entry in
+        if let change = entry.value2 {
+          return ActivityEntry(
+            id: change.id, agentId: change.agentId, agentName: change.agentName, entryId: nil,
+            timestamp: Int64(change.timestamp), kind: change.kind.rawValue, details: [:],
+            change: try LearnedChange(wire: change.change))
+        }
+        let operational = try required(entry.value1)
+        return ActivityEntry(
+          id: operational.id, agentId: operational.agentId, agentName: operational.agentName,
+          entryId: operational.entryId, timestamp: operational.timestamp.flatMap(Int64.init(exactly:)),
+          kind: operational.kind.rawValue,
+          details: try operational.details.additionalProperties.mapValues { try JSONValue(wire: $0) })
+      }, hasMore: wire.hasMore, nextCursor: wire.nextCursor)
     }
   }
 

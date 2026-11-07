@@ -58,6 +58,28 @@ extension APIClientTests {
     #expect(!controller.remoteDelivery)
   }
 
+  @MainActor @Test func cleanupForAnEndedSessionDoesNotBlockTheNextRegistration() async throws {
+    let controller = PushController(defaults: try pushDefaults(), persistCredentials: false)
+    let stub = StubProtocol.client(token: "old") { request in
+      pushResponse(
+        request, installationID: controller.installationID,
+        serverID: "same", remoteDelivery: true, deletionStatus: 401)
+    }
+    let old = APIClient(baseURL: "http://same.test", token: "old", session: stub.session)
+    controller.setAuthorized(true)
+    controller.receivedToken(Data([1]))
+    controller.setConnection(old)
+    await controller.waitForSync()
+
+    let newer = APIClient(baseURL: "http://same.test", token: "new", session: old.session)
+    controller.setConnection(newer)
+    await controller.waitForSync()
+    #expect(!controller.status.contains("Previous server removal is pending"))
+    #expect(StubProtocol.requests.contains {
+      $0.httpMethod == "PUT" && $0.value(forHTTPHeaderField: "Authorization") == "Bearer new"
+    })
+  }
+
   @MainActor @Test func failedCleanupForSameServerPreservesRemoteUntilRetry() async throws {
     let controller = PushController(defaults: try pushDefaults(), persistCredentials: false)
     let stub = StubProtocol.client(token: "old") { request in

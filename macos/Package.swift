@@ -9,8 +9,6 @@ let package = Package(
         .executableTarget(
             name: "Crumble",
             dependencies: ["apfelkern", .product(name: "BotAvatar", package: "apfelkern")]),
-        .executableTarget(
-            name: "AvatarPlayground", dependencies: [.product(name: "BotAvatar", package: "apfelkern")]),
         .testTarget(
             name: "CrumbleTests",
             dependencies: ["Crumble", "apfelkern", .product(name: "BotAvatar", package: "apfelkern")])

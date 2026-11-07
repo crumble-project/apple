@@ -13,13 +13,14 @@ final class CrumbleUITests: XCTestCase {
     settings.tap()
     XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
     XCTAssertTrue(app.textFields["serverURL"].exists)
-    XCTAssertTrue(app.secureTextFields["serverToken"].exists)
-    XCTAssertTrue(app.buttons["Save Connection"].exists)
+    XCTAssertTrue(app.textFields["email"].exists)
+    XCTAssertTrue(app.secureTextFields["password"].exists)
+    XCTAssertTrue(app.buttons["Sign In"].exists)
     let settingsScreenshot = XCTAttachment(screenshot: app.screenshot())
     settingsScreenshot.name = "Connection settings"
     settingsScreenshot.lifetime = .keepAlways
     add(settingsScreenshot)
-    app.buttons["Done"].tap()
+    app.navigationBars["Settings"].buttons.element(boundBy: 0).tap()
     XCTAssertTrue(settings.waitForExistence(timeout: 5))
     let screenshot = XCTAttachment(screenshot: app.screenshot())
     screenshot.name = "First launch"
@@ -34,13 +35,15 @@ final class CrumbleUITests: XCTestCase {
     app.launchEnvironment["CRUMBLE_URL"] = "http://127.0.0.1:1"
     app.launchEnvironment["CRUMBLE_SKIP_KEYCHAIN"] = "1"
     app.launch()
-    XCTAssertTrue(app.buttons["New Agent"].waitForExistence(timeout: 10))
-    app.buttons["New Agent"].tap()
+    XCTAssertTrue(app.buttons["New Conversation"].waitForExistence(timeout: 10))
+    app.buttons["New Conversation"].tap()
+    app.buttons["New Bot"].tap()
     XCTAssertTrue(app.navigationBars["New Agent"].waitForExistence(timeout: 5))
     XCTAssertTrue(app.buttons["Create"].exists)
     app.buttons["Cancel"].tap()
 
-    for title in ["Memory", "Skills", "Tasks", "Activity", "Integrations"] {
+    app.buttons["Settings"].tap()
+    for title in ["Memory", "Skills", "Automations", "Activity", "Integrations"] {
       app.buttons[title].firstMatch.tap()
       XCTAssertTrue(app.navigationBars[title].waitForExistence(timeout: 5))
       let action: String? =

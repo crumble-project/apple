@@ -21,7 +21,7 @@ func notification(for event: ActivityEvent, in context: NotificationContext) -> 
         let text = preview(event.preview ?? "")
         if let group = event.groupId {
             if context.windowOnScreen, context.route == .group(group) { return nil }
-            return ("\(event.agentName) in \(event.groupName ?? "a group chat")", text.isEmpty ? "Replied" : text)
+            return (event.groupTitle, text.isEmpty ? "Replied" : text)
         }
         if context.windowOnScreen, context.route == .agent(event.agentId) { return nil }
         guard let kind = JobKind.allCases.first(where: { $0.originKind == event.origin }) else {
@@ -52,6 +52,11 @@ struct NotificationLedger {
         if keys.count > 512 { keys.removeFirst(keys.count - 512) }
         return true
     }
+}
+
+/// The web's approval and credential cues, bundled by `scripts/build-app.sh`; a plain reply keeps the system sound.
+func noticeSound(for event: ActivityEvent) -> UNNotificationSound {
+    NoticeKind(event).soundFile.map { UNNotificationSound(named: UNNotificationSoundName($0)) } ?? .default
 }
 
 /// The bot chat or group chat a notification opens.
@@ -164,7 +169,7 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body
-        content.sound = .default
+        content.sound = noticeSound(for: event)
         var info: [String: Any] = ["agentId": event.agentId, "serverURL": serverURL]
         if let group = event.groupId { info["groupId"] = group }
         if event.origin == DesktopJob.originKind { info["desktop"] = true }

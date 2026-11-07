@@ -61,7 +61,7 @@ private let groupSnapshotFixture = """
 @Test func memorySourcesReadAsPlainLabels() {
     #expect(memorySourceLabel(nil) == nil)
     #expect(memorySourceLabel(MemorySource(kind: "group", name: "Trip", groupId: "trip")) == "From the group chat Trip")
-    #expect(memorySourceLabel(MemorySource(kind: "task", name: "Morning brief")) == "From the task Morning brief")
+    #expect(memorySourceLabel(MemorySource(kind: "task", name: "Morning brief")) == "From the automation Morning brief")
     #expect(memorySourceLabel(MemorySource(kind: "owner")) == "Added by you")
 }
 
@@ -114,6 +114,36 @@ extension APIClientTests {
         #expect(model.messages.first?.deliveryState == .confirmed)
     }
 
+    @MainActor @Test func retryingAFailedGroupMessageClearsTheDraftItRestored() async {
+        var attempts = 0
+        let model = AppModel(client: StubProtocol.client { request in
+            switch request.url?.path {
+            case "/v1/group-chats/trip/chat": return (200, groupSnapshotFixture)
+            case "/v1/group-chats/trip/events": return (200, "")
+            case "/v1/group-chats/trip/messages":
+                attempts += 1
+                return attempts == 1 ? (500, #"{"error":"busy"}"#) : (201, #"{"requestId":"r","entryId":"trip:1"}"#)
+            default: return (404, "")
+            }
+        })
+        defer { model.leaveGroup() }
+        model.groupChats = [trip]
+        model.selectGroup("trip")
+        await waitFor { model.groupSnapshot != nil }
+
+        model.draft = "Who packs the tent?"
+        await model.sendGroupMessage()?.value
+        #expect(model.draft == "Who packs the tent?")
+        guard let failed = model.messages.first(where: { $0.deliveryState == .failed }) else {
+            Issue.record("Missing failed message")
+            return
+        }
+
+        model.retryMessage(failed)
+        #expect(model.draft.isEmpty)
+        await waitFor { !model.sending }
+    }
+
     @MainActor @Test func openingABotChatClosesTheGroup() async {
         let model = AppModel(client: StubProtocol.client { request in
             switch request.url?.path {
@@ -156,6 +186,27 @@ extension APIClientTests {
         #expect(model.messages.map(\.text) == ["From the stream"])
     }
 
+    @MainActor @Test func aFailedDeletionReopensTheGroup() async {
+        let model = AppModel(client: StubProtocol.client { request in
+            switch (request.httpMethod, request.url?.path) {
+            case ("DELETE", "/v1/group-chats/trip"): (500, #"{"error":"busy"}"#)
+            case (_, "/v1/group-chats/trip/chat"): (200, groupSnapshotFixture)
+            case (_, "/v1/group-chats/trip/events"): (200, "")
+            default: (404, "")
+            }
+        })
+        defer { model.leaveGroup() }
+        model.groupChats = [trip]
+        model.selectGroup("trip")
+        await waitFor { model.groupSnapshot != nil }
+        model.deleteGroup("trip")
+        #expect(model.groupChats.isEmpty)
+        #expect(model.route == nil)
+        await waitFor { model.errorText.contains("busy") && model.groupSnapshot != nil }
+        #expect(model.groupChats.map(\.id) == ["trip"])
+        #expect(model.route == .group("trip"))
+    }
+
     @MainActor @Test func aSlowGroupCreationDoesNotTakeOverNewerNavigation() async {
         let created = #"{"id":"trip","name":"Trip","memberIds":["a1","a2"],"createdAt":"now","updatedAt":"now"}"#
         let model = AppModel(client: StubProtocol.client { request in
@@ -177,4 +228,44 @@ extension APIClientTests {
         #expect(model.route == .agent("a1"))
         #expect(model.draft == "Still typing")
     }
+}
+
+@MainActor @Test func aGroupKeepsItsDraftAcrossNavigation() {
+    let model = AppModel(loadKeychain: false)
+    model.selectGroup("trip")
+    model.draft = "Pack light"
+    model.selectGroup("work")
+    #expect(model.draft.isEmpty)
+    model.draft = "Standup moved"
+    model.selectAgent("a1")
+    #expect(model.draft.isEmpty)
+    model.selectGroup("trip")
+    #expect(model.draft == "Pack light")
+    model.draft = ""
+    model.selectGroup("work")
+    #expect(model.draft == "Standup moved")
+    model.selectGroup("trip")
+    #expect(model.draft.isEmpty)
+}
+
+@MainActor @Test func onlyAnotherSendersNewMessageCountsAsAnArrival() throws {
+    let model = AppModel(loadKeychain: false)
+    model.selectGroup("trip")
+    func snapshot(_ messages: [Message]) throws -> GroupChatSnapshot {
+        var snapshot = try JSONDecoder().decode(GroupChatSnapshot.self, from: Data(groupSnapshotFixture.utf8))
+        snapshot.messages = messages
+        return snapshot
+    }
+    let history = Message(id: "old", role: "assistant", content: .string("Earlier."))
+    let mine = Message(id: "mine", role: "user", content: .string("Hi"), requestId: "r1")
+    let answer = Message(id: "new", role: "assistant", content: .string("Hello."))
+
+    model.applyGroupSnapshot(try snapshot([history]))
+    #expect(model.groupArrivals == 0)
+    model.applyGroupSnapshot(try snapshot([history, mine]))
+    #expect(model.groupArrivals == 0)
+    model.applyGroupSnapshot(try snapshot([history, mine, answer]))
+    #expect(model.groupArrivals == 1)
+    model.applyGroupSnapshot(try snapshot([history, mine, answer]))
+    #expect(model.groupArrivals == 1)
 }

@@ -66,10 +66,20 @@ extension APIClient {
     }
   }
 
-  /// Issues a single-use viewer link for the bot desktop, under the same base URL as the API.
-  public func desktopViewer(_ agentID: String) async throws -> DesktopViewerLink {
+  /// Whether the bot's machine runs its bot desktop now, so a passive viewer can connect. It has no live event.
+  public func desktopRunning(_ agentID: String) async throws -> Bool {
+    try await invoke {
+      try await $0.getDesktopStatus(.init(path: .init(id: agentID))).ok.body.json.running
+    }
+  }
+
+  /// Issues a single-use viewer link for the bot desktop, under the same base URL as the API. A `passive` link only
+  /// watches: it neither boots the bot's machine nor keeps it awake.
+  public func desktopViewer(_ agentID: String, passive: Bool = false) async throws -> DesktopViewerLink {
     let viewer = try await invoke {
-      try await $0.createDesktopViewer(.init(path: .init(id: agentID))).created.body.json
+      try await $0.createDesktopViewer(.init(
+        path: .init(id: agentID), query: .init(passive: passive ? "true" : nil)
+      )).created.body.json
     }
     let base = baseURL.hasSuffix("/") ? baseURL : baseURL + "/"
     let path = viewer.path.hasPrefix("/") ? String(viewer.path.dropFirst()) : viewer.path

@@ -1,11 +1,19 @@
 import apfelkern
 import AuthenticationServices
+import BotAvatar
 import SwiftUI
 
 struct MemoryPanel: View {
     @Environment(AppModel.self) private var model
     @State private var query = ""
     @State private var scope = "all"
+    @State private var pendingDelete: MemoryDeletion?
+
+    private struct MemoryDeletion: Identifiable {
+        let id: String
+        let agentID: String?
+        let label: String
+    }
 
     var body: some View {
         Form {
@@ -21,6 +29,16 @@ struct MemoryPanel: View {
             personalSections
         }
         .formStyle(.grouped)
+        .confirmationDialog(
+            "Delete this memory?",
+            isPresented: Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }),
+            presenting: pendingDelete
+        ) { item in
+            Button("Delete", role: .destructive) { model.deleteMemory(item.id, agentID: item.agentID) }
+            Button("Cancel", role: .cancel) {}
+        } message: { item in
+            Text(item.label)
+        }
         .searchable(text: $query, placement: .toolbar, prompt: "Search memories")
     }
 
@@ -63,8 +81,9 @@ struct MemoryPanel: View {
     }
 
     private func filtered(_ memories: [Memory]) -> [Memory] {
-        guard !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return memories }
-        return memories.filter { $0.content.localizedCaseInsensitiveContains(query) }
+        let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !needle.isEmpty else { return memories }
+        return memories.filter { $0.content.localizedCaseInsensitiveContains(needle) }
     }
 
     private var sharedFooter: String {
@@ -77,12 +96,10 @@ struct MemoryPanel: View {
     private func row(_ memory: Memory, agentID: String?) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text(memory.content)
+                HighlightedText(memory.content, query: query)
                     .fixedSize(horizontal: false, vertical: true)
                     .textSelection(.enabled)
-                if let source = memorySourceLabel(memory.source) {
-                    Text(source).font(.caption).foregroundStyle(.secondary)
-                }
+                MemorySourceLine(memory: memory)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             Menu {
@@ -102,20 +119,8 @@ struct MemoryPanel: View {
 
     @ViewBuilder private func rowActions(_ memory: Memory, agentID: String?) -> some View {
         Button("Edit…") { model.openMemoryForm(memory.id, agentID: agentID) }
-        Button("Delete", role: .destructive) { model.deleteMemory(memory.id, agentID: agentID) }
-    }
-}
-
-/// Where a memory was saved, for the line under it; nil for memories saved before sources were recorded.
-func memorySourceLabel(_ source: MemorySource?) -> String? {
-    guard let source else { return nil }
-    let name = source.name?.nilIfEmpty
-    switch source.kind {
-    case "chat": return "From the bot chat"
-    case "owner": return "Added by you"
-    case "task": return name.map { "From the task \($0)" } ?? "From a scheduled task"
-    case "bot": return name.map { "From a request by \($0)" } ?? "From another bot"
-    case "group": return name.map { "From the group chat \($0)" } ?? "From a group chat"
-    default: return nil
+        Button("Delete…", role: .destructive) {
+            pendingDelete = MemoryDeletion(id: memory.id, agentID: agentID, label: memory.content)
+        }
     }
 }

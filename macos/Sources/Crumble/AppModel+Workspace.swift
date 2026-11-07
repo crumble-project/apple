@@ -1,36 +1,52 @@
 import apfelkern
 import Foundation
 
+extension AppModel: BotListHost {}
+
 extension AppModel {
     // MARK: Workspace panels
 
     func openPanel(_ panel: Route) {
         workspaceRoute = panel
         memoryDraft = nil
-        taskDraft = nil
+        automationBoard.closeUnchangedDraft()
         mcpDraft = nil
         skillDraft = nil
         switch panel {
         case .memory: loadMemoryPanel()
-        case .skills: loadSkillsPanel()
-        case .tasks: loadTasksPanel()
+        case .skills: reloadSkills()
+        case .automations: loadAutomationsPanel()
         case .activity: loadActivityPanel()
+        case .avatars: break
+        case .credentials, .logins:
+            if let kind = panel.botSecretKind { loadBotSecrets(kind) }
         case .integrations: loadIntegrationsPanel()
+        case .coding:
+            loadGitHubApps()
+            loadGitHubAccounts()
+            loadAdmin()
+        case .users: loadAdmin()
+        case .providers:
+            loadProviders()
+            loadPasswordManagers()
+        case .passwordManagers, .webSearch, .judgeModel, .visionModel, .messageGateways, .eventRelay:
+            loadConnectedServices(panel)
         case .agent, .group:
             break
         }
     }
 
-    /// Routines and memories for the details panel beside a bot's chat.
+    /// Automations and memories for the details panel beside a bot's chat.
     func loadAgentDetails(_ agentID: String) {
+        if let client {
+            automationBoard.refresh(client: client)
+            connectedServices.eventSources.refresh(client: client)
+        }
         let mutationVersion = mutationRevision
         request { client in
-            async let schedules = client.schedules()
-            async let memories = client.memories(agentID)
-            let (loadedSchedules, loadedMemories) = try await (schedules, memories)
+            let loadedMemories = try await client.memories(agentID)
             return { [self] in
                 guard mutationRevision == mutationVersion, pendingMutations.isEmpty else { return }
-                self.schedules = loadedSchedules
                 agentMemories[agentID] = loadedMemories
             }
         }
@@ -62,36 +78,41 @@ extension AppModel {
         }
     }
 
-    private func loadSkillsPanel() {
-        let mutationVersion = mutationRevision
-        request { client in
-            async let bots = client.agents()
-            async let skills = client.sharedSkills()
-            let (loadedBots, loadedSkills) = try await (bots, skills)
-            return { [self] in
-                guard mutationRevision == mutationVersion, pendingMutations.isEmpty else { return }
-                agents = loadedBots
-                sharedSkills = loadedSkills
-            }
-        }
-    }
-
-    private func loadTasksPanel() {
-        let mutationVersion = mutationRevision
-        request { client in
-            let items = try await client.schedules()
-            return { [self] in
-                guard mutationRevision == mutationVersion, pendingMutations.isEmpty else { return }
-                schedules = items
-            }
-        }
-    }
-
     private func loadActivityPanel() {
-        request { client in
-            let feed = try await client.activityFeed()
-            return { [self] in activities = feed.activities }
+        loadActivityFeed()
+        if let client { changeBoard.refresh(client: client) }
+    }
+
+    private func loadActivityFeed() {
+        if let client { activityBoard.refresh(client: client) }
+    }
+
+    /// Both lists follow the page's filter; the Changes pill shows the board that tracks reverts.
+    func showActivity(kind: ActivityKind?, botID: String?) {
+        guard let client else { return }
+        activityBoard.show(kind: kind, botID: botID, client: client)
+        changeBoard.show(botID: botID, client: client)
+    }
+
+    func loadMoreActivity() {
+        guard let client else { return }
+        activityBoard.loadMore(client: client)
+    }
+
+    func saveAvatar() { avatarBoard.save(to: self) }
+
+    func revertChange(_ change: LearnedChange) {
+        guard let client else { return }
+        changeBoard.revert(change, client: client) { [weak self] in
+            self?.loadActivityFeed()
+            self?.loadMemoryPanel()
+            self?.reloadSkills()
         }
+    }
+
+    func loadMoreChanges() {
+        guard let client else { return }
+        changeBoard.loadMore(client: client)
     }
 
     private func loadIntegrationsPanel() {

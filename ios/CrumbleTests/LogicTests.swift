@@ -1,5 +1,4 @@
 import apfelkern
-import BotAvatar
 import Foundation
 import ImageIO
 import Testing
@@ -29,6 +28,11 @@ struct LogicTests {
     model.handleActivity(
       ActivityEvent(type: "chat-preview", agentId: "a2", agentName: "Beacon", lastMessage: ""))
     #expect(model.agents[1].lastMessage?.isEmpty == true)
+    #expect(model.unread.total == 0)
+    model.handleActivity(ActivityEvent(type: "reply", agentId: "a2", agentName: "Beacon", origin: "chat", preview: "Hi"))
+    #expect(model.unread.total == 1)
+    model.handleActivity(ActivityEvent(type: "reply", agentId: "a2", agentName: "Beacon", origin: "bot", preview: "Hi"))
+    #expect(model.unread.total == 1)
   }
 
   @Test func sseRejectsSnapshotsWithoutAgent() throws {
@@ -49,27 +53,11 @@ struct LogicTests {
     #expect(merged[1].text == "updated")
   }
 
-  @Test func tasksNeedExactlyOneScheduleMode() {
-    #expect(validateTask(name: "", prompt: "", cron: "", runAt: "") != nil)
-    #expect(
-      validateTask(
-        name: "Daily", prompt: "Check inbox", cron: "0 9 * * *", runAt: "2026-10-18T09:00:00Z")
-        != nil)
-    #expect(validateTask(name: "Daily", prompt: "Check inbox", cron: "0 9 * * *", runAt: "") == nil)
-    #expect(
-      validateTask(name: "Once", prompt: "Check inbox", cron: "", runAt: "2026-10-18T09:00:00Z")
-        == nil)
-    #expect(validateTask(name: "Once", prompt: "Check inbox", cron: "", runAt: "tomorrow") != nil)
-  }
-
-  @Test func taskRunAtPreservesExplicitOffsetInstant() throws {
-    #expect(taskRunDate("2026-10-18T12:10:00+02:00") == taskRunDate("2026-10-18T10:10:00Z"))
-    let fractional = try #require(taskRunDate("2026-10-18T12:10:00.123Z"))
-    let whole = try #require(taskRunDate("2026-10-18T12:10:00Z"))
+  @Test func automationRunAtPreservesExplicitOffsetInstant() throws {
+    #expect(automationRunDate("2026-10-18T12:10:00+02:00") == automationRunDate("2026-10-18T10:10:00Z"))
+    let fractional = try #require(automationRunDate("2026-10-18T12:10:00.123Z"))
+    let whole = try #require(automationRunDate("2026-10-18T12:10:00Z"))
     #expect(abs(fractional.timeIntervalSince(whole) - 0.123) < 0.000001)
-    #expect(
-      validateTask(name: "Task", prompt: "Hi", cron: "0 9 * * *", runAt: "", timezone: "Not/AZone")
-        != nil)
   }
 
   @Test func requestIDsAreUUIDs() {
@@ -78,26 +66,14 @@ struct LogicTests {
     #expect(id.split(separator: "-").count == 5)
   }
 
-  @Test func avatarSeedsAcceptLegacyValues() {
-    let cases = [
-      "bot:violet": "violet", "critters:violet": "violet", "sparkles": "a1", "😀": "a1", "": "a1"
-    ]
-    for (avatar, seed) in cases {
-      #expect(agentAvatarSeed(Agent(id: "a1", avatar: avatar)) == seed)
-    }
-    let first = BotLook(seed: "agent-seed")
-    let repeated = BotLook(seed: "agent-seed")
-    #expect(first == repeated)
-  }
-
   @Test func chatHidesToolActivity() {
     let tool = Message(
       id: "a1:1:0", role: "assistant", blocks: .array([.object(["type": .string("toolCall")])]))
     let reply = Message(
       id: "a1:1:1", role: "assistant", content: .string("Hi"),
       blocks: .array([.object(["type": .string("text"), "text": .string("Hi")])]))
-    #expect(!ChatRow.shownInChat(tool))
-    #expect(ChatRow.shownInChat(reply))
+    #expect(!shownInChat(tool))
+    #expect(shownInChat(reply))
   }
 
   @Test func shiftReturnInsertsANewlineAtTheCaret() throws {
@@ -192,7 +168,7 @@ struct LogicTests {
     let message = try JSONDecoder().decode(Message.self, from: data)
     let rows = ChatRow.rows(messages: [message], snapshot: nil, hasMore: false)
     #expect(rows.count == 1)
-    guard case .message(let retained) = rows[0] else {
+    guard case .message(let retained, _) = rows[0] else {
       Issue.record("bot communication event was omitted")
       return
     }
@@ -204,23 +180,23 @@ struct LogicTests {
 
   @Test func signInCallbacksCarryACodeOrAReason() throws {
     let result = try oauthResult(
-      from: URL(string: "dev.crumble.ios:/oauth/callback?code=abc&state=xyz")!)
+      from: URL(string: "ng.crumbli.ios:/oauth/callback?code=abc&state=xyz")!)
     #expect(result.code == "abc" && result.state == "xyz" && result.iss == nil)
     let issued = try oauthResult(
       from: URL(
         string:
-          "dev.crumble.ios:/oauth/callback?code=abc&state=xyz&iss=https%3A%2F%2Fexecutor.sh%2Fapi%2Fauth"
+          "ng.crumbli.ios:/oauth/callback?code=abc&state=xyz&iss=https%3A%2F%2Fexecutor.sh%2Fapi%2Fauth"
       )!)
     #expect(issued.iss == "https://executor.sh/api/auth")
     #expect(throws: SignInError.self) {
       try oauthResult(
         from: URL(
           string:
-            "dev.crumble.ios:/oauth/callback?error=access_denied&error_description=User%20declined")!
+            "ng.crumbli.ios:/oauth/callback?error=access_denied&error_description=User%20declined")!
       )
     }
     #expect(throws: SignInError.self) {
-      try oauthResult(from: URL(string: "dev.crumble.ios:/oauth/callback")!)
+      try oauthResult(from: URL(string: "ng.crumbli.ios:/oauth/callback")!)
     }
   }
 
@@ -235,5 +211,95 @@ struct LogicTests {
           .init(marker: "•", text: "14:30 Call", indent: 0)
         ]), .code("code")
       ])
+  }
+}
+
+/// UIKit has no public way to make a key press.
+private final class StubKey: UIKey {
+  override var keyCode: UIKeyboardHIDUsage { .keyboardReturnOrEnter }
+  override var modifierFlags: UIKeyModifierFlags { [] }
+}
+
+private final class StubPress: UIPress {
+  override var key: UIKey? { StubKey() }
+}
+
+struct PhoneNavigationTests {
+  private let chat = PhonePage.route(.agent("a"))
+
+  @Test func aChatOpensFromTheList() {
+    #expect(PhonePage.path(from: [], to: .agent("a")) == [chat])
+  }
+
+  @Test func aPageFromAChatReturnsToIt() {
+    #expect(PhonePage.path(from: [chat], to: .providers) == [chat, .route(.providers)])
+  }
+
+  @Test func aPageFromNowhereReturnsThroughSettings() {
+    #expect(PhonePage.path(from: [], to: .memory) == [.settings, .route(.memory)])
+  }
+
+  @Test func oneSettingsPageReplacesAnother() {
+    #expect(PhonePage.path(from: [.settings, .route(.memory)], to: .skills) == [.settings, .route(.skills)])
+  }
+
+  @Test func aChatReplacesWhateverWasOpen() {
+    #expect(PhonePage.path(from: [.settings, .route(.memory)], to: .agent("a")) == [chat])
+  }
+
+  @Test func leavingARouteKeepsSettingsOpen() {
+    #expect(PhonePage.path(from: [.settings], to: nil) == [.settings])
+    #expect(PhonePage.path(from: [chat], to: nil).isEmpty)
+  }
+
+  @Test func aRunEndsWhereTheSenderChanges() {
+    let places = BubblePlace.places(["a", "a", nil, "a", "b"]) { $0 }
+    #expect(places.map(\.startsRun) == [true, false, true, true, true])
+    #expect(places.map(\.endsRun) == [false, true, true, true, true])
+  }
+}
+
+@MainActor
+struct ComposerTextViewTests {
+  private func composing() -> PastingTextView {
+    let view = PastingTextView()
+    view.setMarkedText("nihon", selectedRange: NSRange(location: 5, length: 0))
+    return view
+  }
+
+  @Test func returnSendsWhenNothingIsComposing() {
+    let view = PastingTextView()
+    var keys: [ComposerKey] = []
+    view.onKey = {
+      keys.append($0)
+      return true
+    }
+    view.pressesBegan([StubPress()], with: nil)
+    #expect(keys == [.send])
+  }
+
+  @Test func returnConfirmsACompositionInsteadOfSending() {
+    let view = composing()
+    #expect(view.markedTextRange != nil)
+    var keys: [ComposerKey] = []
+    view.onKey = {
+      keys.append($0)
+      return true
+    }
+    view.pressesBegan([StubPress()], with: nil)
+    #expect(keys.isEmpty)
+  }
+
+  @Test func emptyingTheDraftEndsAComposition() {
+    let view = composing()
+    view.show("", selection: nil)
+    #expect(view.markedTextRange == nil)
+    #expect(view.text.isEmpty)
+  }
+
+  @Test func anUpdateLeavesACompositionAlone() {
+    let view = composing()
+    view.show("nihon", selection: nil)
+    #expect(view.markedTextRange != nil)
   }
 }

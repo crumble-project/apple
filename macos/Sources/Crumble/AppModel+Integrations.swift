@@ -6,14 +6,8 @@ import SwiftUI
 extension AppModel {
     /// Opens a server to edit, or a new one owned by `agentID` (nil for shared).
     func openMCPForm(_ id: String, agentID: String? = nil) {
-        var form = MCPDraft(serverID: id, agentID: agentID)
-        if let server = mcpServers.first(where: { $0.id == id }) {
-            form.agentID = server.agentId
-            form.name = server.name
-            form.url = server.url
-            form.enabled = server.enabled
-        }
-        mcpDraft = form
+        mcpDraft = mcpServers.first { $0.id == id }.map(MCPDraft.init(server:))
+            ?? MCPDraft(serverID: id, agentID: agentID)
     }
 
     func saveMCP() {
@@ -26,21 +20,53 @@ extension AppModel {
             errorText = "MCP name and an HTTP(S) URL are required."
             return
         }
-        var payload: [String: JSONValue] = [
-            "name": .string(name), "url": .string(rawURL), "enabled": .bool(form.enabled)
-        ]
-        if !form.token.isEmpty { payload["token"] = .object(["value": .string(form.token)]) }
+        let payload = form.payload(name: name, url: rawURL)
+        if form.checksPasswordManager {
+            saveMCPAfterCheck(form, payload: payload)
+            return
+        }
         let isNew = form.serverID.isEmpty
         let provisionalID = isNew ? "pending-mcp-" + newRequestID() : form.serverID
         let old = mcpServers.first { $0.id == form.serverID }
         var provisional = MCPServer(
             id: provisionalID, name: name, url: rawURL, enabled: form.enabled, agentId: form.agentID,
-            authenticated: false, auth: form.token.isEmpty ? "none" : "token")
-        if let old, form.token.isEmpty, old.url == rawURL {
+            authenticated: false, auth: form.changesToken ? "token" : "none",
+            token: old?.token ?? SecretStatus(configured: false),
+            oauthClientSecret: old?.oauthClientSecret ?? SecretStatus(configured: false))
+        if let old, !form.changesToken, old.url == rawURL {
             provisional.authenticated = old.authenticated
             provisional.auth = old.auth
         }
-        persistMCP(form, provisional: provisional, payload: payload)
+        persistMCP(form, provisional: form.applyingOAuthApp(to: provisional), payload: payload)
+    }
+
+    /// A new reference's outcome is the password manager's: the server reads it before it answers, so
+    /// the form holds until then and keeps what the owner entered on failure.
+    private func saveMCPAfterCheck(_ form: MCPDraft, payload: [String: JSONValue]) {
+        var payload = payload
+        let isNew = form.serverID.isEmpty
+        let owner = form.agentID
+        optimisticMutation(
+            key: "mcp:\(form.id)",
+            update: { [self] in isCheckingMCP = true },
+            rollback: { [self] in isCheckingMCP = false },
+            work: { client in
+                if isNew, let owner { payload["agentId"] = .string(owner) }
+                let saved = try await isNew
+                    ? client.createMCPServer(payload) : client.updateMCPServer(form.serverID, patch: payload)
+                return { [self] in
+                    isCheckingMCP = false
+                    if mcpDraft?.id == form.id { mcpDraft = nil }
+                    if let index = mcpServers.firstIndex(where: { $0.id == saved.id }) {
+                        mcpServers[index] = saved
+                    } else {
+                        mcpServers.append(saved)
+                    }
+                    if isNew, let owner, let index = agents.firstIndex(where: { $0.id == owner }) {
+                        agents[index].mcpServers = (agents[index].mcpServers ?? []) + [saved.id]
+                    }
+                }
+            })
     }
 
     private func persistMCP(_ form: MCPDraft, provisional: MCPServer, payload: [String: JSONValue]) {

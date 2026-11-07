@@ -11,6 +11,7 @@ struct AgentEditorView: View {
         Form {
             avatarSection
             SheetError()
+            if let request = draft.botRequest { BotRequestEditorStatus(request: request) }
             Section {
                 TextField("Name", text: $draft.name, prompt: Text("Required"))
                 TextField("Description", text: $draft.description, prompt: Text("What it helps with"))
@@ -20,10 +21,18 @@ struct AgentEditorView: View {
             instructionsSection
             capabilitiesSection
             integrationsSection
-            Section("Skills") {
-                Text("Manage this bot’s personal skills and shared skill assignments in the Skills tab.")
-                    .foregroundStyle(.secondary)
-                Button("Open Skills") { model.openPanel(.skills) }
+            if !draft.isNew {
+                BotSecretsSection(kind: .credential, agentID: draft.agentID)
+                BotSecretsSection(kind: .login, agentID: draft.agentID)
+            }
+            if draft.isNew {
+                Section("Skills") {
+                    Text("Add this bot’s own skills and turn on shared skills after you create it.")
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                BotSkillsSection(title: "Skills", agentID: draft.agentID, agentName: draft.name)
+                SharedSkillToggles(agentID: draft.agentID)
             }
             if !draft.isNew {
                 Section {
@@ -42,43 +51,39 @@ struct AgentEditorView: View {
                 }
             }
             ToolbarItem(placement: .confirmationAction) {
-                Button(draft.isNew ? "Create" : "Save") { model.saveAgentEditor() }.disabled(model.loading)
+                Button(saveTitle) { model.saveAgentEditor() }.disabled(saveDisabled)
+            }
+        }
+        .botSecretSheets(active: true)
+        .skillSheet(active: true)
+        .task(id: draft.agentID) {
+            if !draft.isNew {
+                model.loadBotSecrets(agentID: draft.agentID)
+                model.loadBotSkills(agentID: draft.agentID)
             }
         }
         .confirmationDialog("Delete agent?", isPresented: $model.confirmingDelete) {
             Button("Delete", role: .destructive) { model.deleteSelected() }
         } message: {
-            Text("The agent, its chat, memories and tasks will be removed.")
+            Text("The agent, its chat, memories and automations will be removed.")
         }
+    }
+
+    private var saveTitle: String {
+        if draft.botRequest != nil { return "Approve" }
+        return draft.isNew ? "Create" : "Save"
+    }
+
+    private var saveDisabled: Bool {
+        guard let request = draft.botRequest else { return model.loading }
+        return model.loading || !draft.canApprove || model.botRequestBoard.decision(for: request.id).sending
     }
 
     private var avatarSection: some View {
         Section {
             VStack(spacing: 8) {
-                BotAvatarView(
-                    seed: agentAvatarSeed(Agent(id: draft.agentID, avatar: draft.avatar)), size: 96, live: true)
+                BotAvatarPicker(value: $draft.avatar)
                 Text(draft.name.trimmingCharacters(in: .whitespaces).nilIfEmpty ?? "New Agent").font(.title2.bold())
-                HStack(spacing: 6) {
-                    ForEach(draft.avatarChoices, id: \.self) { seed in
-                        Button {
-                            draft.avatar = "bot:" + seed
-                        } label: {
-                            BotAvatarView(seed: seed, size: 36)
-                                .padding(3)
-                                .overlay {
-                                    if draft.avatar == "bot:" + seed {
-                                        RoundedRectangle(cornerRadius: 10).strokeBorder(.tint, lineWidth: 2)
-                                    }
-                                }
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("Choose this avatar")
-                    }
-                    Button("More Avatars", systemImage: "shuffle") { draft.shuffleAvatars() }
-                        .labelStyle(.iconOnly)
-                        .buttonStyle(.borderless)
-                        .help("More avatars")
-                }
             }
             .frame(maxWidth: .infinity)
         }
@@ -102,6 +107,8 @@ struct AgentEditorView: View {
                         Text(summary.id).textInputCompletion(summary.id)
                     }
                 }
+            ReasoningField(
+                levels: ThinkingLevel.available(for: draft.model, in: model.models), thinking: $draft.thinking)
         } header: {
             Text("Model")
         } footer: {
@@ -150,9 +157,14 @@ struct AgentEditorView: View {
                 }
                 .padding(.leading, 16)
             }
+            Toggle(isOn: $draft.toolsWeb) {
+                Text("Web search")
+                Text("Searches the web and reads pages.")
+            }
+            if draft.toolsWeb { webSearchProviderPicker.padding(.leading, 16) }
             Toggle(isOn: $draft.toolsSchedule) {
-                Text("Schedule tasks")
-                Text("Saves one-time and recurring tasks for itself or a bot it can message.")
+                Text("Schedule automations")
+                Text("Saves one-time and recurring automations for itself or a bot it can message.")
             }
             Toggle(isOn: $draft.toolsDelegate) {
                 Text("Message other bots")
@@ -168,6 +180,10 @@ struct AgentEditorView: View {
                 Text("Writes a short script that calls its tools, so many tool calls take one step.")
             }
             workspaceToggles
+            Toggle(isOn: $draft.toolsCreateBots) {
+                Text("Create bots")
+                Text("Asks you to approve new bots.")
+            }
         }
     }
 
@@ -187,6 +203,16 @@ struct AgentEditorView: View {
         }
     }
 
+    private var webSearchProviderPicker: some View {
+        Picker(selection: $draft.webSearchProvider) {
+            Text("Account default").tag(WebSearchProvider?.none)
+            ForEach(WebSearchProvider.allCases) { Text($0.name).tag(WebSearchProvider?.some($0)) }
+        } label: {
+            Text("Web search provider")
+            Text("Manage the default and Exa key in Settings → Web search.")
+        }
+    }
+
     @ViewBuilder private var desktopModelFields: some View {
         if model.providerChoices.isEmpty {
             TextField("Desktop job provider", text: $draft.desktopProvider, prompt: Text("Same as the agent"))
@@ -197,7 +223,7 @@ struct AgentEditorView: View {
             }
         }
         if !draft.desktopProvider.isEmpty {
-            TextField("Desktop job model", text: $draft.desktopModel, prompt: Text("Model ID"))
+            DesktopModelField(provider: draft.desktopProvider, client: model.client, model: $draft.desktopModel)
         }
     }
 

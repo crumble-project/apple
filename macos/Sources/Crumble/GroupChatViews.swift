@@ -6,6 +6,7 @@ import SwiftUI
 struct GroupRow: View {
     @Environment(AppModel.self) private var model
     let group: GroupChat
+    @State private var confirmingDelete = false
 
     private var members: [Agent] { group.memberIds.compactMap { id in model.agents.first { $0.id == id } } }
 
@@ -32,63 +33,28 @@ struct GroupRow: View {
         .contentShape(Rectangle())
         .contextMenu {
             Button("Edit Group…") { model.editGroup(group) }
-            Button("Delete Group", role: .destructive) { model.deleteGroup(group.id) }
+            Button("Delete Group…", role: .destructive) { confirmingDelete = true }
         }
+        .confirmsGroupDeletion(name: group.name, isPresented: $confirmingDelete) { model.deleteGroup(group.id) }
     }
 }
 
-/// One row of a group transcript.
-enum GroupChatRow: Identifiable {
-    case older
-    case time(String, String)
-    case message(Message, reactions: [Reaction.Mark])
-    case working([Agent])
-    case failure(Agent, String)
-    case paused
-
-    var id: String {
-        switch self {
-        case .older: "older"
-        case .time(let id, _): "time:" + id
-        case .message(let message, _): message.id
-        case .working: "working"
-        case .failure(let agent, _): "failure:" + agent.id
-        case .paused: "paused"
+extension View {
+    /// Group deletion can't be undone, so both the row and the editor ask first.
+    func confirmsGroupDeletion(
+        name: String, isPresented: Binding<Bool>, delete: @escaping () -> Void
+    ) -> some View {
+        confirmationDialog("Delete \(name)?", isPresented: isPresented, titleVisibility: .visible) {
+            Button("Delete", role: .destructive, action: delete)
+        } message: {
+            Text("The group chat and its messages will be removed. The bots stay. This cannot be undone.")
         }
-    }
-
-    /// Owner and bot messages with reactions beside the message they answer, then who is answering,
-    /// failed turns, and the paused state.
-    static func rows(messages: [Message], snapshot: GroupChatSnapshot?, agents: [Agent], hasMore: Bool)
-        -> [GroupChatRow] {
-        var rows: [GroupChatRow] = hasMore ? [.older] : []
-        var last: Int64 = 0
-        let reactions = Reaction.byReplyTarget(messages)
-        for message in messages where message.role == "user" || message.role == "assistant" {
-            if let timestamp = message.timestamp, timestamp > 0 {
-                if timestamp - last > 30 * 60 * 1000 {
-                    rows.append(.time(message.id, timeLabel(Date(timeIntervalSince1970: Double(timestamp) / 1000))))
-                }
-                last = timestamp
-            }
-            rows.append(.message(message, reactions: reactions[message.id] ?? []))
-        }
-        guard let snapshot else { return rows }
-        let agent = { (id: String) in agents.first { $0.id == id } }
-        let working = snapshot.activity.members.filter { $0.status == .running }.compactMap { agent($0.agentId) }
-        if !working.isEmpty { rows.append(.working(working)) }
-        for member in snapshot.activity.members {
-            if let error = member.error?.nilIfEmpty, let bot = agent(member.agentId) {
-                rows.append(.failure(bot, error))
-            }
-        }
-        if snapshot.activity.paused { rows.append(.paused) }
-        return rows
     }
 }
 
 struct GroupChatView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let group: GroupChat
 
     private var members: [Agent] { group.memberIds.compactMap { id in model.agents.first { $0.id == id } } }
@@ -99,9 +65,12 @@ struct GroupChatView: View {
         ScrollView {
             LazyVStack(spacing: 0) {
                 ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                    GroupChatRowView(row: row).padding(.top, index > 0 ? 12 : 0)
+                    GroupChatRowView(row: row)
+                        .padding(.top, index > 0 ? 12 : 0)
+                        .transition(.groupArrival)
                 }
             }
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: model.groupArrivals)
             .frame(maxWidth: Palette.column)
             .padding(.horizontal, 28)
             .padding(.vertical, 20)
@@ -109,6 +78,7 @@ struct GroupChatView: View {
         }
         .defaultScrollAnchor(.bottom)
         .defaultScrollAnchor(.bottom, for: .sizeChanges)
+        .jumpToLatest()
         .scrollEdgeEffectStyle(.soft, for: .all)
         .overlay {
             if rows.isEmpty {
@@ -155,6 +125,13 @@ struct GroupChatView: View {
     }
 }
 
+extension AnyTransition {
+    /// A new message rises into place as it fades in, as on the web.
+    static var groupArrival: AnyTransition {
+        .asymmetric(insertion: .opacity.combined(with: .offset(y: 8)), removal: .identity)
+    }
+}
+
 /// The group's members with what each is doing: answering, waiting for a turn, or disabled.
 struct GroupMembersStrip: View {
     @Environment(AppModel.self) private var model
@@ -168,19 +145,10 @@ struct GroupMembersStrip: View {
                     let status = model.groupSnapshot?.activity.member(id)?.status ?? .idle
                     BotAvatarView(agent: agent, size: 22, state: status == .running ? .working : .idle)
                         .opacity(status == .disabled ? 0.4 : 1)
-                        .help(memberHelp(agent, status))
-                        .accessibilityLabel(memberHelp(agent, status))
+                        .help(status.label(for: agent.name))
+                        .accessibilityLabel(status.label(for: agent.name))
                 }
             }
-        }
-    }
-
-    private func memberHelp(_ agent: Agent, _ status: GroupMemberActivity.Status) -> String {
-        switch status {
-        case .running: "\(agent.name) is answering"
-        case .queued: "\(agent.name) answers next"
-        case .disabled: "\(agent.name) is disabled and skipped"
-        case .idle: agent.name
         }
     }
 }
@@ -219,10 +187,10 @@ struct GroupChatRowView: View {
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("\(agents.map(\.name).formatted(.list(type: .and))) answering…")
-        case .failure(let agent, let error):
+        case .failure(_, let name, let error):
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("\(agent.name) couldn’t finish").font(.system(size: 14, weight: .medium))
+                    Text("\(name) couldn’t finish").font(.system(size: 14, weight: .medium))
                     Text(error).font(.system(size: 13)).foregroundStyle(.red).textSelection(.enabled)
                 }
                 .padding(.horizontal, 14)
@@ -276,24 +244,28 @@ struct GroupBotMessage: View {
     }
 
     private var bubble: some View {
-        MarkdownText(text: message.text)
-            .font(Palette.messageFont)
-            .lineSpacing(Palette.messageLineSpacing)
-            .textSelection(.enabled)
-            .bubble(owner: false)
-            .fixedSize(horizontal: false, vertical: true)
-            .overlay(alignment: .bottomTrailing) {
-                if !reactions.isEmpty {
-                    ReactionBadge(reactions: reactions.map(\.emoji))
-                        .offset(x: 8, y: 16)
-                        .help(reactions.map { "\($0.from ?? "A bot") \($0.emoji)" }.joined(separator: ", "))
-                }
+        let reply = SourceCitations.split(message.text, sources: message.sources ?? [])
+        return VStack(alignment: .leading, spacing: 6) {
+            MarkdownText(text: reply.text)
+                .font(Palette.messageFont)
+                .lineSpacing(Palette.messageLineSpacing)
+                .textSelection(.enabled)
+            ForEach(reply.chips, id: \.href) { SourceChipLink(chip: $0) }
+        }
+        .bubble(owner: false)
+        .fixedSize(horizontal: false, vertical: true)
+        .overlay(alignment: .bottomTrailing) {
+            if !reactions.isEmpty {
+                ReactionBadge(reactions: reactions.map(\.emoji))
+                    .offset(x: 8, y: 16)
+                    .help(reactions.map { "\($0.from ?? "A bot") \($0.emoji)" }.joined(separator: ", "))
             }
-            .padding(.bottom, reactions.isEmpty ? 0 : 14)
-            .contextMenu {
-                Button("Reply") { model.replyTo = message }
-                Button("Copy") { copy() }
-            }
+        }
+        .padding(.bottom, reactions.isEmpty ? 0 : 14)
+        .contextMenu {
+            Button("Reply") { model.replyTo = message }
+            Button("Copy") { copy() }
+        }
     }
 
     private var replyButton: some View {
@@ -319,26 +291,40 @@ struct GroupBotMessage: View {
     }
 }
 
+/// A page the reply's turn read, opened in the browser.
+struct SourceChipLink: View {
+    let chip: SourceChip
+
+    var body: some View {
+        if let url = URL(string: chip.href) {
+            Link(destination: url) {
+                Label(chip.title.nilIfEmpty ?? chip.href, systemImage: "link")
+                    .font(.callout)
+                    .lineLimit(1)
+            }
+            .help(chip.href)
+        }
+    }
+}
+
 /// Creates or edits a group: its name and two to six member bots.
 struct GroupEditorView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
     @Binding var draft: GroupDraft
+    @State private var confirmingDelete = false
 
     var body: some View {
         Form {
             TextField("Name", text: $draft.name)
+                .onChange(of: draft.name) { _, name in
+                    if name.count > GroupDraft.nameLimit { draft.name = String(name.prefix(GroupDraft.nameLimit)) }
+                }
             Section {
                 ForEach(model.agents) { agent in
                     Toggle(isOn: Binding(
-                        get: { draft.memberIDs.contains(agent.id) },
-                        set: { included in
-                            if included {
-                                if !draft.memberIDs.contains(agent.id) { draft.memberIDs.append(agent.id) }
-                            } else {
-                                draft.memberIDs.removeAll { $0 == agent.id }
-                            }
-                        })
+                        get: { draft.includes(agent.id) },
+                        set: { draft.setMember(agent.id, included: $0) })
                     ) {
                         HStack(spacing: 8) {
                             BotAvatarView(agent: agent, size: 22, state: .idle)
@@ -346,18 +332,28 @@ struct GroupEditorView: View {
                             if !agent.enabled { Text("Disabled").font(.caption).foregroundStyle(.secondary) }
                         }
                     }
-                    .disabled(!draft.memberIDs.contains(agent.id)
-                        && draft.memberIDs.count >= GroupDraft.memberRange.upperBound)
+                    .disabled(!draft.includes(agent.id) && draft.isFull)
                 }
             } header: {
                 Text("Members")
             } footer: {
                 Text("Choose two to six bots. A bot added later gets a summary of the conversation so far.")
             }
+            if draft.groupID != nil {
+                Section {
+                    Button("Delete Group…", role: .destructive) { confirmingDelete = true }
+                }
+            }
             SheetError()
         }
         .formStyle(.grouped)
         .frame(width: 420, height: 480)
+        .confirmsGroupDeletion(name: draft.name, isPresented: $confirmingDelete) {
+            guard let id = draft.groupID else { return }
+            model.groupDraft = nil
+            model.deleteGroup(id)
+            dismiss()
+        }
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel") {

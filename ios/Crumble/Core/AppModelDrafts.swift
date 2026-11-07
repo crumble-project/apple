@@ -6,4 +6,6 @@ struct SkillDraft: Identifiable, Sendable {
   var agentID: String?
   var name = ""
   var instructions = ""
+  /// The bots that use a shared skill.
+  var usedBy: Set<String> = []
 }

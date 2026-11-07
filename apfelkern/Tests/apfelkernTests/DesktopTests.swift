@@ -5,7 +5,9 @@ import Testing
 @testable import apfelkern
 
 private let agentJSON = #"""
-  {"id":"bot","name":"Desk","avatar":{"definition":{"version":1,"id":"bot","name":"Bot","body":{"path":"M0 0"},"eyes":{"x":0,"y":0,"spacing":1,"scale":1}},"color":"#000000","eyeColor":"#ffffff"},"description":"","instructions":"","provider":"openai",
+  {"id":"bot","name":"Desk",
+   "avatar":{"definition":{"version":1,"id":"bot","name":"Bot","body":{"path":"M0 0"},"eyes":{"x":0,"y":0,"spacing":1,"scale":1}},"color":"#000000","eyeColor":"#ffffff"},
+   "description":"","instructions":"","provider":"openai",
    "model":"gpt-4.1","enabled":true,"tools":["desktop"],"skills":[],"mcpServers":[],"delegates":[],
    "desktopModel":{"provider":"opencode-go","model":"gpt-6-luna"},"createdAt":"now","updatedAt":"now"}
   """#
@@ -118,6 +120,25 @@ private let controlJSON = #"{"holder":"owner","changes":3,"updatedAt":"2026-10-2
     #expect(link.url.path == "/prefix/desktop-viewer/abc_-1")
     #expect(link.url.scheme == "https")
     #expect(link.expiresAt == "soon")
+  }
+}
+
+@Test func aPassiveViewerLinkAsksTheServerNotToWakeTheMachine() async throws {
+  try await withClient(handler: { request in
+    #expect(request.url?.query == "passive=true")
+    return StubResponse(status: 201, body: Data(#"{"path":"/desktop-viewer/p","expiresAt":"soon"}"#.utf8))
+  }) { client in
+    _ = try await client.desktopViewer("bot", passive: true)
+  }
+}
+
+@Test func desktopStatusSaysWhetherTheMachineRuns() async throws {
+  try await withClient(handler: { request in
+    #expect(request.url?.path == "/prefix/v1/agents/bot/desktop/status")
+    return StubResponse(body: Data(#"{"running":true}"#.utf8))
+  }) { client in
+    let running = try await client.desktopRunning("bot")
+    #expect(running)
   }
 }
 

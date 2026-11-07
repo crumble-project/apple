@@ -42,29 +42,6 @@ extension APIClient {
     }
   }
 
-  public func sharedSkills() async throws -> [SharedSkill] {
-    try await invoke { try await $0.listSkills(.init()).ok.body.json.map(SharedSkill.init(wire:)) }
-  }
-
-  public func createSharedSkill(name: String, instructions: String) async throws -> SharedSkill {
-    try await invoke {
-      try SharedSkill(wire: await $0.createSkill(.init(
-        body: .json(.init(instructions: instructions, name: name)))).created.body.json)
-    }
-  }
-
-  public func updateSharedSkill(_ id: String, name: String, instructions: String) async throws -> SharedSkill {
-    try await invoke {
-      SharedSkill(wire: try requestModel(required(try await $0.updateSkill(.init(
-        path: .init(id: id), body: .json(.init(instructions: instructions, name: name)))).ok.body.json))
-        as Components.Schemas.Skill)
-    }
-  }
-
-  public func deleteSharedSkill(_ id: String) async throws {
-    try await invoke { _ = try await $0.deleteSkill(.init(path: .init(id: id))).noContent }
-  }
-
   public func schedules() async throws -> [Schedule] {
     try await invoke { try await $0.listSchedules(.init()).ok.body.json.map(Schedule.init(wire:)) }
   }
@@ -104,5 +81,12 @@ extension APIClient {
 
   public func executions() async throws -> [Execution] {
     try await invoke { try await $0.listExecutions(.init()).ok.body.json.map(Execution.init(wire:)) }
+  }
+
+  public func scriptRuns(_ scheduleID: String, limit: Int = 20) async throws -> [ScriptRun] {
+    try await invoke {
+      try await $0.listScriptRuns(.init(path: .init(id: scheduleID), query: .init(limit: limit)))
+        .ok.body.json.map(ScriptRun.init(wire:))
+    }
   }
 }

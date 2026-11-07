@@ -13,12 +13,13 @@ public func insertingNewline(into text: String, replacing range: Range<String.In
 }
 
 public func messageLabel(_ message: Message) -> String {
-  if message.role == "assistant" { return "Agent" }
+  if message.role == "assistant" { return message.origin?.name ?? "Agent" }
   if message.role != "user" { return "Tool result" }
-  if message.origin?.kind == "task" { return "Task · " + (message.origin?.name ?? "") }
+  if message.origin?.kind == "task" { return "Automation · " + (message.origin?.name ?? "") }
   if message.origin?.kind == "bot" { return "From " + (message.origin?.name ?? "") }
   if message.origin?.kind == "coding" { return "Coding job · " + (message.origin?.name ?? "") }
   if message.origin?.kind == "desktop" { return "Desktop job · " + (message.origin?.name ?? "") }
+  if message.origin?.kind == "credential" { return "Credential · " + (message.origin?.name ?? "") }
   return "You"
 }
 

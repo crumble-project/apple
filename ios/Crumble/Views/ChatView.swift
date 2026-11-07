@@ -9,7 +9,7 @@ import UniformTypeIdentifiers
 enum ChatRow: Identifiable {
   case older
   case time(String, String)
-  case message(Message)
+  case message(Message, reactions: [String])
   case partial(String)
   case thinking
   case failure(String)
@@ -18,7 +18,7 @@ enum ChatRow: Identifiable {
     switch self {
     case .older: "older"
     case .time(let id, _): "time:" + id
-    case .message(let message): message.id
+    case .message(let message, _): message.id
     case .partial: "partial"
     case .thinking: "thinking"
     case .failure: "error"
@@ -28,14 +28,17 @@ enum ChatRow: Identifiable {
   static func rows(messages: [Message], snapshot: ChatSnapshot?, hasMore: Bool) -> [ChatRow] {
     var rows: [ChatRow] = hasMore ? [.older] : []
     var last: Int64 = 0
-    for message in messages where shownInChat(message) {
+    let reactions = Reaction.byMessage(messages)
+    let sources = SourceCitations.byReply(messages)
+    for var message in messages where shownInChat(message) {
       if let timestamp = message.timestamp, timestamp > 0 {
         if timestamp - last > 30 * 60 * 1000 {
           rows.append(.time(message.id, timeLabel(Date(timeIntervalSince1970: Double(timestamp) / 1000))))
         }
         last = timestamp
       }
-      rows.append(.message(message))
+      message.sources = sources[message.id]
+      rows.append(.message(message, reactions: reactions[message.id] ?? []))
     }
     if let snapshot {
       // Live generation text is intentionally withheld until the completed assistant
@@ -45,79 +48,106 @@ enum ChatRow: Identifiable {
     }
     return rows
   }
+}
 
-  /// Keeps the conversation itself: owner and agent text and context events, not thinking,
-  /// tool calls, or tool results.
-  static func shownInChat(_ message: Message) -> Bool {
-    switch message.role {
-    case "user":
-      return !message.text.isEmpty || !(message.attachments ?? []).isEmpty
-    case "event":
-      return !message.text.isEmpty
-    case "assistant":
-      guard case .array(let blocks)? = message.blocks else {
-        return !contentText(message.blocks).isEmpty
-      }
-      return blocks.contains {
-        $0["type"]?.stringValue == "text"
-          && !($0["text"]?.stringValue ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-            .isEmpty
-      }
-    default:
-      return false
-    }
+extension ChatRow {
+  /// Who a bubble is from, so messages in a row from one sender read as a run.
+  var bubbleSender: String? {
+    guard case .message(let message, _) = self else { return nil }
+    if message.role == "assistant" { return "bot" }
+    return message.role == "user" && noticeTitle(message) == nil ? "owner" : nil
   }
 }
 
 struct ChatView: View {
   @Environment(AppModel.self) private var model
+  @Environment(\.horizontalSizeClass) private var sizeClass
+  @State private var showsDetails = false
+  @State private var afterDetails: (() -> Void)?
   let agent: Agent
 
   var body: some View {
     let rows = ChatRow.rows(
       messages: model.messages, snapshot: model.snapshot, hasMore: model.hasMore)
+    let places = BubblePlace.places(rows, sender: \.bubbleSender)
     ScrollView {
-      LazyVStack(spacing: 10) {
-        ForEach(rows) { row in
-          ChatRowView(agent: agent, row: row)
+      LazyVStack(spacing: 0) {
+        ForEach(Array(zip(rows, places)), id: \.0.id) { row, place in
+          ChatRowView(agent: agent, row: row, place: place).padding(.top, place.gap)
         }
       }
-      .padding(.horizontal, 20)
-      .padding(.vertical, 16)
+      .padding(.horizontal, 12)
+      .padding(.vertical, 12)
     }
     .defaultScrollAnchor(.bottom)
     .defaultScrollAnchor(.bottom, for: .sizeChanges)
+    .jumpToLatest()
+    .keepsContentSwipe()
     .overlay {
       if rows.isEmpty { EmptyChatView(agent: agent) }
     }
+    .task(id: model.jobPollDelay) { await model.watchJobs() }
+    .task(id: model.heldActionBoard.needsPolling) { await model.watchHeldActions() }
+    .task(id: model.botRequestBoard.needsPolling) { await model.watchBotRequests() }
+    .task(id: model.botSecretBoard.needsPolling) { await model.watchBotSecrets() }
     .safeAreaInset(edge: .bottom) {
-      if model.snapshot != nil { Composer(agent: agent) }
+      if model.snapshot != nil { Composer(target: .chat(agent, model: model)) }
     }
     .navigationTitle(agent.name)
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {
-      ToolbarItem(placement: .principal) {
-        HStack(spacing: 8) {
-          BotAvatarView(agent: agent, size: 28, state: model.botState(agent), live: true)
-          Button {
-            model.openEditor()
-          } label: {
-            VStack(alignment: .leading, spacing: 2) {
-              Text(agent.name).font(.headline).lineLimit(1)
-              if !subtitle.isEmpty {
-                Text(subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(1)
-              }
+      ToolbarItem(placement: .principal) { profileButton }
+      .sharedBackgroundVisibility(.hidden)
+      if sizeClass != .compact {
+        if agent.tools?.contains(DesktopJob.toolName) == true {
+          ToolbarItem(placement: .primaryAction) {
+            Button("Bot Desktop", systemImage: "display") {
+              model.botDesktop = BotDesktopTarget(id: agent.id)
             }
-            .frame(minHeight: 44, alignment: .leading)
-            .contentShape(Rectangle())
           }
-          .buttonStyle(.plain)
-          .accessibilityLabel("Open \(agent.name) profile")
-          .accessibilityValue(subtitle)
+        }
+        ToolbarItem(placement: .primaryAction) {
+          Button("Details", systemImage: "sidebar.trailing") { showsDetails.toggle() }
+            .help(showsDetails ? "Hide Details" : "Show Details")
         }
       }
-      .sharedBackgroundVisibility(.hidden)
     }
+    .inspector(isPresented: $showsDetails) {
+      DetailsPanel(agent: agent, leave: leaveDetails)
+        .inspectorColumnWidth(min: 260, ideal: 300, max: 400)
+        .onDisappear {
+          afterDetails?()
+          afterDetails = nil
+        }
+    }
+  }
+
+  /// The bot's portrait over its name, as Messages heads a conversation. Tapping opens its details.
+  private var profileButton: some View {
+    Button {
+      showsDetails = true
+    } label: {
+      VStack(spacing: 1) {
+        BotAvatarView(agent: agent, size: 36, state: model.botState(agent), live: true)
+        HStack(spacing: 2) {
+          Text(agent.name).font(.caption2.weight(.medium)).lineLimit(1)
+          Image(systemName: "chevron.right")
+            .font(.system(size: 7, weight: .bold))
+            .foregroundStyle(.tertiary)
+        }
+      }
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .accessibilityLabel("Open \(agent.name) details")
+    .accessibilityValue(subtitle)
+  }
+
+  /// On a phone the panel is a sheet, and the app's sheets can't open over it until it has gone.
+  private func leaveDetails(_ action: @escaping () -> Void) {
+    guard sizeClass == .compact else { return action() }
+    afterDetails = action
+    showsDetails = false
   }
 
   private var subtitle: String {
@@ -155,6 +185,7 @@ struct ChatRowView: View {
   @Environment(AppModel.self) private var model
   let agent: Agent
   let row: ChatRow
+  var place = BubblePlace()
 
   var body: some View {
     switch row {
@@ -165,32 +196,62 @@ struct ChatRowView: View {
         Button("Load Earlier Messages") { model.loadOlder() }
       }
     case .time(_, let label):
-      Text(label).font(.caption).foregroundStyle(.secondary).padding(.top, 6)
-    case .message(let message):
-      MessageView(message: message)
+      ChatTimeLabel(text: label)
+    case .message(let message, let reactions):
+      MessageView(message: message, reactions: reactions, place: place)
     case .partial(let text):
       HStack {
         MarkdownText(text: text).bubble(owner: false)
-        Spacer(minLength: 60)
+        Spacer(minLength: 44)
       }
     case .thinking:
       HStack(spacing: 8) {
-        BotAvatarView(agent: agent, size: 24, state: .working, live: true)
-        Text("\(agent.name) is working…").font(.callout).foregroundStyle(.secondary)
+        TypingBubble()
+        Text(Working(snapshot: model.snapshot, messages: model.messages).label + "…")
+          .font(.caption)
+          .foregroundStyle(.secondary)
         Spacer()
       }
     case .failure(let error):
-      HStack {
-        VStack(alignment: .leading, spacing: 8) {
-          Text("The agent couldn’t finish").font(.headline)
-          Text(error).font(.callout).foregroundStyle(.red).textSelection(.enabled)
-          Button("Provider Settings…") { model.route = .integrations }
-        }
-        .padding(14)
-        .background(.red.opacity(0.08), in: .rect(cornerRadius: 12))
-        .frame(maxWidth: 560, alignment: .leading)
-        Spacer(minLength: 0)
-      }
+      ChatFailureRow(title: "The agent couldn’t finish", error: error) { model.openProviderSettings() }
     }
+  }
+}
+
+/// The centered time above a stretch of conversation.
+struct ChatTimeLabel: View {
+  let text: String
+
+  var body: some View {
+    Text(text)
+      .font(.caption.weight(.medium))
+      .foregroundStyle(.secondary)
+      .frame(maxWidth: .infinity)
+      .padding(.top, 8)
+  }
+}
+
+/// A failed turn, as quiet as Messages' "Not Delivered".
+struct ChatFailureRow: View {
+  let title: String
+  let error: String
+  var openSettings: (() -> Void)?
+
+  var body: some View {
+    HStack(alignment: .firstTextBaseline, spacing: 6) {
+      Image(systemName: "exclamationmark.circle.fill")
+        .foregroundStyle(.red)
+        .accessibilityHidden(true)
+      VStack(alignment: .leading, spacing: 2) {
+        Text(title).fontWeight(.medium)
+        Text(error).foregroundStyle(.secondary).textSelection(.enabled)
+        if let openSettings {
+          Button("Provider Settings…", action: openSettings).buttonStyle(.borderless)
+        }
+      }
+      Spacer(minLength: 44)
+    }
+    .font(.footnote)
+    .padding(.leading, BubbleShape.tailWidth + 6)
   }
 }

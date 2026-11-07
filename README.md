@@ -11,7 +11,7 @@ flowchart LR
 
 | Directory | Contents |
 | --- | --- |
-| [`apfelkern`](apfelkern/README.md) | Shared Swift package: generated OpenAPI/SSE client, domain models, delivery state, and `BotAvatar`. |
+| [`apfelkern`](apfelkern/README.md) | Shared Swift package: generated OpenAPI/SSE client, domain models, delivery state, and `BotAvatar` (avatars on Open Bot Avatar). |
 | [`macos`](macos/README.md) | Crumble for macOS (SwiftUI package). |
 | [`ios`](ios/README.md) | Crumble for iOS and iPadOS (Xcode project). |
 

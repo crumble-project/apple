@@ -1,7 +1,7 @@
 #!/bin/sh
 # Builds Crumble Dev.app into a temporary folder and checks what local
-# notifications need from the bundle: its bundle ID and a valid signature,
-# without APNs entitlements or push metadata. It does not launch the app.
+# notifications need from the bundle: its bundle ID, notice sounds, and a valid
+# signature, without APNs entitlements or push metadata. It does not launch the app.
 set -eu
 cd "$(dirname "$0")/.."
 output="$(mktemp -d)"
@@ -18,6 +18,9 @@ fail() {
 [ -x "$app/Contents/MacOS/Crumble" ] || fail "missing executable"
 [ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$plist")" = "ng.crumbli.mac.dev" ] ||
 	fail "notifications need the ng.crumbli.mac.dev bundle ID"
+for sound in notice-approval notice-credential; do
+	[ -f "$app/Contents/Resources/$sound.wav" ] || fail "missing notice sound $sound"
+done
 codesign --verify --strict "$app" || fail "invalid signature"
 if codesign --display --entitlements :- "$app" 2>/dev/null | grep -q "aps-environment"; then
 	fail "unexpected APNs entitlement"

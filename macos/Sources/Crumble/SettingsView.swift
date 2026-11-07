@@ -1,5 +1,6 @@
 import AppKit
 import apfelkern
+import BotAvatar
 import SwiftUI
 
 struct ConnectionSettingsView: View {
@@ -8,14 +9,28 @@ struct ConnectionSettingsView: View {
     var body: some View {
         Form {
             SheetError()
+            themeSection
             notificationsSection
             serverSection
-            providerSection
+            if model.isSignedIn {
+                PasskeysSection(board: model.passkeyBoard, client: model.client)
+            }
         }
         .formStyle(.grouped)
         .frame(maxWidth: 620)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .onAppear { model.loadProviders() }
+        .task(id: model.client?.token) { model.loadPasskeys() }
+    }
+
+    private var themeSection: some View {
+        Section {
+            Picker(
+                "Theme",
+                selection: Binding(get: { model.themeBoard.theme }, set: { model.chooseTheme($0) })
+            ) {
+                ForEach(AppTheme.allCases) { Label($0.title, systemImage: $0.symbol).tag($0) }
+            }
+        }
     }
 
     private var notificationsSection: some View {
@@ -35,14 +50,38 @@ struct ConnectionSettingsView: View {
         }
     }
 
-    private var serverSection: some View {
+    @ViewBuilder private var serverSection: some View {
+        if model.isSignedIn {
+            accountSection
+            connectedServerSection
+        } else {
+            signInSection
+        }
+    }
+
+    private var accountSection: some View {
+        let account = model.adminBoard.account
+        return Section("Account") {
+            LabeledContent(
+                account.flatMap { $0.name.isEmpty ? nil : $0.name } ?? "Signed in", value: account?.email ?? "")
+            HStack {
+                Button("Sign Out") { model.signOut() }
+                    .disabled(model.accountBoard.isSigningOut || model.savingConnection)
+                if model.accountBoard.isSigningOut {
+                    ProgressView().controlSize(.small)
+                    Text("Signing out…").foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+
+    private var connectedServerSection: some View {
         @Bindable var model = model
         return Section {
             TextField("Server URL", text: $model.serverURL, prompt: Text("http://127.0.0.1:7337"))
-            SecureField("Server token", text: $model.token, prompt: Text("Required"))
             HStack {
-                Button("Save Connection") { model.saveSettings() }
-                    .disabled(model.savingConnection)
+                Button("Connect") { model.saveSettings() }
+                    .disabled(model.savingConnection || model.accountBoard.isSigningOut)
                 if model.savingConnection {
                     ProgressView().controlSize(.small)
                     Text("Connecting…").foregroundStyle(.secondary)
@@ -51,75 +90,55 @@ struct ConnectionSettingsView: View {
         } header: {
             Text("Server")
         } footer: {
-            Text("The token stays in the macOS Keychain; it is never written to the project.").foregroundStyle(
+            Text("Your session stays in the macOS Keychain; it is never written to the project.").foregroundStyle(
                 .secondary)
         }
     }
 
-    private var providerSection: some View {
+    private var signInSection: some View {
         @Bindable var model = model
-        let configured = model.providers.filter(\.configured).map(\.provider)
-        let status = model.providers.first { $0.provider == model.provider }
-        let busy = model.pendingMutations.contains("provider:\(model.provider)")
-        let offersKey = status.map { $0.authMethods.contains { $0.type == .apiKey } } ?? true
-        let accountMethods = status?.authMethods.filter { $0.type == .oauth } ?? []
+        @Bindable var board = model.accountBoard
+        let signingUp = board.mode == .signUp
         return Section {
-            if model.providers.isEmpty {
-                TextField("Provider", text: $model.provider, prompt: Text("melious"))
-            } else {
-                Picker("Provider", selection: $model.provider) {
-                    ForEach(model.providers, id: \.provider) { Text($0.provider).tag($0.provider) }
+            TextField("Server URL", text: $model.serverURL, prompt: Text("http://127.0.0.1:7337"))
+                .onChange(of: model.serverURL) { board.takeInvite(from: &model.serverURL) }
+            if board.invite != nil {
+                LabeledContent("Invite") {
+                    HStack {
+                        Text("Link added")
+                        Button("Remove") { board.removeInvite() }
+                    }
                 }
             }
-            if let credential = status?.credentialType {
-                LabeledContent("Saved", value: credential == .oauth ? "Account sign-in" : "API key")
+            if signingUp {
+                TextField("Name", text: $board.name, prompt: Text("Required"))
+                    .textContentType(.name)
             }
-            if offersKey {
-                SecureField("API key", text: $model.providerKey, prompt: Text("Paste a key"))
-            }
+            TextField("Email", text: $board.email, prompt: Text("Required"))
+                .textContentType(.username)
+            SecureField("Password", text: $board.password, prompt: Text("Required"))
+                .textContentType(signingUp ? .newPassword : .password)
             HStack {
-                if offersKey { Button("Save Key") { model.saveProviderKey() } }
-                Button(status?.credentialType == .oauth ? "Sign Out" : "Remove Key", role: .destructive) {
-                    model.removeProviderKey()
-                }
-                if busy {
+                Button(signingUp ? "Create Account" : "Sign In") { model.saveSettings() }
+                    .disabled(model.savingConnection)
+                if model.savingConnection {
                     ProgressView().controlSize(.small)
-                    Text("Updating key…").foregroundStyle(.secondary)
+                    Text(signingUp ? "Creating account…" : "Signing in…").foregroundStyle(.secondary)
                 }
+                Spacer()
+                Button(signingUp ? "Already have an account? Sign In" : "Create an Account") { board.switchMode() }
+                    .buttonStyle(.link)
+                    .disabled(model.savingConnection)
             }
-            .disabled(busy)
-            providerLogin(accountMethods)
         } header: {
-            Text("Providers")
+            Text("Server")
         } footer: {
             Text(
-                (configured.isEmpty ? "" : "Configured: " + configured.joined(separator: ", ") + ". ")
-                    + "Keys and account sign-ins are stored encrypted on your Crumble server and shared by its bots."
-            )
-            .foregroundStyle(.secondary)
-        }
-    }
-
-    @ViewBuilder
-    private func providerLogin(_ methods: [ProviderLoginMethod]) -> some View {
-        let provider = model.provider
-        if let login = model.providerLogins[provider] {
-            ProviderLoginView(login: login)
-        } else if !methods.isEmpty {
-            let starting = model.providerLoginRequests.contains(provider)
-            HStack {
-                ForEach(methods, id: \.label) { method in
-                    Button(method.label) { model.startProviderLogin(provider, method: method.type) }
-                }
-                if starting {
-                    ProgressView().controlSize(.small)
-                    Text("Starting sign-in…").foregroundStyle(.secondary)
-                }
-            }
-            .disabled(starting)
-        }
-        if let outcome = model.providerLoginOutcomes[provider] {
-            Text(outcome).foregroundStyle(.red)
+                """
+                To join with an invite link, paste it into Server URL. Your session stays in the macOS Keychain; it is \
+                never written to the project.
+                """
+            ).foregroundStyle(.secondary)
         }
     }
 }

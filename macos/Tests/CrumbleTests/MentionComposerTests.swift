@@ -31,7 +31,7 @@ struct MentionComposerTests {
 
     private func testBot(_ id: String, _ name: String, delegates: [String] = [], tools: [String] = ["delegate"])
         -> Agent {
-        Agent(id: id, name: name, avatar: "bot:" + id, enabled: true, tools: tools, delegates: delegates)
+        Agent(id: id, name: name, enabled: true, tools: tools, delegates: delegates)
     }
 
     @MainActor

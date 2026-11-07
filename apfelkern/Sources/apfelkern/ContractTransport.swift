@@ -60,10 +60,18 @@ struct ContractTransport: ClientTransport {
     guard !nullFields.isEmpty else { return }
     let allowed: Set<String>
     switch operationID {
-    case Operations.UpdateSchedule.id, Operations.CreateSchedule.id: allowed = ["cron", "runAt"]
+    case Operations.UpdateSchedule.id, Operations.CreateSchedule.id:
+      allowed = ["cron", "runAt", "eventSourceId", "command"]
     case Operations.PutPushPresence.id: allowed = ["agentId"]
     case Operations.CreateMcpServer.id: allowed = ["agentId"]
-    case Operations.UpdateAgent.id: allowed = ["desktopModel"]
+    case Operations.UpdateMcpServer.id: allowed = ["oauthClientId", "oauthClientSecret"]
+    case Operations.UpdateAgent.id: allowed = ["desktopModel", "webSearchProvider"]
+    case Operations.SaveAgentLogin.id: allowed = ["fields.one_time_code"]
+    case Operations.UpdateServerSettings.id: allowed = ["codingImage"]
+    case Operations.UpdateMessageGateway.id: allowed = ["defaultBotId", "ownerId"]
+    case Operations.UpdateEventRelay.id: allowed = ["url"]
+    case Operations.UpdateJudgeModel.id: allowed = ["judgeModel"]
+    case Operations.UpdateVisionModel.id: allowed = ["visionModel"]
     default: allowed = []
     }
     guard nullFields.isSubset(of: allowed), let body = request.httpBody,
@@ -71,7 +79,15 @@ struct ContractTransport: ClientTransport {
       throw EncodingError.invalidValue(nullFields, .init(
         codingPath: [], debugDescription: "Invalid nullable request fields"))
     }
-    for field in nullFields { object[field] = .null }
+    for field in nullFields {
+      let path = field.split(separator: ".").map(String.init)
+      if path.count == 2, case .object(var parent)? = object[path[0]] {
+        parent[path[1]] = .null
+        object[path[0]] = .object(parent)
+      } else {
+        object[field] = .null
+      }
+    }
     request.httpBody = try JSONEncoder().encode(JSONValue.object(object))
   }
 

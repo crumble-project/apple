@@ -1,10 +1,13 @@
 import apfelkern
+import BotAvatar
 import SwiftUI
 import UIKit
 
 struct MessageView: View {
   @Environment(AppModel.self) private var model
   let message: Message
+  var reactions: [String] = []
+  var place = BubblePlace()
 
   private var replyable: Bool {
     !(message.entryId ?? "").isEmpty && (message.role == "user" || message.role == "assistant")
@@ -16,20 +19,63 @@ struct MessageView: View {
     case "event":
       if message.kind == "bot-message" {
         BotMessageView(message: message)
+      } else if message.kind == JobQuestionEvent.messageKind, let question = message.jobQuestion {
+        HStack {
+          JobQuestionCard(question: question, text: message.text)
+          Spacer(minLength: 24)
+        }
+      } else if message.kind == HeldActionEvent.messageKind, let held = message.heldAction {
+        HStack {
+          HeldActionCard(held: held, title: message.text)
+          Spacer(minLength: 24)
+        }
+      } else if let failure = JobFailure(message: message) {
+        HStack {
+          JobFailureCard(failure: failure) { model.openJob(failure.kind, failure.name) }
+          Spacer(minLength: 24)
+        }
       } else {
         EventView(message: message)
       }
-    case "user":
-      HStack(spacing: 6) {
-        Spacer(minLength: 60)
-        ViewThatFits(in: .horizontal) {
-          sentMessageContent.fixedSize(horizontal: true, vertical: false)
-          sentMessageContent.frame(maxWidth: 520, alignment: .trailing)
+    case "toolResult":
+      if let component = DisplayComponent(message: message) {
+        DisplayView(component: component).frame(maxWidth: .infinity, alignment: .leading)
+      } else if message.isDesktopScreenshot {
+        HStack {
+          DesktopScreenshotCard(message: message)
+          Spacer(minLength: 24)
         }
-        replyButton
+      } else if let job = Job(message: message) {
+        HStack {
+          JobCard(job: model.job(job))
+          Spacer(minLength: 24)
+        }
+      } else if let request = BotRequest(message: message) {
+        HStack {
+          BotRequestCard(request: request)
+          Spacer(minLength: 24)
+        }
+      } else if let ask = BotSecretAsk(message: message) {
+        HStack {
+          BotSecretRequestCard(ask: ask)
+          Spacer(minLength: 24)
+        }
+      }
+    case "user":
+      if let notice = noticeTitle(message) {
+        EventView(message: message, title: notice)
+      } else {
+        HStack(spacing: 0) {
+          Spacer(minLength: 56)
+          ViewThatFits(in: .horizontal) {
+            sentMessageContent.fixedSize(horizontal: true, vertical: false)
+            sentMessageContent.frame(maxWidth: 520, alignment: .trailing)
+          }
+        }
+        .swipeToReply(enabled: replyable) { model.replyTo = message }
       }
     default:
-      HStack(spacing: 6) {
+      HStack(spacing: 0) {
         ViewThatFits(in: .horizontal) {
           incomingMessageContent.fixedSize(horizontal: true, vertical: false)
           incomingMessageContent
@@ -37,33 +83,31 @@ struct MessageView: View {
             .fixedSize(horizontal: false, vertical: true)
             .layoutPriority(1)
         }
-        replyButton
-        Spacer(minLength: 60)
+        Spacer(minLength: 44)
       }
+      .swipeToReply(enabled: replyable) { model.replyTo = message }
     }
   }
 
   @ViewBuilder private var sentMessageContent: some View {
     VStack(alignment: .trailing, spacing: 4) {
       if !owner {
-        if message.origin?.kind == "bot" {
-          Label(messageLabel(message), systemImage: "person.2.fill")
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 6)
-        } else {
-          Text(messageLabel(message)).font(.caption).foregroundStyle(.secondary).padding(.horizontal, 6)
-        }
+        Text(messageLabel(message)).font(.caption).foregroundStyle(.secondary).padding(.horizontal, 6)
       }
       ReplyQuote(message: message)
       SentAttachments(message: message)
       if !message.text.isEmpty {
         Text(message.text)
           .textSelection(.enabled)
-          .bubble(owner: owner)
+          .bubble(owner: owner, tail: place.endsRun)
           .contextMenu { menu }
+          .overlay(alignment: .topLeading) {
+            if !reactions.isEmpty { ReactionBadge(reactions: reactions).offset(x: -8, y: -14) }
+          }
+          .padding(.top, reactions.isEmpty ? 0 : 14)
       }
       deliveryStatus
+      if let via = message.origin?.via { GatewayOriginLabel(id: via) }
     }
   }
 
@@ -85,22 +129,14 @@ struct MessageView: View {
     }
   }
 
-  @ViewBuilder private var incomingMessageContent: some View {
-    MarkdownText(text: message.text)
-      .textSelection(.enabled)
-      .bubble(owner: false)
-      .contextMenu { menu }
-  }
-
-  @ViewBuilder private var replyButton: some View {
-    if replyable {
-      Button("Reply", systemImage: "arrowshape.turn.up.left") { model.replyTo = message }
-        .labelStyle(.iconOnly)
-        .buttonStyle(.borderless)
-        .foregroundStyle(.secondary)
-        .opacity(1)
-        .help("Reply")
+  private var incomingMessageContent: some View {
+    let reply = SourceCitations.split(message.text, sources: message.sources ?? [])
+    return VStack(alignment: .leading, spacing: 6) {
+      MarkdownText(text: reply.text).textSelection(.enabled)
+      ForEach(reply.chips, id: \.href) { SourceChipLink(chip: $0) }
     }
+    .bubble(owner: false, tail: place.endsRun)
+    .contextMenu { menu }
   }
 
   @ViewBuilder private var menu: some View {
@@ -183,6 +219,7 @@ struct BotMessageView: View {
 struct EventView: View {
   @Environment(AppModel.self) private var model
   let message: Message
+  var title: String?
 
   var body: some View {
     @Bindable var model = model
@@ -193,9 +230,14 @@ struct EventView: View {
       }
     )
     DisclosureGroup(
-      message.kind == "reset" ? "Context reset" : "Earlier messages summarized", isExpanded: open
+      title ?? (message.kind == "reset" ? "Context reset" : "Earlier messages summarized"),
+      isExpanded: open
     ) {
-      Text(message.text).font(.callout).foregroundStyle(.secondary).textSelection(.enabled)
+      MarkdownText(text: message.text)
+        .font(.callout)
+        .foregroundStyle(.secondary)
+        .textSelection(.enabled)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
     .font(.callout)
     .frame(maxWidth: 560)

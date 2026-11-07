@@ -5,13 +5,21 @@ import SwiftUI
 struct IntegrationsPanel: View {
   @Environment(AppModel.self) private var model
   @Environment(\.webAuthenticationSession) private var webAuthenticationSession
+  @State private var query = ""
+  @State private var deleting: MCPServer?
+
+  private var searching: Bool { !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+
+  private func servers(of agentID: String?) -> [MCPServer] {
+    model.mcpServers.filter { $0.agentId == agentID && $0.matches(query) }
+  }
 
   var body: some View {
     Form {
       sharedSection
-      ForEach(model.agents) { agent in
+      ForEach(searching ? model.agents.filter { !servers(of: $0.id).isEmpty } : model.agents) { agent in
         Section {
-          let own = model.mcpServers.filter { $0.agentId == agent.id }
+          let own = servers(of: agent.id)
           if own.isEmpty {
             Text("No MCP servers of its own.").foregroundStyle(.secondary)
           }
@@ -28,13 +36,26 @@ struct IntegrationsPanel: View {
       }
     }
     .formStyle(.grouped)
+    .confirmationDialog(
+      "Delete \(deleting?.name ?? "this server")?",
+      isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
+      titleVisibility: .visible,
+      presenting: deleting
+    ) { server in
+      Button("Delete", role: .destructive) { model.deleteMCP(server.id) }
+      Button("Cancel", role: .cancel) {}
+    } message: { _ in
+      Text("Bots lose its tools and its sign-in is removed. This cannot be undone.")
+    }
+    .searchable(text: $query, placement: .automatic, prompt: "Search MCP servers")
   }
 
   private var sharedSection: some View {
     Section {
-      let shared = model.mcpServers.filter { $0.agentId == nil }
+      let shared = servers(of: nil)
       if shared.isEmpty {
-        Text("No shared MCP servers yet.").foregroundStyle(.secondary)
+        Text(searching ? "No shared MCP servers match your search." : "No shared MCP servers yet.")
+          .foregroundStyle(.secondary)
       }
       ForEach(shared) { server in
         row(server)
@@ -73,7 +94,7 @@ struct IntegrationsPanel: View {
             .disabled(model.signingIn != nil)
           }
           Button("Edit") { model.openMCPForm(server.id) }
-          Button("Delete", role: .destructive) { model.deleteMCP(server.id) }
+          Button("Delete…", role: .destructive) { deleting = server }
         } label: {
           Image(systemName: "ellipsis.circle")
         }

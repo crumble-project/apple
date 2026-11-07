@@ -1,6 +1,7 @@
 import apfelkern
 import AppKit
 import Foundation
+import UniformTypeIdentifiers
 
 extension AppModel {
     // MARK: Agents and chat
@@ -13,6 +14,7 @@ extension AppModel {
                 guard mutationRevision == revision, pendingMutations.isEmpty else { return }
                 self.agents = agents
                 loadCapabilities()
+                loadAccount()
                 loadGroupChats()
                 // An open group chat stays open; the bot list only refreshes.
                 guard selectedGroupID.isEmpty else { return }
@@ -57,10 +59,11 @@ extension AppModel {
         oldestEntryID = ""
         loadingOlder = false
         replyTo = nil
-        jobs = [:]
-        jobActivity = 0
-        jobHistory = nil
-        draft = ""
+        jobBoard.select(id)
+        heldActionBoard.select(id)
+        botRequestBoard.select(id)
+        botSecretBoard.select(id)
+        draft = composerDrafts[id] ?? ""
         attachments = []
         failedDraft = ""
         failedReplyTo = ""
@@ -119,6 +122,9 @@ extension AppModel {
         messages = mergeMessages(messages.filter { $0.deliveryState == .confirmed }, incomingMessages)
         messages.append(contentsOf: local)
         refreshJobsIfChanged()
+        refreshHeldActionsIfChanged()
+        refreshBotRequestsIfChanged()
+        refreshBotSecretsIfChanged()
         var snapshot = incoming
         snapshot.messages = nil
         self.snapshot = snapshot
@@ -203,7 +209,13 @@ extension AppModel {
         }
         let context = NotificationContext(windowOnScreen: mainWindowOnScreen(), route: route)
         guard let client, let note = notification(for: event, in: context) else { return }
+        unread.add(event)
         notifier.post(event, title: note.title, body: note.body, serverURL: client.baseURL)
+    }
+
+    /// The chat on screen counts as read, as the web marks it when its tab shows it.
+    func markChatSeen() {
+        if mainWindowOnScreen() { unread.markSeen(route) }
     }
 
     /// Restarts every server stream after wake or a network change. Chat streams resend a snapshot
@@ -257,6 +269,9 @@ extension AppModel {
                     guard selectionVersion == version else { return }
                     loadingOlder = false
                     messages = mergeMessages(messages, page.messages ?? [])
+                    refreshHeldActionsIfChanged()
+                    refreshBotRequestsIfChanged()
+                    refreshBotSecretsIfChanged()
                     hasMore = page.hasMore ?? false
                     oldestEntryID = page.oldestEntryId ?? ""
                 }
@@ -281,6 +296,43 @@ extension AppModel {
         }
     }
 
+    /// Attaches the clipboard's files and images, leaving a clipboard of text for the field. True when it attached.
+    @discardableResult
+    func pasteAttachments(from pasteboard: NSPasteboard) -> Bool {
+        let identifiers = (pasteboard.pasteboardItems ?? []).flatMap { $0.types.map(\.rawValue) }
+        guard
+            PasteContent.attachesFiles(
+                identifiers: identifiers, hasText: pasteboard.string(forType: .string) != nil)
+        else { return false }
+        let files = pasteboard.readObjects(
+            forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
+        if !files.isEmpty {
+            addAttachments(files)
+            return true
+        }
+        for item in pasteboard.pasteboardItems ?? [] {
+            guard let type = PasteContent.fileType(in: item.types.map(\.rawValue)),
+                let data = item.data(forType: NSPasteboard.PasteboardType(type.identifier))
+            else { continue }
+            addPastedFile(data, type: type)
+        }
+        return true
+    }
+
+    private func addPastedFile(_ data: Data, type: UTType) {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        do {
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            let name = type.conforms(to: .image) ? "Pasted image" : "Pasted file"
+            let url = folder.appendingPathComponent(name, conformingTo: type)
+            try data.write(to: url)
+            addAttachments([url])
+        } catch {
+            errorText = error.localizedDescription
+        }
+    }
+
     /// Drops client-only optimistic rows and payloads when switching server connections.
     /// The next chat snapshot becomes the sole source of truth.
     func resetPendingMessages() {
@@ -302,7 +354,7 @@ extension AppModel {
 
     func attachmentImage(message: Message, index: Int) -> NSImage? {
         if let entryID = message.entryId { return attachmentImage(entryID: entryID, index: index) }
-        let key = selectedGroupID.isEmpty ? selectedAgentID : Self.groupKey(selectedGroupID)
+        let key = selectedGroupID.isEmpty ? selectedAgentID : GroupChat.deliveryKey(selectedGroupID)
         guard let requestID = message.requestId,
             let data = delivery.imageData(botID: key, requestID: requestID, index: index)
         else { return nil }

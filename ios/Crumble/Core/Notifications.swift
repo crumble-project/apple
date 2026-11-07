@@ -1,4 +1,5 @@
 import apfelkern
+import AudioToolbox
 import Foundation
 import UIKit
 import UserNotifications
@@ -14,8 +15,12 @@ func notification(for event: ActivityEvent, in context: NotificationContext) -> 
   switch event.type {
   case "reply":
     guard event.origin != "bot" else { return nil }
-    if context.appActive, context.route == .agent(event.agentId) { return nil }
     let text = preview(event.preview ?? "")
+    if let group = event.groupId {
+      if context.appActive, context.route == .group(group) { return nil }
+      return (event.groupTitle, text.isEmpty ? "Replied" : text)
+    }
+    if context.appActive, context.route == .agent(event.agentId) { return nil }
     return (event.agentName, text.isEmpty ? "Replied" : text)
   default:
     return nil
@@ -73,7 +78,7 @@ struct NotificationPayload: Sendable {
 
 /// Retains a cold-launch destination until both server identity and agents are available.
 struct NotificationTapRouter {
-  enum Resolution: Equatable { case open(String), differentServer }
+  enum Resolution: Equatable { case open(String), openGroup(String), openDesktop(String), differentServer }
   private var pending: NotificationPayload?
 
   mutating func queue(_ payload: NotificationPayload) {
@@ -90,9 +95,16 @@ struct NotificationTapRouter {
       pending = nil
       return .differentServer
     }
+    // A group outlives the bot that answered in it, so wait only for the bot list to load.
+    if let group = event.groupId {
+      guard !agentIDs.isEmpty else { return nil }
+      pending = nil
+      return .openGroup(group)
+    }
     guard agentIDs.contains(event.agentId) else { return nil }
     pending = nil
-    return .open(event.agentId)
+    // A desktop job's report usually needs the owner on the bot desktop.
+    return event.origin == DesktopJob.originKind ? .openDesktop(event.agentId) : .open(event.agentId)
   }
 }
 
@@ -126,6 +138,13 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
     updatePresence()
   }
 
+  /// Unregisters this device while the session still works, before it's signed out.
+  func releaseConnection() async {
+    guard started else { return }
+    push.setConnection(nil)
+    await push.waitForSync()
+  }
+
   func setEnabled(_ enabled: Bool) {
     push.setEnabled(enabled)
     if enabled { refreshAuthorization(requestIfNeeded: true) }
@@ -135,12 +154,14 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
     guard started else { return }
     Task {
       var settings = await center.notificationSettings()
-      if push.enabled, requestIfNeeded, settings.authorizationStatus == .notDetermined {
-        _ = try? await center.requestAuthorization(options: [.alert, .sound])
+      // Also for installs that allowed notifications before the app used badges.
+      if push.enabled, requestIfNeeded, settings.authorizationStatus != .denied, settings.badgeSetting != .enabled {
+        _ = try? await center.requestAuthorization(options: [.alert, .sound, .badge])
         settings = await center.notificationSettings()
       }
       let authorized = [.authorized, .provisional, .ephemeral].contains(settings.authorizationStatus)
       push.setAuthorized(authorized)
+      push.setBadgesOff(authorized && settings.badgeSetting != .enabled)
       if authorized, push.enabled { UIApplication.shared.registerForRemoteNotifications() }
     }
   }
@@ -175,6 +196,10 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
     switch tapRouter.resolve(
       serverID: push.serverID, serverURL: model.client?.baseURL, agentIDs: model.agents.map(\.id)) {
     case .open(let agentID): model.selectAgent(agentID)
+    case .openGroup(let groupID): model.openNotificationGroup(groupID)
+    case .openDesktop(let agentID):
+      model.selectAgent(agentID)
+      model.botDesktop = BotDesktopTarget(id: agentID)
     case .differentServer: model.showNotice("This notification belongs to a different server.")
     case nil: break
     }
@@ -192,16 +217,29 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
     let content = UNMutableNotificationContent()
     content.title = title
     content.body = body
-    content.sound = .default
-    var info: [String: Any] = [
+    content.sound = NoticeKind(event).soundFile.map { UNNotificationSound(named: .init($0)) } ?? .default
+    content.userInfo = Self.localPayload(event, serverURL: model?.client?.baseURL ?? "")
+    let identifier = event.groupId.map { "reply-group-\($0)" } ?? "reply-\(event.agentId)"
+    center.add(UNNotificationRequest(identifier: identifier, content: content, trigger: nil))
+  }
+
+  /// Carries every field `NotificationPayload` decodes, so a local notification shows and routes like a push.
+  nonisolated static func localPayload(_ event: ActivityEvent, serverURL: String) -> [AnyHashable: Any] {
+    var info: [AnyHashable: Any] = [
       "type": event.type, "agentId": event.agentId, "agentName": event.agentName,
-      "crumbleLocal": true, "localServerURL": model?.client?.baseURL ?? ""
+      "crumbleLocal": true, "localServerURL": serverURL
     ]
     info["eventId"] = event.eventId
+    info["entryId"] = event.entryId
     info["serverId"] = event.serverId
+    info["createdAt"] = event.createdAt
     info["origin"] = event.origin
-    content.userInfo = info
-    center.add(UNNotificationRequest(identifier: "reply-\(event.agentId)", content: content, trigger: nil))
+    info["preview"] = event.preview
+    info["groupId"] = event.groupId
+    info["groupName"] = event.groupName
+    info["jobName"] = event.jobName
+    info["waitingFor"] = event.waitingFor
+    return info
   }
 
   private func presentation(for payload: NotificationPayload) -> UNNotificationPresentationOptions {
@@ -211,7 +249,19 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
     if !payload.local, !remember(event) { return [] }
     guard notification(for: event, in: NotificationContext(appActive: true, route: model?.route)) != nil
     else { return [] }
+    // A push names the system sound and only the server can change that, so while the app is open it plays the cue.
+    if !payload.local, let file = NoticeKind(event).soundFile {
+      playNoticeSound(file)
+      return [.banner]
+    }
     return [.banner, .sound]
+  }
+
+  private func playNoticeSound(_ file: String) {
+    guard let url = Bundle.main.url(forResource: file, withExtension: nil) else { return }
+    var sound: SystemSoundID = 0
+    guard AudioServicesCreateSystemSoundID(url as CFURL, &sound) == noErr else { return }
+    AudioServicesPlaySystemSoundWithCompletion(sound) { AudioServicesDisposeSystemSoundID(sound) }
   }
 
   nonisolated func userNotificationCenter(

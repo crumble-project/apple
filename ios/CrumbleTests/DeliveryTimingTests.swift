@@ -107,6 +107,19 @@ struct DeliveryTimingTests {
     #expect(model.errorText.isEmpty)
   }
 
+  @MainActor @Test func unsentTextStaysWithItsChat() async throws {
+    let (model, _) = initializedModel()
+    defer { model.cancelStream() }
+    model.draft = "for the first bot"
+    model.selectAgent("a2")
+    #expect(model.draft.isEmpty)
+    model.draft = "for the second bot"
+    model.selectAgent("a1")
+    #expect(model.draft == "for the first bot")
+    model.selectAgent("a2")
+    #expect(model.draft == "for the second bot")
+  }
+
   @MainActor @Test func replacingConnectionDropsAnOutstandingSend() async throws {
     let (model, oldController) = initializedModel()
     model.draft = "old connection send"

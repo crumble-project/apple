@@ -27,6 +27,8 @@ final class PushController {
   static let shared = PushController()
   private(set) var enabled: Bool
   private(set) var authorized = false
+  /// iOS doesn't ask again once notifications are allowed, so only the owner can turn badges on.
+  private(set) var badgesOff = false
   private var authorizationKnown = false
   private(set) var serverID: String?
   private(set) var remoteDelivery = false
@@ -61,7 +63,7 @@ final class PushController {
 
   init(
     defaults: UserDefaults = .standard, persistCredentials: Bool = true,
-    bundleID: String = Bundle.main.bundleIdentifier ?? "dev.crumble-project.ios",
+    bundleID: String = Bundle.main.bundleIdentifier ?? "ng.crumbli.ios",
     environment: String = Bundle.main.object(forInfoDictionaryKey: "CrumbleAPNSEnvironment") as? String
       ?? "development"
   ) {
@@ -111,6 +113,10 @@ final class PushController {
     authorizationKnown = true
     if !value { remoteDelivery = false }
     changed()
+  }
+
+  func setBadgesOff(_ value: Bool) {
+    badgesOff = value
   }
 
   func receivedToken(_ token: Data) {
@@ -175,6 +181,10 @@ final class PushController {
         // Reuse the current session for testability, without changing the old credentials.
         let api = APIClient(baseURL: old.url, token: old.token, session: client?.session ?? .shared)
         try await api.unregisterPush(old.installationID)
+        cleanup.removeAll { $0 == old }
+        persist()
+      } catch let error as APIError where error.statusCode == 401 {
+        // A session that ended can never unregister, and pending cleanup blocks the next registration.
         cleanup.removeAll { $0 == old }
         persist()
       } catch { /* Keep the old credential in Keychain and retry on the next heartbeat/launch. */ }

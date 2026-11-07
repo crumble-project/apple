@@ -108,10 +108,110 @@ extension APIClientTests {
         #expect(model.jobHistory?.messages.map(\.text) == ["Log in"])
     }
 
+    private static let questionJob =
+        #"{"jobs":[{"name":"fix","conversationId":"c1","status":"idle","#
+        + #""model":{"provider":"p","model":"gpt-6"},"#
+        + #""question":{"id":"q1","text":"Which?","askedAt":1,"options":["a","b"]}}]}"#
+
+    @MainActor private func questionModel(
+        answer: @escaping @Sendable (URLRequest) -> (Int, String)
+    ) async -> AppModel {
+        let model = AppModel(client: StubProtocol.client { request in
+            switch request.url?.path {
+            case "/v1/agents/a1/coding-jobs": (200, Self.questionJob)
+            case "/v1/agents/a1/coding-jobs/fix/answer": answer(request)
+            default: (404, "")
+            }
+        })
+        model.selectedAgentID = "a1"
+        let event = Message(
+            id: "a1:1:0", role: "event", content: .string("Which?"), kind: "job-question",
+            jobQuestion: JobQuestionEvent(id: "q1", kind: "coding", job: "fix"))
+        model.applySnapshot(ChatSnapshot(messages: [event], agentId: "a1"))
+        await waitForJobs { model.jobBoard.waitingQuestion("q1") != nil }
+        return model
+    }
+
+    @Test func aTranscriptPageKeepsTheJobQuestionOfItsEvent() async throws {
+        let client = StubProtocol.client { _ in
+            (200, #"{"messages":[{"id":"m","entryId":"e","role":"event","kind":"job-question","content":"Which?","#
+                + #""jobQuestion":{"id":"q1","kind":"coding","job":"fix"}}],"hasMore":false,"oldestEntryId":null}"#)
+        }
+        let page = try await client.chatHistory("a1", before: "", limit: 50)
+        #expect(page.messages?.first?.jobQuestion == JobQuestionEvent(id: "q1", kind: "coding", job: "fix"))
+    }
+
+    @MainActor @Test func aJobQuestionEventListsTheJobsQuestionAndModel() async {
+        let model = await questionModel { _ in (204, "") }
+        #expect(model.jobs["coding/fix"]?.question?.options == ["a", "b"])
+        #expect(model.jobs["coding/fix"]?.model == "gpt-6")
+        #expect(model.jobPollDelay == .seconds(5))
+    }
+
+    @MainActor @Test func answeringShowsPendingThenRetiresTheQuestion() async throws {
+        nonisolated(unsafe) var sent: [String: String]?
+        let model = await questionModel { request in
+            sent = try? JSONSerialization.jsonObject(with: request.httpBody ?? Data()) as? [String: String]
+            return (204, "")
+        }
+        let question = try #require(model.jobBoard.waitingQuestion("q1"))
+        model.answerJobQuestion(question, job: "fix", reply: "a")
+        #expect(model.jobBoard.answers["q1"]?.sent == "a")
+        // A second tap while the first is on its way sends nothing.
+        model.answerJobQuestion(question, job: "fix", reply: "b")
+        await waitForJobs { model.jobBoard.answers["q1"] == nil }
+        #expect(sent == ["questionId": "q1", "text": "a"])
+        #expect(model.jobBoard.waitingQuestion("q1") == nil)
+        // The stub still lists the question, as a listing already in flight would.
+        await waitForJobs { model.jobBoard.waitingQuestion("q1") != nil }
+        #expect(model.jobBoard.waitingQuestion("q1") == nil)
+    }
+
+    @MainActor @Test func aFailedAnswerKeepsWhatTheOwnerWrote() async throws {
+        let model = await questionModel { _ in (500, #"{"error":"busy"}"#) }
+        let question = try #require(model.jobBoard.waitingQuestion("q1"))
+        model.jobBoard.answers["q1", default: JobAnswer()].text = "use Postgres"
+        model.answerJobQuestion(question, job: "fix", reply: "use Postgres")
+        await waitForJobs { model.jobBoard.answers["q1"]?.error.isEmpty == false }
+        #expect(model.jobBoard.answers["q1"]?.text == "use Postgres")
+        #expect(model.jobBoard.answers["q1"]?.sending == false)
+        #expect(model.jobBoard.waitingQuestion("q1") != nil)
+    }
+
+    @MainActor @Test func anAnswerThatReturnsAfterLeavingTheBotIsDropped() async throws {
+        let model = await questionModel { _ in (204, "") }
+        let question = try #require(model.jobBoard.waitingQuestion("q1"))
+        model.answerJobQuestion(question, job: "fix", reply: "a")
+        model.jobBoard.select("a2")
+        #expect(model.jobBoard.answers.isEmpty)
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(model.jobs.isEmpty)
+        #expect(model.jobBoard.answers.isEmpty)
+    }
+
+    @MainActor @Test func aJobTranscriptReadsEveryPageOldestFirst() async {
+        let model = AppModel(client: StubProtocol.client { request in
+            guard request.url?.path == "/v1/agents/a1/coding-jobs/fix/history" else { return (404, "") }
+            return request.url?.query?.contains("before=") == true
+                ? (200, #"{"messages":[{"id":"1","entryId":"e1","role":"user","content":"First"}],"hasMore":false,"#
+                    + #""oldestEntryId":null}"#)
+                : (200, #"{"messages":[{"id":"2","entryId":"e2","role":"user","content":"Second"}],"hasMore":true,"#
+                    + #""oldestEntryId":"e2"}"#)
+        })
+        model.selectedAgentID = "a1"
+        model.openJob(.coding, "fix")
+        model.downloadJobTranscript()
+        await waitForJobs { model.jobHistory?.transcript != nil }
+        let markdown = model.jobHistory?.transcript?.markdown ?? ""
+        #expect(markdown.contains("First") && markdown.contains("Second"))
+        #expect(markdown.range(of: "First")?.lowerBound ?? markdown.endIndex
+            < markdown.range(of: "Second")?.lowerBound ?? markdown.startIndex)
+    }
+
     @Test func desktopJobReportsStayBehindTheirCard() {
         let report = Message(
             id: "a1:2:0", role: "user", content: .string("Please log in"),
             origin: MessageOrigin(kind: "desktop", name: "github"))
-        #expect(!ChatRow.shownInChat(report))
+        #expect(!shownInChat(report))
     }
 }

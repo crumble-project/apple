@@ -18,15 +18,18 @@ struct CrumbleApp: App {
         Window("Crumble", id: "main") {
             ContentView()
                 .environment(model)
-                .environment(\.botFinish, .dither)
+                .environment(\.diagramServer, URL(string: model.serverURL))
                 .frame(minWidth: 860, minHeight: 560)
                 .task { model.start() }
+                .modifier(FollowsTheme(board: model.themeBoard))
         }
         .defaultSize(width: 1280, height: 820)
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("New Agent") { model.createAgent() }.keyboardShortcut("n")
                 Button("New Group Chat") { model.createGroup() }.keyboardShortcut("n", modifiers: [.command, .shift])
+                Divider()
+                CommandPaletteButton(model: model).keyboardShortcut("k")
             }
             CommandGroup(replacing: .appSettings) { SettingsButton().keyboardShortcut(",") }
         }
@@ -34,7 +37,7 @@ struct CrumbleApp: App {
         // A plain window rather than a Settings scene: those lay their toolbar out as a row of tabs
         // under the title, which leaves a split view with an empty band across the top.
         Window("Settings", id: SettingsButton.windowID) {
-            SettingsView().environment(model).environment(\.botFinish, .dither)
+            SettingsView().environment(model)
         }
         .windowResizability(.contentMinSize)
         .defaultSize(width: 800, height: 680)
@@ -62,12 +65,24 @@ struct ContentView: View {
                 .overlay(alignment: .top) { ErrorBanner() }
                 .overlay(alignment: .bottom) { NoticeToast() }
         }
+        .overlay {
+            if model.commandPaletteOpen { CommandPaletteView() }
+        }
         .onAppear {
             model.notifier.openBotDesktop = { openWindow(id: BotDesktopView.windowID, value: $0) }
             model.notifier.openMainWindow = { openWindow(id: "main") }
         }
+        .onChange(of: model.route) { model.markChatSeen() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            model.markChatSeen()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didChangeOcclusionStateNotification)) { _ in
+            model.markChatSeen()
+        }
         .sheet(item: $model.agentDraft) { AgentEditorView(draft: sheetBinding($model.agentDraft, for: $0)) }
-        .sheet(item: $model.jobHistory) { JobSheet(job: $0) }
+        .botSecretSheets(active: model.agentDraft == nil && !model.settingsShowsBotSecrets)
+        .automationSheet(active: model.agentDraft == nil && !model.settingsShowsAutomations)
+        .sheet(item: $model.jobSheet) { JobSheet(job: $0) }
         .sheet(item: $model.groupDraft) { GroupEditorView(draft: sheetBinding($model.groupDraft, for: $0)) }
     }
 
@@ -80,6 +95,13 @@ struct ContentView: View {
             WelcomeView()
         }
     }
+}
+
+/// For credentials. The concealed type asks clipboard managers not to keep the text in their history.
+func copyConcealed(_ text: String) {
+    NSPasteboard.general.clearContents()
+    NSPasteboard.general.setString(text, forType: .string)
+    NSPasteboard.general.setString("", forType: .init("org.nspasteboard.ConcealedType"))
 }
 
 /// Binds a sheet to the draft it edits. A closing sheet still redraws after Cancel or Save clears
@@ -123,6 +145,12 @@ struct SidebarView: View {
                     GroupRow(group: group)
                         .tag(Route.group(group.id))
                         .disabled(model.pendingMutations.contains("group:\(group.id)") || group.id.hasPrefix("local:"))
+                }
+                if model.groupChats.isEmpty {
+                    Text(model.agents.count < GroupDraft.memberRange.lowerBound
+                        ? "Create two bots to start a group chat" : "No group chats yet")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
                 }
             } header: {
                 HStack {
@@ -176,7 +204,10 @@ struct AgentRow: View {
 
     var body: some View {
         HStack(spacing: 11) {
-            BotAvatarView(agent: agent, size: 38, state: model.botState(agent), live: true)
+            let state = model.botState(agent)
+            // Only the open and working bots animate: a long sidebar shouldn't repaint every bot.
+            BotAvatarView(
+                agent: agent, size: 38, state: state, live: state == .working || model.route == .agent(agent.id))
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(agent.name)
@@ -249,7 +280,7 @@ struct ErrorBanner: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        if !model.errorText.isEmpty, model.agentDraft == nil, model.memoryDraft == nil, model.taskDraft == nil,
+        if !model.errorText.isEmpty, model.agentDraft == nil, model.memoryDraft == nil, model.automationBoard.draft == nil,
             model.mcpDraft == nil,
             model.skillDraft == nil {
             HStack(alignment: .firstTextBaseline, spacing: 8) {

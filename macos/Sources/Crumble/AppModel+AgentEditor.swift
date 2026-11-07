@@ -7,41 +7,20 @@ extension AppModel {
     func createAgent() {
         var draft = AgentDraft(isNew: true, agentID: "")
         draft.delegates = Set(agents.map(\.id))
-        draft.shuffleAvatars()
         agentDraft = draft
         loadEditorData(provider: draft.provider)
     }
 
     func openEditor(agentID: String? = nil) {
         guard let agent = agents.first(where: { $0.id == (agentID ?? selectedAgentID) }) else { return }
-        var draft = AgentDraft(isNew: false, agentID: agent.id)
-        draft.name = agent.name
-        draft.description = agent.description ?? ""
-        draft.instructions = agent.instructions ?? ""
-        draft.model = agent.model ?? ""
-        draft.provider = agent.provider ?? ""
-        draft.enabled = agent.enabled
-        draft.avatar = "bot:" + agentAvatarSeed(agent)
-        if let inference = agent.inference {
-            draft.thinking = inference.thinkingLevel
-            draft.temperature = inference.temperature.map { String($0) } ?? ""
-            draft.maxOutput = inference.maxOutputTokens.map { String($0) } ?? ""
-        }
-        let tools = agent.tools ?? []
-        draft.toolsMemory = tools.contains("memory")
-        draft.toolsDelegate = tools.contains("delegate")
-        draft.toolsSchedule = tools.contains("schedule")
-        draft.toolsCodemode = tools.contains("codemode")
-        draft.toolsCoding = tools.contains("coding")
-        draft.toolsDesktop = tools.contains("desktop")
-        draft.desktopProvider = agent.desktopModel?.provider ?? ""
-        draft.desktopModel = agent.desktopModel?.model ?? ""
-        draft.skills = agent.skills ?? []
-        draft.sharedSkills = Set(agent.sharedSkills ?? [])
-        draft.sharedMemory = agent.sharedMemory ?? false
-        draft.delegates = Set(agent.delegates ?? [])
-        draft.mcpServers = Set(agent.mcpServers ?? [])
-        draft.shuffleAvatars()
+        let draft = AgentDraft(agent: agent)
+        agentDraft = draft
+        loadEditorData(provider: draft.provider)
+    }
+
+    /// The proposal in the bot editor, where saving approves the request.
+    func openEditor(botRequest: BotRequest) {
+        let draft = AgentDraft(botRequest: botRequest)
         agentDraft = draft
         loadEditorData(provider: draft.provider)
     }
@@ -49,14 +28,12 @@ extension AppModel {
     private func loadEditorData(provider: String) {
         models = []
         let revision = mutationRevision
+        if let client { sharedSkillBoard.refresh(client: client) }
         request { client in
-            async let servers = client.mcpServers()
-            async let skills = client.sharedSkills()
-            let (loadedServers, loadedSkills) = try await (servers, skills)
+            let loadedServers = try await client.mcpServers()
             return { [self] in
                 guard mutationRevision == revision, pendingMutations.isEmpty else { return }
                 mcpServers = loadedServers
-                sharedSkills = loadedSkills
             }
         }
         loadProviders()
@@ -71,6 +48,13 @@ extension AppModel {
                 resumeProviderLogins()
             }
         }
+    }
+
+    /// Providers changed, so what they list and reach did too, as the web's `refreshProviders`.
+    func refreshProviders() {
+        loadProviders()
+        if let provider = agentDraft?.provider { loadModels(provider) }
+        if let client { connectedServices.refreshModelChoices(client: client) }
     }
 
     func loadModels(_ provider: String) {
@@ -108,7 +92,12 @@ extension AppModel {
 
     func saveAgentEditor() {
         guard let draft = agentDraft, let input = editorInput(for: draft) else { return }
-        persistAgentEditor(draft, input: input)
+        if let request = draft.botRequest {
+            errorText = ""
+            approveBotRequest(request, editedTo: input)
+        } else {
+            persistAgentEditor(draft, input: input)
+        }
     }
 
     private func editorInput(for draft: AgentDraft) -> Agent? {
@@ -117,18 +106,7 @@ extension AppModel {
             errorText = "Give your agent a name."
             return nil
         }
-        var tools: [String] = []
-        if draft.toolsMemory { tools.append("memory") }
-        if draft.toolsDelegate { tools.append("delegate") }
-        if draft.toolsSchedule { tools.append("schedule") }
-        if draft.toolsCodemode { tools.append("codemode") }
-        if draft.toolsCoding { tools.append("coding") }
-        if draft.toolsDesktop { tools.append("desktop") }
-        // Capabilities without a toggle here were set elsewhere; saving must not drop them.
-        let toggled: Set = ["memory", "delegate", "schedule", "codemode", "coding", "desktop"]
-        let stored = agents.first { $0.id == draft.agentID }?.tools ?? []
-        tools += stored.filter { !toggled.contains($0) }
-        if draft.skills.contains(where: {
+        if draft.isNew, draft.skills.contains(where: {
             $0.name.trimmingCharacters(in: .whitespaces).isEmpty
                 || $0.instructions.trimmingCharacters(in: .whitespaces).isEmpty
         }) {
@@ -139,13 +117,18 @@ extension AppModel {
         let delegates = draft.delegates.sorted()
         let servers = draft.mcpServers.sorted()
         let shared = draft.sharedSkills.filter { id in sharedSkills.contains { $0.id == id && !$0.isDefault } }.sorted()
+        // An open editor must not put back skills or assignments changed while it was open.
+        let saved = draft.isNew ? nil : agents.first { $0.id == draft.agentID }
         return Agent(
             name: name, description: draft.description.nilIfEmpty, instructions: draft.instructions.nilIfEmpty,
             avatar: draft.avatar, enabled: draft.enabled, provider: draft.provider.nilIfEmpty,
             model: draft.model.nilIfEmpty,
-            tools: tools, delegates: delegates, skills: draft.skills,
-            sharedSkills: shared, sharedMemory: draft.sharedMemory, mcpServers: servers, inference: inference,
-            desktopModel: desktopModel(for: draft))
+            tools: draft.tools(
+                keeping: draft.botRequest?.proposal.tools ?? agents.first { $0.id == draft.agentID }?.tools ?? []),
+            webSearchProvider: draft.webSearchProvider,
+            delegates: delegates, skills: saved?.skills ?? draft.skills,
+            sharedSkills: saved?.sharedSkills ?? shared, sharedMemory: draft.sharedMemory, mcpServers: servers, inference: inference,
+            desktopModel: draft.desktopModelChoice)
     }
 
     private func persistAgentEditor(_ draft: AgentDraft, input: Agent) {
@@ -205,11 +188,11 @@ extension AppModel {
             "name": .string(input.name), "description": .string(draft.description),
             "instructions": .string(draft.instructions),
             "provider": .string(draft.provider), "model": .string(draft.model),
-            "avatar": .string(draft.avatar),
+            "avatar": try JSONValue(encoding: draft.avatar),
             "enabled": .bool(draft.enabled),
             "tools": .array((input.tools ?? []).map(JSONValue.string)),
-            "skills": try JSONValue(encoding: draft.skills),
-            "sharedSkills": .array((input.sharedSkills ?? []).map(JSONValue.string)),
+            // Null puts the bot back on the account default.
+            "webSearchProvider": input.webSearchProvider.map { .string($0.rawValue) } ?? .null,
             "sharedMemory": .bool(draft.sharedMemory),
             "mcpServers": .array((input.mcpServers ?? []).map(JSONValue.string)),
             "delegates": .array((input.delegates ?? []).map(JSONValue.string)),
@@ -217,13 +200,6 @@ extension AppModel {
             // Null clears an override, so the bot's desktop jobs use its own model again.
             "desktopModel": try input.desktopModel.map { try JSONValue(encoding: $0) } ?? .null
         ]
-    }
-
-    /// Both fields set picks a model for desktop jobs; both empty means the bot's own model.
-    private func desktopModel(for draft: AgentDraft) -> DesktopModel? {
-        let provider = draft.desktopProvider.trimmingCharacters(in: .whitespaces)
-        let model = draft.desktopModel.trimmingCharacters(in: .whitespaces)
-        return provider.isEmpty || model.isEmpty ? nil : DesktopModel(provider: provider, model: model)
     }
 
     private func editorInference(for draft: AgentDraft) -> Inference? {

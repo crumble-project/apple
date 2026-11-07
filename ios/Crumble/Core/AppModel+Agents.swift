@@ -7,37 +7,20 @@ extension AppModel {
   func createAgent() {
     var draft = AgentDraft(isNew: true, agentID: "")
     draft.delegates = Set(agents.map(\.id))
-    draft.shuffleAvatars()
     agentDraft = draft
     loadEditorData(provider: draft.provider)
   }
 
   func openEditor(agentID: String? = nil) {
     guard let agent = agents.first(where: { $0.id == (agentID ?? selectedAgentID) }) else { return }
-    var draft = AgentDraft(isNew: false, agentID: agent.id)
-    draft.name = agent.name
-    draft.description = agent.description ?? ""
-    draft.instructions = agent.instructions ?? ""
-    draft.model = agent.model ?? ""
-    draft.provider = agent.provider ?? ""
-    draft.enabled = agent.enabled
-    draft.avatar = "bot:" + agentAvatarSeed(agent)
-    if let inference = agent.inference {
-      draft.thinking = inference.thinkingLevel
-      draft.temperature = inference.temperature.map { String($0) } ?? ""
-      draft.maxOutput = inference.maxOutputTokens.map { String($0) } ?? ""
-    }
-    let tools = agent.tools ?? []
-    draft.toolsMemory = tools.contains("memory")
-    draft.toolsDelegate = tools.contains("delegate")
-    draft.toolsSchedule = tools.contains("schedule")
-    draft.toolsCodemode = tools.contains("codemode")
-    draft.skills = agent.skills ?? []
-    draft.sharedSkills = Set(agent.sharedSkills ?? [])
-    draft.sharedMemory = agent.sharedMemory ?? false
-    draft.delegates = Set(agent.delegates ?? [])
-    draft.mcpServers = Set(agent.mcpServers ?? [])
-    draft.shuffleAvatars()
+    let draft = AgentDraft(agent: agent)
+    agentDraft = draft
+    loadEditorData(provider: draft.provider)
+  }
+
+  /// The proposal in the bot editor, where saving approves the request.
+  func openEditor(botRequest: BotRequest) {
+    let draft = AgentDraft(botRequest: botRequest)
     agentDraft = draft
     loadEditorData(provider: draft.provider)
   }
@@ -45,14 +28,12 @@ extension AppModel {
   private func loadEditorData(provider: String) {
     models = []
     let revision = mutationRevision
+    if let client { sharedSkillBoard.refresh(client: client) }
     request { client in
-      async let servers = client.mcpServers()
-      async let skills = client.sharedSkills()
-      let (loadedServers, loadedSkills) = try await (servers, skills)
+      let loadedServers = try await client.mcpServers()
       return { [self] in
         guard mutationRevision == revision, pendingMutations.isEmpty else { return }
         mcpServers = loadedServers
-        sharedSkills = loadedSkills
       }
     }
     loadProviders()
@@ -62,8 +43,18 @@ extension AppModel {
   func loadProviders() {
     request { client in
       let providers = try await client.providers()
-      return { [self] in self.providers = providers }
+      return { [self] in
+        self.providers = providers
+        resumeProviderLogins()
+      }
     }
+  }
+
+  /// Providers changed, so what they list and reach did too, as the web's `refreshProviders`.
+  func refreshProviders() {
+    loadProviders()
+    if let provider = agentDraft?.provider { loadModels(provider) }
+    if let client { connectedServices.refreshModelChoices(client: client) }
   }
 
   func loadModels(_ provider: String) {
@@ -128,12 +119,7 @@ extension AppModel {
       errorText = "Give your agent a name."
       return nil
     }
-    var tools: [String] = []
-    if draft.toolsMemory { tools.append("memory") }
-    if draft.toolsDelegate { tools.append("delegate") }
-    if draft.toolsSchedule { tools.append("schedule") }
-    if draft.toolsCodemode { tools.append("codemode") }
-    if draft.skills.contains(where: {
+    if draft.isNew, draft.skills.contains(where: {
       $0.name.trimmingCharacters(in: .whitespaces).isEmpty
         || $0.instructions.trimmingCharacters(in: .whitespaces).isEmpty
     }) {
@@ -146,19 +132,29 @@ extension AppModel {
     let shared = draft.sharedSkills.filter { id in
       sharedSkills.contains { $0.id == id && !$0.isDefault }
     }.sorted()
+    // An open editor must not put back skills or assignments changed while it was open.
+    let saved = draft.isNew ? nil : agents.first { $0.id == draft.agentID }
     return Agent(
       name: name, description: draft.description.nilIfEmpty,
       instructions: draft.instructions.nilIfEmpty,
       avatar: draft.avatar, enabled: draft.enabled, provider: draft.provider.nilIfEmpty,
       model: draft.model.nilIfEmpty,
-      tools: tools, delegates: delegates, skills: draft.skills,
-      sharedSkills: shared, sharedMemory: draft.sharedMemory, mcpServers: servers,
-      inference: inference)
+      tools: draft.tools(
+        keeping: draft.botRequest?.proposal.tools ?? agents.first { $0.id == draft.agentID }?.tools ?? []),
+      webSearchProvider: draft.webSearchProvider,
+      delegates: delegates, skills: saved?.skills ?? draft.skills,
+      sharedSkills: saved?.sharedSkills ?? shared, sharedMemory: draft.sharedMemory, mcpServers: servers,
+      inference: inference, desktopModel: draft.desktopModelChoice)
   }
 
   func saveAgentEditor() {
     guard let draft = agentDraft else { return }
     guard let input = agentInput(from: draft) else { return }
+    if let request = draft.botRequest {
+      errorText = ""
+      approveBotRequest(request, editedTo: input)
+      return
+    }
     let isNew = draft.isNew
     let id = isNew ? "pending:" + newRequestID() : draft.agentID
     let old = agents.first { $0.id == id }
@@ -207,16 +203,40 @@ extension AppModel {
         "name": .string(input.name), "description": .string(draft.description),
         "instructions": .string(draft.instructions),
         "provider": .string(draft.provider), "model": .string(draft.model),
-        "avatar": .string(draft.avatar),
+        "avatar": try JSONValue(encoding: draft.avatar),
         "enabled": .bool(draft.enabled),
         "tools": .array((input.tools ?? []).map(JSONValue.string)),
-        "skills": try JSONValue(encoding: draft.skills),
-        "sharedSkills": .array((input.sharedSkills ?? []).map(JSONValue.string)),
+        // Null puts the bot back on the account default.
+        "webSearchProvider": input.webSearchProvider.map { .string($0.rawValue) } ?? .null,
         "sharedMemory": .bool(draft.sharedMemory),
         "mcpServers": .array((input.mcpServers ?? []).map(JSONValue.string)),
         "delegates": .array((input.delegates ?? []).map(JSONValue.string)),
-        "inference": try JSONValue(encoding: input.inference)
+        "inference": try JSONValue(encoding: input.inference),
+        // Null clears an override, so the bot's desktop jobs use its own model again.
+        "desktopModel": try input.desktopModel.map { try JSONValue(encoding: $0) } ?? .null
       ])
+  }
+
+  /// Loaded once per connection; a failed load leaves it unknown and the next refresh tries again.
+  func loadCapabilities() {
+    guard capabilities == nil, let client else { return }
+    let connection = generation
+    Task {
+      guard let loaded = try? await client.capabilities(), generation == connection else { return }
+      capabilities = loaded
+    }
+  }
+
+  /// The Coding toggle appears when the server can run jobs. A bot that already has coding keeps
+  /// the toggle if the server can't be asked, so the owner can still turn it off.
+  func offersCoding(for draft: AgentDraft) -> Bool {
+    (capabilities?.coding ?? false) || draft.toolsCoding
+  }
+
+  /// The Bot desktop toggle appears when the server has a desktop image. A bot that already has
+  /// one keeps the toggle if the server can't be asked, so the owner can still turn it off.
+  func offersDesktop(for draft: AgentDraft) -> Bool {
+    (capabilities?.desktop ?? false) || draft.toolsDesktop
   }
 
   func duplicateSelected() {

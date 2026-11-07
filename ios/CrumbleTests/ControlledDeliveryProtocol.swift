@@ -11,8 +11,13 @@ struct ControlledHTTPResponse: Sendable {
 actor ControlledDeliveryController {
   private var postCount = 0
   private var pendingResponses: [Int: CheckedContinuation<ControlledHTTPResponse, Never>] = [:]
+  fileprivate var heldPaths: Set<String> = []
+  fileprivate var heldRequests: [String: CheckedContinuation<ControlledHTTPResponse, Never>] = [:]
 
   func response(for request: URLRequest) async -> ControlledHTTPResponse {
+    if let path = request.url?.path, heldPaths.contains(path) {
+      return await withCheckedContinuation { heldRequests[path] = $0 }
+    }
     guard request.httpMethod == "POST", request.url?.path.hasSuffix("/messages") == true else {
       if request.url?.path == "/v1/agents" {
         return ControlledHTTPResponse(status: 200, body: Data("[]".utf8))
@@ -94,6 +99,25 @@ extension ControlledDeliveryController {
       try? await Task.sleep(for: .milliseconds(10))
     }
     return false
+  }
+}
+
+extension ControlledDeliveryController {
+  /// Requests for `path` wait until `release`, so a test can order a response against later work.
+  func hold(_ path: String) { heldPaths.insert(path) }
+
+  func waitForHeld(_ path: String) async -> Bool {
+    for _ in 0..<500 {
+      if heldRequests[path] != nil { return true }
+      try? await Task.sleep(for: .milliseconds(10))
+    }
+    return false
+  }
+
+  func release(_ path: String, body: String) {
+    heldPaths.remove(path)
+    heldRequests.removeValue(forKey: path)?.resume(
+      returning: ControlledHTTPResponse(status: 200, body: Data(body.utf8)))
   }
 }
 

@@ -26,7 +26,7 @@ jobs:
           key: generator-${{ runner.os }}-${{ hashFiles('apfelkern/Generation/tools.json', 'apfelkern/Generation/generator-Package.resolved') }}
       - run: python3 scripts/contract.py --check
       - run: swift build
-      - run: swift test
+      - run: swift test --no-parallel
       - run: brew install swiftlint
       - run: swiftlint lint
       - run: xcodebuild -scheme BotAvatar -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
