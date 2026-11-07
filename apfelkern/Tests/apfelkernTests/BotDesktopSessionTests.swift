@@ -192,7 +192,9 @@ private func settle() async {
     session.connect()
     await eventually { session.holder == .owner }
     session.leave()
-    try await Task.sleep(for: .milliseconds(100))
+    await eventually { handBacks.withLock { $0 } > 0 && session.pending == nil }
+    // session.settle() would never return under the retry loop this test guards against.
+    await settle()
 
     #expect(handBacks.withLock { $0 } == 1)
     #expect(session.pending == nil)
