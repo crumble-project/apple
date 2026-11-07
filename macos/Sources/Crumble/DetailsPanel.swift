@@ -2,64 +2,50 @@ import apfelkern
 import BotAvatar
 import SwiftUI
 
-/// The inspector beside a chat: the bot's live portrait, its desktop, its automations, and what it remembers.
+/// The column beside a chat, as on the web: the bot's live portrait, its desktop, and its automations.
 struct DetailsPanel: View {
+    /// The web's `w-72`.
+    static let width: CGFloat = 288
+
     @Environment(AppModel.self) private var model
     @Environment(\.openWindow) private var openWindow
     let agent: Agent
-    @State private var tab = Tab.details
-
-    enum Tab { case details, memory }
 
     var body: some View {
-        VStack(spacing: 0) {
-            header
-            Form {
-                Section {
-                    Picker("View", selection: $tab) {
-                        Text("Details").tag(Tab.details)
-                        Text("Memory").tag(Tab.memory)
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                }
-                switch tab {
-                case .details:
-                    desktopPreview
-                    automations
-                    modelSection
-                case .memory:
-                    memories
-                }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                header
+                desktopPreview
+                automations
             }
-            .formStyle(.grouped)
+            .padding(16)
         }
         .task(id: agent.id) { model.loadAgentDetails(agent.id) }
     }
 
     private var header: some View {
-        VStack(spacing: 2) {
+        VStack(spacing: 8) {
             BotAvatarView(agent: agent, size: 84, state: model.botState(agent), live: true)
-            Text(agent.name).font(.title3.weight(.semibold)).padding(.top, 4)
+            Text(agent.name).font(.title3.weight(.semibold))
             Text(agent.description?.nilIfEmpty ?? (agent.enabled ? "Ready" : "Paused"))
-                .font(.callout)
+                .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-                .lineLimit(2)
-            Button("Edit Profile…") { model.openEditor(agentID: agent.id) }
-                .buttonStyle(.link)
-                .font(.callout)
-                .padding(.top, 4)
         }
-        .padding(.horizontal, 20)
         .padding(.top, 24)
-        .padding(.bottom, 4)
         .frame(maxWidth: .infinity)
+    }
+
+    private func section(_ title: String, @ViewBuilder content: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title).font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
+            content()
+        }
     }
 
     @ViewBuilder private var desktopPreview: some View {
         if let client = model.client, agent.tools?.contains(DesktopJob.toolName) == true {
-            Section("Desktop") {
+            section("Desktop") {
                 BotDesktopPreviewCard(preview: BotDesktopPreview(agentID: agent.id, client: client)) {
                     openWindow(id: BotDesktopView.windowID, value: agent.id)
                 }
@@ -71,52 +57,39 @@ struct DetailsPanel: View {
     private var automations: some View {
         let board = model.automationBoard
         let items = board.schedules(on: agent.id)
-        return Section("Automations") {
-            if items.isEmpty {
-                Text("No automations yet").foregroundStyle(.secondary)
+        return section("Automations") {
+            if !board.isLoaded {
+                ProgressView().controlSize(.small)
+            } else if items.isEmpty {
+                Text("No automations yet").font(.subheadline).foregroundStyle(.secondary)
             }
-            ForEach(items) { schedule in
-                Toggle(
-                    isOn: Binding(
-                        get: { schedule.enabled },
-                        set: { model.setAutomationEnabled(schedule, $0) })
-                ) {
-                    Text(schedule.name)
-                    Text(automationTiming(schedule, sources: model.connectedServices.eventSources.sources))
-                    if let error = board.errors[schedule.id] { Text(error).foregroundStyle(.red) }
-                }
-                .toggleStyle(.switch)
-                .disabled(board.isPending(schedule.id))
-            }
+            ForEach(items) { automationRow($0) }
         }
     }
 
-    private var modelSection: some View {
-        Section("Model") {
-            LabeledContent("Model", value: agent.model?.nilIfEmpty ?? "Default")
-            if let provider = agent.provider?.nilIfEmpty {
-                LabeledContent("Provider", value: provider)
-            }
-        }
-    }
-
-    private var memories: some View {
-        Section("Memories") {
-            if let items = model.agentMemories[agent.id] {
-                if items.isEmpty {
-                    Text("Nothing remembered yet").foregroundStyle(.secondary)
+    private func automationRow(_ schedule: Schedule) -> some View {
+        let board = model.automationBoard
+        return HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(schedule.name).font(.subheadline.weight(.medium)).lineLimit(1)
+                Text(automationTiming(schedule, sources: model.connectedServices.eventSources.sources))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                if let error = board.errors[schedule.id] {
+                    Text(error).font(.caption).foregroundStyle(.red)
                 }
-                ForEach(items) { memory in
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(memory.content).lineLimit(4).textSelection(.enabled)
-                        if let source = memorySourceLabel(memory.source) {
-                            Text(source).font(.caption).foregroundStyle(.secondary)
-                        }
-                    }
-                }
-            } else {
-                ProgressView().controlSize(.small).frame(maxWidth: .infinity)
             }
+            Spacer(minLength: 0)
+            Toggle(
+                "Run \(schedule.name)",
+                isOn: Binding(
+                    get: { schedule.enabled },
+                    set: { model.setAutomationEnabled(schedule, $0) })
+            )
+            .labelsHidden()
+            .toggleStyle(.switch)
+            .controlSize(.small)
+            .disabled(board.isPending(schedule.id))
         }
     }
 }

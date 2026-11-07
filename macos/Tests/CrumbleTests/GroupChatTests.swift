@@ -231,7 +231,7 @@ extension APIClientTests {
 }
 
 @MainActor @Test func aGroupKeepsItsDraftAcrossNavigation() {
-    let model = AppModel()
+    let model = AppModel(loadKeychain: false)
     model.selectGroup("trip")
     model.draft = "Pack light"
     model.selectGroup("work")
@@ -249,7 +249,7 @@ extension APIClientTests {
 }
 
 @MainActor @Test func onlyAnotherSendersNewMessageCountsAsAnArrival() throws {
-    let model = AppModel()
+    let model = AppModel(loadKeychain: false)
     model.selectGroup("trip")
     func snapshot(_ messages: [Message]) throws -> GroupChatSnapshot {
         var snapshot = try JSONDecoder().decode(GroupChatSnapshot.self, from: Data(groupSnapshotFixture.utf8))

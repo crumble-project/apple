@@ -62,8 +62,8 @@ extension ChatRow {
 
 struct ChatView: View {
     @Environment(AppModel.self) private var model
-    @Environment(\.openWindow) private var openWindow
     @AppStorage("showsDetails") private var showsDetails = true
+    @State private var width: CGFloat = 0
     let agent: Agent
 
     var body: some View {
@@ -103,29 +103,57 @@ struct ChatView: View {
         .toolbar {
             // With the title removed nothing pushes the button to the trailing edge.
             ToolbarSpacer(.flexible)
-            if agent.tools?.contains(DesktopJob.toolName) == true {
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        openWindow(id: BotDesktopView.windowID, value: agent.id)
-                    } label: {
-                        Label("Bot Desktop", systemImage: JobKind.desktop.icon)
-                    }
-                    .help("Open Bot Desktop")
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    model.openEditor(agentID: agent.id)
+                } label: {
+                    Label("Bot Settings", systemImage: "gearshape")
                 }
+                .help("Bot Settings")
             }
             ToolbarItem(placement: .primaryAction) {
                 Button {
-                    showsDetails.toggle()
+                    showDetails()
                 } label: {
                     Label("Details", systemImage: "sidebar.trailing")
                 }
-                .help(showsDetails ? "Hide Details" : "Show Details")
+                .help(showsDetails && model.jobHistory == nil ? "Hide Details" : "Show Details")
             }
         }
-        .inspector(isPresented: $showsDetails) {
-            DetailsPanel(agent: agent)
-                .inspectorColumnWidth(min: 260, ideal: 300, max: 400)
+        .safeAreaInset(edge: .trailing, spacing: 0) { rightPanel }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+    }
+}
+
+extension ChatView {
+    /// A job takes the details' place, as on the web, and the button brings them back.
+    @ViewBuilder fileprivate var rightPanel: some View {
+        if let job = model.jobHistory {
+            panelColumn(width: min(JobSheet.panelWidth, width / 2)) { JobSheet(job: job, inPanel: true) }
+        } else if showsDetails {
+            panelColumn(width: DetailsPanel.width) {
+                DetailsPanel(agent: agent)
+            }
         }
+    }
+
+    private func panelColumn(width: CGFloat, @ViewBuilder content: () -> some View) -> some View {
+        HStack(spacing: 0) {
+            Divider()
+            content()
+                .frame(width: width)
+                .frame(maxHeight: .infinity)
+                .background(.background)
+        }
+    }
+
+    fileprivate func showDetails() {
+        guard model.jobHistory == nil else {
+            model.closeJob()
+            showsDetails = true
+            return
+        }
+        showsDetails.toggle()
     }
 }
 

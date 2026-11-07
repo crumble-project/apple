@@ -7,6 +7,13 @@ struct MemoryPanel: View {
     @Environment(AppModel.self) private var model
     @State private var query = ""
     @State private var scope = "all"
+    @State private var pendingDelete: MemoryDeletion?
+
+    private struct MemoryDeletion: Identifiable {
+        let id: String
+        let agentID: String?
+        let label: String
+    }
 
     var body: some View {
         Form {
@@ -22,6 +29,16 @@ struct MemoryPanel: View {
             personalSections
         }
         .formStyle(.grouped)
+        .confirmationDialog(
+            "Delete this memory?",
+            isPresented: Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }),
+            presenting: pendingDelete
+        ) { item in
+            Button("Delete", role: .destructive) { model.deleteMemory(item.id, agentID: item.agentID) }
+            Button("Cancel", role: .cancel) {}
+        } message: { item in
+            Text(item.label)
+        }
         .searchable(text: $query, placement: .toolbar, prompt: "Search memories")
     }
 
@@ -102,6 +119,8 @@ struct MemoryPanel: View {
 
     @ViewBuilder private func rowActions(_ memory: Memory, agentID: String?) -> some View {
         Button("Edit…") { model.openMemoryForm(memory.id, agentID: agentID) }
-        Button("Delete", role: .destructive) { model.deleteMemory(memory.id, agentID: agentID) }
+        Button("Delete…", role: .destructive) {
+            pendingDelete = MemoryDeletion(id: memory.id, agentID: agentID, label: memory.content)
+        }
     }
 }

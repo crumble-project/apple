@@ -76,6 +76,7 @@ struct ActivityPanel: View {
                         .padding(.horizontal, 6)
                         .padding(.vertical, 1)
                         .background(.quaternary, in: .capsule)
+                    if activity.failed { ActivityErrorBadge() }
                     Text(activityTime(activity.timestamp)).font(.caption).foregroundStyle(.secondary)
                     Text(activity.agentName ?? "").font(.caption).foregroundStyle(.secondary)
                 }

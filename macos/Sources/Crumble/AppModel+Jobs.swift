@@ -33,6 +33,12 @@ extension AppModel {
         set { jobBoard.history = newValue }
     }
 
+    /// A bot chat shows a job in its side column; anywhere else it opens as a sheet.
+    var jobSheet: JobHistory? {
+        get { if case .agent = route { nil } else { jobHistory } }
+        set { jobHistory = newValue }
+    }
+
     /// How often `watchJobs` asks the server again; nil while no open job or question needs it.
     var jobPollDelay: Duration? { jobBoard.pollDelay(messages: messages) }
 

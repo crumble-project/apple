@@ -176,9 +176,13 @@ struct JobQuestionAnswerView: View {
 
 /// One job: its open question, task, what the bot said, the work it did, and what it spent.
 struct JobSheet: View {
+    /// The web's 42rem; the column never takes more than half the chat.
+    static let panelWidth: CGFloat = 672
+
     @Environment(AppModel.self) private var model
     @Environment(\.openWindow) private var openWindow
     let job: JobHistory
+    var inPanel = false
 
     private var items: [CodingJobItem] { CodingJobItem.items(from: job.messages) }
     private var current: Job? { model.jobs[Job.id(job.kind, job.name)] }
@@ -189,7 +193,58 @@ struct JobSheet: View {
             set: { if !$0 { model.jobHistory?.transcript = nil } })
     }
 
-    var body: some View {
+    @ViewBuilder var body: some View {
+        if inPanel {
+            VStack(spacing: 0) {
+                panelHeader
+                Divider()
+                log
+            }
+        } else {
+            log
+                .frame(width: 600, height: 560)
+                .navigationTitle(job.name)
+                .navigationSubtitle(current?.summary() ?? "")
+                .toolbar { sheetToolbar }
+        }
+    }
+
+    private var panelHeader: some View {
+        HStack(spacing: 2) {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(job.name).font(.subheadline.weight(.semibold)).lineLimit(1)
+                if let summary = current?.summary().nilIfEmpty {
+                    Text(summary).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                }
+            }
+            Spacer(minLength: 8)
+            panelButton("Refresh", symbol: "arrow.clockwise") { model.loadJobHistory() }
+            panelButton(
+                job.transcriptError.isEmpty ? "Download Transcript" : job.transcriptError,
+                symbol: "arrow.down.circle"
+            ) { model.downloadJobTranscript() }
+            .disabled(job.downloading)
+            if job.kind == .desktop {
+                panelButton("Open Bot Desktop", symbol: JobKind.desktop.icon) {
+                    openWindow(id: BotDesktopView.windowID, value: job.agentID)
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .frame(height: 56)
+    }
+
+    private func panelButton(_ title: String, symbol: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol).frame(width: 24, height: 24).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
+        .accessibilityLabel(title)
+        .help(title)
+    }
+
+    private var log: some View {
         ScrollView { entries }
         .defaultScrollAnchor(.bottom)
         .overlay { placeholder }
@@ -202,43 +257,41 @@ struct JobSheet: View {
                     .background(.bar)
             }
         }
-        .frame(width: 600, height: 560)
-        .navigationTitle(job.name)
-        .navigationSubtitle(current?.summary() ?? "")
         .fileExporter(
             isPresented: exporting, item: job.transcript, contentTypes: [JobTranscript.contentType],
             defaultFilename: job.transcript?.filename
         ) { _ in }
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Done") { model.closeJob() }.keyboardShortcut(.cancelAction)
+    }
+
+    @ToolbarContentBuilder private var sheetToolbar: some ToolbarContent {
+        ToolbarItem(placement: .cancellationAction) {
+            Button("Done") { model.closeJob() }.keyboardShortcut(.cancelAction)
+        }
+        ToolbarItem(placement: .primaryAction) {
+            Button {
+                model.loadJobHistory()
+            } label: {
+                Label("Refresh", systemImage: "arrow.clockwise")
             }
+            .help("Refresh")
+        }
+        ToolbarItem(placement: .primaryAction) {
+            Button {
+                model.downloadJobTranscript()
+            } label: {
+                Label("Download Transcript", systemImage: "arrow.down.circle")
+            }
+            .disabled(job.downloading)
+            .help(job.transcriptError.isEmpty ? "Download Transcript" : job.transcriptError)
+        }
+        if job.kind == .desktop {
             ToolbarItem(placement: .primaryAction) {
                 Button {
-                    model.loadJobHistory()
+                    openWindow(id: BotDesktopView.windowID, value: job.agentID)
                 } label: {
-                    Label("Refresh", systemImage: "arrow.clockwise")
+                    Label("Open Bot Desktop", systemImage: JobKind.desktop.icon)
                 }
-                .help("Refresh")
-            }
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    model.downloadJobTranscript()
-                } label: {
-                    Label("Download Transcript", systemImage: "arrow.down.circle")
-                }
-                .disabled(job.downloading)
-                .help(job.transcriptError.isEmpty ? "Download Transcript" : job.transcriptError)
-            }
-            if job.kind == .desktop {
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        openWindow(id: BotDesktopView.windowID, value: job.agentID)
-                    } label: {
-                        Label("Open Bot Desktop", systemImage: JobKind.desktop.icon)
-                    }
-                    .help("Open Bot Desktop")
-                }
+                .help("Open Bot Desktop")
             }
         }
     }

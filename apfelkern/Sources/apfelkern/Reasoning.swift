@@ -25,6 +25,12 @@ public enum ThinkingLevel: String, CaseIterable, Codable, Identifiable, Sendable
     let higher = Self.allCases.dropFirst(lower.count + 1)
     return higher.first(where: levels.contains) ?? lower.last(where: levels.contains) ?? levels.first ?? .off
   }
+
+  /// What a model supports. As on the web, a model the server doesn't list offers every level.
+  public static func available(for model: String?, in models: [ModelSummary]) -> [ThinkingLevel] {
+    let id = model?.trimmingCharacters(in: .whitespacesAndNewlines)
+    return models.first { $0.id == id }?.thinkingLevels ?? allCases
+  }
 }
 
 /// The reasoning control in a bot chat's composer. A choice shows on the bot at once and rolls back if the
@@ -56,7 +62,7 @@ public final class ReasoningBoard {
   /// doesn't list offers every level.
   public func levels(of bot: Agent) -> [ThinkingLevel] {
     guard let provider = bot.provider, let models = models[provider] else { return [] }
-    return models.first { $0.id == bot.model }?.thinkingLevels ?? ThinkingLevel.allCases
+    return ThinkingLevel.available(for: bot.model, in: models)
   }
 
   /// The level the bot's turns run at, which a model that lacks the saved one clamps.

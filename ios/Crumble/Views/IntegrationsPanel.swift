@@ -6,6 +6,7 @@ struct IntegrationsPanel: View {
   @Environment(AppModel.self) private var model
   @Environment(\.webAuthenticationSession) private var webAuthenticationSession
   @State private var query = ""
+  @State private var deleting: MCPServer?
 
   private var searching: Bool { !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
@@ -35,6 +36,17 @@ struct IntegrationsPanel: View {
       }
     }
     .formStyle(.grouped)
+    .confirmationDialog(
+      "Delete \(deleting?.name ?? "this server")?",
+      isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
+      titleVisibility: .visible,
+      presenting: deleting
+    ) { server in
+      Button("Delete", role: .destructive) { model.deleteMCP(server.id) }
+      Button("Cancel", role: .cancel) {}
+    } message: { _ in
+      Text("Bots lose its tools and its sign-in is removed. This cannot be undone.")
+    }
     .searchable(text: $query, placement: .automatic, prompt: "Search MCP servers")
   }
 
@@ -82,7 +94,7 @@ struct IntegrationsPanel: View {
             .disabled(model.signingIn != nil)
           }
           Button("Edit") { model.openMCPForm(server.id) }
-          Button("Delete", role: .destructive) { model.deleteMCP(server.id) }
+          Button("Delete…", role: .destructive) { deleting = server }
         } label: {
           Image(systemName: "ellipsis.circle")
         }

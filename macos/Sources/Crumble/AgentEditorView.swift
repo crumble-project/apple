@@ -82,11 +82,10 @@ struct AgentEditorView: View {
     private var avatarSection: some View {
         Section {
             VStack(spacing: 8) {
-                BotAvatarView(avatar: draft.avatar, size: 96, live: true)
+                BotAvatarPicker(value: $draft.avatar)
                 Text(draft.name.trimmingCharacters(in: .whitespaces).nilIfEmpty ?? "New Agent").font(.title2.bold())
             }
             .frame(maxWidth: .infinity)
-            BotAvatarEditor(value: $draft.avatar)
         }
     }
 
@@ -108,6 +107,8 @@ struct AgentEditorView: View {
                         Text(summary.id).textInputCompletion(summary.id)
                     }
                 }
+            ReasoningField(
+                levels: ThinkingLevel.available(for: draft.model, in: model.models), thinking: $draft.thinking)
         } header: {
             Text("Model")
         } footer: {
@@ -222,7 +223,7 @@ struct AgentEditorView: View {
             }
         }
         if !draft.desktopProvider.isEmpty {
-            TextField("Desktop job model", text: $draft.desktopModel, prompt: Text("Model ID"))
+            DesktopModelField(provider: draft.desktopProvider, client: model.client, model: $draft.desktopModel)
         }
     }
 

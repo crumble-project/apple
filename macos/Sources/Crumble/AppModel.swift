@@ -30,7 +30,7 @@ final class AppModel {
     var groupSnapshot: GroupChatSnapshot?
     var groupDraft: GroupDraft?
     var groupStreamTask: Task<Void, Never>?
-    var groupComposerDrafts: [String: String] = [:]
+    var composerDrafts = ComposerDrafts()
     var groupArrivals = 0
     var runningAgentIDs: Set<String> = []
     @ObservationIgnored var backgroundChats: [String: (id: UUID, task: Task<Void, Never>)] = [:]
@@ -66,7 +66,11 @@ final class AppModel {
     let sharedSkillBoard = SharedSkillBoard()
     let skillBulkBoard = SkillBulkBoard()
 
-    var draft = ""
+    var draft = "" {
+        didSet {
+            composerDrafts[selectedGroupID.isEmpty ? selectedAgentID : GroupChat.deliveryKey(selectedGroupID)] = draft
+        }
+    }
     var attachments: [PendingAttachment] = []
     var replyTo: Message?
     var sending = false
@@ -119,6 +123,7 @@ final class AppModel {
 
     init(environment: [String: String] = ProcessInfo.processInfo.environment, loadKeychain: Bool = true) {
         if loadKeychain {
+            composerDrafts = ComposerDrafts(defaults: .standard)
             if let saved = Keychain.read("server-url"), !saved.isEmpty { serverURL = saved }
             if let saved = Keychain.read("server-token") { token = saved }
         }
@@ -333,7 +338,7 @@ extension AppModel {
         skillDraft = nil
         snapshot = nil
         leaveGroup()
-    groupComposerDrafts = [:]
+    composerDrafts.removeAll()
         groupChats = []
         groupDraft = nil
         messages = []

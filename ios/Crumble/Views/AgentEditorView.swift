@@ -126,12 +126,11 @@ extension AgentEditorView {
   private var avatarSection: some View {
     Section {
       VStack(spacing: 8) {
-        BotAvatarView(avatar: draft.avatar, size: 96, live: true)
+        BotAvatarPicker(value: $draft.avatar)
         Text(draft.name.trimmingCharacters(in: .whitespaces).nilIfEmpty ?? "New Agent").font(
           .title2.bold())
       }
       .frame(maxWidth: .infinity)
-      BotAvatarEditor(value: $draft.avatar)
     }
   }
 
@@ -176,15 +175,8 @@ extension AgentEditorView {
 
   private var inferenceSection: some View {
     Section {
-      Picker("Reasoning", selection: $draft.thinking) {
-        Text("Off").tag("off")
-        Text("Minimal").tag("minimal")
-        Text("Low").tag("low")
-        Text("Medium").tag("medium")
-        Text("High").tag("high")
-        Text("Extra high").tag("xhigh")
-        Text("Maximum").tag("max")
-      }
+      ReasoningField(
+        levels: ThinkingLevel.available(for: draft.model, in: model.models), thinking: $draft.thinking)
       LabeledContent("Temperature") {
         TextField("Optional, 0–2", text: $draft.temperature)
           .labelsHidden()
@@ -239,7 +231,7 @@ extension AgentEditorView {
       }
     }
     if !draft.desktopProvider.isEmpty {
-      TextField("Desktop job model", text: $draft.desktopModel, prompt: Text("Model ID"))
+      DesktopModelField(provider: draft.desktopProvider, client: model.client, model: $draft.desktopModel)
     }
   }
 

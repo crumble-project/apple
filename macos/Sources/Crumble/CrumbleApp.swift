@@ -82,7 +82,7 @@ struct ContentView: View {
         .sheet(item: $model.agentDraft) { AgentEditorView(draft: sheetBinding($model.agentDraft, for: $0)) }
         .botSecretSheets(active: model.agentDraft == nil && !model.settingsShowsBotSecrets)
         .automationSheet(active: model.agentDraft == nil && !model.settingsShowsAutomations)
-        .sheet(item: $model.jobHistory) { JobSheet(job: $0) }
+        .sheet(item: $model.jobSheet) { JobSheet(job: $0) }
         .sheet(item: $model.groupDraft) { GroupEditorView(draft: sheetBinding($model.groupDraft, for: $0)) }
     }
 

@@ -94,7 +94,7 @@ extension AppModel {
     heldActionBoard.select(id)
     botRequestBoard.select(id)
     botSecretBoard.select(id)
-    draft = ""
+    draft = composerDrafts[id] ?? ""
     attachments = []
     failedDraft = ""
     failedReplyTo = ""

@@ -164,6 +164,44 @@ public struct BotAvatarEditor: View {
   }
 }
 
+/// The portrait with a pencil, which opens the editor in a popover as on the web, so the form stays short.
+public struct BotAvatarPicker: View {
+  /// The web's 30rem.
+  private static let width: CGFloat = 480
+  @Binding private var value: BotAvatarDefinition
+  @State private var editing = false
+
+  public init(value: Binding<BotAvatarDefinition>) {
+    _value = value
+  }
+
+  public var body: some View {
+    Button {
+      editing = true
+    } label: {
+      BotAvatarView(avatar: value, size: 96, live: true)
+        .padding(4)
+        .overlay(alignment: .bottomTrailing) {
+          Image(systemName: "pencil")
+            .font(.system(size: 13, weight: .medium))
+            .padding(7)
+            .background(.background, in: .circle)
+            .offset(x: 4, y: 4)
+        }
+        .contentShape(.rect)
+    }
+    .buttonStyle(.plain)
+    .accessibilityLabel("Change avatar")
+    .popover(isPresented: $editing, arrowEdge: .bottom) {
+      ScrollView {
+        BotAvatarEditor(value: $value).padding(16)
+      }
+      .frame(idealWidth: Self.width, maxWidth: Self.width)
+      .presentationDetents([.medium, .large])
+    }
+  }
+}
+
 private func copyToPasteboard(_ text: String) {
   #if os(macOS)
     NSPasteboard.general.clearContents()

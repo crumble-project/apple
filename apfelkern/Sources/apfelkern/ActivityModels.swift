@@ -56,6 +56,19 @@ public struct ActivityEntry: Identifiable, Hashable, Sendable {
   /// Set for a skill or memory change, whose `kind` is `change` and `details` are empty.
   public var change: LearnedChange?
 
+  /// The web's test: an explicit `isError`, or any truthy `error` detail.
+  public var failed: Bool {
+    guard kind != "change" else { return false }
+    if details["isError"] == .bool(true) { return true }
+    switch details["error"] {
+    case nil, .null?: return false
+    case .bool(let value)?: return value
+    case .number(let value)?: return value != 0
+    case .string(let value)?: return !value.isEmpty
+    case .array?, .object?: return true
+    }
+  }
+
   public init(id: String, agentId: String?, agentName: String?, entryId: String?,
               timestamp: Int64? = nil, kind: String, details: [String: JSONValue],
               change: LearnedChange? = nil) {

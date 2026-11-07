@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- The bot form shows the portrait with a pencil, and the avatar editor opens in a popover instead of filling the form, as on the web.
+- The column beside a chat matches the web: a fixed width with the bot's portrait, its desktop, and its automations. The toolbar has **Bot Settings** in place of **Bot Desktop**, and its Details button opens and closes the column. Details and Memory tabs and the Model section are gone, and memories stay on the **Memory** page. An opened job takes the column's place.
+- Unsent text stays with its chat, including across launches.
+- The bot form has a **Reasoning** field limited to what its model supports, and suggests models for the desktop job.
+- Failed Activity entries show an **Error** badge. Deleting an MCP server or a memory asks first.
 - A new **Providers** page lists every provider with its status, set-up providers first, and has a search field. Choose a provider to open its key and sign-in form, which moved here from general settings.
 - A provider a command-line tool signs in to, such as Claude Code, shows **Signed in**, **Not signed in**, **Not installed**, or **Unavailable**, and its menu copies the sign-in or sign-out command to run on the server's machine.
 - **Integrations** has a search field for names and addresses.

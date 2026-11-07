@@ -19,7 +19,7 @@ public protocol GroupChatHost: AnyObject, Sendable {
   var groupDraft: GroupDraft? { get set }
   var groupStreamTask: Task<Void, Never>? { get set }
   /// What the owner typed in each group they left. Group IDs belong to one server, so a new connection clears it.
-  var groupComposerDrafts: [String: String] { get set }
+  var composerDrafts: ComposerDrafts { get set }
   /// Counts snapshots that brought a new message from someone else, for the rows' arrival animation.
   var groupArrivals: Int { get set }
 
@@ -73,7 +73,6 @@ extension GroupChatHost {
 
   /// Opens a group chat and follows its event stream.
   public func selectGroup(_ id: String) {
-    keepGroupDraft()
     leaveBotChat()
     stopGroupStream()
     selectionVersion += 1
@@ -86,7 +85,7 @@ extension GroupChatHost {
     oldestEntryID = ""
     loadingOlder = false
     replyTo = nil
-    draft = groupComposerDrafts[id] ?? ""
+    draft = composerDrafts[GroupChat.deliveryKey(id)] ?? ""
     attachments = []
     failedDraft = ""
     failedReplyTo = ""
@@ -113,15 +112,9 @@ extension GroupChatHost {
 
   /// Closes the open group chat, if any, so a bot chat or panel can take its place.
   public func leaveGroup() {
-    keepGroupDraft()
     stopGroupStream()
     selectedGroupID = ""
     groupSnapshot = nil
-  }
-
-  private func keepGroupDraft() {
-    guard !selectedGroupID.isEmpty else { return }
-    groupComposerDrafts[selectedGroupID] = draft.nilIfEmpty
   }
 
   public func stopGroupStream() {

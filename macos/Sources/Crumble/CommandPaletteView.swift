@@ -10,7 +10,7 @@ struct CommandPaletteButton: View {
     /// A palette opened under one of these sheets couldn't be seen or typed in.
     private var mainWindowHasSheet: Bool {
         let secrets = model.botSecretBoard
-        return model.agentDraft != nil || model.groupDraft != nil || model.jobHistory != nil
+        return model.agentDraft != nil || model.groupDraft != nil || model.jobSheet != nil
             || (!model.settingsShowsBotSecrets && (secrets.draft != nil || secrets.useLog != nil))
     }
 

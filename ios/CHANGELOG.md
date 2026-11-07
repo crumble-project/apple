@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- The bot form shows the portrait with a pencil, and the avatar editor opens in a popover instead of filling the form, as on the web.
+- Unsent text stays with its chat, including across launches.
+- The bot form offers only the reasoning levels its model supports, and suggests models for the desktop job.
+- Failed Activity entries show an **Error** badge. Deleting an MCP server asks first.
 - The app now reads like Messages. The root is one list of bots and group chats, the latest first, with large portraits, two lines of the latest message, a date, an unread dot, and search and compose at the bottom. A phone opens on this list rather than the first chat.
 - **Settings** opens from the top corner and holds the account, theme, notifications, every workspace page, and every connected service. The list no longer has these sections.
 - Chats have a centered portrait over the name, blue and gray bubbles with a tail on the last of a run, tighter spacing, and a typing bubble. Tapping the header opens the bot's details, which hold its desktop and, on a phone, its reasoning level.
