@@ -27,3 +27,7 @@ Workflows in `.github/workflows` run only when their directory or `apfelkern` ch
 - `apfelkern-update-contract.yml`: checks weekly for a new `bot` contract release and opens a verified pull request.
 
 The canonical glossary is [`bot/GLOSSARY.md`](https://github.com/crumble-project/bot/blob/main/GLOSSARY.md).
+
+## License
+
+Licensed under the [GNU Affero General Public License v3.0](LICENSE) (`AGPL-3.0-only`). Third-party components retain their respective licenses.
