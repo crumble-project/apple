@@ -9,9 +9,9 @@ private struct SheetActions: ToolbarContent {
   let saveDisabled: Bool
 
   var body: some ToolbarContent {
-    ToolbarItem(placement: .cancellationAction) { Button("Cancel", action: onCancel) }
+    ToolbarItem(placement: .cancellationAction) { Button(role: .cancel, action: onCancel) }
     ToolbarItem(placement: .confirmationAction) {
-      Button("Save", action: onSave).disabled(saveDisabled)
+      Button(role: .confirm, action: onSave).disabled(saveDisabled)
     }
   }
 }

@@ -123,7 +123,6 @@ struct ConversationListView: View {
     .refreshable { model.refresh() }
     .navigationTitle("Crumble")
     .navigationSubtitle(status)
-    .navigationBarTitleDisplayMode(.inline)
     .toolbar {
       ToolbarItem(placement: .primaryAction) { settingsButton }
       if sizeClass == .compact {

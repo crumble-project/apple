@@ -19,7 +19,7 @@ struct PasswordManagersSheet: View {
         .navigationTitle("Password managers")
         .toolbar {
           ToolbarItem(placement: .confirmationAction) {
-            Button("Done") { dismiss() }
+            Button(role: .close) { dismiss() }
           }
         }
     }
@@ -131,7 +131,7 @@ private struct PasswordManagerTokenSheet: View {
       .navigationTitle(draft.title)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") { board.closeDraft() }.disabled(board.isSaving)
+          Button(role: .cancel) { board.closeDraft() }.disabled(board.isSaving)
         }
         ToolbarItem(placement: .confirmationAction) {
           Button(draft.saveLabel) { model.savePasswordManagerDraft() }.disabled(!board.canSave)
@@ -265,10 +265,10 @@ private struct PluginSettingSheet: View {
       .navigationTitle(draft.setting.label)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") { board.closeDraft() }.disabled(board.isSaving)
+          Button(role: .cancel) { board.closeDraft() }.disabled(board.isSaving)
         }
         ToolbarItem(placement: .confirmationAction) {
-          Button("Save") { model.savePluginSettingDraft() }.disabled(!board.canSave)
+          Button(role: .confirm) { model.savePluginSettingDraft() }.disabled(!board.canSave)
         }
       }
     }

@@ -112,14 +112,24 @@ struct ChatView: View {
         }
       }
     }
-    .inspector(isPresented: $showsDetails) {
-      DetailsPanel(agent: agent, leave: leaveDetails)
-        .inspectorColumnWidth(min: 260, ideal: 300, max: 400)
-        .onDisappear {
-          afterDetails?()
-          afterDetails = nil
-        }
+    // A phone gets a sheet with its own stack for the top bar; an inspector inside the chat's stack can't hold one.
+    .inspector(isPresented: sizeClass == .compact ? .constant(false) : $showsDetails) {
+      // Built even while hidden, so on a phone its toolbar would land in the chat's bar.
+      if sizeClass != .compact {
+        details.inspectorColumnWidth(min: 260, ideal: 300, max: 400)
+      }
     }
+    .sheet(isPresented: sizeClass == .compact ? $showsDetails : .constant(false)) {
+      NavigationStack { details }
+    }
+  }
+
+  private var details: some View {
+    DetailsPanel(agent: agent, leave: leaveDetails) { showsDetails = false }
+      .onDisappear {
+        afterDetails?()
+        afterDetails = nil
+      }
   }
 
   /// The bot's portrait over its name, as Messages heads a conversation. Tapping opens its details.
@@ -127,14 +137,17 @@ struct ChatView: View {
     Button {
       showsDetails = true
     } label: {
-      VStack(spacing: 1) {
-        BotAvatarView(agent: agent, size: 36, state: model.botState(agent), live: true)
-        HStack(spacing: 2) {
-          Text(agent.name).font(.caption2.weight(.medium)).lineLimit(1)
+      VStack(spacing: -6) {
+        BotAvatarView(agent: agent, size: 48, state: model.botState(agent), live: true)
+        HStack(spacing: 3) {
+          Text(agent.name).font(.subheadline.weight(.semibold)).lineLimit(1)
           Image(systemName: "chevron.right")
-            .font(.system(size: 7, weight: .bold))
+            .font(.caption2.weight(.bold))
             .foregroundStyle(.tertiary)
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .glassEffect(.regular.interactive(), in: .capsule)
       }
       .contentShape(Rectangle())
     }

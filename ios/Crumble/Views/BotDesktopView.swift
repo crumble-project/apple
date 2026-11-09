@@ -29,7 +29,7 @@ struct BotDesktopView: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("Done") { dismiss() }
+          Button(role: .close) { dismiss() }
         }
       }
     }

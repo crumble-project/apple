@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- The conversation list and **Settings** use large titles. A chat's header shows a larger portrait with the name in a glass capsule, as in Messages, and the composer is taller and further from the screen edges.
+- Sheets close and save with the system's glass X and checkmark buttons instead of **Cancel** and **Save**. Sheets with a specific action, such as **Install** or **Approve**, keep its name.
+- A bot's details match Android: the portrait, name, and status, then its desktop and its automations, each with an icon. A close button and an edit button sit in the top bar. The **Details** and **Memory** tabs, the model section, and the reasoning picker are gone; reasoning is set in the bot form, and memories are on the **Memory** page.
+- Workspace pages refresh with a pull instead of a **Refresh** button. A message's menu shows icons for **Reply** and **Copy**.
 - The app uses the Crumble icon, as on Android and the website.
 - The app's bundle ID is now `ng.crumbli.ios`, matching the Android and macOS apps. Keychain items and the sign-in callback follow it, so it installs as a new app and you sign in again.
 - The bot form shows the portrait with a pencil, and the avatar editor opens in a popover instead of filling the form, as on the web.
@@ -10,7 +14,7 @@
 - Failed Activity entries show an **Error** badge. Deleting an MCP server asks first.
 - The app now reads like Messages. The root is one list of bots and group chats, the latest first, with large portraits, two lines of the latest message, a date, an unread dot, and search and compose at the bottom. A phone opens on this list rather than the first chat.
 - **Settings** opens from the top corner and holds the account, theme, notifications, every workspace page, and every connected service. The list no longer has these sections.
-- Chats have a centered portrait over the name, blue and gray bubbles with a tail on the last of a run, tighter spacing, and a typing bubble. Tapping the header opens the bot's details, which hold its desktop and, on a phone, its reasoning level.
+- Chats have a centered portrait over the name, blue and gray bubbles with a tail on the last of a run, tighter spacing, and a typing bubble. Tapping the header opens the bot's details, which hold its desktop.
 - The composer's send button sits inside the field and appears when there is something to send. A reply starts with a swipe across a message or a long press, and a swipe from the screen's edge goes back.
 - A failed turn is a small line under the conversation, and reactions sit on a bubble's top corner.
 - A new **Providers** page lists every provider with its status, set-up providers first, and has a search field. Choose a provider to open its key and sign-in form, which moved here from general settings.

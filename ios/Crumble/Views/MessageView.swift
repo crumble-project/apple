@@ -141,9 +141,9 @@ struct MessageView: View {
 
   @ViewBuilder private var menu: some View {
     if replyable {
-      Button("Reply") { model.replyTo = message }
+      Button("Reply", systemImage: "arrowshape.turn.up.left") { model.replyTo = message }
     }
-    Button("Copy") {
+    Button("Copy", systemImage: "doc.on.doc") {
       UIPasteboard.general.string = message.text
     }
   }

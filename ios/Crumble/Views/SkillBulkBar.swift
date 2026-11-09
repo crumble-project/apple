@@ -77,7 +77,7 @@ private struct SkillTargetsSheet: View {
       .navigationTitle(action.label)
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
-        ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+        ToolbarItem(placement: .cancellationAction) { Button(role: .cancel) { dismiss() } }
         ToolbarItem(placement: .confirmationAction) {
           Button(action.confirmation) {
             model.runBulkSkillAction(action, targets: targets)

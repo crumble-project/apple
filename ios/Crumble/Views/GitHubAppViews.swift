@@ -107,7 +107,7 @@ private struct NewGitHubAppSheet: View {
       .navigationTitle("New GitHub App")
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") { board.closeNew() }
+          Button(role: .cancel) { board.closeNew() }
             .disabled(board.isOpening)
         }
         ToolbarItem(placement: .confirmationAction) {
@@ -200,11 +200,11 @@ private struct GitHubAppSheet: View {
       .navigationTitle(app.login)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") { board.closeDraft() }
+          Button(role: .cancel) { board.closeDraft() }
             .disabled(board.isSaving)
         }
         ToolbarItem(placement: .confirmationAction) {
-          Button("Save") { model.saveGitHubAppDraft() }
+          Button(role: .confirm) { model.saveGitHubAppDraft() }
             .disabled(!board.canSave)
         }
       }

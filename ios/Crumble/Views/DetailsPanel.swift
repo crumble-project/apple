@@ -2,56 +2,42 @@ import apfelkern
 import BotAvatar
 import SwiftUI
 
-/// The inspector beside a chat: the bot's live portrait, its desktop, its automations, and what it remembers.
+/// The inspector beside a chat, laid out as on Android: the bot's live portrait, its desktop, and its automations.
 struct DetailsPanel: View {
   @Environment(AppModel.self) private var model
   @Environment(\.horizontalSizeClass) private var sizeClass
   let agent: Agent
   /// Opens a page that covers the panel, which a phone must close first.
   let leave: (@escaping () -> Void) -> Void
-  @State private var tab = Tab.details
-
-  enum Tab { case details, memory }
+  let close: () -> Void
 
   var body: some View {
     Form {
       header
-      Section {
-        Picker("View", selection: $tab) {
-          Text("Details").tag(Tab.details)
-          Text("Memory").tag(Tab.memory)
-        }
-        .pickerStyle(.segmented)
-        .labelsHidden()
-      }
-      .listRowBackground(Color.clear)
-      .listRowInsets(EdgeInsets())
-      switch tab {
-      case .details:
-        desktopPreview
-        automations
-        modelSection
-      case .memory:
-        memories
-      }
+      desktopPreview
+      automations
     }
     .formStyle(.grouped)
+    .navigationBarTitleDisplayMode(.inline)
+    .toolbar {
+      if sizeClass == .compact {
+        ToolbarItem(placement: .cancellationAction) { Button(role: .close, action: close) }
+      }
+      ToolbarItem(placement: .primaryAction) {
+        Button("Edit Bot", systemImage: "pencil") { leave { model.openEditor(agentID: agent.id) } }
+      }
+    }
     .task(id: agent.id) { model.loadAgentDetails(agent.id) }
   }
 
   private var header: some View {
-    VStack(spacing: 2) {
+    VStack(spacing: 8) {
       BotAvatarView(agent: agent, size: 84, state: model.botState(agent), live: true)
-      Text(agent.name).font(.title3.weight(.semibold)).padding(.top, 4)
+      Text(agent.name).font(.title2.weight(.semibold))
       Text(agent.description?.nilIfEmpty ?? (agent.enabled ? "Ready" : "Paused"))
-        .font(.callout)
+        .font(.subheadline)
         .foregroundStyle(.secondary)
         .multilineTextAlignment(.center)
-        .lineLimit(2)
-      Button("Edit Profile…") { leave { model.openEditor(agentID: agent.id) } }
-        .buttonStyle(.borderless)
-        .font(.callout)
-        .padding(.top, 4)
     }
     .frame(maxWidth: .infinity)
     .listRowBackground(Color.clear)
@@ -82,47 +68,19 @@ struct DetailsPanel: View {
             get: { schedule.enabled },
             set: { model.setAutomationEnabled(schedule, $0) })
         ) {
-          Text(schedule.name)
-          Text(automationTiming(schedule, sources: model.connectedServices.eventSources.sources))
-          if let error = board.errors[schedule.id] { Text(error).foregroundStyle(.red) }
+          Label {
+            VStack(alignment: .leading, spacing: 2) {
+              Text(schedule.name).lineLimit(1)
+              Text(automationTiming(schedule, sources: model.connectedServices.eventSources.sources))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+              if let error = board.errors[schedule.id] { Text(error).font(.subheadline).foregroundStyle(.red) }
+            }
+          } icon: {
+            SettingsIcon(symbol: "calendar.badge.clock", color: .red)
+          }
         }
         .disabled(board.isPending(schedule.id))
-      }
-    }
-  }
-
-  private var modelSection: some View {
-    Section("Model") {
-      LabeledContent("Model", value: agent.model?.nilIfEmpty ?? "Default")
-      if let provider = agent.provider?.nilIfEmpty {
-        LabeledContent("Provider", value: provider)
-      }
-      if sizeClass == .compact {
-        LabeledContent("Reasoning") {
-          ReasoningControl(board: model.reasoningBoard, bot: agent, client: model.client) {
-            model.reasoningBoard.choose($0, for: agent.id, host: model)
-          }
-        }
-      }
-    }
-  }
-
-  private var memories: some View {
-    Section("Memories") {
-      if let items = model.agentMemories[agent.id] {
-        if items.isEmpty {
-          Text("Nothing remembered yet").foregroundStyle(.secondary)
-        }
-        ForEach(items) { memory in
-          VStack(alignment: .leading, spacing: 2) {
-            Text(memory.content).lineLimit(4).textSelection(.enabled)
-            if let source = memorySourceLabel(memory.source) {
-              Text(source).font(.caption).foregroundStyle(.secondary)
-            }
-          }
-        }
-      } else {
-        ProgressView().controlSize(.small).frame(maxWidth: .infinity)
       }
     }
   }

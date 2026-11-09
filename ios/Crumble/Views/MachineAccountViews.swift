@@ -93,11 +93,11 @@ private struct MachineAccountSheet: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") { board.closeDraft() }
+          Button(role: .cancel) { board.closeDraft() }
             .disabled(board.isSaving)
         }
         ToolbarItem(placement: .confirmationAction) {
-          Button(draft.existing == nil ? "Add" : "Save") { model.saveGitHubAccountDraft() }
+          Button(role: .confirm) { model.saveGitHubAccountDraft() }
             .disabled(!board.canSave)
         }
       }

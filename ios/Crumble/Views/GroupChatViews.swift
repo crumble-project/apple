@@ -325,14 +325,14 @@ struct GroupEditorView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
           ToolbarItem(placement: .cancellationAction) {
-            Button("Cancel") {
+            Button(role: .cancel) {
               model.errorText = ""
               model.groupDraft = nil
               dismiss()
             }
           }
           ToolbarItem(placement: .confirmationAction) {
-            Button(draft.groupID == nil ? "Create" : "Save") { model.saveGroup(draft) }
+            Button(role: .confirm) { model.saveGroup(draft) }
               .disabled(!draft.isValid)
           }
         }

@@ -165,7 +165,6 @@ struct SettingsView: View {
     }
     .formStyle(.grouped)
     .navigationTitle("Settings")
-    .navigationBarTitleDisplayMode(.inline)
   }
 }
 
@@ -179,12 +178,22 @@ private struct SettingsLabel: View {
     Label {
       Text(title)
     } icon: {
-      Image(systemName: symbol)
-        .font(.system(size: 14, weight: .medium))
-        .foregroundStyle(.white)
-        .frame(width: 29, height: 29)
-        .background(color, in: .rect(cornerRadius: 7, style: .continuous))
+      SettingsIcon(symbol: symbol, color: color)
     }
+  }
+}
+
+/// A symbol on a colored tile, as in the iOS Settings app.
+struct SettingsIcon: View {
+  let symbol: String
+  let color: Color
+
+  var body: some View {
+    Image(systemName: symbol)
+      .font(.system(size: 14, weight: .medium))
+      .foregroundStyle(.white)
+      .frame(width: 29, height: 29)
+      .background(color, in: .rect(cornerRadius: 7, style: .continuous))
   }
 }
 

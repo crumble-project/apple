@@ -17,14 +17,18 @@ struct AgentEditorView: View {
       .formStyle(.grouped)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") {
+          Button(role: .cancel) {
             model.errorText = ""
             model.agentDraft = nil
             dismiss()
           }
         }
         ToolbarItem(placement: .confirmationAction) {
-          Button(saveTitle) { model.saveAgentEditor() }.disabled(saveDisabled)
+          if draft.botRequest != nil {
+            Button("Approve") { model.saveAgentEditor() }.disabled(saveDisabled)
+          } else {
+            Button(role: .confirm) { model.saveAgentEditor() }.disabled(saveDisabled)
+          }
         }
       }
       .navigationTitle(navigationTitle)
@@ -47,11 +51,6 @@ struct AgentEditorView: View {
 }
 
 extension AgentEditorView {
-  private var saveTitle: String {
-    if draft.botRequest != nil { return "Approve" }
-    return draft.isNew ? "Create" : "Save"
-  }
-
   private var navigationTitle: String {
     if draft.botRequest != nil { return "Edit Bot Proposal" }
     return draft.isNew ? "New Agent" : "Edit Agent"

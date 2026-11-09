@@ -39,7 +39,7 @@ final class CrumbleUITests: XCTestCase {
     app.buttons["New Conversation"].tap()
     app.buttons["New Bot"].tap()
     XCTAssertTrue(app.navigationBars["New Agent"].waitForExistence(timeout: 5))
-    XCTAssertTrue(app.buttons["Create"].exists)
+    XCTAssertTrue(app.buttons["Done"].exists)
     app.buttons["Cancel"].tap()
 
     app.buttons["Settings"].tap()
@@ -56,7 +56,7 @@ final class CrumbleUITests: XCTestCase {
       if let action {
         app.buttons[action].firstMatch.tap()
         XCTAssertTrue(app.buttons["Cancel"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["Save"].exists)
+        XCTAssertTrue(app.buttons["Done"].exists)
         app.buttons["Cancel"].tap()
       }
       let screenshot = XCTAttachment(screenshot: app.screenshot())

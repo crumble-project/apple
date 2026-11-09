@@ -86,10 +86,10 @@ private struct GatewaySheet: View {
       .navigationTitle(draft.label)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") { board.closeDraft() }
+          Button(role: .cancel) { board.closeDraft() }
         }
         ToolbarItem(placement: .confirmationAction) {
-          Button("Save") { model.saveGatewayDraft() }.disabled(!board.canSave)
+          Button(role: .confirm) { model.saveGatewayDraft() }.disabled(!board.canSave)
         }
       }
     }
