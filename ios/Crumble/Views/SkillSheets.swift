@@ -91,7 +91,7 @@ struct SkillInstallSheet: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") { model.sharedSkillBoard.sheet = nil }.disabled(install.installing)
+          Button(role: .cancel) { model.sharedSkillBoard.sheet = nil }.disabled(install.installing)
         }
         ToolbarItem(placement: .confirmationAction) {
           Button(install.installing ? "Installing…" : install.actionLabel) {
@@ -174,10 +174,10 @@ struct InstalledSkillSheet: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") { model.sharedSkillBoard.sheet = nil }
+          Button(role: .cancel) { model.sharedSkillBoard.sheet = nil }
         }
         ToolbarItem(placement: .confirmationAction) {
-          Button("Save") {
+          Button(role: .confirm) {
             model.assignSharedSkill(skill.id, usedBy: review.usedBy)
             model.sharedSkillBoard.sheet = nil
           }
@@ -256,7 +256,7 @@ struct SkillUpdateSheet: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") { model.sharedSkillBoard.sheet = nil }.disabled(review.applying)
+          Button(role: .cancel) { model.sharedSkillBoard.sheet = nil }.disabled(review.applying)
         }
         ToolbarItem(placement: .confirmationAction) {
           Button(review.applying ? "Updating…" : "Update") { model.applySkillUpdate(review) }

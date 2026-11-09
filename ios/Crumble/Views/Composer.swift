@@ -22,7 +22,7 @@ extension ComposerTarget {
 
 struct Composer: View {
   /// The height of the message field and the attach button beside it.
-  static let height: CGFloat = 36
+  static let height: CGFloat = 40
   @Environment(AppModel.self) private var model
   @Environment(\.horizontalSizeClass) private var sizeClass
   let target: ComposerTarget
@@ -53,7 +53,7 @@ struct Composer: View {
       }
       controls
     }
-    .padding(.horizontal, 12)
+    .padding(.horizontal, 20)
     .padding(.bottom, 6)
     .fileImporter(
       isPresented: $importing, allowedContentTypes: [.image, .text, .sourceCode, .json, .xml],
@@ -131,7 +131,7 @@ extension Composer {
   ) -> some View {
     Button(action: action) {
       Image(systemName: symbol)
-        .font(.system(size: 28))
+        .font(.system(size: 32))
         .symbolRenderingMode(.palette)
         .foregroundStyle(.white, color)
         .frame(height: Composer.height)

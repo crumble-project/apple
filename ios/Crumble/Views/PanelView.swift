@@ -10,6 +10,7 @@ struct PanelView: View {
 
   var body: some View {
     content
+      .refreshable { model.openPanel(panel) }
       .navigationTitle(panel.title)
       .toolbar {
         ToolbarItemGroup(placement: .primaryAction) {
@@ -41,7 +42,6 @@ struct PanelView: View {
           default:
             EmptyView()
           }
-          Button("Refresh", systemImage: "arrow.clockwise") { model.openPanel(panel) }
         }
       }
   }

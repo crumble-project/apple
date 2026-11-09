@@ -232,10 +232,10 @@ private struct ServerSettingsSheet: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") { board.closeDraft() }
+          Button(role: .cancel) { board.closeDraft() }
         }
         ToolbarItem(placement: .confirmationAction) {
-          Button("Save") { model.saveServerSettingsDraft() }
+          Button(role: .confirm) { model.saveServerSettingsDraft() }
             .disabled(!draft.isReady)
         }
       }
@@ -305,7 +305,7 @@ private struct InviteLinkSheetView: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .confirmationAction) {
-          Button("Done") { board.closeInviteSheet() }
+          Button(role: .close) { board.closeInviteSheet() }
         }
       }
     }

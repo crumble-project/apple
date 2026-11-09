@@ -199,7 +199,7 @@ struct JobSheet: View {
 
   @ToolbarContentBuilder private var toolbar: some ToolbarContent {
     ToolbarItem(placement: .cancellationAction) {
-      Button("Done") { model.closeJob() }
+      Button(role: .close) { model.closeJob() }
     }
     ToolbarItem(placement: .principal) {
       VStack(spacing: 2) {

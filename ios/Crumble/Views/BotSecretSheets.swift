@@ -37,11 +37,11 @@ private struct BotSecretSheet: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") { board.closeDraft() }
+          Button(role: .cancel) { board.closeDraft() }
             .disabled(board.isSaving)
         }
         ToolbarItem(placement: .confirmationAction) {
-          Button(draft.existing == nil ? "Add" : "Save") { model.saveBotSecretDraft() }
+          Button(role: .confirm) { model.saveBotSecretDraft() }
             .disabled(!board.canSave)
         }
       }
@@ -255,7 +255,7 @@ private struct BotSecretUsesView: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .confirmationAction) {
-          Button("Done") { dismiss() }
+          Button(role: .close) { dismiss() }
         }
       }
     }

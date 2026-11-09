@@ -103,10 +103,10 @@ private struct EventSourceSheet: View {
     .disabled(board.isSaving)
     .toolbar {
       ToolbarItem(placement: .cancellationAction) {
-        Button("Cancel") { board.closeDraft() }.disabled(board.isSaving)
+        Button(role: .cancel) { board.closeDraft() }.disabled(board.isSaving)
       }
       ToolbarItem(placement: .confirmationAction) {
-        Button("Add") { model.saveEventSourceDraft() }.disabled(!board.canSave)
+        Button(role: .confirm) { model.saveEventSourceDraft() }.disabled(!board.canSave)
       }
     }
   }
@@ -129,7 +129,7 @@ private struct EventSourceSheet: View {
     }
     .toolbar {
       ToolbarItem(placement: .confirmationAction) {
-        Button("Done") { board.closeDraft() }
+        Button(role: .close) { board.closeDraft() }
       }
     }
   }
