@@ -9,12 +9,12 @@ Shared Swift package for the Crumble macOS and iOS apps. Requires Swift 6.2+ and
 
 ## Update the API contract
 
-`Contract/pin.json` pins the verified `bot` contract release (`contract-vX.Y.Z`) and SHA-256 checksums. Ordinary builds use committed output in `Sources/apfelkern/Generated` without running the generator.
+`Contract/` holds a copy of the `bot` contract files from `bot/openapi/`. Ordinary builds use committed output in `Sources/apfelkern/Generated` without running the generator. A running server also serves its document at `GET /openapi.json`.
 
 ```sh
-python3 scripts/contract.py                          # Regenerate from current pin
-python3 scripts/contract.py --check                  # Verify checksums and byte-for-byte output
-python3 scripts/contract.py --update contract-vX.Y.Z # Update to a published release (or local bundle path)
+python3 scripts/contract.py                           # Regenerate from Contract/
+python3 scripts/contract.py --check                   # Verify the generated output byte-for-byte
+python3 scripts/contract.py --update ../../bot/openapi # Copy the contract files, regenerate, and run swift test
 ```
 
 ## Verify changes

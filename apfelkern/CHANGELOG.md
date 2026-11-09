@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- `scripts/contract.py --update DIRECTORY` copies the contract files from a directory such as `bot/openapi/`. `Contract/` no longer carries `pin.json`, `SHA256SUMS`, `CHANGELOG.md`, or `source-commit.txt`, and the weekly contract update workflow is gone.
 - Add `BotAvatarPicker`: the portrait opens `BotAvatarEditor` in a popover.
 - Add `ComposerDrafts`, unsent text by conversation, and `GroupChatHost.composerDrafts`, which replaces `groupComposerDrafts`.
 - Add `ThinkingLevel.available(for:in:)` and `ActivityEntry.failed`. `BotAvatar` gains `ReasoningField`, `DesktopModelField`, and `ActivityErrorBadge`.
