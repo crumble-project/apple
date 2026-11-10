@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Update the contract copy for the voice gateway. `Message` gains `call`, a `CallEvent` with the call's ID and direction. Add `CallMarker`, which reads a `call-started` or `call-ended` event and the `call` notice whose end woke the bot, and `gatewayOrigin(_:)`, which reads "Spoken on a call" for a spoken message. `noticeTitle(_:)` names a `call` notice **Call**. `BotAvatar` gains `CallMarkerView`, and `GatewayOriginLabel` shows a phone for a spoken message.
 - `scripts/contract.py --update DIRECTORY` copies the contract files from a directory such as `bot/openapi/`. `Contract/` no longer carries `pin.json`, `SHA256SUMS`, `CHANGELOG.md`, or `source-commit.txt`, and the weekly contract update workflow is gone.
 - Add `BotAvatarPicker`: the portrait opens `BotAvatarEditor` in a popover.
 - Add `ComposerDrafts`, unsent text by conversation, and `GroupChatHost.composerDrafts`, which replaces `groupComposerDrafts`.

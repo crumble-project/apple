@@ -8,6 +8,7 @@ struct MessageView: View {
   let message: Message
   var reactions: [String] = []
   var place = BubblePlace()
+  var botName = ""
 
   private var replyable: Bool {
     !(message.entryId ?? "").isEmpty && (message.role == "user" || message.role == "assistant")
@@ -34,6 +35,8 @@ struct MessageView: View {
           JobFailureCard(failure: failure) { model.openJob(failure.kind, failure.name) }
           Spacer(minLength: 24)
         }
+      } else if let call = CallMarker(message: message) {
+        CallMarkerView(marker: call, botName: botName)
       } else {
         EventView(message: message)
       }
@@ -62,7 +65,9 @@ struct MessageView: View {
         }
       }
     case "user":
-      if let notice = noticeTitle(message) {
+      if let call = CallMarker(message: message) {
+        CallMarkerView(marker: call, botName: botName, reactions: reactions)
+      } else if let notice = noticeTitle(message) {
         EventView(message: message, title: notice)
       } else {
         HStack(spacing: 0) {

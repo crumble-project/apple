@@ -7,6 +7,7 @@ struct MessageView: View {
     @Environment(AppModel.self) private var model
     let message: Message
     var reactions: [String] = []
+    var botName = ""
     @State private var hovered = false
 
     private var replyable: Bool {
@@ -33,11 +34,15 @@ struct MessageView: View {
                     JobFailureCard(failure: failure) { model.openJob(failure.kind, failure.name) }
                     Spacer(minLength: 56)
                 }
+            } else if let call = CallMarker(message: message) {
+                CallMarkerView(marker: call, botName: botName)
             } else {
                 EventView(message: message)
             }
         case "user":
-            if let notice = noticeTitle(message) {
+            if let call = CallMarker(message: message) {
+                CallMarkerView(marker: call, botName: botName, reactions: reactions)
+            } else if let notice = noticeTitle(message) {
                 EventView(message: message, title: notice)
             } else {
                 // Without a width cap, bubbles hug their text and the actions sit right beside them; the

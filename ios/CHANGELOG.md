@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- A chat shows a voice gateway call as centered phone lines, as on the web: **Call started**, or, when the bot placed the call, that it called you over the greeting it spoke, and then how the call ended, with any reaction the bot left on it. A message spoken on a call says **Spoken on a call**.
 - The conversation list and **Settings** use large titles. A chat's header shows a larger portrait with the name in a glass capsule, as in Messages, and the composer is taller and further from the screen edges.
 - Sheets close and save with the system's glass X and checkmark buttons instead of **Cancel** and **Save**. Sheets with a specific action, such as **Install** or **Approve**, keep its name.
 - A bot's details match Android: the portrait, name, and status, then its desktop and its automations, each with an icon. A close button and an edit button sit in the top bar. The **Details** and **Memory** tabs, the model section, and the reasoning picker are gone; reasoning is set in the bot form, and memories are on the **Memory** page.

@@ -46,6 +46,7 @@ extension Message {
                          status: $0.status.rawValue)
       }, jobQuestion: wire.jobQuestion.map { JobQuestionEvent(id: $0.id, kind: $0.kind, job: $0.job) },
       heldAction: wire.heldAction.map { HeldActionEvent(id: $0.id, job: $0.job) },
+      call: wire.call.map { CallEvent(callId: $0.callId, direction: CallEvent.Direction(wire: $0.direction)) },
       timestamp: wire.timestamp.flatMap(Int64.init(exactly:)),
       attachments: wire.attachments?.map {
         AttachmentInfo(name: $0.name, mimeType: $0.mimeType, size: Int(exactly: $0.size) ?? 0,
@@ -53,6 +54,15 @@ extension Message {
       }, toolName: wire.toolName, toolCallId: wire.toolCallId, isError: wire.isError,
       toolDetails: try wire.toolDetails.map { try JSONValue(wire: $0) }, requestId: wire.requestId,
       sources: wire.sources?.map { MessageSource(url: $0.url, title: $0.title) })
+  }
+}
+
+extension CallEvent.Direction {
+  init(wire: Components.Schemas.TranscriptMessage.CallPayload.DirectionPayload) {
+    switch wire {
+    case .inbound: self = .inbound
+    case .outbound: self = .outbound
+    }
   }
 }
 

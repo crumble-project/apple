@@ -51,6 +51,23 @@ public struct BotCommunication: Codable, Hashable, Sendable {
   }
 }
 
+/// The voice gateway call a `call-started` or `call-ended` event belongs to.
+public struct CallEvent: Codable, Hashable, Sendable {
+  public enum Direction: String, Codable, Hashable, Sendable {
+    case inbound
+    /// The bot called the owner.
+    case outbound
+  }
+
+  public var callId: String
+  public var direction: Direction
+
+  public init(callId: String, direction: Direction) {
+    self.callId = callId
+    self.direction = direction
+  }
+}
+
 /// Client-side delivery state for an optimistic owner message.
 public enum MessageDeliveryState: String, Codable, Hashable, Sendable {
   case confirmed
@@ -71,6 +88,7 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
   public var communication: BotCommunication?
   public var jobQuestion: JobQuestionEvent?
   public var heldAction: HeldActionEvent?
+  public var call: CallEvent?
   public var timestamp: Int64?
   public var createdAt: String?
   public var attachments: [AttachmentInfo]?
@@ -90,7 +108,7 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
     blocks: JSONValue? = nil, kind: String? = nil,
     replyTo: String? = nil, replyPreview: String? = nil, origin: MessageOrigin? = nil,
     communication: BotCommunication? = nil, jobQuestion: JobQuestionEvent? = nil,
-    heldAction: HeldActionEvent? = nil, timestamp: Int64? = nil,
+    heldAction: HeldActionEvent? = nil, call: CallEvent? = nil, timestamp: Int64? = nil,
     attachments: [AttachmentInfo]? = nil, toolName: String? = nil, toolCallId: String? = nil,
     isError: Bool? = nil,
     toolDetails: JSONValue? = nil, requestId: String? = nil, sources: [MessageSource]? = nil,
@@ -108,6 +126,7 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
     self.communication = communication
     self.jobQuestion = jobQuestion
     self.heldAction = heldAction
+    self.call = call
     self.timestamp = timestamp
     self.attachments = attachments
     self.toolName = toolName
@@ -133,6 +152,7 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
     communication = try container.decodeIfPresent(BotCommunication.self, forKey: .communication)
     jobQuestion = try container.decodeIfPresent(JobQuestionEvent.self, forKey: .jobQuestion)
     heldAction = try container.decodeIfPresent(HeldActionEvent.self, forKey: .heldAction)
+    call = try container.decodeIfPresent(CallEvent.self, forKey: .call)
     timestamp = try container.decodeIfPresent(Int64.self, forKey: .timestamp)
     createdAt = try container.decodeIfPresent(String.self, forKey: .createdAt)
     attachments = try container.decodeIfPresent([AttachmentInfo].self, forKey: .attachments)

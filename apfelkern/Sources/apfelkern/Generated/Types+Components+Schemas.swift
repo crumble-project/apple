@@ -1486,6 +1486,8 @@ extension Components {
                 ///
                 /// - Remark: Generated from `#/components/schemas/ChatSnapshot/value2/live`.
                 public var live: OpenAPIRuntime.OpenAPIValueContainer?
+                /// Text of the reply the bot is writing now. Empty unless the event stream was opened with partial=true.
+                ///
                 /// - Remark: Generated from `#/components/schemas/ChatSnapshot/value2/partial`.
                 public var partial: Swift.String
                 /// - Remark: Generated from `#/components/schemas/ChatSnapshot/value2/status`.
@@ -1510,7 +1512,7 @@ extension Components {
                 ///   - conversationId:
                 ///   - error:
                 ///   - live: Pi Durable live progress state. In-flight assistant message content is omitted.
-                ///   - partial:
+                ///   - partial: Text of the reply the bot is writing now. Empty unless the event stream was opened with partial=true.
                 ///   - status:
                 ///   - updatedAt:
                 ///   - usage: Pi Durable usage document.
@@ -2995,6 +2997,68 @@ extension Components {
                 public var attachments: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.AttachmentsPayload?
                 /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/blocks`.
                 public var blocks: OpenAPIRuntime.OpenAPIValueContainer?
+                /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/call`.
+                public struct CallPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/call/callId`.
+                    public var callId: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/call/direction`.
+                    @frozen public enum DirectionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                        case inbound = "inbound"
+                        case outbound = "outbound"
+                    }
+                    /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/call/direction`.
+                    public var direction: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.CallPayload.DirectionPayload
+                    /// A container of undocumented properties.
+                    public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
+                    /// Creates a new `CallPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - callId:
+                    ///   - direction:
+                    ///   - additionalProperties: A container of undocumented properties.
+                    public init(
+                        callId: Swift.String,
+                        direction: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.CallPayload.DirectionPayload,
+                        additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()
+                    ) {
+                        self.callId = callId
+                        self.direction = direction
+                        self.additionalProperties = additionalProperties
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case callId
+                        case direction
+                    }
+                    public init(from decoder: any Swift.Decoder) throws {
+                        let container = try decoder.container(keyedBy: CodingKeys.self)
+                        self.callId = try container.decode(
+                            Swift.String.self,
+                            forKey: .callId
+                        )
+                        self.direction = try container.decode(
+                            Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.CallPayload.DirectionPayload.self,
+                            forKey: .direction
+                        )
+                        additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
+                            "callId",
+                            "direction"
+                        ])
+                    }
+                    public func encode(to encoder: any Swift.Encoder) throws {
+                        var container = encoder.container(keyedBy: CodingKeys.self)
+                        try container.encode(
+                            self.callId,
+                            forKey: .callId
+                        )
+                        try container.encode(
+                            self.direction,
+                            forKey: .direction
+                        )
+                        try encoder.encodeAdditionalProperties(additionalProperties)
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/call`.
+                public var call: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.CallPayload?
                 /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/communication`.
                 public struct CommunicationPayload: Codable, Hashable, Sendable {
                     /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/communication/executionId`.
@@ -3474,6 +3538,7 @@ extension Components {
                 /// - Parameters:
                 ///   - attachments:
                 ///   - blocks:
+                ///   - call:
                 ///   - communication:
                 ///   - content:
                 ///   - entryId:
@@ -3497,6 +3562,7 @@ extension Components {
                 public init(
                     attachments: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.AttachmentsPayload? = nil,
                     blocks: OpenAPIRuntime.OpenAPIValueContainer? = nil,
+                    call: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.CallPayload? = nil,
                     communication: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.CommunicationPayload? = nil,
                     content: Swift.String,
                     entryId: Swift.String,
@@ -3520,6 +3586,7 @@ extension Components {
                 ) {
                     self.attachments = attachments
                     self.blocks = blocks
+                    self.call = call
                     self.communication = communication
                     self.content = content
                     self.entryId = entryId
@@ -3544,6 +3611,7 @@ extension Components {
                 public enum CodingKeys: String, CodingKey {
                     case attachments
                     case blocks
+                    case call
                     case communication
                     case content
                     case entryId
@@ -3573,6 +3641,10 @@ extension Components {
                     self.blocks = try container.decodeIfPresent(
                         OpenAPIRuntime.OpenAPIValueContainer.self,
                         forKey: .blocks
+                    )
+                    self.call = try container.decodeIfPresent(
+                        Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.CallPayload.self,
+                        forKey: .call
                     )
                     self.communication = try container.decodeIfPresent(
                         Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.CommunicationPayload.self,
@@ -3653,6 +3725,7 @@ extension Components {
                     additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
                         "attachments",
                         "blocks",
+                        "call",
                         "communication",
                         "content",
                         "entryId",
@@ -3683,6 +3756,10 @@ extension Components {
                     try container.encodeIfPresent(
                         self.blocks,
                         forKey: .blocks
+                    )
+                    try container.encodeIfPresent(
+                        self.call,
+                        forKey: .call
                     )
                     try container.encodeIfPresent(
                         self.communication,
@@ -4392,6 +4469,68 @@ extension Components {
                 public var attachments: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.AttachmentsPayload?
                 /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/blocks`.
                 public var blocks: OpenAPIRuntime.OpenAPIValueContainer?
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/call`.
+                public struct CallPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/call/callId`.
+                    public var callId: Swift.String
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/call/direction`.
+                    @frozen public enum DirectionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                        case inbound = "inbound"
+                        case outbound = "outbound"
+                    }
+                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/call/direction`.
+                    public var direction: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.CallPayload.DirectionPayload
+                    /// A container of undocumented properties.
+                    public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
+                    /// Creates a new `CallPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - callId:
+                    ///   - direction:
+                    ///   - additionalProperties: A container of undocumented properties.
+                    public init(
+                        callId: Swift.String,
+                        direction: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.CallPayload.DirectionPayload,
+                        additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()
+                    ) {
+                        self.callId = callId
+                        self.direction = direction
+                        self.additionalProperties = additionalProperties
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case callId
+                        case direction
+                    }
+                    public init(from decoder: any Swift.Decoder) throws {
+                        let container = try decoder.container(keyedBy: CodingKeys.self)
+                        self.callId = try container.decode(
+                            Swift.String.self,
+                            forKey: .callId
+                        )
+                        self.direction = try container.decode(
+                            Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.CallPayload.DirectionPayload.self,
+                            forKey: .direction
+                        )
+                        additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
+                            "callId",
+                            "direction"
+                        ])
+                    }
+                    public func encode(to encoder: any Swift.Encoder) throws {
+                        var container = encoder.container(keyedBy: CodingKeys.self)
+                        try container.encode(
+                            self.callId,
+                            forKey: .callId
+                        )
+                        try container.encode(
+                            self.direction,
+                            forKey: .direction
+                        )
+                        try encoder.encodeAdditionalProperties(additionalProperties)
+                    }
+                }
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/call`.
+                public var call: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.CallPayload?
                 /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/communication`.
                 public struct CommunicationPayload: Codable, Hashable, Sendable {
                     /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/communication/executionId`.
@@ -4871,6 +5010,7 @@ extension Components {
                 /// - Parameters:
                 ///   - attachments:
                 ///   - blocks:
+                ///   - call:
                 ///   - communication:
                 ///   - content:
                 ///   - entryId:
@@ -4894,6 +5034,7 @@ extension Components {
                 public init(
                     attachments: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.AttachmentsPayload? = nil,
                     blocks: OpenAPIRuntime.OpenAPIValueContainer? = nil,
+                    call: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.CallPayload? = nil,
                     communication: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.CommunicationPayload? = nil,
                     content: Swift.String,
                     entryId: Swift.String,
@@ -4917,6 +5058,7 @@ extension Components {
                 ) {
                     self.attachments = attachments
                     self.blocks = blocks
+                    self.call = call
                     self.communication = communication
                     self.content = content
                     self.entryId = entryId
@@ -4941,6 +5083,7 @@ extension Components {
                 public enum CodingKeys: String, CodingKey {
                     case attachments
                     case blocks
+                    case call
                     case communication
                     case content
                     case entryId
@@ -4970,6 +5113,10 @@ extension Components {
                     self.blocks = try container.decodeIfPresent(
                         OpenAPIRuntime.OpenAPIValueContainer.self,
                         forKey: .blocks
+                    )
+                    self.call = try container.decodeIfPresent(
+                        Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.CallPayload.self,
+                        forKey: .call
                     )
                     self.communication = try container.decodeIfPresent(
                         Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.CommunicationPayload.self,
@@ -5050,6 +5197,7 @@ extension Components {
                     additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
                         "attachments",
                         "blocks",
+                        "call",
                         "communication",
                         "content",
                         "entryId",
@@ -5080,6 +5228,10 @@ extension Components {
                     try container.encodeIfPresent(
                         self.blocks,
                         forKey: .blocks
+                    )
+                    try container.encodeIfPresent(
+                        self.call,
+                        forKey: .call
                     )
                     try container.encodeIfPresent(
                         self.communication,
@@ -7044,7 +7196,7 @@ extension Components {
         public struct MessageOrigin: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/MessageOrigin/agentId`.
             public var agentId: Swift.String?
-            /// Where the message came from: owner, task, event (an event automation's prompt), script (a script task's result), credential, bot, or group. Clients may receive other values later.
+            /// Where the message came from: owner, task, event (an event automation's prompt), script (a script task's result), credential, bot, group, or call (a voice gateway call ended, which starts a bot turn). Clients may receive other values later.
             ///
             /// - Remark: Generated from `#/components/schemas/MessageOrigin/kind`.
             public var kind: Swift.String
@@ -7054,7 +7206,7 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/MessageOrigin/source`.
             public var source: Swift.String?
-            /// On an owner message sent through a message gateway: the gateway's ID, such as `discord`.
+            /// On an owner message sent through a message gateway: the gateway's ID, such as `discord`. On a spoken message from a voice gateway call: `voice`.
             ///
             /// - Remark: Generated from `#/components/schemas/MessageOrigin/via`.
             public var via: Swift.String?
@@ -7062,10 +7214,10 @@ extension Components {
             ///
             /// - Parameters:
             ///   - agentId:
-            ///   - kind: Where the message came from: owner, task, event (an event automation's prompt), script (a script task's result), credential, bot, or group. Clients may receive other values later.
+            ///   - kind: Where the message came from: owner, task, event (an event automation's prompt), script (a script task's result), credential, bot, group, or call (a voice gateway call ended, which starts a bot turn). Clients may receive other values later.
             ///   - name:
             ///   - source: On an event automation's message: the name of the event source whose event started it.
-            ///   - via: On an owner message sent through a message gateway: the gateway's ID, such as `discord`.
+            ///   - via: On an owner message sent through a message gateway: the gateway's ID, such as `discord`. On a spoken message from a voice gateway call: `voice`.
             public init(
                 agentId: Swift.String? = nil,
                 kind: Swift.String,
@@ -9197,6 +9349,39 @@ extension Components {
                 case removed
             }
         }
+        /// - Remark: Generated from `#/components/schemas/SpokenExecution`.
+        public struct SpokenExecution: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SpokenExecution/execution`.
+            public var execution: Components.Schemas.Execution
+            /// True when the bot asked to end the call: hang up once the reply was read aloud, then report the end with reason hungUp.
+            ///
+            /// - Remark: Generated from `#/components/schemas/SpokenExecution/hangUp`.
+            public var hangUp: Swift.Bool
+            /// The bot's reply, read by the message's submission; null unless the execution's status is done. A failed or cancelled execution never gets one.
+            ///
+            /// - Remark: Generated from `#/components/schemas/SpokenExecution/reply`.
+            public var reply: [Swift.String]?
+            /// Creates a new `SpokenExecution`.
+            ///
+            /// - Parameters:
+            ///   - execution:
+            ///   - hangUp: True when the bot asked to end the call: hang up once the reply was read aloud, then report the end with reason hungUp.
+            ///   - reply: The bot's reply, read by the message's submission; null unless the execution's status is done. A failed or cancelled execution never gets one.
+            public init(
+                execution: Components.Schemas.Execution,
+                hangUp: Swift.Bool,
+                reply: [Swift.String]? = nil
+            ) {
+                self.execution = execution
+                self.hangUp = hangUp
+                self.reply = reply
+            }
+            public enum CodingKeys: String, CodingKey {
+                case execution
+                case hangUp
+                case reply
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/TranscriptMessage`.
         public struct TranscriptMessage: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/TranscriptMessage/attachments`.
@@ -9205,6 +9390,44 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/TranscriptMessage/blocks`.
             public var blocks: OpenAPIRuntime.OpenAPIValueContainer?
+            /// On a `call-started` or `call-ended` event: the call.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TranscriptMessage/call`.
+            public struct CallPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/TranscriptMessage/call/callId`.
+                public var callId: Swift.String
+                /// outbound: the bot called the owner.
+                ///
+                /// - Remark: Generated from `#/components/schemas/TranscriptMessage/call/direction`.
+                @frozen public enum DirectionPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case inbound = "inbound"
+                    case outbound = "outbound"
+                }
+                /// outbound: the bot called the owner.
+                ///
+                /// - Remark: Generated from `#/components/schemas/TranscriptMessage/call/direction`.
+                public var direction: Components.Schemas.TranscriptMessage.CallPayload.DirectionPayload
+                /// Creates a new `CallPayload`.
+                ///
+                /// - Parameters:
+                ///   - callId:
+                ///   - direction: outbound: the bot called the owner.
+                public init(
+                    callId: Swift.String,
+                    direction: Components.Schemas.TranscriptMessage.CallPayload.DirectionPayload
+                ) {
+                    self.callId = callId
+                    self.direction = direction
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case callId
+                    case direction
+                }
+            }
+            /// On a `call-started` or `call-ended` event: the call.
+            ///
+            /// - Remark: Generated from `#/components/schemas/TranscriptMessage/call`.
+            public var call: Components.Schemas.TranscriptMessage.CallPayload?
             /// - Remark: Generated from `#/components/schemas/TranscriptMessage/communication`.
             public var communication: Components.Schemas.BotCommunication?
             /// - Remark: Generated from `#/components/schemas/TranscriptMessage/content`.
@@ -9291,6 +9514,8 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/TranscriptMessage/jobQuestion`.
             public var jobQuestion: Components.Schemas.TranscriptMessage.JobQuestionPayload?
+            /// The entry's kind. Events include bot-message, job-question, held-action, job-failure, reset, compaction, call-started (content: the greeting of a call the bot placed, or Call started), and call-ended (content: how the call ended, when it woke no bot turn). Clients may receive other values later.
+            ///
             /// - Remark: Generated from `#/components/schemas/TranscriptMessage/kind`.
             public var kind: Swift.String?
             /// - Remark: Generated from `#/components/schemas/TranscriptMessage/origin`.
@@ -9351,6 +9576,7 @@ extension Components {
             /// - Parameters:
             ///   - attachments:
             ///   - blocks: Provider content blocks, with inline image bytes removed.
+            ///   - call: On a `call-started` or `call-ended` event: the call.
             ///   - communication:
             ///   - content:
             ///   - entryId:
@@ -9358,7 +9584,7 @@ extension Components {
             ///   - id:
             ///   - isError:
             ///   - jobQuestion: On a `job-question` event: the job that asked the owner the question in `content`. Whether it still waits is the job's `question` in its listing.
-            ///   - kind:
+            ///   - kind: The entry's kind. Events include bot-message, job-question, held-action, job-failure, reset, compaction, call-started (content: the greeting of a call the bot placed, or Call started), and call-ended (content: how the call ended, when it woke no bot turn). Clients may receive other values later.
             ///   - origin:
             ///   - replyPreview:
             ///   - replyTo:
@@ -9373,6 +9599,7 @@ extension Components {
             public init(
                 attachments: [Components.Schemas.AttachmentInfo]? = nil,
                 blocks: OpenAPIRuntime.OpenAPIValueContainer? = nil,
+                call: Components.Schemas.TranscriptMessage.CallPayload? = nil,
                 communication: Components.Schemas.BotCommunication? = nil,
                 content: Swift.String,
                 entryId: Swift.String,
@@ -9395,6 +9622,7 @@ extension Components {
             ) {
                 self.attachments = attachments
                 self.blocks = blocks
+                self.call = call
                 self.communication = communication
                 self.content = content
                 self.entryId = entryId
@@ -9418,6 +9646,7 @@ extension Components {
             public enum CodingKeys: String, CodingKey {
                 case attachments
                 case blocks
+                case call
                 case communication
                 case content
                 case entryId
@@ -9549,5 +9778,300 @@ extension Components {
                 case visionModel
             }
         }
+        /// The call's turn was aborted or its wait ran out: hang up if it still rings.
+        ///
+        /// - Remark: Generated from `#/components/schemas/VoiceCallCancelEvent`.
+        public struct VoiceCallCancelEvent: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/VoiceCallCancelEvent/callId`.
+            public var callId: Swift.String
+            /// Creates a new `VoiceCallCancelEvent`.
+            ///
+            /// - Parameters:
+            ///   - callId:
+            public init(callId: Swift.String) {
+                self.callId = callId
+            }
+            public enum CodingKeys: String, CodingKey {
+                case callId
+            }
+        }
+        /// A bot asks to call the owner. Sent only to a stream opened with calls=true, and sent again after a reconnect until the call is acknowledged; ignore a callId you already dial.
+        ///
+        /// - Remark: Generated from `#/components/schemas/VoiceCallEvent`.
+        public struct VoiceCallEvent: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/VoiceCallEvent/callId`.
+            public var callId: Swift.String
+            /// What the bot says when the owner answers.
+            ///
+            /// - Remark: Generated from `#/components/schemas/VoiceCallEvent/greeting`.
+            public var greeting: Swift.String
+            /// The owner number to dial, the first in the owner's list.
+            ///
+            /// - Remark: Generated from `#/components/schemas/VoiceCallEvent/to`.
+            public var to: Swift.String
+            /// The line the call is placed from.
+            ///
+            /// - Remark: Generated from `#/components/schemas/VoiceCallEvent/username`.
+            public var username: Swift.String
+            /// Creates a new `VoiceCallEvent`.
+            ///
+            /// - Parameters:
+            ///   - callId:
+            ///   - greeting: What the bot says when the owner answers.
+            ///   - to: The owner number to dial, the first in the owner's list.
+            ///   - username: The line the call is placed from.
+            public init(
+                callId: Swift.String,
+                greeting: Swift.String,
+                to: Swift.String,
+                username: Swift.String
+            ) {
+                self.callId = callId
+                self.greeting = greeting
+                self.to = to
+                self.username = username
+            }
+            public enum CodingKeys: String, CodingKey {
+                case callId
+                case greeting
+                case to
+                case username
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/VoiceCallReport`.
+        @frozen public enum VoiceCallReport: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/VoiceCallReport/case1`.
+            public struct Case1Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/VoiceCallReport/case1/error`.
+                public var error: Swift.String?
+                /// For a call a bot placed: ringing acknowledges it as soon as dialing starts; the others settle it.
+                ///
+                /// - Remark: Generated from `#/components/schemas/VoiceCallReport/case1/outcome`.
+                @frozen public enum OutcomePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case ringing = "ringing"
+                    case answered = "answered"
+                    case unanswered = "unanswered"
+                    case busy = "busy"
+                    case failed = "failed"
+                }
+                /// For a call a bot placed: ringing acknowledges it as soon as dialing starts; the others settle it.
+                ///
+                /// - Remark: Generated from `#/components/schemas/VoiceCallReport/case1/outcome`.
+                public var outcome: Components.Schemas.VoiceCallReport.Case1Payload.OutcomePayload
+                /// Creates a new `Case1Payload`.
+                ///
+                /// - Parameters:
+                ///   - error:
+                ///   - outcome: For a call a bot placed: ringing acknowledges it as soon as dialing starts; the others settle it.
+                public init(
+                    error: Swift.String? = nil,
+                    outcome: Components.Schemas.VoiceCallReport.Case1Payload.OutcomePayload
+                ) {
+                    self.error = error
+                    self.outcome = outcome
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case error
+                    case outcome
+                }
+                public init(from decoder: any Swift.Decoder) throws {
+                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    self.error = try container.decodeIfPresent(
+                        Swift.String.self,
+                        forKey: .error
+                    )
+                    self.outcome = try container.decode(
+                        Components.Schemas.VoiceCallReport.Case1Payload.OutcomePayload.self,
+                        forKey: .outcome
+                    )
+                    try decoder.ensureNoAdditionalProperties(knownKeys: [
+                        "error",
+                        "outcome"
+                    ])
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/VoiceCallReport/case1`.
+            case case1(Components.Schemas.VoiceCallReport.Case1Payload)
+            /// - Remark: Generated from `#/components/schemas/VoiceCallReport/case2`.
+            public struct Case2Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/VoiceCallReport/case2/error`.
+                public var error: Swift.String?
+                /// A started call ended. Accepted for an active, ended, or unknown call; an unknown one can't be started afterwards.
+                ///
+                /// - Remark: Generated from `#/components/schemas/VoiceCallReport/case2/outcome`.
+                @frozen public enum OutcomePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case ended = "ended"
+                }
+                /// A started call ended. Accepted for an active, ended, or unknown call; an unknown one can't be started afterwards.
+                ///
+                /// - Remark: Generated from `#/components/schemas/VoiceCallReport/case2/outcome`.
+                public var outcome: Components.Schemas.VoiceCallReport.Case2Payload.OutcomePayload
+                /// hungUp: the media ended or the dialog closed. maxDuration: the call reached its maximum length. failed: any other error. stopping: the voice gateway shut down.
+                ///
+                /// - Remark: Generated from `#/components/schemas/VoiceCallReport/case2/reason`.
+                @frozen public enum ReasonPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case hungUp = "hungUp"
+                    case maxDuration = "maxDuration"
+                    case failed = "failed"
+                    case stopping = "stopping"
+                }
+                /// hungUp: the media ended or the dialog closed. maxDuration: the call reached its maximum length. failed: any other error. stopping: the voice gateway shut down.
+                ///
+                /// - Remark: Generated from `#/components/schemas/VoiceCallReport/case2/reason`.
+                public var reason: Components.Schemas.VoiceCallReport.Case2Payload.ReasonPayload
+                /// Creates a new `Case2Payload`.
+                ///
+                /// - Parameters:
+                ///   - error:
+                ///   - outcome: A started call ended. Accepted for an active, ended, or unknown call; an unknown one can't be started afterwards.
+                ///   - reason: hungUp: the media ended or the dialog closed. maxDuration: the call reached its maximum length. failed: any other error. stopping: the voice gateway shut down.
+                public init(
+                    error: Swift.String? = nil,
+                    outcome: Components.Schemas.VoiceCallReport.Case2Payload.OutcomePayload,
+                    reason: Components.Schemas.VoiceCallReport.Case2Payload.ReasonPayload
+                ) {
+                    self.error = error
+                    self.outcome = outcome
+                    self.reason = reason
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case error
+                    case outcome
+                    case reason
+                }
+                public init(from decoder: any Swift.Decoder) throws {
+                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    self.error = try container.decodeIfPresent(
+                        Swift.String.self,
+                        forKey: .error
+                    )
+                    self.outcome = try container.decode(
+                        Components.Schemas.VoiceCallReport.Case2Payload.OutcomePayload.self,
+                        forKey: .outcome
+                    )
+                    self.reason = try container.decode(
+                        Components.Schemas.VoiceCallReport.Case2Payload.ReasonPayload.self,
+                        forKey: .reason
+                    )
+                    try decoder.ensureNoAdditionalProperties(knownKeys: [
+                        "error",
+                        "outcome",
+                        "reason"
+                    ])
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/VoiceCallReport/case2`.
+            case case2(Components.Schemas.VoiceCallReport.Case2Payload)
+            public init(from decoder: any Swift.Decoder) throws {
+                var errors: [any Swift.Error] = []
+                do {
+                    self = .case1(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                do {
+                    self = .case2(try .init(from: decoder))
+                    return
+                } catch {
+                    errors.append(error)
+                }
+                throw Swift.DecodingError.failedToDecodeOneOfSchema(
+                    type: Self.self,
+                    codingPath: decoder.codingPath,
+                    errors: errors
+                )
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                switch self {
+                case let .case1(value):
+                    try value.encode(to: encoder)
+                case let .case2(value):
+                    try value.encode(to: encoder)
+                }
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/VoiceGatewayConfigEvent`.
+        public struct VoiceGatewayConfigEvent: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/VoiceGatewayConfigEvent/enabled`.
+            public var enabled: Swift.Bool
+            /// - Remark: Generated from `#/components/schemas/VoiceGatewayConfigEvent/LinesPayload`.
+            public struct LinesPayloadPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/VoiceGatewayConfigEvent/LinesPayload/botId`.
+                public var botId: Swift.String
+                /// - Remark: Generated from `#/components/schemas/VoiceGatewayConfigEvent/LinesPayload/botName`.
+                public var botName: Swift.String
+                /// - Remark: Generated from `#/components/schemas/VoiceGatewayConfigEvent/LinesPayload/callsOwner`.
+                public var callsOwner: Swift.Bool
+                /// The line's display name, or the bot's name.
+                ///
+                /// - Remark: Generated from `#/components/schemas/VoiceGatewayConfigEvent/LinesPayload/displayName`.
+                public var displayName: Swift.String
+                /// - Remark: Generated from `#/components/schemas/VoiceGatewayConfigEvent/LinesPayload/username`.
+                public var username: Swift.String
+                /// Creates a new `LinesPayloadPayload`.
+                ///
+                /// - Parameters:
+                ///   - botId:
+                ///   - botName:
+                ///   - callsOwner:
+                ///   - displayName: The line's display name, or the bot's name.
+                ///   - username:
+                public init(
+                    botId: Swift.String,
+                    botName: Swift.String,
+                    callsOwner: Swift.Bool,
+                    displayName: Swift.String,
+                    username: Swift.String
+                ) {
+                    self.botId = botId
+                    self.botName = botName
+                    self.callsOwner = callsOwner
+                    self.displayName = displayName
+                    self.username = username
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case botId
+                    case botName
+                    case callsOwner
+                    case displayName
+                    case username
+                }
+            }
+            /// Lines whose bot is enabled; empty while the voice gateway is disabled.
+            ///
+            /// - Remark: Generated from `#/components/schemas/VoiceGatewayConfigEvent/lines`.
+            public typealias LinesPayload = [Components.Schemas.VoiceGatewayConfigEvent.LinesPayloadPayload]
+            /// Lines whose bot is enabled; empty while the voice gateway is disabled.
+            ///
+            /// - Remark: Generated from `#/components/schemas/VoiceGatewayConfigEvent/lines`.
+            public var lines: Components.Schemas.VoiceGatewayConfigEvent.LinesPayload
+            /// - Remark: Generated from `#/components/schemas/VoiceGatewayConfigEvent/ownerNumbers`.
+            public var ownerNumbers: [Swift.String]
+            /// Creates a new `VoiceGatewayConfigEvent`.
+            ///
+            /// - Parameters:
+            ///   - enabled:
+            ///   - lines: Lines whose bot is enabled; empty while the voice gateway is disabled.
+            ///   - ownerNumbers:
+            public init(
+                enabled: Swift.Bool,
+                lines: Components.Schemas.VoiceGatewayConfigEvent.LinesPayload,
+                ownerNumbers: [Swift.String]
+            ) {
+                self.enabled = enabled
+                self.lines = lines
+                self.ownerNumbers = ownerNumbers
+            }
+            public enum CodingKeys: String, CodingKey {
+                case enabled
+                case lines
+                case ownerNumbers
+            }
+        }
+        /// Another connection with the same voice gateway token took over; sent before this stream closes.
+        ///
+        /// - Remark: Generated from `#/components/schemas/VoiceGatewayReplacedEvent`.
+        public typealias VoiceGatewayReplacedEvent = OpenAPIRuntime.OpenAPIObjectContainer
     }
 }

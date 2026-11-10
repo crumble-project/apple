@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- A chat shows a voice gateway call as centered phone lines, as on the web: **Call started**, or, when the bot placed the call, that it called you over the greeting it spoke, and then how the call ended, with any reaction the bot left on it. A message spoken on a call says **Spoken on a call**.
 - The bot form shows the portrait with a pencil, and the avatar editor opens in a popover instead of filling the form, as on the web.
 - The column beside a chat matches the web: a fixed width with the bot's portrait, its desktop, and its automations. The toolbar has **Bot Settings** in place of **Bot Desktop**, and its Details button opens and closes the column. Details and Memory tabs and the Model section are gone, and memories stay on the **Memory** page. An opened job takes the column's place.
 - Unsent text stays with its chat, including across launches.

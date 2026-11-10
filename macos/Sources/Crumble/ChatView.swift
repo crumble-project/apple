@@ -201,7 +201,7 @@ struct ChatRowView: View {
         case .time(_, let label):
             Text(label).font(.system(size: 12)).foregroundStyle(.secondary).frame(maxWidth: .infinity)
         case .message(let message, let reactions):
-            MessageView(message: message, reactions: reactions)
+            MessageView(message: message, reactions: reactions, botName: agent.name)
         case .thinking:
             let label = Working(snapshot: model.snapshot, messages: model.messages).label + "…"
             HStack(spacing: 10) {

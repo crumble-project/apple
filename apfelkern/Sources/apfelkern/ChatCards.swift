@@ -29,12 +29,47 @@ public struct JobFailure: Hashable, Sendable {
   public var title: String { text.prefix(1).uppercased() + text.dropFirst() }
 }
 
+/// A voice gateway call in the chat: its start or end, or the notice that its end woke the bot.
+public struct CallMarker: Hashable, Sendable {
+  public static let startedKind = "call-started"
+  public static let endedKind = "call-ended"
+  public static let originKind = "call"
+
+  /// The bot placed the call, so its start reads "{bot} called you" over the greeting it spoke.
+  public var outbound: Bool
+  public var ended: Bool
+  public var text: String
+
+  public init?(message: Message) {
+    if message.role == "user", message.origin?.kind == Self.originKind {
+      outbound = false
+      ended = true
+    } else if message.role == "event", let call = message.call,
+      [Self.startedKind, Self.endedKind].contains(message.kind) {
+      outbound = call.direction == .outbound
+      ended = message.kind == Self.endedKind
+    } else {
+      return nil
+    }
+    text = message.text
+  }
+
+  public func title(botName: String) -> String {
+    if ended { return text }
+    return outbound ? "\(botName) called you" : "Call started"
+  }
+
+  /// The greeting the bot spoke on a call it placed.
+  public var quote: String? { !ended && outbound ? text.nilIfEmpty : nil }
+}
+
 /// The title of the collapsed row that stands in for an automated turn's prompt; nil for other messages.
 public func noticeTitle(_ message: Message) -> String? {
   guard message.role == "user", let origin = message.origin else { return nil }
   let name = origin.name ?? ""
   switch origin.kind {
   case "bot_request": return "Bot request"
+  case CallMarker.originKind: return "Call"
   case "task", "credential", "bot": return messageLabel(message)
   case "script": return "Script automation · \(name)"
   case "event": return "Automation · \(name), event from \(origin.source ?? "a deleted source")"
@@ -45,6 +80,15 @@ public func noticeTitle(_ message: Message) -> String? {
 /// A message gateway's name for "Sent from"; a gateway this client doesn't know keeps its ID.
 public func gatewayLabel(_ id: String) -> String {
   id == "discord" ? "Discord" : id
+}
+
+/// The voice gateway's `via` on a spoken message.
+public let voiceGatewayID = "voice"
+
+/// The line under an owner message that came through a gateway: "Sent from Discord" or, for a spoken message,
+/// "Spoken on a call".
+public func gatewayOrigin(_ id: String) -> String {
+  id == voiceGatewayID ? "Spoken on a call" : "Sent from \(gatewayLabel(id))"
 }
 
 /// Keeps the conversation itself: owner and agent text, context events, and the cards tools leave,

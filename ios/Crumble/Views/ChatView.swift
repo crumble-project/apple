@@ -211,7 +211,7 @@ struct ChatRowView: View {
     case .time(_, let label):
       ChatTimeLabel(text: label)
     case .message(let message, let reactions):
-      MessageView(message: message, reactions: reactions, place: place)
+      MessageView(message: message, reactions: reactions, place: place, botName: agent.name)
     case .partial(let text):
       HStack {
         MarkdownText(text: text).bubble(owner: false)
