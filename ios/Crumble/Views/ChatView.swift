@@ -89,6 +89,7 @@ struct ChatView: View {
     .task(id: model.jobPollDelay) { await model.watchJobs() }
     .task(id: model.heldActionBoard.needsPolling) { await model.watchHeldActions() }
     .task(id: model.botRequestBoard.needsPolling) { await model.watchBotRequests() }
+    .task(id: model.callRequestBoard.needsPolling) { await model.watchCallRequests() }
     .task(id: model.botSecretBoard.needsPolling) { await model.watchBotSecrets() }
     .safeAreaInset(edge: .bottom) {
       if model.snapshot != nil { Composer(target: .chat(agent, model: model)) }
@@ -211,7 +212,7 @@ struct ChatRowView: View {
     case .time(_, let label):
       ChatTimeLabel(text: label)
     case .message(let message, let reactions):
-      MessageView(message: message, reactions: reactions, place: place)
+      MessageView(message: message, reactions: reactions, place: place, botName: agent.name)
     case .partial(let text):
       HStack {
         MarkdownText(text: text).bubble(owner: false)

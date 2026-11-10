@@ -4,7 +4,7 @@ Native macOS and iOS clients for Crumble and the Swift package they share.
 
 ```mermaid
 flowchart LR
-  Contract["bot contract-vX.Y.Z\n(apfelkern/Contract)"] --> Apfelkern["apfelkern\nGenerated client, models, delivery & BotAvatar"]
+  Contract["bot contract\n(apfelkern/Contract)"] --> Apfelkern["apfelkern\nGenerated client, models, delivery & BotAvatar"]
   Apfelkern --> macOS["macos\nCrumble for macOS"]
   Apfelkern --> iOS["ios\nCrumble for iOS & iPadOS"]
 ```
@@ -24,7 +24,6 @@ Workflows in `.github/workflows` run only when their directory or `apfelkern` ch
 - `apfelkern.yml`: verifies the generated client, builds, tests, and lints `apfelkern`.
 - `macos.yml`: runs `swift test` and `swiftlint` for the macOS app.
 - `ios.yml`: builds the unsigned iOS app and test targets and runs `swiftlint` (simulator tests run locally).
-- `apfelkern-update-contract.yml`: checks weekly for a new `bot` contract release and opens a verified pull request.
 
 The canonical glossary is [`bot/GLOSSARY.md`](https://github.com/crumble-project/bot/blob/main/GLOSSARY.md).
 

@@ -54,8 +54,11 @@ extension AppModel {
 
     func job(_ recorded: Job) -> Job { jobBoard.job(recorded) }
 
+    /// Selecting the open job's card again closes it.
     func openJob(_ kind: JobKind, _ name: String) {
         guard let client else { return }
+        if let open = jobBoard.history, open.kind == kind, open.name == name { return closeJob() }
+        openCall = nil
         jobBoard.open(kind, name, agentID: selectedAgentID, client: client)
     }
 

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add outside calls: `CallRequest` (a bot's proposal to call someone other than the owner, read from a `request_call` result or `APIClient.callRequests(_:)`), `approveCallRequest`, `declineCallRequest`, and `callRequestTranscript`, and `CallRequestBoard`, whose decisions show pending until the server confirms and whose refused approval exposes the server's text. `CallEvent` gains `callee`, and `shownInChat(_:)` hides the `call-started` event of an outside call and shows a call request card. Add `CallRequest.stateLabel`, `callRequest(for:in:)`, `callNoticeDetail(_:request:)`, and `callTranscriptLines(_:)`. `noticeTitle(_:)` names a `call_request` notice **Call request**.
+- Update the contract copy for the voice gateway. `Message` gains `call`, a `CallEvent` with the call's ID and direction. Add `CallMarker`, which reads a `call-started` or `call-ended` event and the `call` notice whose end woke the bot, and `gatewayOrigin(_:)`, which reads "Spoken on a call" for a spoken message. `noticeTitle(_:)` names a `call` notice **Call**. `BotAvatar` gains `CallMarkerView`, and `GatewayOriginLabel` shows a phone for a spoken message.
+- `scripts/contract.py --update DIRECTORY` copies the contract files from a directory such as `bot/openapi/`. `Contract/` no longer carries `pin.json`, `SHA256SUMS`, `CHANGELOG.md`, or `source-commit.txt`, and the weekly contract update workflow is gone.
 - Add `BotAvatarPicker`: the portrait opens `BotAvatarEditor` in a popover.
 - Add `ComposerDrafts`, unsent text by conversation, and `GroupChatHost.composerDrafts`, which replaces `groupComposerDrafts`.
 - Add `ThinkingLevel.available(for:in:)` and `ActivityEntry.failed`. `BotAvatar` gains `ReasoningField`, `DesktopModelField`, and `ActivityErrorBadge`.

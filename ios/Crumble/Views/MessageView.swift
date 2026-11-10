@@ -8,9 +8,19 @@ struct MessageView: View {
   let message: Message
   var reactions: [String] = []
   var place = BubblePlace()
+  var botName = ""
 
   private var replyable: Bool {
     !(message.entryId ?? "").isEmpty && (message.role == "user" || message.role == "assistant")
+  }
+  private var outsideCall: CallRequest? {
+    callRequest(for: message, in: model.callRequestBoard.requests).flatMap {
+      $0.status == .declined ? nil : $0
+    }
+  }
+  private func noticeDetail(_ request: CallRequest) -> String {
+    let detail = callNoticeDetail(message, request: request)
+    return detail.prefix(1).uppercased() + detail.dropFirst()
   }
   private var owner: Bool { message.origin == nil || message.origin?.kind == "owner" }
 
@@ -34,6 +44,8 @@ struct MessageView: View {
           JobFailureCard(failure: failure) { model.openJob(failure.kind, failure.name) }
           Spacer(minLength: 24)
         }
+      } else if let call = CallMarker(message: message) {
+        CallMarkerView(marker: call, botName: botName)
       } else {
         EventView(message: message)
       }
@@ -55,6 +67,11 @@ struct MessageView: View {
           BotRequestCard(request: request)
           Spacer(minLength: 24)
         }
+      } else if let request = CallRequest(message: message) {
+        HStack {
+          CallRequestCard(request: request)
+          Spacer(minLength: 24)
+        }
       } else if let ask = BotSecretAsk(message: message) {
         HStack {
           BotSecretRequestCard(ask: ask)
@@ -62,7 +79,14 @@ struct MessageView: View {
         }
       }
     case "user":
-      if let notice = noticeTitle(message) {
+      if let request = outsideCall {
+        HStack {
+          CallRequestRow(request: request, detail: noticeDetail(request), opens: true)
+          Spacer(minLength: 24)
+        }
+      } else if let call = CallMarker(message: message) {
+        CallMarkerView(marker: call, botName: botName, reactions: reactions)
+      } else if let notice = noticeTitle(message) {
         EventView(message: message, title: notice)
       } else {
         HStack(spacing: 0) {

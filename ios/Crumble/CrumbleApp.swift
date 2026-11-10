@@ -200,6 +200,7 @@ struct ContentView: View {
     .gitHubAppSheets()
     .skillSheet(active: model.agentDraft == nil)
     .sheet(item: $model.jobHistory) { JobSheet(job: $0) }
+    .sheet(item: $model.openedCall) { CallSheet(call: $0) }
     .sheet(item: $model.groupDraft) { GroupEditorView(draft: sheetBinding($model.groupDraft, for: $0)) }
   }
 }

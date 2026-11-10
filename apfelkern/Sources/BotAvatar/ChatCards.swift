@@ -31,7 +31,7 @@ public struct JobFailureCard: View {
   }
 }
 
-/// "Sent from Discord", under an owner message that came through a message gateway.
+/// "Sent from Discord" or "Spoken on a call", under an owner message that came through a gateway.
 public struct GatewayOriginLabel: View {
   let id: String
 
@@ -41,11 +41,58 @@ public struct GatewayOriginLabel: View {
 
   public var body: some View {
     HStack(spacing: 4) {
-      BrandLogoView(.gateway(id), size: 12)
-      Text("Sent from \(gatewayLabel(id))")
+      if id == voiceGatewayID {
+        Image(systemName: "phone").font(.system(size: 10))
+      } else {
+        BrandLogoView(.gateway(id), size: 12)
+      }
+      Text(gatewayOrigin(id))
     }
     .font(.caption)
     .foregroundStyle(.secondary)
     .accessibilityElement(children: .combine)
+  }
+}
+
+/// A centered phone marker for a call's start or end, with the greeting of a call the bot placed under it.
+public struct CallMarkerView: View {
+  let title: String
+  let quote: String?
+  let reactions: [String]
+
+  public init(marker: CallMarker, botName: String, reactions: [String] = []) {
+    title = marker.title(botName: botName)
+    quote = marker.quote
+    self.reactions = reactions
+  }
+
+  public var body: some View {
+    VStack(spacing: 4) {
+      HStack(spacing: 6) {
+        Image(systemName: "phone").font(.caption)
+        Text(title)
+        if !reactions.isEmpty {
+          Text(reactions.joined())
+            .padding(.horizontal, 6)
+            .padding(.vertical, 1)
+            .background(.quaternary, in: .capsule)
+            .accessibilityLabel("Reacted \(reactions.joined(separator: " "))")
+        }
+      }
+      .font(.callout)
+      .foregroundStyle(.secondary)
+      .multilineTextAlignment(.center)
+      .accessibilityElement(children: .combine)
+      if let quote {
+        HStack(spacing: 8) {
+          Capsule().fill(.quaternary).frame(width: 2)
+          Text(quote).font(.callout).foregroundStyle(.secondary).textSelection(.enabled)
+        }
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: 448, alignment: .leading)
+      }
+    }
+    .padding(.vertical, 6)
+    .frame(maxWidth: .infinity)
   }
 }

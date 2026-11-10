@@ -45,6 +45,10 @@ final class AppModel {
     let jobBoard = JobBoard()
     let heldActionBoard = HeldActionBoard()
     let botRequestBoard = BotRequestBoard()
+    let callRequestBoard = CallRequestBoard()
+    var openCall: OpenCall?
+    @ObservationIgnored var callOpenings = 0
+    @ObservationIgnored var callPollInterval = Duration.seconds(2)
     let botSecretBoard = BotSecretBoard()
     let gitHubAccountBoard = GitHubAccountBoard()
     let gitHubAppBoard = GitHubAppBoard()
@@ -316,6 +320,8 @@ extension AppModel {
         jobBoard.reset()
         heldActionBoard.reset()
         botRequestBoard.reset()
+        callRequestBoard.reset()
+        openCall = nil
         botSecretBoard.reset()
         gitHubAccountBoard.reset()
         gitHubAppBoard.reset()

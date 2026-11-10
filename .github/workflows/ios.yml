@@ -20,7 +20,7 @@ defaults:
 jobs:
   build:
     runs-on: macos-26
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -29,7 +29,9 @@ jobs:
             ios/.packages
             ios/build
             !ios/build/Index.noindex
-          key: build-${{ runner.os }}-${{ hashFiles('ios/Crumble.xcodeproj/project.pbxproj', 'ios/Crumble.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+          # apfelkern is in the key so a contract update saves a fresh build instead of recompiling it on every run.
+          key: build-${{ runner.os }}-${{ hashFiles('ios/Crumble.xcodeproj/project.pbxproj', 'ios/Crumble.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved', 'apfelkern/Package.swift', 'apfelkern/Package.resolved', 'apfelkern/Sources/**') }}
+          restore-keys: build-${{ runner.os }}-
       - run: ./scripts/build.sh
   lint:
     runs-on: macos-26
