@@ -61,10 +61,13 @@ public struct CallEvent: Codable, Hashable, Sendable {
 
   public var callId: String
   public var direction: Direction
+  /// Who an outside call phones; nil for a call with the owner.
+  public var callee: String?
 
-  public init(callId: String, direction: Direction) {
+  public init(callId: String, direction: Direction, callee: String? = nil) {
     self.callId = callId
     self.direction = direction
+    self.callee = callee
   }
 }
 

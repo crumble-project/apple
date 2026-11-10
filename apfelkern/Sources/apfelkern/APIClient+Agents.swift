@@ -126,6 +126,39 @@ extension APIClient {
     }
   }
 
+  /// The bot's requests to call someone other than the owner, newest first, pending and decided.
+  public func callRequests(_ agentID: String) async throws -> [CallRequest] {
+    try await invoke {
+      try await $0.listCallRequests(.init(path: .init(id: agentID))).ok.body.json.map(CallRequest.init(wire:))
+    }
+  }
+
+  /// Places the call. Fails with a 409, whose message the owner can read, when the call can't start;
+  /// the request stays pending.
+  public func approveCallRequest(_ agentID: String, id: String) async throws -> CallRequest {
+    try await invoke {
+      CallRequest(wire: try await $0.approveCallRequest(.init(path: .init(id: agentID, requestId: id))).ok.body.json)
+    }
+  }
+
+  /// Fails with a 409 once decided.
+  public func declineCallRequest(_ agentID: String, id: String) async throws -> CallRequest {
+    try await invoke {
+      CallRequest(wire: try await $0.declineCallRequest(.init(path: .init(id: agentID, requestId: id))).ok.body.json)
+    }
+  }
+
+  /// The call's messages, a page at a time.
+  public func callRequestTranscript(_ agentID: String, id: String, before: String = "", limit: Int = 200)
+    async throws -> ChatHistoryResponse {
+    try await invoke {
+      try ChatHistoryResponse(wire: await $0.getCallRequestTranscript(.init(
+        path: .init(id: agentID, requestId: id),
+        query: .init(limit: limit > 0 ? limit : nil, before: before.nilIfEmpty)
+      )).ok.body.json)
+    }
+  }
+
   public func codingJobHistory(_ agentID: String, name: String, before: String, limit: Int)
     async throws -> ChatHistoryResponse {
     try await invoke {

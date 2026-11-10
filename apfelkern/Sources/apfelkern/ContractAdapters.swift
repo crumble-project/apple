@@ -46,7 +46,9 @@ extension Message {
                          status: $0.status.rawValue)
       }, jobQuestion: wire.jobQuestion.map { JobQuestionEvent(id: $0.id, kind: $0.kind, job: $0.job) },
       heldAction: wire.heldAction.map { HeldActionEvent(id: $0.id, job: $0.job) },
-      call: wire.call.map { CallEvent(callId: $0.callId, direction: CallEvent.Direction(wire: $0.direction)) },
+      call: wire.call.map {
+        CallEvent(callId: $0.callId, direction: CallEvent.Direction(wire: $0.direction), callee: $0.callee)
+      },
       timestamp: wire.timestamp.flatMap(Int64.init(exactly:)),
       attachments: wire.attachments?.map {
         AttachmentInfo(name: $0.name, mimeType: $0.mimeType, size: Int(exactly: $0.size) ?? 0,

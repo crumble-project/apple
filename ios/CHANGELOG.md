@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- A bot's request to call someone other than you appears in its chat with the callee, the number, the goal, and the opening it will say, and you approve or decline it there. A call that is under way or over shows as a row with its state; tap it to read the goal and the conversation, which updates during the call.
 - A chat shows a voice gateway call as centered phone lines, as on the web: **Call started**, or, when the bot placed the call, that it called you over the greeting it spoke, and then how the call ended, with any reaction the bot left on it. A message spoken on a call says **Spoken on a call**.
 - The conversation list and **Settings** use large titles. A chat's header shows a larger portrait with the name in a glass capsule, as in Messages, and the composer is taller and further from the screen edges.
 - Sheets close and save with the system's glass X and checkmark buttons instead of **Cancel** and **Save**. Sheets with a specific action, such as **Install** or **Approve**, keep its name.

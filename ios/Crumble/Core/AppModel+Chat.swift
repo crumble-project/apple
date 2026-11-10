@@ -93,6 +93,8 @@ extension AppModel {
     jobBoard.select(id)
     heldActionBoard.select(id)
     botRequestBoard.select(id)
+    callRequestBoard.select(id)
+    openedCall = nil
     botSecretBoard.select(id)
     draft = composerDrafts[id] ?? ""
     attachments = []
@@ -129,6 +131,7 @@ extension AppModel {
     refreshJobsIfChanged()
     refreshHeldActionsIfChanged()
     refreshBotRequestsIfChanged()
+    refreshCallRequestsIfChanged()
     refreshBotSecretsIfChanged()
     var snapshot = incoming
     snapshot.messages = nil
@@ -287,6 +290,7 @@ extension AppModel {
           messages = mergeMessages(messages, page.messages ?? [])
           refreshHeldActionsIfChanged()
           refreshBotRequestsIfChanged()
+          refreshCallRequestsIfChanged()
           refreshBotSecretsIfChanged()
           hasMore = page.hasMore ?? false
           oldestEntryID = page.oldestEntryId ?? ""

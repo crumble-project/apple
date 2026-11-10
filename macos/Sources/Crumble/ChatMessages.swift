@@ -13,6 +13,9 @@ struct MessageView: View {
     private var replyable: Bool {
         !(message.entryId ?? "").isEmpty && (message.role == "user" || message.role == "assistant")
     }
+    private func placedCall(for message: Message) -> CallRequest? {
+        callRequest(for: message, in: model.callRequestBoard.requests).flatMap { $0.status == .declined ? nil : $0 }
+    }
     private var owner: Bool { message.origin == nil || message.origin?.kind == "owner" }
     var body: some View {
         switch message.role {
@@ -35,12 +38,18 @@ struct MessageView: View {
                     Spacer(minLength: 56)
                 }
             } else if let call = CallMarker(message: message) {
-                CallMarkerView(marker: call, botName: botName)
+                if let request = placedCall(for: message) {
+                    CallNoticeRow(request: request, message: message)
+                } else {
+                    CallMarkerView(marker: call, botName: botName)
+                }
             } else {
                 EventView(message: message)
             }
         case "user":
-            if let call = CallMarker(message: message) {
+            if let request = placedCall(for: message) {
+                CallNoticeRow(request: request, message: message)
+            } else if let call = CallMarker(message: message) {
                 CallMarkerView(marker: call, botName: botName, reactions: reactions)
             } else if let notice = noticeTitle(message) {
                 EventView(message: message, title: notice)
@@ -73,6 +82,11 @@ struct MessageView: View {
             } else if let request = BotRequest(message: message) {
                 HStack {
                     BotRequestCard(request: request)
+                    Spacer(minLength: 56)
+                }
+            } else if let request = CallRequest(message: message) {
+                HStack {
+                    CallRequestCard(request: request)
                     Spacer(minLength: 56)
                 }
             } else if let ask = BotSecretAsk(message: message) {

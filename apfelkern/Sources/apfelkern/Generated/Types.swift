@@ -99,6 +99,26 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /v1/agents/{id}/bot-requests/{requestId}/decline`.
     /// - Remark: Generated from `#/paths//v1/agents/{id}/bot-requests/{requestId}/decline/post(declineBotRequest)`.
     func declineBotRequest(_ input: Operations.DeclineBotRequest.Input) async throws -> Operations.DeclineBotRequest.Output
+    /// The bot's call requests, newest first: its proposals to phone someone other than the owner, and how each call went.
+    ///
+    /// - Remark: HTTP `GET /v1/agents/{id}/call-requests`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/get(listCallRequests)`.
+    func listCallRequests(_ input: Operations.ListCallRequests.Input) async throws -> Operations.ListCallRequests.Output
+    /// Approves a pending call request and dials at once; returns once the voice gateway was asked to call, with the status calling. 409, with the request still pending, when the request is not pending, the number no longer passes the number rules, calls to other people are switched off for the line, no voice gateway that places calls is connected, or the line has a call.
+    ///
+    /// - Remark: HTTP `POST /v1/agents/{id}/call-requests/{requestId}/approve`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/approve/post(approveCallRequest)`.
+    func approveCallRequest(_ input: Operations.ApproveCallRequest.Input) async throws -> Operations.ApproveCallRequest.Output
+    /// Declines a pending call request; the bot gets a notice.
+    ///
+    /// - Remark: HTTP `POST /v1/agents/{id}/call-requests/{requestId}/decline`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/decline/post(declineCallRequest)`.
+    func declineCallRequest(_ input: Operations.DeclineCallRequest.Input) async throws -> Operations.DeclineCallRequest.Output
+    /// The messages of the call's conversation: the callee's words as user messages and the bot's replies. Empty before the call, and when the callee objected to the call.
+    ///
+    /// - Remark: HTTP `GET /v1/agents/{id}/call-requests/{requestId}/transcript`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/transcript/get(getCallRequestTranscript)`.
+    func getCallRequestTranscript(_ input: Operations.GetCallRequestTranscript.Input) async throws -> Operations.GetCallRequestTranscript.Output
     /// - Remark: HTTP `GET /v1/agents/{id}/chat`.
     /// - Remark: Generated from `#/paths//v1/agents/{id}/chat/get(getChat)`.
     func getChat(_ input: Operations.GetChat.Input) async throws -> Operations.GetChat.Output
@@ -642,22 +662,22 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `PUT /v1/voice/lines`.
     /// - Remark: Generated from `#/paths//v1/voice/lines/put(reportVoiceLines)`.
     func reportVoiceLines(_ input: Operations.ReportVoiceLines.Input) async throws -> Operations.ReportVoiceLines.Output
-    /// Reports that a call on the line started, before the greeting is spoken; send it again after every config event while the call runs. For a call a bot placed, it also settles the call as answered. A call nobody confirms within 15 seconds of a new events stream, or 60 seconds without one, ends. 409 when the call ended or another call is active on the line: hang up.
+    /// Reports that a call on the line started, before the greeting is spoken; send it again after every config event while the call runs. For a call a bot placed, it also settles the call as answered. A call nobody confirms within 15 seconds of a new events stream, or 60 seconds without one, ends. 409 when the call ended, another call is active on the line, or the callId is an outside call's that no longer rings: hang up.
     ///
     /// - Remark: HTTP `PUT /v1/voice/lines/{username}/calls/{callId}`.
     /// - Remark: Generated from `#/paths//v1/voice/lines/{username}/calls/{callId}/put(startVoiceCall)`.
     func startVoiceCall(_ input: Operations.StartVoiceCall.Input) async throws -> Operations.StartVoiceCall.Output
-    /// The line's bot chat as server-sent events, the same as /v1/agents/{id}/events. The stream closes when the line gets another bot, is removed, or its bot is deleted or disabled.
+    /// The line's bot chat as server-sent events, the same as /v1/agents/{id}/events. While the line's active call is an outside call, the snapshots are that call's conversation instead. The stream closes when the line gets another bot, is removed, or its bot is deleted or disabled.
     ///
     /// - Remark: HTTP `GET /v1/voice/lines/{username}/events`.
     /// - Remark: Generated from `#/paths//v1/voice/lines/{username}/events/get(streamVoiceLineEvents)`.
     func streamVoiceLineEvents(_ input: Operations.StreamVoiceLineEvents.Input) async throws -> Operations.StreamVoiceLineEvents.Output
-    /// A spoken message's execution, the bot's reply to it when its status is done, and whether the bot asked to hang up. Stop polling when the status is failed or cancelled: reply stays null. 404 unless the execution is a spoken message to the line's bot.
+    /// A spoken message's execution, the bot's reply to it when its status is done, and whether the bot asked to hang up. Stop polling when the status is failed or cancelled: reply stays null. 404 unless the execution is a spoken message to the line's bot or a callee's message on its outside call; 409 for a callee's message whose outside call is not the line's active call.
     ///
     /// - Remark: HTTP `GET /v1/voice/lines/{username}/executions/{executionId}`.
     /// - Remark: Generated from `#/paths//v1/voice/lines/{username}/executions/{executionId}/get(getSpokenExecution)`.
     func getSpokenExecution(_ input: Operations.GetSpokenExecution.Input) async throws -> Operations.GetSpokenExecution.Output
-    /// Sends what the owner said on a call to the line's bot. The same IDs with other content answer 409, and so does a callId whose call ended: hang up. A callId the server doesn't know is accepted.
+    /// Sends what the owner said on a call to the line's bot. On the line's active outside call, what the callee said goes to that call's conversation instead, never the bot chat, under requestId outside-call:{callId}:{requestId}. The same IDs with other content answer 409, and so do a callId whose call ended and an outside call's ID that is not the line's active call: hang up. A callId the server doesn't know is accepted.
     ///
     /// - Remark: HTTP `POST /v1/voice/lines/{username}/messages`.
     /// - Remark: Generated from `#/paths//v1/voice/lines/{username}/messages/post(sendSpokenMessage)`.
@@ -897,6 +917,60 @@ extension APIProtocol {
     ) async throws -> Operations.DeclineBotRequest.Output {
         try await declineBotRequest(Operations.DeclineBotRequest.Input(
             path: path,
+            headers: headers
+        ))
+    }
+    /// The bot's call requests, newest first: its proposals to phone someone other than the owner, and how each call went.
+    ///
+    /// - Remark: HTTP `GET /v1/agents/{id}/call-requests`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/get(listCallRequests)`.
+    public func listCallRequests(
+        path: Operations.ListCallRequests.Input.Path,
+        headers: Operations.ListCallRequests.Input.Headers = .init()
+    ) async throws -> Operations.ListCallRequests.Output {
+        try await listCallRequests(Operations.ListCallRequests.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Approves a pending call request and dials at once; returns once the voice gateway was asked to call, with the status calling. 409, with the request still pending, when the request is not pending, the number no longer passes the number rules, calls to other people are switched off for the line, no voice gateway that places calls is connected, or the line has a call.
+    ///
+    /// - Remark: HTTP `POST /v1/agents/{id}/call-requests/{requestId}/approve`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/approve/post(approveCallRequest)`.
+    public func approveCallRequest(
+        path: Operations.ApproveCallRequest.Input.Path,
+        headers: Operations.ApproveCallRequest.Input.Headers = .init()
+    ) async throws -> Operations.ApproveCallRequest.Output {
+        try await approveCallRequest(Operations.ApproveCallRequest.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Declines a pending call request; the bot gets a notice.
+    ///
+    /// - Remark: HTTP `POST /v1/agents/{id}/call-requests/{requestId}/decline`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/decline/post(declineCallRequest)`.
+    public func declineCallRequest(
+        path: Operations.DeclineCallRequest.Input.Path,
+        headers: Operations.DeclineCallRequest.Input.Headers = .init()
+    ) async throws -> Operations.DeclineCallRequest.Output {
+        try await declineCallRequest(Operations.DeclineCallRequest.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// The messages of the call's conversation: the callee's words as user messages and the bot's replies. Empty before the call, and when the callee objected to the call.
+    ///
+    /// - Remark: HTTP `GET /v1/agents/{id}/call-requests/{requestId}/transcript`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/transcript/get(getCallRequestTranscript)`.
+    public func getCallRequestTranscript(
+        path: Operations.GetCallRequestTranscript.Input.Path,
+        query: Operations.GetCallRequestTranscript.Input.Query = .init(),
+        headers: Operations.GetCallRequestTranscript.Input.Headers = .init()
+    ) async throws -> Operations.GetCallRequestTranscript.Output {
+        try await getCallRequestTranscript(Operations.GetCallRequestTranscript.Input(
+            path: path,
+            query: query,
             headers: headers
         ))
     }
@@ -2473,7 +2547,7 @@ extension APIProtocol {
             body: body
         ))
     }
-    /// Reports that a call on the line started, before the greeting is spoken; send it again after every config event while the call runs. For a call a bot placed, it also settles the call as answered. A call nobody confirms within 15 seconds of a new events stream, or 60 seconds without one, ends. 409 when the call ended or another call is active on the line: hang up.
+    /// Reports that a call on the line started, before the greeting is spoken; send it again after every config event while the call runs. For a call a bot placed, it also settles the call as answered. A call nobody confirms within 15 seconds of a new events stream, or 60 seconds without one, ends. 409 when the call ended, another call is active on the line, or the callId is an outside call's that no longer rings: hang up.
     ///
     /// - Remark: HTTP `PUT /v1/voice/lines/{username}/calls/{callId}`.
     /// - Remark: Generated from `#/paths//v1/voice/lines/{username}/calls/{callId}/put(startVoiceCall)`.
@@ -2488,7 +2562,7 @@ extension APIProtocol {
             body: body
         ))
     }
-    /// The line's bot chat as server-sent events, the same as /v1/agents/{id}/events. The stream closes when the line gets another bot, is removed, or its bot is deleted or disabled.
+    /// The line's bot chat as server-sent events, the same as /v1/agents/{id}/events. While the line's active call is an outside call, the snapshots are that call's conversation instead. The stream closes when the line gets another bot, is removed, or its bot is deleted or disabled.
     ///
     /// - Remark: HTTP `GET /v1/voice/lines/{username}/events`.
     /// - Remark: Generated from `#/paths//v1/voice/lines/{username}/events/get(streamVoiceLineEvents)`.
@@ -2503,7 +2577,7 @@ extension APIProtocol {
             headers: headers
         ))
     }
-    /// A spoken message's execution, the bot's reply to it when its status is done, and whether the bot asked to hang up. Stop polling when the status is failed or cancelled: reply stays null. 404 unless the execution is a spoken message to the line's bot.
+    /// A spoken message's execution, the bot's reply to it when its status is done, and whether the bot asked to hang up. Stop polling when the status is failed or cancelled: reply stays null. 404 unless the execution is a spoken message to the line's bot or a callee's message on its outside call; 409 for a callee's message whose outside call is not the line's active call.
     ///
     /// - Remark: HTTP `GET /v1/voice/lines/{username}/executions/{executionId}`.
     /// - Remark: Generated from `#/paths//v1/voice/lines/{username}/executions/{executionId}/get(getSpokenExecution)`.
@@ -2516,7 +2590,7 @@ extension APIProtocol {
             headers: headers
         ))
     }
-    /// Sends what the owner said on a call to the line's bot. The same IDs with other content answer 409, and so does a callId whose call ended: hang up. A callId the server doesn't know is accepted.
+    /// Sends what the owner said on a call to the line's bot. On the line's active outside call, what the callee said goes to that call's conversation instead, never the bot chat, under requestId outside-call:{callId}:{requestId}. The same IDs with other content answer 409, and so do a callId whose call ended and an outside call's ID that is not the line's active call: hang up. A callId the server doesn't know is accepted.
     ///
     /// - Remark: HTTP `POST /v1/voice/lines/{username}/messages`.
     /// - Remark: Generated from `#/paths//v1/voice/lines/{username}/messages/post(sendSpokenMessage)`.

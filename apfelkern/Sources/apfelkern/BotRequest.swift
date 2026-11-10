@@ -92,7 +92,7 @@ extension BotRequest {
 }
 
 extension JSONValue {
-  fileprivate func decoded<T: Decodable>() throws -> T {
+  func decoded<T: Decodable>() throws -> T {
     try JSONDecoder().decode(T.self, from: JSONEncoder().encode(self))
   }
 }

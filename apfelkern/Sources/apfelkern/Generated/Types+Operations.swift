@@ -12856,6 +12856,2218 @@ public enum Operations {
             }
         }
     }
+    /// The bot's call requests, newest first: its proposals to phone someone other than the owner, and how each call went.
+    ///
+    /// - Remark: HTTP `GET /v1/agents/{id}/call-requests`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/get(listCallRequests)`.
+    public enum ListCallRequests {
+        public static let id: Swift.String = "listCallRequests"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/GET/path/id`.
+                public var id: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                public init(id: Swift.String) {
+                    self.id = id
+                }
+            }
+            public var path: Operations.ListCallRequests.Input.Path
+            /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.ListCallRequests.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.ListCallRequests.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.ListCallRequests.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.ListCallRequests.Input.Path,
+                headers: Operations.ListCallRequests.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/GET/responses/200/content/application\/json`.
+                    case json([Components.Schemas.CallRequest])
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: [Components.Schemas.CallRequest] {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ListCallRequests.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ListCallRequests.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Success
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/get(listCallRequests)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.ListCallRequests.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.ListCallRequests.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct BadRequest: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/GET/responses/400/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/GET/responses/400/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ListCallRequests.Output.BadRequest.Body
+                /// Creates a new `BadRequest`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ListCallRequests.Output.BadRequest.Body) {
+                    self.body = body
+                }
+            }
+            /// Invalid request or operation
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/get(listCallRequests)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Operations.ListCallRequests.Output.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Operations.ListCallRequests.Output.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Unauthorized: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/GET/responses/401/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/GET/responses/401/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ListCallRequests.Output.Unauthorized.Body
+                /// Creates a new `Unauthorized`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ListCallRequests.Output.Unauthorized.Body) {
+                    self.body = body
+                }
+            }
+            /// Missing, expired, or invalid account session
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/get(listCallRequests)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Operations.ListCallRequests.Output.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Operations.ListCallRequests.Output.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct NotFound: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/GET/responses/404/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/GET/responses/404/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ListCallRequests.Output.NotFound.Body
+                /// Creates a new `NotFound`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ListCallRequests.Output.NotFound.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/get(listCallRequests)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Operations.ListCallRequests.Output.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Operations.ListCallRequests.Output.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct MethodNotAllowed: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/GET/responses/405/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/GET/responses/405/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ListCallRequests.Output.MethodNotAllowed.Body
+                /// Creates a new `MethodNotAllowed`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ListCallRequests.Output.MethodNotAllowed.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource is read-only
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/get(listCallRequests)/responses/405`.
+            ///
+            /// HTTP response code: `405 methodNotAllowed`.
+            case methodNotAllowed(Operations.ListCallRequests.Output.MethodNotAllowed)
+            /// The associated value of the enum case if `self` is `.methodNotAllowed`.
+            ///
+            /// - Throws: An error if `self` is not `.methodNotAllowed`.
+            /// - SeeAlso: `.methodNotAllowed`.
+            public var methodNotAllowed: Operations.ListCallRequests.Output.MethodNotAllowed {
+                get throws {
+                    switch self {
+                    case let .methodNotAllowed(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "methodNotAllowed",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Conflict: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/GET/responses/409/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/GET/responses/409/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ListCallRequests.Output.Conflict.Body
+                /// Creates a new `Conflict`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ListCallRequests.Output.Conflict.Body) {
+                    self.body = body
+                }
+            }
+            /// Conflicting request
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/get(listCallRequests)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Operations.ListCallRequests.Output.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Operations.ListCallRequests.Output.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ContentTooLarge: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/GET/responses/413/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/GET/responses/413/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ListCallRequests.Output.ContentTooLarge.Body
+                /// Creates a new `ContentTooLarge`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ListCallRequests.Output.ContentTooLarge.Body) {
+                    self.body = body
+                }
+            }
+            /// Request body exceeds the size limit
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/get(listCallRequests)/responses/413`.
+            ///
+            /// HTTP response code: `413 contentTooLarge`.
+            case contentTooLarge(Operations.ListCallRequests.Output.ContentTooLarge)
+            /// The associated value of the enum case if `self` is `.contentTooLarge`.
+            ///
+            /// - Throws: An error if `self` is not `.contentTooLarge`.
+            /// - SeeAlso: `.contentTooLarge`.
+            public var contentTooLarge: Operations.ListCallRequests.Output.ContentTooLarge {
+                get throws {
+                    switch self {
+                    case let .contentTooLarge(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "contentTooLarge",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct InternalServerError: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/GET/responses/500/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/GET/responses/500/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ListCallRequests.Output.InternalServerError.Body
+                /// Creates a new `InternalServerError`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ListCallRequests.Output.InternalServerError.Body) {
+                    self.body = body
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/get(listCallRequests)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Operations.ListCallRequests.Output.InternalServerError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Operations.ListCallRequests.Output.InternalServerError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ServiceUnavailable: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/GET/responses/503/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/GET/responses/503/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ListCallRequests.Output.ServiceUnavailable.Body
+                /// Creates a new `ServiceUnavailable`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ListCallRequests.Output.ServiceUnavailable.Body) {
+                    self.body = body
+                }
+            }
+            /// Service unavailable
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/get(listCallRequests)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Operations.ListCallRequests.Output.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Operations.ListCallRequests.Output.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case plainText
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "text/plain":
+                    self = .plainText
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .plainText:
+                    return "text/plain"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .plainText
+                ]
+            }
+        }
+    }
+    /// Approves a pending call request and dials at once; returns once the voice gateway was asked to call, with the status calling. 409, with the request still pending, when the request is not pending, the number no longer passes the number rules, calls to other people are switched off for the line, no voice gateway that places calls is connected, or the line has a call.
+    ///
+    /// - Remark: HTTP `POST /v1/agents/{id}/call-requests/{requestId}/approve`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/approve/post(approveCallRequest)`.
+    public enum ApproveCallRequest {
+        public static let id: Swift.String = "approveCallRequest"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/approve/POST/path`.
+            public struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/approve/POST/path/id`.
+                public var id: Swift.String
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/approve/POST/path/requestId`.
+                public var requestId: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                ///   - requestId:
+                public init(
+                    id: Swift.String,
+                    requestId: Swift.String
+                ) {
+                    self.id = id
+                    self.requestId = requestId
+                }
+            }
+            public var path: Operations.ApproveCallRequest.Input.Path
+            /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/approve/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.ApproveCallRequest.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.ApproveCallRequest.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.ApproveCallRequest.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.ApproveCallRequest.Input.Path,
+                headers: Operations.ApproveCallRequest.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/approve/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/approve/POST/responses/200/content/application\/json`.
+                    case json(Components.Schemas.CallRequest)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.CallRequest {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ApproveCallRequest.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ApproveCallRequest.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Success
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/approve/post(approveCallRequest)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.ApproveCallRequest.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.ApproveCallRequest.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct BadRequest: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/approve/POST/responses/400/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/approve/POST/responses/400/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ApproveCallRequest.Output.BadRequest.Body
+                /// Creates a new `BadRequest`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ApproveCallRequest.Output.BadRequest.Body) {
+                    self.body = body
+                }
+            }
+            /// Invalid request or operation
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/approve/post(approveCallRequest)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Operations.ApproveCallRequest.Output.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Operations.ApproveCallRequest.Output.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Unauthorized: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/approve/POST/responses/401/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/approve/POST/responses/401/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ApproveCallRequest.Output.Unauthorized.Body
+                /// Creates a new `Unauthorized`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ApproveCallRequest.Output.Unauthorized.Body) {
+                    self.body = body
+                }
+            }
+            /// Missing, expired, or invalid account session
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/approve/post(approveCallRequest)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Operations.ApproveCallRequest.Output.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Operations.ApproveCallRequest.Output.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct NotFound: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/approve/POST/responses/404/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/approve/POST/responses/404/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ApproveCallRequest.Output.NotFound.Body
+                /// Creates a new `NotFound`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ApproveCallRequest.Output.NotFound.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/approve/post(approveCallRequest)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Operations.ApproveCallRequest.Output.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Operations.ApproveCallRequest.Output.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct MethodNotAllowed: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/approve/POST/responses/405/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/approve/POST/responses/405/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ApproveCallRequest.Output.MethodNotAllowed.Body
+                /// Creates a new `MethodNotAllowed`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ApproveCallRequest.Output.MethodNotAllowed.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource is read-only
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/approve/post(approveCallRequest)/responses/405`.
+            ///
+            /// HTTP response code: `405 methodNotAllowed`.
+            case methodNotAllowed(Operations.ApproveCallRequest.Output.MethodNotAllowed)
+            /// The associated value of the enum case if `self` is `.methodNotAllowed`.
+            ///
+            /// - Throws: An error if `self` is not `.methodNotAllowed`.
+            /// - SeeAlso: `.methodNotAllowed`.
+            public var methodNotAllowed: Operations.ApproveCallRequest.Output.MethodNotAllowed {
+                get throws {
+                    switch self {
+                    case let .methodNotAllowed(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "methodNotAllowed",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Conflict: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/approve/POST/responses/409/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/approve/POST/responses/409/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ApproveCallRequest.Output.Conflict.Body
+                /// Creates a new `Conflict`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ApproveCallRequest.Output.Conflict.Body) {
+                    self.body = body
+                }
+            }
+            /// Conflicting request
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/approve/post(approveCallRequest)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Operations.ApproveCallRequest.Output.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Operations.ApproveCallRequest.Output.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ContentTooLarge: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/approve/POST/responses/413/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/approve/POST/responses/413/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ApproveCallRequest.Output.ContentTooLarge.Body
+                /// Creates a new `ContentTooLarge`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ApproveCallRequest.Output.ContentTooLarge.Body) {
+                    self.body = body
+                }
+            }
+            /// Request body exceeds the size limit
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/approve/post(approveCallRequest)/responses/413`.
+            ///
+            /// HTTP response code: `413 contentTooLarge`.
+            case contentTooLarge(Operations.ApproveCallRequest.Output.ContentTooLarge)
+            /// The associated value of the enum case if `self` is `.contentTooLarge`.
+            ///
+            /// - Throws: An error if `self` is not `.contentTooLarge`.
+            /// - SeeAlso: `.contentTooLarge`.
+            public var contentTooLarge: Operations.ApproveCallRequest.Output.ContentTooLarge {
+                get throws {
+                    switch self {
+                    case let .contentTooLarge(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "contentTooLarge",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct InternalServerError: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/approve/POST/responses/500/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/approve/POST/responses/500/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ApproveCallRequest.Output.InternalServerError.Body
+                /// Creates a new `InternalServerError`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ApproveCallRequest.Output.InternalServerError.Body) {
+                    self.body = body
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/approve/post(approveCallRequest)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Operations.ApproveCallRequest.Output.InternalServerError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Operations.ApproveCallRequest.Output.InternalServerError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ServiceUnavailable: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/approve/POST/responses/503/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/approve/POST/responses/503/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ApproveCallRequest.Output.ServiceUnavailable.Body
+                /// Creates a new `ServiceUnavailable`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ApproveCallRequest.Output.ServiceUnavailable.Body) {
+                    self.body = body
+                }
+            }
+            /// Service unavailable
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/approve/post(approveCallRequest)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Operations.ApproveCallRequest.Output.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Operations.ApproveCallRequest.Output.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case plainText
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "text/plain":
+                    self = .plainText
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .plainText:
+                    return "text/plain"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .plainText
+                ]
+            }
+        }
+    }
+    /// Declines a pending call request; the bot gets a notice.
+    ///
+    /// - Remark: HTTP `POST /v1/agents/{id}/call-requests/{requestId}/decline`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/decline/post(declineCallRequest)`.
+    public enum DeclineCallRequest {
+        public static let id: Swift.String = "declineCallRequest"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/decline/POST/path`.
+            public struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/decline/POST/path/id`.
+                public var id: Swift.String
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/decline/POST/path/requestId`.
+                public var requestId: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                ///   - requestId:
+                public init(
+                    id: Swift.String,
+                    requestId: Swift.String
+                ) {
+                    self.id = id
+                    self.requestId = requestId
+                }
+            }
+            public var path: Operations.DeclineCallRequest.Input.Path
+            /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/decline/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.DeclineCallRequest.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.DeclineCallRequest.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.DeclineCallRequest.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.DeclineCallRequest.Input.Path,
+                headers: Operations.DeclineCallRequest.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/decline/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/decline/POST/responses/200/content/application\/json`.
+                    case json(Components.Schemas.CallRequest)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.CallRequest {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.DeclineCallRequest.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.DeclineCallRequest.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Success
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/decline/post(declineCallRequest)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.DeclineCallRequest.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.DeclineCallRequest.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct BadRequest: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/decline/POST/responses/400/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/decline/POST/responses/400/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.DeclineCallRequest.Output.BadRequest.Body
+                /// Creates a new `BadRequest`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.DeclineCallRequest.Output.BadRequest.Body) {
+                    self.body = body
+                }
+            }
+            /// Invalid request or operation
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/decline/post(declineCallRequest)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Operations.DeclineCallRequest.Output.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Operations.DeclineCallRequest.Output.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Unauthorized: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/decline/POST/responses/401/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/decline/POST/responses/401/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.DeclineCallRequest.Output.Unauthorized.Body
+                /// Creates a new `Unauthorized`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.DeclineCallRequest.Output.Unauthorized.Body) {
+                    self.body = body
+                }
+            }
+            /// Missing, expired, or invalid account session
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/decline/post(declineCallRequest)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Operations.DeclineCallRequest.Output.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Operations.DeclineCallRequest.Output.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct NotFound: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/decline/POST/responses/404/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/decline/POST/responses/404/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.DeclineCallRequest.Output.NotFound.Body
+                /// Creates a new `NotFound`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.DeclineCallRequest.Output.NotFound.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/decline/post(declineCallRequest)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Operations.DeclineCallRequest.Output.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Operations.DeclineCallRequest.Output.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct MethodNotAllowed: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/decline/POST/responses/405/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/decline/POST/responses/405/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.DeclineCallRequest.Output.MethodNotAllowed.Body
+                /// Creates a new `MethodNotAllowed`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.DeclineCallRequest.Output.MethodNotAllowed.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource is read-only
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/decline/post(declineCallRequest)/responses/405`.
+            ///
+            /// HTTP response code: `405 methodNotAllowed`.
+            case methodNotAllowed(Operations.DeclineCallRequest.Output.MethodNotAllowed)
+            /// The associated value of the enum case if `self` is `.methodNotAllowed`.
+            ///
+            /// - Throws: An error if `self` is not `.methodNotAllowed`.
+            /// - SeeAlso: `.methodNotAllowed`.
+            public var methodNotAllowed: Operations.DeclineCallRequest.Output.MethodNotAllowed {
+                get throws {
+                    switch self {
+                    case let .methodNotAllowed(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "methodNotAllowed",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Conflict: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/decline/POST/responses/409/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/decline/POST/responses/409/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.DeclineCallRequest.Output.Conflict.Body
+                /// Creates a new `Conflict`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.DeclineCallRequest.Output.Conflict.Body) {
+                    self.body = body
+                }
+            }
+            /// Conflicting request
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/decline/post(declineCallRequest)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Operations.DeclineCallRequest.Output.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Operations.DeclineCallRequest.Output.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ContentTooLarge: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/decline/POST/responses/413/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/decline/POST/responses/413/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.DeclineCallRequest.Output.ContentTooLarge.Body
+                /// Creates a new `ContentTooLarge`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.DeclineCallRequest.Output.ContentTooLarge.Body) {
+                    self.body = body
+                }
+            }
+            /// Request body exceeds the size limit
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/decline/post(declineCallRequest)/responses/413`.
+            ///
+            /// HTTP response code: `413 contentTooLarge`.
+            case contentTooLarge(Operations.DeclineCallRequest.Output.ContentTooLarge)
+            /// The associated value of the enum case if `self` is `.contentTooLarge`.
+            ///
+            /// - Throws: An error if `self` is not `.contentTooLarge`.
+            /// - SeeAlso: `.contentTooLarge`.
+            public var contentTooLarge: Operations.DeclineCallRequest.Output.ContentTooLarge {
+                get throws {
+                    switch self {
+                    case let .contentTooLarge(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "contentTooLarge",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct InternalServerError: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/decline/POST/responses/500/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/decline/POST/responses/500/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.DeclineCallRequest.Output.InternalServerError.Body
+                /// Creates a new `InternalServerError`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.DeclineCallRequest.Output.InternalServerError.Body) {
+                    self.body = body
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/decline/post(declineCallRequest)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Operations.DeclineCallRequest.Output.InternalServerError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Operations.DeclineCallRequest.Output.InternalServerError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ServiceUnavailable: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/decline/POST/responses/503/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/decline/POST/responses/503/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.DeclineCallRequest.Output.ServiceUnavailable.Body
+                /// Creates a new `ServiceUnavailable`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.DeclineCallRequest.Output.ServiceUnavailable.Body) {
+                    self.body = body
+                }
+            }
+            /// Service unavailable
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/decline/post(declineCallRequest)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Operations.DeclineCallRequest.Output.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Operations.DeclineCallRequest.Output.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case plainText
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "text/plain":
+                    self = .plainText
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .plainText:
+                    return "text/plain"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .plainText
+                ]
+            }
+        }
+    }
+    /// The messages of the call's conversation: the callee's words as user messages and the bot's replies. Empty before the call, and when the callee objected to the call.
+    ///
+    /// - Remark: HTTP `GET /v1/agents/{id}/call-requests/{requestId}/transcript`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/transcript/get(getCallRequestTranscript)`.
+    public enum GetCallRequestTranscript {
+        public static let id: Swift.String = "getCallRequestTranscript"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/transcript/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/transcript/GET/path/id`.
+                public var id: Swift.String
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/transcript/GET/path/requestId`.
+                public var requestId: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                ///   - requestId:
+                public init(
+                    id: Swift.String,
+                    requestId: Swift.String
+                ) {
+                    self.id = id
+                    self.requestId = requestId
+                }
+            }
+            public var path: Operations.GetCallRequestTranscript.Input.Path
+            /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/transcript/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/transcript/GET/query/limit`.
+                public var limit: Swift.Int?
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/transcript/GET/query/before`.
+                public var before: Swift.String?
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - limit:
+                ///   - before:
+                public init(
+                    limit: Swift.Int? = nil,
+                    before: Swift.String? = nil
+                ) {
+                    self.limit = limit
+                    self.before = before
+                }
+            }
+            public var query: Operations.GetCallRequestTranscript.Input.Query
+            /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/transcript/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetCallRequestTranscript.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetCallRequestTranscript.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.GetCallRequestTranscript.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - query:
+            ///   - headers:
+            public init(
+                path: Operations.GetCallRequestTranscript.Input.Path,
+                query: Operations.GetCallRequestTranscript.Input.Query = .init(),
+                headers: Operations.GetCallRequestTranscript.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/transcript/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/transcript/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.TranscriptPage)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.TranscriptPage {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetCallRequestTranscript.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetCallRequestTranscript.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Success
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/transcript/get(getCallRequestTranscript)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.GetCallRequestTranscript.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.GetCallRequestTranscript.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct BadRequest: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/transcript/GET/responses/400/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/transcript/GET/responses/400/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetCallRequestTranscript.Output.BadRequest.Body
+                /// Creates a new `BadRequest`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetCallRequestTranscript.Output.BadRequest.Body) {
+                    self.body = body
+                }
+            }
+            /// Invalid request or operation
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/transcript/get(getCallRequestTranscript)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Operations.GetCallRequestTranscript.Output.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Operations.GetCallRequestTranscript.Output.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Unauthorized: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/transcript/GET/responses/401/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/transcript/GET/responses/401/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetCallRequestTranscript.Output.Unauthorized.Body
+                /// Creates a new `Unauthorized`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetCallRequestTranscript.Output.Unauthorized.Body) {
+                    self.body = body
+                }
+            }
+            /// Missing, expired, or invalid account session
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/transcript/get(getCallRequestTranscript)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Operations.GetCallRequestTranscript.Output.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Operations.GetCallRequestTranscript.Output.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct NotFound: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/transcript/GET/responses/404/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/transcript/GET/responses/404/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetCallRequestTranscript.Output.NotFound.Body
+                /// Creates a new `NotFound`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetCallRequestTranscript.Output.NotFound.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/transcript/get(getCallRequestTranscript)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Operations.GetCallRequestTranscript.Output.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Operations.GetCallRequestTranscript.Output.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct MethodNotAllowed: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/transcript/GET/responses/405/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/transcript/GET/responses/405/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetCallRequestTranscript.Output.MethodNotAllowed.Body
+                /// Creates a new `MethodNotAllowed`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetCallRequestTranscript.Output.MethodNotAllowed.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource is read-only
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/transcript/get(getCallRequestTranscript)/responses/405`.
+            ///
+            /// HTTP response code: `405 methodNotAllowed`.
+            case methodNotAllowed(Operations.GetCallRequestTranscript.Output.MethodNotAllowed)
+            /// The associated value of the enum case if `self` is `.methodNotAllowed`.
+            ///
+            /// - Throws: An error if `self` is not `.methodNotAllowed`.
+            /// - SeeAlso: `.methodNotAllowed`.
+            public var methodNotAllowed: Operations.GetCallRequestTranscript.Output.MethodNotAllowed {
+                get throws {
+                    switch self {
+                    case let .methodNotAllowed(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "methodNotAllowed",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Conflict: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/transcript/GET/responses/409/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/transcript/GET/responses/409/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetCallRequestTranscript.Output.Conflict.Body
+                /// Creates a new `Conflict`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetCallRequestTranscript.Output.Conflict.Body) {
+                    self.body = body
+                }
+            }
+            /// Conflicting request
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/transcript/get(getCallRequestTranscript)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Operations.GetCallRequestTranscript.Output.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Operations.GetCallRequestTranscript.Output.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ContentTooLarge: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/transcript/GET/responses/413/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/transcript/GET/responses/413/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetCallRequestTranscript.Output.ContentTooLarge.Body
+                /// Creates a new `ContentTooLarge`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetCallRequestTranscript.Output.ContentTooLarge.Body) {
+                    self.body = body
+                }
+            }
+            /// Request body exceeds the size limit
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/transcript/get(getCallRequestTranscript)/responses/413`.
+            ///
+            /// HTTP response code: `413 contentTooLarge`.
+            case contentTooLarge(Operations.GetCallRequestTranscript.Output.ContentTooLarge)
+            /// The associated value of the enum case if `self` is `.contentTooLarge`.
+            ///
+            /// - Throws: An error if `self` is not `.contentTooLarge`.
+            /// - SeeAlso: `.contentTooLarge`.
+            public var contentTooLarge: Operations.GetCallRequestTranscript.Output.ContentTooLarge {
+                get throws {
+                    switch self {
+                    case let .contentTooLarge(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "contentTooLarge",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct InternalServerError: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/transcript/GET/responses/500/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/transcript/GET/responses/500/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetCallRequestTranscript.Output.InternalServerError.Body
+                /// Creates a new `InternalServerError`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetCallRequestTranscript.Output.InternalServerError.Body) {
+                    self.body = body
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/transcript/get(getCallRequestTranscript)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Operations.GetCallRequestTranscript.Output.InternalServerError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Operations.GetCallRequestTranscript.Output.InternalServerError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ServiceUnavailable: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/transcript/GET/responses/503/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/agents/{id}/call-requests/{requestId}/transcript/GET/responses/503/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetCallRequestTranscript.Output.ServiceUnavailable.Body
+                /// Creates a new `ServiceUnavailable`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetCallRequestTranscript.Output.ServiceUnavailable.Body) {
+                    self.body = body
+                }
+            }
+            /// Service unavailable
+            ///
+            /// - Remark: Generated from `#/paths//v1/agents/{id}/call-requests/{requestId}/transcript/get(getCallRequestTranscript)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Operations.GetCallRequestTranscript.Output.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Operations.GetCallRequestTranscript.Output.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case plainText
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "text/plain":
+                    self = .plainText
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .plainText:
+                    return "text/plain"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .plainText
+                ]
+            }
+        }
+    }
     /// - Remark: HTTP `GET /v1/agents/{id}/chat`.
     /// - Remark: Generated from `#/paths//v1/agents/{id}/chat/get(getChat)`.
     public enum GetChat {
@@ -85444,6 +87656,10 @@ public enum Operations {
                             public struct LinesPayloadPayload: Codable, Hashable, Sendable {
                                 /// - Remark: Generated from `#/paths/v1/voice-gateway/GET/responses/200/content/json/config/LinesPayload/botId`.
                                 public var botId: Swift.String
+                                /// Whether the line's bot may ask to call people other than the owner, each call after the owner approved it. Absent means false.
+                                ///
+                                /// - Remark: Generated from `#/paths/v1/voice-gateway/GET/responses/200/content/json/config/LinesPayload/callsOthers`.
+                                public var callsOthers: Swift.Bool
                                 /// - Remark: Generated from `#/paths/v1/voice-gateway/GET/responses/200/content/json/config/LinesPayload/callsOwner`.
                                 public var callsOwner: Swift.Bool
                                 /// The name callers hear; null uses the bot's name.
@@ -85456,22 +87672,26 @@ public enum Operations {
                                 ///
                                 /// - Parameters:
                                 ///   - botId:
+                                ///   - callsOthers: Whether the line's bot may ask to call people other than the owner, each call after the owner approved it. Absent means false.
                                 ///   - callsOwner:
                                 ///   - displayName: The name callers hear; null uses the bot's name.
                                 ///   - username:
                                 public init(
                                     botId: Swift.String,
+                                    callsOthers: Swift.Bool,
                                     callsOwner: Swift.Bool,
                                     displayName: Swift.String? = nil,
                                     username: Swift.String
                                 ) {
                                     self.botId = botId
+                                    self.callsOthers = callsOthers
                                     self.callsOwner = callsOwner
                                     self.displayName = displayName
                                     self.username = username
                                 }
                                 public enum CodingKeys: String, CodingKey {
                                     case botId
+                                    case callsOthers
                                     case callsOwner
                                     case displayName
                                     case username
@@ -85481,6 +87701,10 @@ public enum Operations {
                                     self.botId = try container.decode(
                                         Swift.String.self,
                                         forKey: .botId
+                                    )
+                                    self.callsOthers = try container.decode(
+                                        Swift.Bool.self,
+                                        forKey: .callsOthers
                                     )
                                     self.callsOwner = try container.decode(
                                         Swift.Bool.self,
@@ -85496,6 +87720,7 @@ public enum Operations {
                                     )
                                     try decoder.ensureNoAdditionalProperties(knownKeys: [
                                         "botId",
+                                        "callsOthers",
                                         "callsOwner",
                                         "displayName",
                                         "username"
@@ -86209,6 +88434,10 @@ public enum Operations {
                     public struct LinesPayloadPayload: Codable, Hashable, Sendable {
                         /// - Remark: Generated from `#/paths/v1/voice-gateway/PUT/requestBody/json/LinesPayload/botId`.
                         public var botId: Swift.String
+                        /// Whether the line's bot may ask to call people other than the owner, each call after the owner approved it. Absent means false.
+                        ///
+                        /// - Remark: Generated from `#/paths/v1/voice-gateway/PUT/requestBody/json/LinesPayload/callsOthers`.
+                        public var callsOthers: Swift.Bool
                         /// - Remark: Generated from `#/paths/v1/voice-gateway/PUT/requestBody/json/LinesPayload/callsOwner`.
                         public var callsOwner: Swift.Bool
                         /// The name callers hear; null uses the bot's name.
@@ -86221,22 +88450,26 @@ public enum Operations {
                         ///
                         /// - Parameters:
                         ///   - botId:
+                        ///   - callsOthers: Whether the line's bot may ask to call people other than the owner, each call after the owner approved it. Absent means false.
                         ///   - callsOwner:
                         ///   - displayName: The name callers hear; null uses the bot's name.
                         ///   - username:
                         public init(
                             botId: Swift.String,
+                            callsOthers: Swift.Bool,
                             callsOwner: Swift.Bool,
                             displayName: Swift.String? = nil,
                             username: Swift.String
                         ) {
                             self.botId = botId
+                            self.callsOthers = callsOthers
                             self.callsOwner = callsOwner
                             self.displayName = displayName
                             self.username = username
                         }
                         public enum CodingKeys: String, CodingKey {
                             case botId
+                            case callsOthers
                             case callsOwner
                             case displayName
                             case username
@@ -86246,6 +88479,10 @@ public enum Operations {
                             self.botId = try container.decode(
                                 Swift.String.self,
                                 forKey: .botId
+                            )
+                            self.callsOthers = try container.decode(
+                                Swift.Bool.self,
+                                forKey: .callsOthers
                             )
                             self.callsOwner = try container.decode(
                                 Swift.Bool.self,
@@ -86261,6 +88498,7 @@ public enum Operations {
                             )
                             try decoder.ensureNoAdditionalProperties(knownKeys: [
                                 "botId",
+                                "callsOthers",
                                 "callsOwner",
                                 "displayName",
                                 "username"
@@ -86347,6 +88585,10 @@ public enum Operations {
                             public struct LinesPayloadPayload: Codable, Hashable, Sendable {
                                 /// - Remark: Generated from `#/paths/v1/voice-gateway/PUT/responses/200/content/json/config/LinesPayload/botId`.
                                 public var botId: Swift.String
+                                /// Whether the line's bot may ask to call people other than the owner, each call after the owner approved it. Absent means false.
+                                ///
+                                /// - Remark: Generated from `#/paths/v1/voice-gateway/PUT/responses/200/content/json/config/LinesPayload/callsOthers`.
+                                public var callsOthers: Swift.Bool
                                 /// - Remark: Generated from `#/paths/v1/voice-gateway/PUT/responses/200/content/json/config/LinesPayload/callsOwner`.
                                 public var callsOwner: Swift.Bool
                                 /// The name callers hear; null uses the bot's name.
@@ -86359,22 +88601,26 @@ public enum Operations {
                                 ///
                                 /// - Parameters:
                                 ///   - botId:
+                                ///   - callsOthers: Whether the line's bot may ask to call people other than the owner, each call after the owner approved it. Absent means false.
                                 ///   - callsOwner:
                                 ///   - displayName: The name callers hear; null uses the bot's name.
                                 ///   - username:
                                 public init(
                                     botId: Swift.String,
+                                    callsOthers: Swift.Bool,
                                     callsOwner: Swift.Bool,
                                     displayName: Swift.String? = nil,
                                     username: Swift.String
                                 ) {
                                     self.botId = botId
+                                    self.callsOthers = callsOthers
                                     self.callsOwner = callsOwner
                                     self.displayName = displayName
                                     self.username = username
                                 }
                                 public enum CodingKeys: String, CodingKey {
                                     case botId
+                                    case callsOthers
                                     case callsOwner
                                     case displayName
                                     case username
@@ -86384,6 +88630,10 @@ public enum Operations {
                                     self.botId = try container.decode(
                                         Swift.String.self,
                                         forKey: .botId
+                                    )
+                                    self.callsOthers = try container.decode(
+                                        Swift.Bool.self,
+                                        forKey: .callsOthers
                                     )
                                     self.callsOwner = try container.decode(
                                         Swift.Bool.self,
@@ -86399,6 +88649,7 @@ public enum Operations {
                                     )
                                     try decoder.ensureNoAdditionalProperties(knownKeys: [
                                         "botId",
+                                        "callsOthers",
                                         "callsOwner",
                                         "displayName",
                                         "username"
@@ -88684,14 +90935,14 @@ public enum Operations {
         public struct Input: Sendable, Hashable {
             /// - Remark: Generated from `#/paths/v1/voice/events/GET/query`.
             public struct Query: Sendable, Hashable {
-                /// With calls=true, the voice gateway declares it can place calls: bots with a line that may call the owner are offered the call_owner tool, and call events arrive on this stream.
+                /// With calls=true, the voice gateway declares it can place calls: bots with a line that may call the owner are offered the call_owner tool, approved call requests can dial, and call events arrive on this stream.
                 ///
                 /// - Remark: Generated from `#/paths/v1/voice/events/GET/query/calls`.
                 public var calls: Swift.String?
                 /// Creates a new `Query`.
                 ///
                 /// - Parameters:
-                ///   - calls: With calls=true, the voice gateway declares it can place calls: bots with a line that may call the owner are offered the call_owner tool, and call events arrive on this stream.
+                ///   - calls: With calls=true, the voice gateway declares it can place calls: bots with a line that may call the owner are offered the call_owner tool, approved call requests can dial, and call events arrive on this stream.
                 public init(calls: Swift.String? = nil) {
                     self.calls = calls
                 }
@@ -89820,7 +92071,7 @@ public enum Operations {
             }
         }
     }
-    /// Reports that a call on the line started, before the greeting is spoken; send it again after every config event while the call runs. For a call a bot placed, it also settles the call as answered. A call nobody confirms within 15 seconds of a new events stream, or 60 seconds without one, ends. 409 when the call ended or another call is active on the line: hang up.
+    /// Reports that a call on the line started, before the greeting is spoken; send it again after every config event while the call runs. For a call a bot placed, it also settles the call as answered. A call nobody confirms within 15 seconds of a new events stream, or 60 seconds without one, ends. 409 when the call ended, another call is active on the line, or the callId is an outside call's that no longer rings: hang up.
     ///
     /// - Remark: HTTP `PUT /v1/voice/lines/{username}/calls/{callId}`.
     /// - Remark: Generated from `#/paths//v1/voice/lines/{username}/calls/{callId}/put(startVoiceCall)`.
@@ -90374,7 +92625,7 @@ public enum Operations {
             }
         }
     }
-    /// The line's bot chat as server-sent events, the same as /v1/agents/{id}/events. The stream closes when the line gets another bot, is removed, or its bot is deleted or disabled.
+    /// The line's bot chat as server-sent events, the same as /v1/agents/{id}/events. While the line's active call is an outside call, the snapshots are that call's conversation instead. The stream closes when the line gets another bot, is removed, or its bot is deleted or disabled.
     ///
     /// - Remark: HTTP `GET /v1/voice/lines/{username}/events`.
     /// - Remark: Generated from `#/paths//v1/voice/lines/{username}/events/get(streamVoiceLineEvents)`.
@@ -90404,17 +92655,24 @@ public enum Operations {
                 ///
                 /// - Remark: Generated from `#/paths/v1/voice/lines/{username}/events/GET/query/partial`.
                 public var partial: Swift.String?
+                /// The call the turn belongs to. For the line's active outside call, the stream sends that call's conversation; for another outside call's ID it answers 409: hang up. Without it, the stream follows the line's active call.
+                ///
+                /// - Remark: Generated from `#/paths/v1/voice/lines/{username}/events/GET/query/callId`.
+                public var callId: Swift.String?
                 /// Creates a new `Query`.
                 ///
                 /// - Parameters:
                 ///   - limit:
                 ///   - partial: With partial=true, each snapshot's partial carries the reply text the bot is writing, updated about every 100 ms. Without it, partial stays empty and replies appear only when the turn ends.
+                ///   - callId: The call the turn belongs to. For the line's active outside call, the stream sends that call's conversation; for another outside call's ID it answers 409: hang up. Without it, the stream follows the line's active call.
                 public init(
                     limit: Swift.Int? = nil,
-                    partial: Swift.String? = nil
+                    partial: Swift.String? = nil,
+                    callId: Swift.String? = nil
                 ) {
                     self.limit = limit
                     self.partial = partial
+                    self.callId = callId
                 }
             }
             public var query: Operations.StreamVoiceLineEvents.Input.Query
@@ -90949,7 +93207,7 @@ public enum Operations {
             }
         }
     }
-    /// A spoken message's execution, the bot's reply to it when its status is done, and whether the bot asked to hang up. Stop polling when the status is failed or cancelled: reply stays null. 404 unless the execution is a spoken message to the line's bot.
+    /// A spoken message's execution, the bot's reply to it when its status is done, and whether the bot asked to hang up. Stop polling when the status is failed or cancelled: reply stays null. 404 unless the execution is a spoken message to the line's bot or a callee's message on its outside call; 409 for a callee's message whose outside call is not the line's active call.
     ///
     /// - Remark: HTTP `GET /v1/voice/lines/{username}/executions/{executionId}`.
     /// - Remark: Generated from `#/paths//v1/voice/lines/{username}/executions/{executionId}/get(getSpokenExecution)`.
@@ -91500,7 +93758,7 @@ public enum Operations {
             }
         }
     }
-    /// Sends what the owner said on a call to the line's bot. The same IDs with other content answer 409, and so does a callId whose call ended: hang up. A callId the server doesn't know is accepted.
+    /// Sends what the owner said on a call to the line's bot. On the line's active outside call, what the callee said goes to that call's conversation instead, never the bot chat, under requestId outside-call:{callId}:{requestId}. The same IDs with other content answer 409, and so do a callId whose call ended and an outside call's ID that is not the line's active call: hang up. A callId the server doesn't know is accepted.
     ///
     /// - Remark: HTTP `POST /v1/voice/lines/{username}/messages`.
     /// - Remark: Generated from `#/paths//v1/voice/lines/{username}/messages/post(sendSpokenMessage)`.

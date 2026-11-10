@@ -89,6 +89,7 @@ struct ChatView: View {
     .task(id: model.jobPollDelay) { await model.watchJobs() }
     .task(id: model.heldActionBoard.needsPolling) { await model.watchHeldActions() }
     .task(id: model.botRequestBoard.needsPolling) { await model.watchBotRequests() }
+    .task(id: model.callRequestBoard.needsPolling) { await model.watchCallRequests() }
     .task(id: model.botSecretBoard.needsPolling) { await model.watchBotSecrets() }
     .safeAreaInset(edge: .bottom) {
       if model.snapshot != nil { Composer(target: .chat(agent, model: model)) }

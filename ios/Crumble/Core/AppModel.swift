@@ -44,6 +44,8 @@ final class AppModel {
   let jobBoard = JobBoard()
   let heldActionBoard = HeldActionBoard()
   let botRequestBoard = BotRequestBoard()
+  let callRequestBoard = CallRequestBoard()
+  var openedCall: OpenCall?
   let botSecretBoard = BotSecretBoard()
   let gitHubAccountBoard = GitHubAccountBoard()
   let gitHubAppBoard = GitHubAppBoard()
@@ -236,6 +238,7 @@ final class AppModel {
     jobBoard.reset()
     heldActionBoard.reset()
     botRequestBoard.reset()
+    resetCalls()
     botSecretBoard.reset()
     botSkillBoard.reset()
     if case .agent = route {
@@ -269,6 +272,7 @@ extension AppModel {
     jobBoard.reset()
     heldActionBoard.reset()
     botRequestBoard.reset()
+    resetCalls()
     botSecretBoard.reset()
     gitHubAccountBoard.reset()
     gitHubAppBoard.reset()

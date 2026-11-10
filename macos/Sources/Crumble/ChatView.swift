@@ -90,6 +90,7 @@ struct ChatView: View {
         .task(id: model.jobPollDelay) { await model.watchJobs() }
         .task(id: model.heldActionBoard.needsPolling) { await model.watchHeldActions() }
         .task(id: model.botRequestBoard.needsPolling) { await model.watchBotRequests() }
+        .task(id: model.callRequestBoard.needsPolling) { await model.watchCallRequests() }
         .task(id: model.botSecretBoard.needsPolling) { await model.watchBotSecrets() }
         .background(alignment: .top) {
             DitherGlow(color: agent.color).frame(height: 150).ignoresSafeArea(edges: .top)
@@ -117,7 +118,9 @@ struct ChatView: View {
                 } label: {
                     Label("Details", systemImage: "sidebar.trailing")
                 }
-                .help(showsDetails && model.jobHistory == nil ? "Hide Details" : "Show Details")
+                .help(
+                    showsDetails && model.jobHistory == nil && model.openCall == nil
+                        ? "Hide Details" : "Show Details")
             }
         }
         .safeAreaInset(edge: .trailing, spacing: 0) { rightPanel }
@@ -130,6 +133,8 @@ extension ChatView {
     @ViewBuilder fileprivate var rightPanel: some View {
         if let job = model.jobHistory {
             panelColumn(width: min(JobSheet.panelWidth, width / 2)) { JobSheet(job: job, inPanel: true) }
+        } else if let call = model.openCall {
+            panelColumn(width: min(JobSheet.panelWidth, width / 2)) { CallSheet(call: call, botName: agent.name) }
         } else if showsDetails {
             panelColumn(width: DetailsPanel.width) {
                 DetailsPanel(agent: agent)
@@ -148,8 +153,9 @@ extension ChatView {
     }
 
     fileprivate func showDetails() {
-        guard model.jobHistory == nil else {
+        guard model.jobHistory == nil, model.openCall == nil else {
             model.closeJob()
+            model.closeCall()
             showsDetails = true
             return
         }
