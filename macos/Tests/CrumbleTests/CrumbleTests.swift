@@ -10,6 +10,7 @@ import Testing
 final class StubProtocol: URLProtocol, @unchecked Sendable {
     nonisolated(unsafe) static var handler: ((URLRequest) -> (Int, String))?
     nonisolated(unsafe) static var requests: [URLRequest] = []
+    nonisolated(unsafe) private static var sessionID = ""
 
     override static func canInit(with request: URLRequest) -> Bool { true }
     override static func canonicalRequest(for request: URLRequest) -> URLRequest { request }
@@ -28,8 +29,11 @@ final class StubProtocol: URLProtocol, @unchecked Sendable {
             stream.close()
             recorded.httpBody = data
         }
-        Self.requests.append(recorded)
-        let (status, body) = Self.handler?(recorded) ?? (404, "")
+        // A model from an earlier test can still be polling. Keep its requests out of the
+        // current session's handler and request log instead of reusing its canned responses.
+        let current = recorded.value(forHTTPHeaderField: "X-Crumble-Test-Session") == Self.sessionID
+        if current { Self.requests.append(recorded) }
+        let (status, body) = current ? Self.handler?(recorded) ?? (404, "") : (401, "")
         guard let url = request.url,
             let response = HTTPURLResponse(
                 url: url, statusCode: status, httpVersion: "HTTP/1.1", headerFields: nil) else {
@@ -48,6 +52,8 @@ final class StubProtocol: URLProtocol, @unchecked Sendable {
         self.handler = handler
         requests = []
         let configuration = URLSessionConfiguration.ephemeral
+        sessionID = UUID().uuidString
+        configuration.httpAdditionalHeaders = ["X-Crumble-Test-Session": sessionID]
         configuration.protocolClasses = [StubProtocol.self]
         return APIClient(
             baseURL: "http://crumble.test/", token: token, session: URLSession(configuration: configuration))
