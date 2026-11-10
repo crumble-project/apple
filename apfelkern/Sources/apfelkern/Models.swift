@@ -432,29 +432,6 @@ public struct MCPServer: Codable, Identifiable, Hashable, Sendable {
   }
 }
 
-extension MCPServer {
-  /// The Integrations search: a trimmed query against the name or address, as on the web.
-  public func matches(_ query: String) -> Bool {
-    let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
-    return needle.isEmpty || name.localizedCaseInsensitiveContains(needle)
-      || url.localizedCaseInsensitiveContains(needle)
-  }
-}
-
-/// The start of an OAuth sign-in: a URL to open, or `authorized` when saved tokens still work.
-public struct OAuthStart: Decodable, Sendable {
-  public var authorizationUrl: String?
-  public var authorized: Bool?
-
-  public init(
-    authorizationUrl: String? = nil,
-    authorized: Bool? = nil
-  ) {
-    self.authorizationUrl = authorizationUrl
-    self.authorized = authorized
-  }
-}
-
 /// Reads the visible text of message content: a string, text parts, or a text object.
 public func contentText(_ value: JSONValue?) -> String {
   switch value {

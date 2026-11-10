@@ -10,7 +10,6 @@ extension AppModel {
         workspaceRoute = panel
         memoryDraft = nil
         automationBoard.closeUnchangedDraft()
-        mcpDraft = nil
         skillDraft = nil
         switch panel {
         case .memory: loadMemoryPanel()
@@ -18,19 +17,6 @@ extension AppModel {
         case .automations: loadAutomationsPanel()
         case .activity: loadActivityPanel()
         case .avatars: break
-        case .credentials, .logins:
-            if let kind = panel.botSecretKind { loadBotSecrets(kind) }
-        case .integrations: loadIntegrationsPanel()
-        case .coding:
-            loadGitHubApps()
-            loadGitHubAccounts()
-            loadAdmin()
-        case .users: loadAdmin()
-        case .providers:
-            loadProviders()
-            loadPasswordManagers()
-        case .passwordManagers, .webSearch, .judgeModel, .visionModel, .messageGateways, .eventRelay:
-            loadConnectedServices(panel)
         case .agent, .group:
             break
         }
@@ -113,19 +99,5 @@ extension AppModel {
     func loadMoreChanges() {
         guard let client else { return }
         changeBoard.loadMore(client: client)
-    }
-
-    private func loadIntegrationsPanel() {
-        let mutationVersion = mutationRevision
-        request { client in
-            async let bots = client.agents()
-            async let servers = client.mcpServers()
-            let (loadedBots, loadedServers) = try await (bots, servers)
-            return { [self] in
-                guard mutationRevision == mutationVersion, pendingMutations.isEmpty else { return }
-                agents = loadedBots
-                mcpServers = loadedServers
-            }
-        }
     }
 }

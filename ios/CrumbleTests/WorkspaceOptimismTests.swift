@@ -5,16 +5,6 @@ import Testing
 @testable import Crumble
 
 extension APIClientTests {
-  @MainActor @Test func deletingTheSelectedBotLeavesServerWideGitHubBoardsAlone() throws {
-    let client = StubProtocol.client { _ in (200, "{}") }
-    let model = AppModel(client: client)
-    model.gitHubAppBoard.startNew()
-    model.gitHubAccountBoard.startNew(client: client)
-    model.clearDeletedSelection()
-    #expect(model.gitHubAppBoard.creation != nil)
-    #expect(model.gitHubAccountBoard.draft != nil)
-  }
-
   @MainActor @Test func savingTheEditorLeavesSkillsAndAssignmentsAlone() async throws {
     let model = AppModel(
       client: StubProtocol.client { _ in (200, ContractFixtures.json(ContractFixtures.agent("a1").value1)) })
@@ -177,20 +167,6 @@ extension APIClientTests {
     #expect(model.avatarBoard.saveError.contains("busy"))
     #expect(model.errorText.isEmpty)
     #expect(model.pendingMutations.isEmpty)
-  }
-
-  @MainActor @Test func changingTheConnectionEndsAPasswordManagerCheck() throws {
-    let (client, _) = ControlledDeliveryProtocol.client()
-    let model = AppModel(client: client)
-    var draft = MCPDraft(serverID: "", name: "Example", url: "https://mcp.example")
-    draft.token.use(.onePassword)
-    draft.token.reference = "op://vault/item/field"
-    model.mcpDraft = draft
-    model.saveMCP()
-    #expect(model.isCheckingMCP)
-
-    model.applyConnection(client)
-    #expect(!model.isCheckingMCP)
   }
 
   @MainActor @Test func aConnectionFinishingAfterSignOutIsDropped() async throws {

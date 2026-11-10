@@ -22,13 +22,6 @@ public enum BotSecretKind: String, CaseIterable, Hashable, Sendable {
 
   public var title: String { noun + "s" }
 
-  public var searchPrompt: String { "Search \(title.lowercased())" }
-
-  /// What the pills above the list choose between.
-  public var pillsLabel: String { "Whose \(title.lowercased())" }
-
-  public var noMatchText: String { "No \(title.lowercased()) match your search." }
-
   public var emptyText: String {
     switch self {
     case .credential: "None yet. The bot asks for one when a coding job needs it."
@@ -96,27 +89,17 @@ public enum PasswordManagerID: String, CaseIterable, Codable, Hashable, Sendable
     case .bitwarden: "Secret ID"
     }
   }
-
-  public var tokenLabel: String {
-    switch self {
-    case .onePassword: "Service account token"
-    case .bitwarden: "Access token"
-    }
-  }
 }
 
 public struct PasswordManager: Identifiable, Hashable, Sendable {
   public var id: PasswordManagerID
   public var name: String
   public var connected: Bool
-  /// The secrets that read from it. It can't be disconnected while any remain.
-  public var usedBy: [String]
 
-  public init(id: PasswordManagerID, name: String, connected: Bool, usedBy: [String] = []) {
+  public init(id: PasswordManagerID, name: String, connected: Bool) {
     self.id = id
     self.name = name
     self.connected = connected
-    self.usedBy = usedBy
   }
 }
 

@@ -209,7 +209,7 @@ struct AgentEditorView: View {
             ForEach(WebSearchProvider.allCases) { Text($0.name).tag(WebSearchProvider?.some($0)) }
         } label: {
             Text("Web search provider")
-            Text("Manage the default and Exa key in Settings → Web search.")
+            Text("Manage the default and Exa key in Settings → Web search on the web.")
         }
     }
 

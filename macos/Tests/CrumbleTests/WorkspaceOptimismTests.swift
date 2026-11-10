@@ -112,20 +112,6 @@ extension APIClientTests {
         #expect(model.pendingMutations.isEmpty)
     }
 
-    @MainActor @Test func changingTheConnectionEndsAPasswordManagerCheck() throws {
-        let (client, _) = ControlledDeliveryProtocol.client()
-        let model = AppModel(client: client)
-        var draft = MCPDraft(serverID: "", name: "Example", url: "https://mcp.example")
-        draft.token.use(.onePassword)
-        draft.token.reference = "op://vault/item/field"
-        model.mcpDraft = draft
-        model.saveMCP()
-        #expect(model.isCheckingMCP)
-
-        model.applyConnection(client)
-        #expect(!model.isCheckingMCP)
-    }
-
     @MainActor @Test func aConnectionFinishingAfterSignOutIsDropped() async throws {
         let (client, controller) = ControlledDeliveryProtocol.client()
         let model = AppModel(client: client)

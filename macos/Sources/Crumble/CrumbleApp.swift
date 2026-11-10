@@ -80,7 +80,7 @@ struct ContentView: View {
             model.markChatSeen()
         }
         .sheet(item: $model.agentDraft) { AgentEditorView(draft: sheetBinding($model.agentDraft, for: $0)) }
-        .botSecretSheets(active: model.agentDraft == nil && !model.settingsShowsBotSecrets)
+        .botSecretSheets(active: model.agentDraft == nil)
         .automationSheet(active: model.agentDraft == nil && !model.settingsShowsAutomations)
         .sheet(item: $model.jobSheet) { JobSheet(job: $0) }
         .sheet(item: $model.groupDraft) { GroupEditorView(draft: sheetBinding($model.groupDraft, for: $0)) }
@@ -95,13 +95,6 @@ struct ContentView: View {
             WelcomeView()
         }
     }
-}
-
-/// For credentials. The concealed type asks clipboard managers not to keep the text in their history.
-func copyConcealed(_ text: String) {
-    NSPasteboard.general.clearContents()
-    NSPasteboard.general.setString(text, forType: .string)
-    NSPasteboard.general.setString("", forType: .init("org.nspasteboard.ConcealedType"))
 }
 
 /// Binds a sheet to the draft it edits. A closing sheet still redraws after Cancel or Save clears
@@ -281,7 +274,6 @@ struct ErrorBanner: View {
 
     var body: some View {
         if !model.errorText.isEmpty, model.agentDraft == nil, model.memoryDraft == nil, model.automationBoard.draft == nil,
-            model.mcpDraft == nil,
             model.skillDraft == nil {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.red)

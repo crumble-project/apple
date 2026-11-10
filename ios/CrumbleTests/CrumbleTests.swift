@@ -151,38 +151,6 @@ struct APIClientTests {
     #expect(model.errorText.contains("busy"))
   }
 
-  @Test func mcpSignInRoundTrip() async throws {
-    let client = StubProtocol.client { request in
-      switch request.url?.path {
-      case "/v1/mcp-servers/s1/oauth":
-        (200, #"{"authorizationUrl":"https://auth.example.com/authorize?state=x"}"#)
-      case "/v1/mcp-servers/s1/oauth/callback":
-        (
-          200,
-          ContractFixtures.json(Components.Schemas.McpServerStatus(
-            value1: .init(
-              enabled: true, id: "s1", name: "Linear", oauthClientSecret: .init(configured: false),
-              token: .init(configured: false), url: "https://mcp.linear.app/mcp"),
-            value2: .init(auth: .oauth, authenticated: true)))
-        )
-      default: (404, "")
-      }
-    }
-    let start = try await client.startMCPSignIn("s1", redirectURI: AppModel.oauthRedirectURI)
-    #expect(start.authorizationUrl?.hasPrefix("https://auth.example.com/") == true)
-    let sent = try #require(String(data: StubProtocol.requests.last?.httpBody ?? Data(), encoding: .utf8))
-    #expect(
-      sent.contains("ng.crumbli.ios:\\/oauth\\/callback")
-        || sent.contains("ng.crumbli.ios:/oauth/callback"))
-    let server = try await client.finishMCPSignIn(
-      "s1", code: "c", state: "x", iss: "https://auth.example.com")
-    #expect(server.auth == "oauth")
-    let finished = try JSONDecoder().decode(
-      Operations.FinishMcpOAuth.Input.Body.JsonPayload.self,
-      from: try #require(StubProtocol.requests.last?.httpBody))
-    #expect(finished.iss == "https://auth.example.com")
-  }
-
   @Test func chatContracts() async throws {
     let client = StubProtocol.client { request in
       switch request.url?.path {

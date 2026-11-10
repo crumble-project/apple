@@ -159,32 +159,6 @@ struct APIClientTests {
         #expect(model.errorText.contains("busy"))
     }
 
-    @Test func mcpSignInRoundTrip() async throws {
-        let client = StubProtocol.client { request in
-            switch request.url?.path {
-            case "/v1/mcp-servers/s1/oauth":
-                (200, #"{"authorizationUrl":"https://auth.example.com/authorize?state=x"}"#)
-            case "/v1/mcp-servers/s1/oauth/callback":
-                (200, #"""
-                {"id":"s1","name":"Linear","url":"https://mcp.linear.app/mcp","enabled":true,"agentId":null,
-                 "oauthClientId":null,"auth":"oauth","authenticated":true,
-                 "token":{"configured":false,"passwordManager":null,"reference":null},
-                 "oauthClientSecret":{"configured":false,"passwordManager":null,"reference":null}}
-                """#)
-            default: (404, "")
-            }
-        }
-        let start = try await client.startMCPSignIn("s1", redirectURI: AppModel.oauthRedirectURI)
-        #expect(start.authorizationUrl?.hasPrefix("https://auth.example.com/") == true)
-        let sent = try #require(String(data: StubProtocol.requests.last?.httpBody ?? Data(), encoding: .utf8))
-        let scheme = AppIdentity.bundleID
-        #expect(sent.contains(scheme + ":\\/oauth\\/callback") || sent.contains(scheme + ":/oauth/callback"))
-        let server = try await client.finishMCPSignIn("s1", code: "c", state: "x", iss: "https://auth.example.com")
-        #expect(server.auth == "oauth")
-        let finished = try JSONDecoder().decode(JSONValue.self, from: #require(StubProtocol.requests.last?.httpBody))
-        #expect(finished["iss"]?.stringValue == "https://auth.example.com")
-    }
-
     @Test func errorsCarryStatusAndBody() async throws {
         let client = StubProtocol.client { _ in (401, "bad token") }
         do {

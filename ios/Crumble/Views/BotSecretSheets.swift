@@ -16,13 +16,6 @@ private struct BotSecretSheet: View {
           Section { Text(reason).foregroundStyle(.secondary) }
         }
         status
-        if draft.choosesBot {
-          Section {
-            Picker("For bot", selection: $draft.agentID) {
-              ForEach(model.agents) { Text($0.name).tag($0.id) }
-            }
-          }
-        }
         nameAndHosts
         if draft.kind == .credential {
           Section {
@@ -160,9 +153,8 @@ struct SecretSourceField: View {
   /// Overrides every other prompt for a value, for forms where empty doesn't keep what's saved.
   var prompt: String?
   @Environment(AppModel.self) private var model
-  @State private var connecting = false
 
-  /// The board's answer wins once it has one: a password manager connected from here shows at once.
+  /// The board's answer wins once it has one.
   private var available: [PasswordManager] {
     model.connectedServices.passwordManagers.connected(knownUntilLoaded: managers)
   }
@@ -179,11 +171,9 @@ struct SecretSourceField: View {
     Text(source.note(managers: available, valueNote: valueNote))
       .font(.footnote)
       .foregroundStyle(.secondary)
-    if available.isEmpty, source.manager == nil {
-      Button("Connect a password manager") { connecting = true }
-        .buttonStyle(.borderless)
+    if available.isEmpty, source.manager == nil, let url = model.client?.webSettingsURL(.passwordManagers) {
+      Link("Connect a password manager on the web", destination: url)
         .font(.footnote)
-        .sheet(isPresented: $connecting) { PasswordManagersSheet() }
     }
   }
 

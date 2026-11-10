@@ -11,7 +11,7 @@ struct CommandPaletteButton: View {
     private var mainWindowHasSheet: Bool {
         let secrets = model.botSecretBoard
         return model.agentDraft != nil || model.groupDraft != nil || model.jobSheet != nil
-            || (!model.settingsShowsBotSecrets && (secrets.draft != nil || secrets.useLog != nil))
+            || secrets.draft != nil || secrets.useLog != nil
     }
 
     var body: some View {

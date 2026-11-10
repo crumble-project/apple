@@ -47,9 +47,7 @@ final class AppModel {
   let callRequestBoard = CallRequestBoard()
   var openedCall: OpenCall?
   let botSecretBoard = BotSecretBoard()
-  let gitHubAccountBoard = GitHubAccountBoard()
-  let gitHubAppBoard = GitHubAppBoard()
-  let adminBoard = AdminBoard()
+  let serverAccountBoard = ServerAccountBoard()
   let accountBoard = AccountBoard()
   let themeBoard = ThemeBoard()
   let connectedServices = ConnectedServices()
@@ -58,7 +56,6 @@ final class AppModel {
   let activityBoard = ActivityBoard()
   let avatarBoard = AvatarBoard()
   let reasoningBoard = ReasoningBoard()
-  let providerKeyBoard = ProviderKeyBoard()
   let passkeyBoard = PasskeyBoard()
   var unread = UnreadCounts() {
     didSet { if unread != oldValue { showUnreadBadge() } }
@@ -109,18 +106,8 @@ final class AppModel {
 
   var agentDraft: AgentDraft?
   var memoryDraft: MemoryDraft?
-  var mcpDraft: MCPDraft?
-  /// The open form's new password manager reference is with the server.
-  var isCheckingMCP = false
   var skillDraft: SkillDraft?
-  /// The MCP server whose sign-in sheet is open.
-  var signingIn: String?
   var confirmingDelete = false
-
-  var provider = "melious"
-  @ObservationIgnored lazy var providerLoginBoard = ProviderLoginBoard { [weak self] in
-    self?.handleProviderLogin($0)
-  }
 
   init(
     environment: [String: String] = ProcessInfo.processInfo.environment, loadKeychain: Bool = true
@@ -141,7 +128,7 @@ final class AppModel {
     self.client = client
   }
 
-  var isSignedIn: Bool { client?.token.isEmpty == false && !adminBoard.sessionEnded }
+  var isSignedIn: Bool { client?.token.isEmpty == false && !serverAccountBoard.sessionEnded }
 
   var selectedAgent: Agent? { agents.first { $0.id == selectedAgentID } }
   var selectedGroup: GroupChat? { groupChats.first { $0.id == selectedGroupID } }
@@ -274,15 +261,12 @@ extension AppModel {
     botRequestBoard.reset()
     resetCalls()
     botSecretBoard.reset()
-    gitHubAccountBoard.reset()
-    gitHubAppBoard.reset()
-    adminBoard.reset()
+    serverAccountBoard.reset()
     themeBoard.reset()
     connectedServices.reset()
     changeBoard.reset()
     activityBoard.reset()
     avatarBoard.reset()
-    providerKeyBoard.reset()
     passkeyBoard.reset()
     unread.clear()
     botSkillBoard.reset()
@@ -296,13 +280,9 @@ extension AppModel {
     providers = []
     models = []
     reasoningBoard.reset()
-    providerLoginBoard.reset()
-    signingIn = nil
     agentDraft = nil
     memoryDraft = nil
     automationBoard.reset()
-    mcpDraft = nil
-    isCheckingMCP = false
     skillDraft = nil
     snapshot = nil
     leaveGroup()
@@ -372,29 +352,5 @@ extension AppModel {
       route = nil
       showNotice(outcome.notice)
     }
-  }
-
-  func saveProviderKey() {
-    guard let client else {
-      errorText = "Connect to your server in Settings."
-      return
-    }
-    providerKeyBoard.save(client: client) { [weak self] in
-      self?.showNotice("Provider key saved")
-      self?.refreshProviders()
-    }
-  }
-
-  func removeProviderKey() {
-    let provider = provider
-    optimisticMutation(
-      key: "provider:\(provider)", update: {}, rollback: {},
-      work: { client in
-        try await client.deleteProviderKey(provider)
-        return { [self] in
-          showNotice("Provider key removed")
-          refreshProviders()
-        }
-      })
   }
 }

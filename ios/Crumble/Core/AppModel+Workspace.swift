@@ -11,7 +11,6 @@ extension AppModel {
     route = panel
     memoryDraft = nil
     automationBoard.closeUnchangedDraft()
-    mcpDraft = nil
     skillDraft = nil
     switch panel {
     case .memory:
@@ -25,21 +24,6 @@ extension AppModel {
       if let client { changeBoard.refresh(client: client) }
     case .avatars:
       break
-    case .credentials, .logins:
-      if let kind = panel.botSecretKind { loadBotSecrets(kind) }
-    case .integrations:
-      loadIntegrationOverview()
-    case .coding:
-      loadGitHubApps()
-      loadGitHubAccounts()
-      loadAdmin()
-    case .users:
-      loadAdmin()
-    case .providers:
-      loadProviders()
-      loadPasswordManagers()
-    case .passwordManagers, .webSearch, .judgeModel, .visionModel, .messageGateways, .eventRelay:
-      loadConnectedServices(panel)
     case .agent, .group:
       break
     }
@@ -75,20 +59,6 @@ extension AppModel {
   func loadMoreChanges() {
     guard let client else { return }
     changeBoard.loadMore(client: client)
-  }
-
-  private func loadIntegrationOverview() {
-    let mutationVersion = mutationRevision
-    request { client in
-      async let bots = client.agents()
-      async let servers = client.mcpServers()
-      let (loadedBots, loadedServers) = try await (bots, servers)
-      return { [self] in
-        guard mutationRevision == mutationVersion, pendingMutations.isEmpty else { return }
-        agents = loadedBots
-        mcpServers = loadedServers
-      }
-    }
   }
 
   private func loadMemoryOverview() {
@@ -229,10 +199,5 @@ extension AppModel {
         agentMemories[agentID] = loadedMemories
       }
     }
-  }
-
-  /// The failed-turn link.
-  func openProviderSettings() {
-    openPanel(.providers)
   }
 }

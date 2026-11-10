@@ -17,46 +17,6 @@ public func messageOrder(_ id: String) -> [Int] {
 
 public func newRequestID() -> String { UUID().uuidString.lowercased() }
 
-public struct SignInError: LocalizedError {
-  public var errorDescription: String?
-
-  public init(
-    errorDescription: String? = nil
-  ) {
-    self.errorDescription = errorDescription
-  }
-}
-
-/// Reads the code, state and issuer from a sign-in callback, or the provider's reason for refusing.
-public struct OAuthResult {
-  public let code: String
-  public let state: String
-  public let iss: String?
-
-  public init(
-    code: String,
-    state: String,
-    iss: String? = nil
-  ) {
-    self.code = code
-    self.state = state
-    self.iss = iss
-  }
-}
-
-public func oauthResult(from callback: URL) throws -> OAuthResult {
-  let items = URLComponents(url: callback, resolvingAgainstBaseURL: false)?.queryItems ?? []
-  let value = { (name: String) in items.first { $0.name == name }?.value }
-  if let error = value("error") {
-    throw SignInError(
-      errorDescription: "Sign-in was refused: " + (value("error_description") ?? error))
-  }
-  guard let code = value("code"), let state = value("state") else {
-    throw SignInError(errorDescription: "Sign-in returned no authorization code.")
-  }
-  return OAuthResult(code: code, state: state, iss: value("iss"))
-}
-
 /// Server timestamps are absolute instants; the date picker displays them in its time zone.
 public func automationRunDate(_ value: String) -> Date? {
   let parser = ISO8601DateFormatter()
