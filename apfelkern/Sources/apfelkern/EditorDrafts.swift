@@ -3,8 +3,7 @@ import Foundation
 public enum Route: Hashable, Sendable {
   case agent(String)
   case group(String)
-  case memory, skills, automations, activity, avatars, judgeModel, visionModel, integrations, coding, users
-  case providers, passwordManagers, credentials, logins, webSearch, messageGateways, eventRelay
+  case memory, skills, automations, activity, avatars
 
   public var title: String {
     switch self {
@@ -15,27 +14,6 @@ public enum Route: Hashable, Sendable {
     case .automations: "Automations"
     case .activity: "Activity"
     case .avatars: "Avatars"
-    case .judgeModel: JudgeModelSettings.title
-    case .visionModel: VisionModelSettings.title
-    case .integrations: "Integrations"
-    case .coding: "Coding"
-    case .users: "Users"
-    case .providers: "Providers"
-    case .passwordManagers: "Password managers"
-    case .credentials: BotSecretKind.credential.title
-    case .logins: BotSecretKind.login.title
-    case .webSearch: "Web search"
-    case .messageGateways: "Message gateways"
-    case .eventRelay: "Event relay"
-    }
-  }
-
-  /// The kind a cross-bot page lists, if this is one.
-  public var botSecretKind: BotSecretKind? {
-    switch self {
-    case .credentials: .credential
-    case .logins: .login
-    default: nil
     }
   }
 }
@@ -217,117 +195,3 @@ public struct MemoryDraft: Identifiable, Sendable {
   }
 }
 
-public struct MCPDraft: Identifiable, Sendable {
-  public let id = UUID()
-  public var serverID: String
-  /// The bot a new server belongs to, or nil for a shared one; fixed once the server exists.
-  public var agentID: String?
-  public var name = ""
-  public var url = ""
-  public var token = SecretSourceDraft()
-  public var enabled = true
-  /// The owner's OAuth app; empty lets the server register Crumble itself.
-  public var clientID = ""
-  public var clientSecret = SecretSourceDraft()
-  private var hasSavedToken = false
-  private var savedClientID: String?
-
-  public init(
-    serverID: String,
-    agentID: String? = nil,
-    name: String = "",
-    url: String = "",
-    enabled: Bool = true
-  ) {
-    self.serverID = serverID
-    self.agentID = agentID
-    self.name = name
-    self.url = url
-    self.enabled = enabled
-  }
-
-  public init(server: MCPServer) {
-    self.init(
-      serverID: server.id, agentID: server.agentId, name: server.name, url: server.url, enabled: server.enabled)
-    token = SecretSourceDraft(saved: server.token)
-    hasSavedToken = server.auth == "token"
-    clientID = server.oauthClientId ?? ""
-    clientSecret = SecretSourceDraft(saved: server.oauthClientSecret)
-    savedClientID = server.oauthClientId
-  }
-
-  public var tokenPlaceholder: String { hasSavedToken ? "Replace the saved token" : "Optional" }
-
-  public var tokenNote: String {
-    "Sent as a bearer token. Leave it empty for servers that need no sign-in or use OAuth."
-  }
-
-  /// Whether a save sends a token: the saved reference isn't read again when other fields change.
-  public var changesToken: Bool { token.changedInput != nil }
-
-  public var hasClientID: Bool { !trimmedClientID.isEmpty }
-
-  private var trimmedClientID: String { clientID.trimmingCharacters(in: .whitespacesAndNewlines) }
-
-  public var clientSecretPlaceholder: String {
-    clientSecret.saved?.configured == true ? "Replace the saved secret" : "Client secret, optional"
-  }
-
-  public var clientSecretNote: String {
-    "Stored encrypted and never shown again. Changing the app signs the server out."
-  }
-
-  /// `callback` is the address this app's sign-in returns to, which the OAuth app has to list.
-  public static func oauthAppNote(callback: String) -> String {
-    "Only for servers whose sign-in can't register Crumble, such as GitHub's. Register an OAuth app there "
-      + "with the callback URL \(callback) and enter its client ID and secret."
-  }
-
-  private var sendsClientSecret: SecretInput? { hasClientID ? clientSecret.changedInput : nil }
-
-  /// The server signs out of a server whose OAuth app changes, so a save shouldn't look signed in.
-  public var changesOAuthApp: Bool {
-    trimmedClientID.nilIfEmpty != savedClientID || sendsClientSecret != nil
-  }
-
-  /// The server reads a new reference before it answers, so the outcome depends on a password manager.
-  public var checksPasswordManager: Bool {
-    if token.changesReference { return true }
-    if case .reference? = sendsClientSecret { return true }
-    return false
-  }
-
-  /// The fields a save sends, with `name` and `url` already trimmed. Clearing the client ID clears
-  /// its secret too, because a secret means nothing without the app it belongs to.
-  public func payload(name: String, url: String) -> [String: JSONValue] {
-    var payload: [String: JSONValue] = [
-      "name": .string(name), "url": .string(url), "enabled": .bool(enabled)
-    ]
-    if let input = token.changedInput { payload["token"] = input.json }
-    if hasClientID {
-      payload["oauthClientId"] = .string(trimmedClientID)
-    } else if savedClientID != nil {
-      payload["oauthClientId"] = .null
-    }
-    if let input = sendsClientSecret {
-      payload["oauthClientSecret"] = input.json
-    } else if !hasClientID, clientSecret.saved?.configured == true {
-      payload["oauthClientSecret"] = .null
-    }
-    return payload
-  }
-
-  /// `server` as this draft will leave it, to show until the server answers. The secret stays out.
-  public func applyingOAuthApp(to server: MCPServer) -> MCPServer {
-    var server = server
-    server.oauthClientId = trimmedClientID.nilIfEmpty
-    server.oauthClientSecret = !hasClientID
-      ? SecretStatus(configured: false)
-      : SecretStatus(configured: sendsClientSecret != nil || clientSecret.saved?.configured == true)
-    if changesOAuthApp, server.auth == "oauth" {
-      server.authenticated = false
-      server.auth = "none"
-    }
-    return server
-  }
-}

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Settings** no longer configures the server. Providers, the judge and vision models, web search, credentials and logins across bots, password managers, Integrations, Coding, Users, message gateways, and the event relay are set up in Crumble on the web. **Server Settings on the Web** in **General** opens it in the browser, and links that led to those pages, such as **Provider Settings…** under a failed reply, open the matching web page.
 - A bot can ask to call someone other than you. Its **call request** in the chat shows the callee, number, goal, and opening, with **Decline** and **Approve**. Once placed, the call is a row with its state, and clicking it opens the call beside the chat with the goal and the transcript, live while the call goes on. A call's end notice becomes the same row.
 - A chat shows a voice gateway call as centered phone lines, as on the web: **Call started**, or, when the bot placed the call, that it called you over the greeting it spoke, and then how the call ended, with any reaction the bot left on it. A message spoken on a call says **Spoken on a call**.
 - The bot form shows the portrait with a pencil, and the avatar editor opens in a popover instead of filling the form, as on the web.

@@ -159,7 +159,7 @@ func otherTextIsNotAnInviteLink(text: String) {
 
 @MainActor @Test func anUnknownSessionReadsAsEnded() async throws {
   try await withClient(handler: { _ in StubResponse(body: Data("null".utf8)) }, test: { client in
-    let board = AdminBoard()
+    let board = ServerAccountBoard()
     #expect(!board.sessionEnded)
     board.loadAccount(client: client)
     for _ in 0..<400 where !board.isAccountLoaded { try await Task.sleep(for: .milliseconds(5)) }

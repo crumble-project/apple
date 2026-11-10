@@ -54,29 +54,4 @@ extension APIClientTests {
     #expect(model.agents[1].name == "Second updated")
     #expect(model.route == .memory)
   }
-
-  @MainActor @Test func aProviderSignInRefreshesTheEditorsModelsAndTheModelChoices() async throws {
-    let model = AppModel(
-      client: StubProtocol.client { request in
-        switch request.url?.path {
-        case "/v1/models":
-          (200, #"[{"provider":"openai","id":"gpt-new","name":"New","contextWindow":1,"reasoning":false,"#
-            + #""thinkingLevels":[]}]"#)
-        case "/v1/judge-model": (200, #"{"judgeModel":null,"effective":null,"choices":[]}"#)
-        case "/v1/vision-model":
-          (200, #"{"visionModel":null,"choices":[{"provider":"openai","model":"gpt-new","name":"New"}]}"#)
-        default: (200, "[]")
-        }
-      })
-    model.agentDraft = AgentDraft(isNew: false, agentID: "a1", provider: "openai")
-    model.handleProviderLogin(.signedIn(provider: "openai"))
-    let services = model.connectedServices
-    for _ in 0..<200 where model.models.isEmpty || services.visionModel.setting == nil
-        || services.judgeModel.setting == nil {
-      try await Task.sleep(for: .milliseconds(10))
-    }
-    #expect(model.models.map(\.id) == ["gpt-new"])
-    #expect(services.visionModel.setting?.choices.map(\.name) == ["New"])
-    #expect(services.judgeModel.setting != nil)
-  }
 }

@@ -90,9 +90,7 @@ extension SecretSourceDraft: CustomStringConvertible, CustomReflectable {
 public struct BotSecretDraft: Identifiable, Sendable {
   public let id = UUID()
   public let kind: BotSecretKind
-  /// Only a new one from the cross-bot pages can change it, through `choosesBot`.
-  public var agentID: String
-  public let choosesBot: Bool
+  public let agentID: String
   public let existing: BotSecret?
   public let request: BotSecretRequest?
   /// Credentials are environment variable names and logins are lowercase, as the server requires.
@@ -110,12 +108,11 @@ public struct BotSecretDraft: Identifiable, Sendable {
   public var item = ""
 
   public init(
-    kind: BotSecretKind, agentID: String, choosesBot: Bool = false, existing: BotSecret? = nil,
+    kind: BotSecretKind, agentID: String, existing: BotSecret? = nil,
     request: BotSecretRequest? = nil
   ) {
     self.kind = kind
     self.agentID = agentID
-    self.choosesBot = choosesBot
     self.existing = existing
     self.request = request
     name = existing?.name ?? request?.name ?? ""

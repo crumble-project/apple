@@ -60,7 +60,7 @@ struct ConnectionSettingsView: View {
     }
 
     private var accountSection: some View {
-        let account = model.adminBoard.account
+        let account = model.serverAccountBoard.account
         return Section("Account") {
             LabeledContent(
                 account.flatMap { $0.name.isEmpty ? nil : $0.name } ?? "Signed in", value: account?.email ?? "")
@@ -86,12 +86,20 @@ struct ConnectionSettingsView: View {
                     ProgressView().controlSize(.small)
                     Text("Connecting…").foregroundStyle(.secondary)
                 }
+                Spacer()
+                if let url = model.client?.webSettingsURL() {
+                    Link("Server Settings on the Web", destination: url)
+                }
             }
         } header: {
             Text("Server")
         } footer: {
-            Text("Your session stays in the macOS Keychain; it is never written to the project.").foregroundStyle(
-                .secondary)
+            Text(
+                """
+                Providers, connected services, and users are set up in Crumble on the web. Your session stays in the \
+                macOS Keychain; it is never written to the project.
+                """
+            ).foregroundStyle(.secondary)
         }
     }
 

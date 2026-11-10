@@ -192,12 +192,6 @@ struct ContentView: View {
       MemoryFormView(draft: sheetBinding($model.memoryDraft, for: $0))
     }
     .sheet(item: automationDraft) { AutomationFormView(draft: sheetBinding(automationDraft, for: $0)) }
-    .sheet(item: $model.mcpDraft) { MCPFormView(draft: sheetBinding($model.mcpDraft, for: $0)) }
-    .machineAccountSheet()
-    .adminSheets()
-    .messageGatewaySheet()
-    .pluginSettingSheet(active: model.connectedServices.gateways.draft == nil)
-    .gitHubAppSheets()
     .skillSheet(active: model.agentDraft == nil)
     .sheet(item: $model.jobHistory) { JobSheet(job: $0) }
     .sheet(item: $model.openedCall) { CallSheet(call: $0) }
@@ -206,10 +200,6 @@ struct ContentView: View {
 }
 
 /// For credentials. Universal Clipboard would hand the text to the owner's other devices.
-func copyLocally(_ text: String) {
-  UIPasteboard.general.setItems([[UTType.plainText.identifier: text]], options: [.localOnly: true])
-}
-
 func sheetBinding<Draft: Identifiable & Sendable>(_ source: Binding<Draft?>, for item: Draft)
   -> Binding<Draft> {
   Binding(
@@ -257,7 +247,7 @@ struct ErrorBanner: View {
   @Environment(AppModel.self) private var model
   var body: some View {
     if !model.errorText.isEmpty, model.agentDraft == nil, model.memoryDraft == nil,
-      model.automationBoard.draft == nil, model.mcpDraft == nil, model.skillDraft == nil, model.groupDraft == nil {
+      model.automationBoard.draft == nil, model.skillDraft == nil, model.groupDraft == nil {
       HStack(alignment: .top, spacing: 8) {
         Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.red)
         Text(model.errorText).font(.callout).textSelection(.enabled)

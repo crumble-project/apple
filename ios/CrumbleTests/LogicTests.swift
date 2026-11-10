@@ -178,28 +178,6 @@ struct LogicTests {
     #expect(retained.communication?.status == "done")
   }
 
-  @Test func signInCallbacksCarryACodeOrAReason() throws {
-    let result = try oauthResult(
-      from: URL(string: "ng.crumbli.ios:/oauth/callback?code=abc&state=xyz")!)
-    #expect(result.code == "abc" && result.state == "xyz" && result.iss == nil)
-    let issued = try oauthResult(
-      from: URL(
-        string:
-          "ng.crumbli.ios:/oauth/callback?code=abc&state=xyz&iss=https%3A%2F%2Fexecutor.sh%2Fapi%2Fauth"
-      )!)
-    #expect(issued.iss == "https://executor.sh/api/auth")
-    #expect(throws: SignInError.self) {
-      try oauthResult(
-        from: URL(
-          string:
-            "ng.crumbli.ios:/oauth/callback?error=access_denied&error_description=User%20declined")!
-      )
-    }
-    #expect(throws: SignInError.self) {
-      try oauthResult(from: URL(string: "ng.crumbli.ios:/oauth/callback")!)
-    }
-  }
-
   @Test func markdownSplitsBlocks() {
     let blocks = MarkdownBlock.parse(
       "Two meetings:\n\n- 09:00 Design\n- 14:30 Call\n\n```\ncode\n```")
@@ -232,7 +210,7 @@ struct PhoneNavigationTests {
   }
 
   @Test func aPageFromAChatReturnsToIt() {
-    #expect(PhonePage.path(from: [chat], to: .providers) == [chat, .route(.providers)])
+    #expect(PhonePage.path(from: [chat], to: .skills) == [chat, .route(.skills)])
   }
 
   @Test func aPageFromNowhereReturnsThroughSettings() {

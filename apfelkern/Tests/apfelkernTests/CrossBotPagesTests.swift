@@ -13,75 +13,6 @@ private func wait(_ done: () -> Bool) async throws {
   #expect(done())
 }
 
-private func credential(_ name: String, host: String) -> String {
-  #"{"name":"\#(name)","hosts":["\#(host)"],"secret":{"configured":true},"lastUsedAt":null,"#
-    + #""lastError":null,"github":false,"createdAt":"2026-11-05T10:00:00.000Z","#
-    + #""updatedAt":"2026-11-05T10:00:00.000Z"}"#
-}
-
-private func list(_ items: [String], requests: [String] = []) -> StubResponse {
-  json(#"{"credentials":[\#(items.joined(separator: ","))],"requests":[\#(requests.joined(separator: ","))]}"#)
-}
-
-private let wanted = #"{"name":"WANTED","hosts":["want.example.com"],"reason":"For a job","#
-  + #""requestedAt":"2026-11-05T10:00:00.000Z"}"#
-
-private func bots() -> [Agent] {
-  [Agent(id: "a1", name: "Atlas"), Agent(id: "a2", name: "Juniper"), Agent(id: "a3", name: "Pixel")]
-}
-
-@Test @MainActor func aPageNarrowsByBotAndSearchAsTheWebDoes() async throws {
-  try await withClient(handler: { request in
-    let path = request.url?.path ?? ""
-    if path.contains("/a1/") { return list([credential("ACME_TOKEN", host: "api.acme.com")]) }
-    if path.contains("/a2/") {
-      return list([credential("OTHER", host: "other.example.com")], requests: [wanted])
-    }
-    return list([])
-  }, test: { client in
-    let board = BotSecretBoard()
-    for bot in bots() { board.refresh(.credential, agentID: bot.id, client: client) }
-    try await wait { bots().allSatisfy { board.isLoaded(.credential, agentID: $0.id) } }
-
-    let all = board.page(.credential, bots: bots(), scope: nil, search: "")
-    #expect(all.total == 3)
-    #expect(all.counts == ["a1": 1, "a2": 2, "a3": 0])
-    #expect(all.waiting.map(\.request.name) == ["WANTED"])
-    // Every bot in scope leaves out a bot with nothing to show.
-    #expect(all.groups.map(\.bot.id) == ["a1", "a2"])
-
-    let host = board.page(.credential, bots: bots(), scope: nil, search: "  API.acme ")
-    #expect(host.groups.map(\.bot.id) == ["a1"])
-    #expect(host.waiting.isEmpty)
-
-    let one = board.page(.credential, bots: bots(), scope: "a2", search: "acme")
-    #expect(one.groups.map(\.note) == [BotSecretKind.credential.noMatchText])
-
-    let empty = board.page(.credential, bots: bots(), scope: "a3", search: "")
-    #expect(empty.groups.map(\.note) == [BotSecretKind.credential.emptyText])
-
-    let none = board.page(.credential, bots: bots(), scope: nil, search: "nothing")
-    #expect(none.groups.isEmpty)
-    #expect(none.note == BotSecretKind.credential.noMatchText)
-
-    #expect(board.page(.credential, bots: bots(), scope: "gone", search: "").scope == nil)
-  })
-}
-
-@Test @MainActor func aNewSecretFromAPageAsksWhichBot() async throws {
-  try await withClient(handler: { _ in json(#"{"passwordManagers":[]}"#) }, test: { client in
-    let board = BotSecretBoard()
-    board.startNew(.login, choosingFrom: bots(), client: client)
-    #expect(board.draft?.choosesBot == true)
-    #expect(board.draft?.agentID == "a1")
-    board.draft?.agentID = "a2"
-    #expect(board.draft?.agentID == "a2")
-    board.closeDraft()
-    board.startNew(.login, agentID: "a3", client: client)
-    #expect(board.draft?.choosesBot == false)
-  })
-}
-
 @Test func reservedCredentialNamesCannotBeAdded() {
   var draft = BotSecretDraft(kind: .credential, agentID: "a1")
   draft.hosts = "api.example.com"
@@ -98,22 +29,6 @@ private func bots() -> [Agent] {
   login.name = "path"
   #expect(login.nameIsValid)
   #expect(login.nameError == nil)
-}
-
-@Test @MainActor func aGatewayDraftResetsWithoutClosingItsSheet() async throws {
-  let board = MessageGatewayBoard()
-  let gateway = MessageGateway(
-    id: "discord", label: "Discord", secretKey: "k", tokenConfigured: true,
-    config: GatewayConfig(ownerID: "1", allowedChannelIDs: ["c1"]), status: .connected)
-  board.edit(gateway)
-  let sheet = board.draft?.id
-  board.draft?.ownerID = "2"
-  board.draft?.channels = []
-  #expect(board.draft?.isDirty == true)
-  board.resetDraft()
-  #expect(board.draft?.id == sheet)
-  #expect(board.draft?.isDirty == false)
-  #expect(board.draft?.channels.map(\.value) == ["c1"])
 }
 
 private func entry(_ id: String) -> String {
@@ -181,93 +96,6 @@ private func feed(_ ids: [String], next: String? = nil) -> StubResponse {
     #expect(board.botID == nil)
     #expect(board.readError == nil)
   })
-}
-
-private func providerStatus(_ apiKey: SecretStatus = SecretStatus(configured: false)) -> ProviderStatus {
-  ProviderStatus(provider: "openai", configured: apiKey.configured, apiKey: apiKey)
-}
-
-@Test @MainActor func aProviderKeyClearsAtOnceAndComesBackOnFailure() async throws {
-  let bodies = Mutex<[JSONValue]>([])
-  try await withClient(handler: { request in
-    bodies.withLock { $0.append((try? requestJSON(request)) ?? .null) }
-    return json(#"{"error":"Nope"}"#, status: 400, delay: 0.05)
-  }, test: { client in
-    let board = ProviderKeyBoard()
-    board.show(provider: "openai", status: providerStatus())
-    board.source.value = "  made-up  "
-    board.save(client: client) {}
-    #expect(board.source.value.isEmpty)
-    #expect(board.isSaving)
-    try await wait { !board.isSaving }
-    #expect(board.source.value == "  made-up  ")
-    #expect(!board.saveError.isEmpty)
-    let body = try #require(bodies.withLock { $0.first })
-    #expect(body == .object(["value": .string("made-up")]))
-  })
-}
-
-@Test @MainActor func aProviderReferenceWaitsForTheServerAndIsSentAsAReference() async throws {
-  let bodies = Mutex<[JSONValue]>([])
-  try await withClient(handler: { request in
-    bodies.withLock { $0.append((try? requestJSON(request)) ?? .null) }
-    return json(#"{"provider":"openai","configured":true}"#, delay: 0.05)
-  }, test: { client in
-    let board = ProviderKeyBoard()
-    board.show(provider: "openai", status: providerStatus())
-    board.source.use(.onePassword)
-    #expect(!board.canSave)
-    board.source.reference = "op://vault/item/field"
-    var finished = false
-    board.save(client: client) { finished = true }
-    #expect(board.source.reference == "op://vault/item/field")
-    try await wait { finished }
-    #expect(!board.canSave)
-    let body = try #require(bodies.withLock { $0.first })
-    #expect(body == .object([
-      "reference": .object(["passwordManager": .string("1password"), "reference": .string("op://vault/item/field")])
-    ]))
-  })
-}
-
-@Test @MainActor func aSavedReferenceFillsTheFormAndSurvivesARefreshWithTypedText() {
-  let board = ProviderKeyBoard()
-  let saved = SecretStatus(configured: true, passwordManager: .bitwarden, reference: "id")
-  board.show(provider: "openai", status: providerStatus(saved))
-  #expect(board.source.manager == .bitwarden)
-  #expect(!board.canSave)
-
-  board.source.reference = "other"
-  board.show(provider: "openai", status: providerStatus())
-  #expect(board.source.reference == "other")
-
-  board.show(provider: "groq", status: nil)
-  #expect(board.source.manager == nil)
-  #expect(providerStatus(saved).savedLabel(managers: []) == nil)
-  var keyed = providerStatus(saved)
-  keyed.credentialType = .apiKey
-  #expect(keyed.savedLabel(managers: [PasswordManager(id: .bitwarden, name: "Bitwarden", connected: true)])
-    == "API key in Bitwarden")
-}
-
-@Test func anMCPDraftSendsAReferenceOnlyWhenItChanged() {
-  var draft = MCPDraft(server: MCPServer(
-    id: "m1", name: "Docs", url: "https://example.com", enabled: true, auth: "token",
-    token: SecretStatus(configured: true, passwordManager: .onePassword, reference: "op://a/b/c")))
-  #expect(draft.token.manager == .onePassword)
-  #expect(draft.payload(name: "Docs", url: "https://example.com")["token"] == nil)
-  #expect(!draft.checksPasswordManager)
-
-  draft.token.reference = "op://a/b/d"
-  #expect(draft.checksPasswordManager)
-  #expect(draft.payload(name: "Docs", url: "https://example.com")["token"] == .object([
-    "reference": .object(["passwordManager": .string("1password"), "reference": .string("op://a/b/d")])
-  ]))
-
-  var typed = MCPDraft(serverID: "")
-  typed.token.value = "made-up"
-  #expect(typed.tokenPlaceholder == "Optional")
-  #expect(typed.payload(name: "A", url: "https://a.example")["token"] == .object(["value": .string("made-up")]))
 }
 
 @MainActor final class AvatarStubHost: BotListHost {

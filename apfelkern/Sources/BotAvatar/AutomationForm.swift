@@ -9,18 +9,19 @@ public struct AutomationFormSections: View {
   let sources: [EventSource]
   /// Whether the source list has been read, so an empty one means none exist.
   let sourcesLoaded: Bool
-  let openEventRelay: () -> Void
+  /// Where sources are added: the web client's Event relay settings.
+  let eventRelayURL: URL?
 
   public init(
     draft: Binding<AutomationDraft>, agents: [Agent], capabilities: ServerCapabilities?, sources: [EventSource],
-    sourcesLoaded: Bool, openEventRelay: @escaping () -> Void
+    sourcesLoaded: Bool, eventRelayURL: URL?
   ) {
     _draft = draft
     self.agents = agents
     self.capabilities = capabilities
     self.sources = sources
     self.sourcesLoaded = sourcesLoaded
-    self.openEventRelay = openEventRelay
+    self.eventRelayURL = eventRelayURL
   }
 
   private func canScript(_ agentID: String) -> Bool {
@@ -51,7 +52,7 @@ public struct AutomationFormSections: View {
     }
     if draft.kind == .script { scriptSection } else { promptSection }
     AutomationWhenSection(
-      draft: $draft, sources: sources, sourcesLoaded: sourcesLoaded, openEventRelay: openEventRelay)
+      draft: $draft, sources: sources, sourcesLoaded: sourcesLoaded, eventRelayURL: eventRelayURL)
     Section {
       Toggle("Enabled", isOn: $draft.enabled)
     }
@@ -106,7 +107,7 @@ private struct AutomationWhenSection: View {
   @Binding var draft: AutomationDraft
   let sources: [EventSource]
   let sourcesLoaded: Bool
-  let openEventRelay: () -> Void
+  let eventRelayURL: URL?
 
   var body: some View {
     Section {
@@ -128,7 +129,8 @@ private struct AutomationWhenSection: View {
 
   @ViewBuilder private var eventFields: some View {
     if sourcesLoaded, sources.isEmpty {
-      Button("Add a source in Settings › Event relay first", action: openEventRelay)
+      let note = "Add a source in Settings › Event relay on the web first"
+      if let eventRelayURL { Link(note, destination: eventRelayURL) } else { Text(note) }
     } else {
       Picker("Event source", selection: $draft.eventSourceId) {
         if draft.eventSourceId.isEmpty { Text("Choose a source").tag("") }

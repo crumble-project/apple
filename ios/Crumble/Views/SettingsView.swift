@@ -2,8 +2,8 @@ import apfelkern
 import BotAvatar
 import SwiftUI
 
-/// Everything that isn't a conversation: the account, the theme, notifications, and every
-/// workspace page and connected service.
+/// Everything that isn't a conversation: the account, the theme, notifications, and the workspace
+/// pages. The server itself is configured on the web.
 struct SettingsView: View {
   private struct Page {
     let route: Route
@@ -16,22 +16,7 @@ struct SettingsView: View {
     .init(route: .skills, symbol: "book.closed.fill", color: .orange),
     .init(route: .automations, symbol: "calendar.badge.clock", color: .red),
     .init(route: .activity, symbol: "waveform.path.ecg", color: .green),
-    .init(route: .avatars, symbol: "face.smiling", color: .yellow),
-    .init(route: .judgeModel, symbol: JudgeModelSettings.symbol, color: .indigo),
-    .init(route: .visionModel, symbol: VisionModelSettings.symbol, color: .purple),
-    .init(route: .integrations, symbol: "powerplug.fill", color: .teal),
-    .init(route: .coding, symbol: "chevron.left.forwardslash.chevron.right", color: .gray),
-    .init(route: .users, symbol: "person.2.fill", color: .blue)
-  ]
-
-  private static let connectedServices: [Page] = [
-    .init(route: .providers, symbol: "key.radiowaves.forward.fill", color: .blue),
-    .init(route: .passwordManagers, symbol: "lock.rectangle.stack.fill", color: .gray),
-    .init(route: .credentials, symbol: "key.fill", color: .yellow),
-    .init(route: .logins, symbol: "person.badge.key.fill", color: .green),
-    .init(route: .webSearch, symbol: "globe", color: .cyan),
-    .init(route: .messageGateways, symbol: "message.fill", color: .mint),
-    .init(route: .eventRelay, symbol: "dot.radiowaves.left.and.right", color: .orange)
+    .init(route: .avatars, symbol: "face.smiling", color: .yellow)
   ]
 
   private func pageRow(_ page: Page) -> some View {
@@ -52,7 +37,7 @@ struct SettingsView: View {
   }
 
   private var accountLink: some View {
-    let account = model.adminBoard.account
+    let account = model.serverAccountBoard.account
     return Section {
       NavigationLink {
         AccountSettingsView()
@@ -154,12 +139,24 @@ struct SettingsView: View {
       themeSection
       if model.isSignedIn {
         Section("Workspace") {
-          ForEach(Self.workspace.filter { $0.route != .users || model.adminBoard.isAdmin }, id: \.route) {
-            pageRow($0)
-          }
+          ForEach(Self.workspace, id: \.route) { pageRow($0) }
         }
-        Section("Connected services") {
-          ForEach(Self.connectedServices, id: \.route) { pageRow($0) }
+        if let url = model.client?.webSettingsURL() {
+          Section {
+            Link(destination: url) {
+              HStack {
+                SettingsLabel(title: "Server Settings", symbol: "server.rack", color: .gray)
+                Spacer(minLength: 0)
+                Image(systemName: "arrow.up.right")
+                  .font(.footnote.weight(.semibold))
+                  .foregroundStyle(.tertiary)
+                  .accessibilityHidden(true)
+              }
+            }
+            .foregroundStyle(.primary)
+          } footer: {
+            Text("Providers, connected services, and users are set up in Crumble on the web.")
+          }
         }
       }
     }
@@ -225,7 +222,7 @@ private struct AccountSettingsView: View {
   @Environment(AppModel.self) private var model
 
   private var accountSection: some View {
-    let account = model.adminBoard.account
+    let account = model.serverAccountBoard.account
     return Section("Account") {
       LabeledContent(account.flatMap { $0.name.isEmpty ? nil : $0.name } ?? "Signed in", value: account?.email ?? "")
       HStack {

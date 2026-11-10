@@ -54,7 +54,7 @@ public struct CommandPalette {
   /// `pending` holds the app's in-flight mutation keys: a bot or group being changed can't be opened
   /// from the sidebar either.
   public init(
-    bots: [Agent], groups: [GroupChat], pending: Set<String>, isAdmin: Bool, isSignedIn: Bool, theme: AppTheme
+    bots: [Agent], groups: [GroupChat], pending: Set<String>, isSignedIn: Bool, theme: AppTheme
   ) {
     let botItems = bots.filter { !pending.contains("agent:\($0.id)") }.map {
       PaletteItem(
@@ -86,33 +86,15 @@ public struct CommandPalette {
       PaletteSection(title: "Group chats", items: groupItems),
       PaletteSection(title: "Create", items: create),
       PaletteSection(title: "Workspace", items: workspace),
-      PaletteSection(title: "Settings", items: Self.settings(isAdmin: isAdmin)),
+      PaletteSection(title: "Settings", items: Self.settings),
       PaletteSection(title: "Theme", items: themes)
     ].filter { !$0.items.isEmpty }
   }
 
-  private static func settings(isAdmin: Bool) -> [PaletteItem] {
-    let title = "Settings"
-    var items: [PaletteItem] = [
-      .init(id: "general", title: "General", symbol: "gearshape", command: .settings, terms: ["Settings General"]),
-      .init(page: .providers, symbol: "key.radiowaves.forward", section: title),
-      .init(page: .passwordManagers, symbol: "lock.rectangle.stack", section: title),
-      .init(page: .webSearch, symbol: "globe", section: title),
-      .init(page: .credentials, symbol: "key", section: title),
-      .init(page: .logins, symbol: "person.badge.key", section: title),
-      .init(page: .judgeModel, symbol: JudgeModelSettings.symbol, section: title),
-      .init(page: .visionModel, symbol: VisionModelSettings.symbol, section: title),
-      .init(page: .integrations, symbol: "powerplug", section: title),
-      .init(page: .coding, symbol: "chevron.left.forwardslash.chevron.right", section: title)
-    ]
-    if isAdmin { items.append(.init(page: .users, symbol: "person.2", section: title)) }
-    items += [
-      .init(page: .messageGateways, symbol: "message", section: title),
-      .init(page: .eventRelay, symbol: "dot.radiowaves.left.and.right", section: title),
-      .init(page: .skills, symbol: "book.closed", section: title)
-    ]
-    return items
-  }
+  private static var settings: [PaletteItem] { [
+    .init(id: "general", title: "General", symbol: "gearshape", command: .settings, terms: ["Settings General"]),
+    .init(page: .skills, symbol: "book.closed", section: "Settings")
+  ] }
 
   /// Every section as listed for an empty query. Otherwise only what matches, best match first, so
   /// Return opens what the owner most likely meant.

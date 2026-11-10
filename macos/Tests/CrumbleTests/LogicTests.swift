@@ -85,16 +85,16 @@ struct LogicTests {
 
     @MainActor @Test func cancelledSheetDraftStaysReadable() throws {
         let model = AppModel(client: APIClient(baseURL: "http://127.0.0.1:1", token: ""))
-        model.openMCPForm("")
+        model.openMemoryForm("")
         @Bindable var bindable = model
-        let item = try #require(model.mcpDraft)
-        let draft = sheetBinding($bindable.mcpDraft, for: item)
-        draft.wrappedValue.name = "Linear"
-        #expect(model.mcpDraft?.name == "Linear")
-        model.mcpDraft = nil  // Cancel; the closing sheet still redraws and may commit its fields.
+        let item = try #require(model.memoryDraft)
+        let draft = sheetBinding($bindable.memoryDraft, for: item)
+        draft.wrappedValue.content = "Linear"
+        #expect(model.memoryDraft?.content == "Linear")
+        model.memoryDraft = nil  // Cancel; the closing sheet still redraws and may commit its fields.
         #expect(draft.wrappedValue.id == item.id)
-        draft.wrappedValue.name = "Late write"
-        #expect(model.mcpDraft == nil)
+        draft.wrappedValue.content = "Late write"
+        #expect(model.memoryDraft == nil)
     }
 
     @Test func shiftReturnInsertsANewlineAtTheCaret() throws {
@@ -190,21 +190,6 @@ struct LogicTests {
             Issue.record("partial assistant text should render as a working indicator")
             return
         }
-    }
-
-    @Test func signInCallbacksCarryACodeOrAReason() throws {
-        let callback = AppIdentity.bundleID + ":/oauth/callback"
-        let result = try oauthResult(from: #require(URL(string: callback + "?code=abc&state=xyz")))
-        #expect(result.code == "abc" && result.state == "xyz" && result.iss == nil)
-        let issuedURL = try #require(
-            URL(string: callback + "?code=abc&state=xyz&iss=https%3A%2F%2Fexecutor.sh%2Fapi%2Fauth"))
-        let issued = try oauthResult(from: issuedURL)
-        #expect(issued.iss == "https://executor.sh/api/auth")
-        let declined = try #require(
-            URL(string: callback + "?error=access_denied&error_description=User%20declined"))
-        #expect(throws: SignInError.self) { try oauthResult(from: declined) }
-        let missing = try #require(URL(string: callback))
-        #expect(throws: SignInError.self) { try oauthResult(from: missing) }
     }
 
     @Test func markdownSplitsBlocks() {

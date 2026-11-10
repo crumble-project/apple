@@ -4,19 +4,7 @@ extension APIClient {
   public func providers() async throws -> [ProviderStatus] {
     try await invoke {
       try await $0.listProviders(.init()).ok.body.json.map {
-        ProviderStatus(
-          provider: $0.provider, name: $0.name, configured: $0.configured,
-          authMethods: $0.authMethods.map {
-            ProviderLoginMethod(
-              type: $0._type == .oauth ? .oauth : .apiKey, label: $0.label, subscription: $0.subscription)
-          },
-          credentialType: $0.credentialType.flatMap { ProviderAuthType(rawValue: $0.rawValue) },
-          activeLoginId: $0.activeLoginId, apiKey: SecretStatus(wire: $0.apiKey),
-          externalAuth: $0.externalAuth.map {
-            ProviderExternalAuth(
-              status: ProviderExternalAuth.Status(rawValue: $0.status.rawValue) ?? .error,
-              signInCommand: $0.signInCommand, signOutCommand: $0.signOutCommand, message: $0.message)
-          })
+        ProviderStatus(provider: $0.provider, name: $0.name, configured: $0.configured)
       }
     }
   }
@@ -31,57 +19,7 @@ extension APIClient {
     }
   }
 
-  /// The server reads a reference once to check it, so this can take longer than a plain save.
-  func setProviderKey(_ provider: String, secret: SecretInput) async throws {
-    let body: Operations.PutProviderKey.Input.Body.JsonPayload = try requestModel(SecretBody(secret))
-    try await invoke(timeout: 60) {
-      _ = try await $0.putProviderKey(.init(path: .init(provider: provider), body: .json(body))).ok
-    }
-  }
-
-  public func deleteProviderKey(_ provider: String) async throws {
-    try await invoke { _ = try await $0.deleteProviderKey(.init(path: .init(provider: provider))).noContent }
-  }
-
   public func mcpServers() async throws -> [MCPServer] {
     try await invoke { try await $0.listMcpServers(.init()).ok.body.json.map(MCPServer.init(wire:)) }
-  }
-
-  public func createMCPServer(_ payload: [String: JSONValue]) async throws -> MCPServer {
-    let body: Operations.CreateMcpServer.Input.Body.JsonPayload = try requestModel(payload)
-    return try await invoke(timeout: 60, nullFields: Set(payload.filter { $0.value == .null }.keys)) {
-      try MCPServer(wire: await $0.createMcpServer(.init(body: .json(body))).created.body.json)
-    }
-  }
-
-  public func updateMCPServer(_ id: String, patch: [String: JSONValue]) async throws -> MCPServer {
-    let body: Operations.UpdateMcpServer.Input.Body.JsonPayload = try requestModel(patch)
-    return try await invoke(timeout: 60, nullFields: Set(patch.filter { $0.value == .null }.keys)) {
-      MCPServer(wire: try requestModel(required(try await $0.updateMcpServer(
-        .init(path: .init(id: id), body: .json(body))).ok.body.json)) as Components.Schemas.McpServer)
-    }
-  }
-
-  public func deleteMCPServer(_ id: String) async throws {
-    try await invoke { _ = try await $0.deleteMcpServer(.init(path: .init(id: id))).noContent }
-  }
-
-  public func startMCPSignIn(_ id: String, redirectURI: String) async throws -> OAuthStart {
-    try await invoke(timeout: 60) {
-      let wire = try await $0.startMcpOAuth(.init(
-        path: .init(id: id), body: .json(.init(redirectUri: redirectURI)))).ok.body.json
-      return OAuthStart(authorizationUrl: wire.value1?.authorizationUrl, authorized: wire.value2?.authorized)
-    }
-  }
-
-  public func finishMCPSignIn(_ id: String, code: String, state: String, iss: String?) async throws -> MCPServer {
-    try await invoke(timeout: 60) {
-      try MCPServer(wire: await $0.finishMcpOAuth(.init(
-        path: .init(id: id), body: .json(.init(code: code, iss: iss, state: state)))).ok.body.json)
-    }
-  }
-
-  public func signOutOfMCP(_ id: String) async throws -> MCPServer {
-    try await invoke { try MCPServer(wire: await $0.signOutMcpOAuth(.init(path: .init(id: id))).ok.body.json) }
   }
 }

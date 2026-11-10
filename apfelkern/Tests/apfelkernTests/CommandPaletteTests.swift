@@ -3,11 +3,11 @@ import Testing
 
 private func palette(
   bots: [Agent] = [Agent(id: "b1", name: "Atlas"), Agent(id: "b2", name: "Juniper", enabled: false)],
-  groups: [GroupChat] = [], pending: Set<String> = [], isAdmin: Bool = false, isSignedIn: Bool = true,
+  groups: [GroupChat] = [], pending: Set<String> = [], isSignedIn: Bool = true,
   theme: AppTheme = .system
 ) -> CommandPalette {
   CommandPalette(
-    bots: bots, groups: groups, pending: pending, isAdmin: isAdmin, isSignedIn: isSignedIn, theme: theme)
+    bots: bots, groups: groups, pending: pending, isSignedIn: isSignedIn, theme: theme)
 }
 
 private func group(_ id: String, _ name: String = "Trip") -> GroupChat {
@@ -27,9 +27,8 @@ private func titles(_ sections: [PaletteSection], in section: String) -> [String
   #expect(sections.first?.items.last?.detail == "Paused")
 }
 
-@Test func usersIsForAdminsOnly() {
-  #expect(!titles(palette().sections, in: "Settings").contains("Users"))
-  #expect(titles(palette(isAdmin: true).sections, in: "Settings").contains("Users"))
+@Test func serverSettingsAreLeftToTheWeb() {
+  #expect(titles(palette().sections, in: "Settings") == ["General", "Skills"])
 }
 
 @Test func aGroupChatNeedsTwoBots() {
@@ -58,8 +57,8 @@ private func titles(_ sections: [PaletteSection], in section: String) -> [String
 }
 
 @Test func theBestMatchComesFirst() {
-  let sections = palette().matching("coding")
-  #expect(sections.first?.items.first?.command == .open(.coding))
+  let sections = palette().matching("skills")
+  #expect(sections.first?.items.first?.command == .open(.skills))
 }
 
 @Test func sectionNamesMatchTheirItems() {

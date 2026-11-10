@@ -227,7 +227,8 @@ struct ChatRowView: View {
         Spacer()
       }
     case .failure(let error):
-      ChatFailureRow(title: "The agent couldn’t finish", error: error) { model.openProviderSettings() }
+      ChatFailureRow(
+        title: "The agent couldn’t finish", error: error, settings: model.client?.webSettingsURL(.providers))
     }
   }
 }
@@ -249,7 +250,8 @@ struct ChatTimeLabel: View {
 struct ChatFailureRow: View {
   let title: String
   let error: String
-  var openSettings: (() -> Void)?
+  /// The web page that can fix the failure.
+  var settings: URL?
 
   var body: some View {
     HStack(alignment: .firstTextBaseline, spacing: 6) {
@@ -259,8 +261,8 @@ struct ChatFailureRow: View {
       VStack(alignment: .leading, spacing: 2) {
         Text(title).fontWeight(.medium)
         Text(error).foregroundStyle(.secondary).textSelection(.enabled)
-        if let openSettings {
-          Button("Provider Settings…", action: openSettings).buttonStyle(.borderless)
+        if let settings {
+          Link("Provider Settings…", destination: settings)
         }
       }
       Spacer(minLength: 44)

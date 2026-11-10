@@ -222,12 +222,6 @@ public final class BotSecretBoard {
     open(BotSecretDraft(kind: kind, agentID: agentID), client: client)
   }
 
-  /// From a page across every bot: the sheet asks which bot it's for.
-  public func startNew(_ kind: BotSecretKind, choosingFrom bots: [Agent], client: APIClient) {
-    guard let first = bots.first else { return }
-    open(BotSecretDraft(kind: kind, agentID: first.id, choosesBot: true), client: client)
-  }
-
   public func edit(_ item: BotSecret, agentID: String, client: APIClient) {
     let target = BotSecretTarget(kind: item.kind, agentID: agentID, name: item.name)
     guard !item.managed, !isUnconfirmed(target) else { return }

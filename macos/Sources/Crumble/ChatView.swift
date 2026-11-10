@@ -189,7 +189,6 @@ struct EmptyChatView: View {
 
 struct ChatRowView: View {
     @Environment(AppModel.self) private var model
-    @Environment(\.openWindow) private var openWindow
     let agent: Agent
     let row: ChatRow
 
@@ -225,11 +224,10 @@ struct ChatRowView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("The agent couldn’t finish").font(.system(size: 14, weight: .medium))
                     Text(error).font(.system(size: 13)).foregroundStyle(.red).textSelection(.enabled)
-                    Button("Provider Settings…") {
-                        model.settingsTarget = .page(.providers)
-                        openWindow(id: SettingsButton.windowID)
+                    if let url = model.client?.webSettingsURL(.providers) {
+                        Link("Provider Settings…", destination: url)
+                            .padding(.top, 4)
                     }
-                    .padding(.top, 4)
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 11)

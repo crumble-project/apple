@@ -1,9 +1,7 @@
 import apfelkern
-import AuthenticationServices
 import SwiftUI
 
-/// The workspace pages: memory, skills, automations, activity, integrations, coding, users, and
-/// connected services.
+/// The workspace pages: memory, skills, automations, activity, and avatars.
 struct PanelView: View {
     @Environment(AppModel.self) private var model
     let panel: Route
@@ -30,8 +28,6 @@ struct PanelView: View {
                     case .automations:
                         Button("New Automation", systemImage: "plus") { model.openNewAutomation() }.disabled(
                             model.agents.isEmpty)
-                    case .integrations:
-                        Button("Add MCP Server", systemImage: "plus") { model.openMCPForm("", agentID: nil) }
                     default:
                         EmptyView()
                     }
@@ -47,18 +43,6 @@ struct PanelView: View {
         case .automations: AutomationsPanel()
         case .activity: ActivityPanel()
         case .avatars: AvatarsPanel()
-        case .integrations: IntegrationsPanel()
-        case .coding: CodingPanel()
-        case .users: UsersPanel()
-        case .providers: ProvidersPanel()
-        case .passwordManagers: PasswordManagersPanel()
-        case .credentials: BotSecretPanel(kind: .credential)
-        case .logins: BotSecretPanel(kind: .login)
-        case .webSearch: WebSearchPanel()
-        case .judgeModel: ModelSettingPanel(board: model.connectedServices.judgeModel)
-        case .visionModel: ModelSettingPanel(board: model.connectedServices.visionModel)
-        case .messageGateways: MessageGatewaysPanel()
-        case .eventRelay: EventRelayPanel()
         case .agent, .group: EmptyView()
         }
     }

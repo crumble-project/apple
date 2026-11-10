@@ -45,16 +45,13 @@ extension AppModel {
       let providers = try await client.providers()
       return { [self] in
         self.providers = providers
-        resumeProviderLogins()
       }
     }
   }
 
-  /// Providers changed, so what they list and reach did too, as the web's `refreshProviders`.
-  func refreshProviders() {
-    loadProviders()
-    if let provider = agentDraft?.provider { loadModels(provider) }
-    if let client { connectedServices.refreshModelChoices(client: client) }
+  /// Servers a bot may use: the shared ones and its own.
+  func usableServers(for agentID: String) -> [MCPServer] {
+    mcpServers.filter { $0.agentId == nil || $0.agentId == agentID }
   }
 
   func loadModels(_ provider: String) {
@@ -89,7 +86,7 @@ extension AppModel {
   var modelHint: String {
     if let provider = providers.first(where: { $0.provider == agentDraft?.provider }),
       !provider.configured {
-      return "Add an API key for this provider in Settings to load its models."
+      return "Add an API key for this provider in Settings on the web to load its models."
     }
     return models.isEmpty ? "Type a model ID." : "\(models.count) models available."
   }

@@ -57,7 +57,6 @@ struct MemoryFormView: View {
 
 struct AutomationFormView: View {
     @Environment(AppModel.self) private var model
-    @Environment(\.openWindow) private var openWindow
     @Binding var draft: AutomationDraft
 
     var body: some View {
@@ -74,11 +73,7 @@ struct AutomationFormView: View {
                 draft: $draft, agents: model.agents, capabilities: model.capabilities,
                 sources: model.connectedServices.eventSources.sources,
                 sourcesLoaded: model.connectedServices.eventSources.isLoaded,
-                openEventRelay: {
-                    model.automationBoard.closeDraft()
-                    model.settingsTarget = .page(.eventRelay)
-                    openWindow(id: SettingsButton.windowID)
-                })
+                eventRelayURL: model.client?.webSettingsURL(.eventRelay))
         }
         .formStyle(.grouped)
         .frame(width: 480, height: 560)
@@ -108,66 +103,6 @@ private struct AutomationSheet: ViewModifier {
 extension View {
     func automationSheet(active: Bool) -> some View {
         modifier(AutomationSheet(active: active))
-    }
-}
-
-struct MCPFormView: View {
-    @Environment(AppModel.self) private var model
-    @Binding var draft: MCPDraft
-
-    var body: some View {
-        Form {
-            SheetError()
-            ServiceSaveStatus(isSaving: model.isCheckingMCP, label: "Checking…", error: "")
-            Section {
-                if draft.serverID.isEmpty {
-                    Picker("Available to", selection: $draft.agentID) {
-                        Text("Every bot (shared)").tag(String?.none)
-                        ForEach(model.agents) { agent in
-                            Text(agent.name).tag(Optional(agent.id))
-                        }
-                    }
-                }
-                TextField("Name", text: $draft.name, prompt: Text("Required"))
-                TextField("HTTP URL", text: $draft.url, prompt: Text("https://"))
-                Toggle("Enabled", isOn: $draft.enabled)
-            } header: {
-                Text("MCP Server")
-            } footer: {
-                Text("Leave the token empty for servers that use OAuth, then choose Sign In in the list after saving.")
-                    .foregroundStyle(.secondary)
-            }
-            Section {
-                SecretSourceField(
-                    label: "Token", source: $draft.token, valueNote: draft.tokenNote,
-                    prompt: draft.tokenPlaceholder)
-            }
-            Section {
-                TextField("Client ID", text: $draft.clientID, prompt: Text("Optional"))
-                    .autocorrectionDisabled()
-                SecretSourceField(
-                    label: "Client secret", source: $draft.clientSecret, valueNote: draft.clientSecretNote,
-                    prompt: draft.clientSecretPlaceholder
-                )
-                .disabled(!draft.hasClientID)
-            } header: {
-                Text("OAuth App")
-            } footer: {
-                Text(MCPDraft.oauthAppNote(callback: AppModel.oauthRedirectURI))
-                    .foregroundStyle(.secondary)
-                    .textSelection(.enabled)
-            }
-        }
-        .formStyle(.grouped)
-        .disabled(model.isCheckingMCP)
-        .frame(width: 460)
-        .toolbar {
-            SheetActions(
-                onCancel: {
-                    model.errorText = ""
-                    model.mcpDraft = nil
-                }, onSave: model.saveMCP, saveDisabled: model.loading)
-        }
     }
 }
 
