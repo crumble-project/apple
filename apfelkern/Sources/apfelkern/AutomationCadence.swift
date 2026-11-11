@@ -2,21 +2,12 @@ import Foundation
 
 /// When an automation runs: its event source, its cron shape in words, or its one time.
 public func cadence(_ schedule: Schedule, sources: [EventSource] = [], now: Date = .now) -> String {
-  if let sourceID = schedule.eventSourceId {
-    return sources.first { $0.id == sourceID }.map { "On event · \($0.name)" } ?? "On event"
-  }
-  guard let cron = schedule.cron?.nilIfEmpty else {
-    guard let runAt = schedule.runAt, let date = automationRunDate(runAt) else { return "Once" }
-    let zone = schedule.timezone.flatMap(TimeZone.init(identifier:)) ?? .current
-    let when = date.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened, timeZone: zone))
-    return date < now && schedule.nextRunAt == nil ? "Ran \(when)" : "Once, \(when)"
-  }
-  return cronPhrase(cron, timezone: schedule.timezone)
+  schedule.description
 }
 
 /// An automation's timing beside its switch, where a paused one says so.
 public func automationTiming(_ schedule: Schedule, sources: [EventSource] = []) -> String {
-  (schedule.enabled ? "" : "Paused · ") + cadence(schedule, sources: sources)
+  schedule.timing
 }
 
 /// A cron expression in words for the shapes people use, or the expression itself.

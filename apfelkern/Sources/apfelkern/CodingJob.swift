@@ -95,7 +95,7 @@ public struct JobQuestionEvent: Codable, Hashable, Sendable {
 }
 
 /// One readable step of a coding job's history.
-public enum CodingJobItem: Identifiable, Hashable, Sendable {
+public enum CodingJobItem: Identifiable, Hashable, Sendable, Decodable {
   case task(id: String, text: String)
   case reply(id: String, text: String)
   case tool(Tool)
@@ -103,6 +103,8 @@ public enum CodingJobItem: Identifiable, Hashable, Sendable {
   public struct Tool: Hashable, Sendable {
     public var id: String
     public var name: String
+    public var label: String = ""
+    public var icon: String = "tool"
     /// The command a `bash` call ran, or the path a file call touched.
     public var subject: String
     public var output: String
@@ -122,66 +124,21 @@ public enum CodingJobItem: Identifiable, Hashable, Sendable {
     }
   }
 
-  /// Turns job history, oldest first, into items: tool results fold into the call they answer.
-  public static func items(from messages: [Message]) -> [CodingJobItem] {
-    var items: [CodingJobItem] = []
-    var open: [String: Int] = [:]
-    for message in messages {
-      switch message.role {
-      case "user":
-        if !message.text.isEmpty { items.append(.task(id: message.id, text: message.text)) }
-      case "assistant":
-        appendAssistantItems(of: message, to: &items, open: &open)
-      case "toolResult":
-        appendResult(of: message, to: &items, open: open)
-      default:
-        break
-      }
-    }
-    return items
-  }
+  private enum CodingKeys: String, CodingKey { case kind, id, text, tool, label, icon, subject, result }
 
-  private static func appendAssistantItems(
-    of message: Message, to items: inout [CodingJobItem], open: inout [String: Int]
-  ) {
-    guard case .array(let blocks)? = message.blocks else {
-      if !message.text.isEmpty { items.append(.reply(id: message.id, text: message.text)) }
-      return
-    }
-    for (index, block) in blocks.enumerated() {
-      let id = "\(message.id):\(index)"
-      switch block["type"]?.stringValue {
-      case "text":
-        let text = (block["text"]?.stringValue ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        if !text.isEmpty { items.append(.reply(id: id, text: text)) }
-      case "toolCall":
-        let arguments = block["arguments"]
-        let subject = arguments?["command"]?.stringValue ?? arguments?["path"]?.stringValue ?? ""
-        if let callID = block["id"]?.stringValue, !callID.isEmpty { open[callID] = items.count }
-        items.append(
-          .tool(
-            Tool(
-              id: id, name: block["name"]?.stringValue ?? "", subject: subject, output: "",
-              isError: false, finished: false)))
-      default:
-        break
-      }
-    }
-  }
-
-  private static func appendResult(of message: Message, to items: inout [CodingJobItem], open: [String: Int]) {
-    let failed = message.isError == true
-    if let callID = message.toolCallId, let index = open[callID], case .tool(var tool) = items[index] {
-      tool.output = message.text
-      tool.isError = failed
-      tool.finished = true
-      items[index] = .tool(tool)
-    } else {
-      items.append(
-        .tool(
-          Tool(
-            id: message.id, name: message.toolName ?? "", subject: "", output: message.text, isError: failed,
-            finished: true)))
+  public init(from decoder: Decoder) throws {
+    let values = try decoder.container(keyedBy: CodingKeys.self)
+    let id = try values.decode(String.self, forKey: .id)
+    switch try values.decode(String.self, forKey: .kind) {
+    case "task": self = .task(id: id, text: try values.decode(String.self, forKey: .text))
+    case "reply": self = .reply(id: id, text: try values.decode(String.self, forKey: .text))
+    case "step":
+      let result = try values.decodeIfPresent(Message.self, forKey: .result)
+      self = .tool(Tool(id: id, name: try values.decode(String.self, forKey: .tool),
+        label: try values.decode(String.self, forKey: .label), icon: try values.decode(String.self, forKey: .icon),
+        subject: try values.decodeIfPresent(String.self, forKey: .subject) ?? "",
+        output: result?.text ?? "", isError: result?.isError == true, finished: result != nil))
+    default: throw DecodingError.dataCorruptedError(forKey: .kind, in: values, debugDescription: "Unknown job item")
     }
   }
 }

@@ -217,6 +217,7 @@ public final class AutomationBoard {
     let id = schedule.id
     guard schedule.enabled != enabled, !isPending(id), var row = schedules.first(where: { $0.id == id }) else { return }
     row.enabled = enabled
+    row.timing = enabled ? row.description : "Paused · " + row.description
     pending[id] = row
     errors[id] = nil
     let version = scope

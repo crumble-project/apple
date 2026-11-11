@@ -26,22 +26,12 @@ private func decode(_ json: String) throws -> Message {
   #expect(messageLabel(message) == "Coding job · fix-login")
 }
 
-@Test func jobHistoryFoldsToolResultsIntoCalls() throws {
-  let calls = #"{"type":"toolCall","id":"t1","name":"bash","arguments":{"command":"swift test"}},"#
-    + #"{"type":"toolCall","id":"t2","name":"read","arguments":{"path":"a.swift"}}"#
-  let messages = try [
-    decode(#"{"id":"u","role":"user","content":"Fix the build"}"#),
-    decode(#"{"id":"a","role":"assistant","blocks":[{"type":"text","text":"Running tests."},"# + calls + "]}"),
-    decode(#"{"id":"r","role":"toolResult","toolCallId":"t1","toolName":"bash","content":"boom","isError":true}"#)
-  ]
-  let items = CodingJobItem.items(from: messages)
-  #expect(items.count == 4)
-  guard case .tool(let bash) = items[2], case .tool(let read) = items[3] else {
-    Issue.record("expected tool items")
-    return
-  }
-  #expect(bash.subject == "swift test" && bash.output == "boom" && bash.isError && bash.finished)
-  #expect(read.subject == "a.swift" && !read.finished)
+@Test func jobHistoryDecodesProjectedSteps() throws {
+  let json = #"{"kind":"step","id":"t1","tool":"bash","label":"Ran","icon":"terminal","subject":"swift test","#
+    + #""result":{"id":"r","entryId":"e","role":"toolResult","content":"boom","isError":true}}"#
+  let item = try JSONDecoder().decode(CodingJobItem.self, from: Data(json.utf8))
+  guard case .tool(let tool) = item else { Issue.record("expected a step"); return }
+  #expect(tool.subject == "swift test" && tool.output == "boom" && tool.isError && tool.finished)
 }
 
 @Test func shownOutputKeepsEveryLine() {

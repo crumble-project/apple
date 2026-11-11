@@ -13,7 +13,7 @@ extension APIClientTests {
     }
 
     @Test func codingJobHistoryEncodesNameAndPaging() async throws {
-        let client = StubProtocol.client { _ in (200, #"{"messages":[],"hasMore":false,"oldestEntryId":null}"#) }
+        let client = StubProtocol.client { _ in (200, #"{"messages":[],"items":[],"hasMore":false,"oldestEntryId":null}"#) }
         _ = try await client.codingJobHistory("a1", name: "fix login/ui", before: "e:1", limit: 50)
         let url = StubProtocol.requests.first?.url?.absoluteString
         #expect(url == "http://crumble.test/v1/agents/a1/coding-jobs/fix%20login%2Fui/history?limit=50&before=e%3A1")
@@ -35,16 +35,65 @@ extension APIClientTests {
     @MainActor @Test func openingACodingJobLoadsItsHistory() async {
         let model = AppModel(client: StubProtocol.client { request in
             request.url?.path == "/v1/agents/a1/coding-jobs/fix/history"
-                ? (200, #"{"messages":[{"id":"a1:1:0","entryId":"a1:1","role":"user","content":"Fix it"}],"hasMore":true,"#
+                ? (200, #"{"messages":[{"id":"a1:1:0","entryId":"a1:1","role":"user","content":"Fix it"}],"items":[{"kind":"task","id":"a1:1:0","text":"Fix it"}],"hasMore":true,"#
                     + #""oldestEntryId":"a1:1"}"#)
                 : (404, "")
         })
         model.selectedAgentID = "a1"
         model.openJob(.coding, "fix")
         await waitForJobs { model.jobHistory?.loaded == true }
-        #expect(model.jobHistory?.messages.map(\.text) == ["Fix it"])
+        #expect(model.jobHistory?.items == [.task(id: "a1:1:0", text: "Fix it")])
         #expect(model.jobHistory?.hasMore == true)
         #expect(model.jobHistory?.oldestEntryID == "a1:1")
+    }
+
+    @MainActor @Test func refreshingHistoryUpdatesAnUnfinishedOlderStep() async {
+        nonisolated(unsafe) var finished = false
+        let client = StubProtocol.client { request in
+            if request.url?.query?.contains("before=") == true {
+                let result = finished ? #","result":{"id":"r","entryId":"e2","role":"toolResult","content":"Done"}"# : ""
+                return (200, #"{"messages":[],"items":[{"kind":"step","id":"t","tool":"bash","label":"Ran","icon":"terminal""#
+                    + result + #"}],"hasMore":false,"oldestEntryId":null}"#)
+            }
+            return (200, #"{"messages":[],"items":[],"hasMore":true,"oldestEntryId":"e2"}"#)
+        }
+        let board = JobBoard()
+        board.open(.coding, "fix", agentID: "a1", client: client)
+        await waitForJobs { board.history?.loaded == true }
+        board.loadOlderHistory(client: client)
+        await waitForJobs { board.history?.items.count == 1 }
+        finished = true
+        board.loadHistory(client: client)
+        await waitForJobs {
+            guard case .tool(let tool)? = board.history?.items.first else { return false }
+            return tool.finished
+        }
+        guard case .tool(let tool)? = board.history?.items.first else { Issue.record("missing step"); return }
+        #expect(tool.finished && tool.output == "Done")
+    }
+
+    @MainActor @Test func refreshingFindsAnUnfinishedStepThatLeftTheNewestPage() async {
+        nonisolated(unsafe) var shifted = false
+        let client = StubProtocol.client { request in
+            let old = request.url?.query?.contains("before=") == true
+            if !shifted || old {
+                let result = shifted ? #","result":{"id":"r","entryId":"e2","role":"toolResult","content":"Done"}"# : ""
+                return (200, #"{"messages":[],"items":[{"kind":"step","id":"t","tool":"bash","label":"Ran","icon":"terminal""#
+                    + result + #"}],"hasMore":false,"oldestEntryId":null}"#)
+            }
+            return (200, #"{"messages":[],"items":[],"hasMore":true,"oldestEntryId":"e2"}"#)
+        }
+        let board = JobBoard()
+        board.open(.coding, "fix", agentID: "a1", client: client)
+        await waitForJobs { board.history?.loaded == true }
+        shifted = true
+        board.loadHistory(client: client)
+        await waitForJobs {
+            guard case .tool(let tool)? = board.history?.items.first else { return false }
+            return tool.finished
+        }
+        guard case .tool(let tool)? = board.history?.items.first else { Issue.record("missing step"); return }
+        #expect(tool.finished && tool.output == "Done")
     }
 
     @MainActor @Test func codingJobStatusRefreshesWhenItsReportArrives() async {
@@ -80,7 +129,7 @@ extension APIClientTests {
                 (200, #"{"jobs":[{"name":"github","conversationId":"c2","status":"\#(status)","#
                     + #""usage":{"models":{"m":{"input":1000,"output":500,"cacheRead":0,"cost":{"total":0.002}}}}}]}"#)
             case "/v1/agents/a1/desktop-jobs/github/history":
-                (200, #"{"messages":[{"id":"a1:3:0","entryId":"a1:3","role":"user","content":"Log in"}],"#
+                (200, #"{"messages":[{"id":"a1:3:0","entryId":"a1:3","role":"user","content":"Log in"}],"items":[{"kind":"task","id":"a1:3:0","text":"Log in"}],"#
                     + #""hasMore":false,"oldestEntryId":null}"#)
             default:
                 (404, "")
@@ -105,7 +154,7 @@ extension APIClientTests {
 
         model.openJob(.desktop, "github")
         await waitForJobs { model.jobHistory?.loaded == true }
-        #expect(model.jobHistory?.messages.map(\.text) == ["Log in"])
+        #expect(model.jobHistory?.items == [.task(id: "a1:3:0", text: "Log in")])
     }
 
     private static let questionJob =
@@ -193,9 +242,9 @@ extension APIClientTests {
         let model = AppModel(client: StubProtocol.client { request in
             guard request.url?.path == "/v1/agents/a1/coding-jobs/fix/history" else { return (404, "") }
             return request.url?.query?.contains("before=") == true
-                ? (200, #"{"messages":[{"id":"1","entryId":"e1","role":"user","content":"First"}],"hasMore":false,"#
+                ? (200, #"{"messages":[{"id":"1","entryId":"e1","role":"user","content":"First"}],"items":[{"kind":"task","id":"1","text":"First"}],"hasMore":false,"#
                     + #""oldestEntryId":null}"#)
-                : (200, #"{"messages":[{"id":"2","entryId":"e2","role":"user","content":"Second"}],"hasMore":true,"#
+                : (200, #"{"messages":[{"id":"2","entryId":"e2","role":"user","content":"Second"}],"items":[{"kind":"task","id":"2","text":"Second"}],"hasMore":true,"#
                     + #""oldestEntryId":"e2"}"#)
         })
         model.selectedAgentID = "a1"

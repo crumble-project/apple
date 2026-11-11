@@ -13,7 +13,7 @@ private func wire(
     {"id":"\#(id)","agentId":"a1","name":"\#(name)","prompt":"\#(prompt)","kind":"\#(kind)",
      "command":\#(text(command)),"timeoutSeconds":\#(timeout),"notify":\#(notify),"cron":\#(text(cron)),
      "timezone":"Europe/Berlin","runAt":\#(text(runAt)),"eventSourceId":\#(text(source)),
-     "enabled":\#(enabled),"nextRunAt":\#(text(next)),"createdAt":"2026-11-05T10:00:00.000Z",
+     "enabled":\#(enabled),"description":"Once","timing":"Once","nextRunAt":\#(text(next)),"createdAt":"2026-11-05T10:00:00.000Z",
      "createdByAgentId":null}
     """#
 }
@@ -289,10 +289,10 @@ private func savedUnchanged(_ schedule: String) async throws -> JSONValue {
 }
 
 @Test func timingNamesEventSourcesAndPausedAutomations() {
-  let event = Schedule(id: "s", agentId: "a", name: "n", prompt: "p", eventSourceId: "src", enabled: false)
-  #expect(cadence(event) == "On event")
+  let event = Schedule(id: "s", agentId: "a", name: "n", prompt: "p", eventSourceId: "src", enabled: false, description: "On event · Issues", timing: "Paused · On event · Issues")
+  #expect(cadence(event) == "On event · Issues")
   #expect(cadence(event, sources: [EventSource(id: "src", name: "Issues")]) == "On event · Issues")
-  #expect(automationTiming(event) == "Paused · On event")
+  #expect(automationTiming(event) == "Paused · On event · Issues")
 }
 
 @Test func theBuilderReadsAndWritesEachCronShape() throws {

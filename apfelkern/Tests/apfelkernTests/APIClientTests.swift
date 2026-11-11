@@ -108,7 +108,7 @@ import Testing
   let schedule = #"""
     {"id":"task","agentId":"bot","name":"Task","prompt":"hello","kind":"prompt","command":null,
      "timeoutSeconds":60,"notify":true,"eventSourceId":null,"cron":null,"timezone":"UTC",
-     "runAt":"2026-07-01T09:00:00.123Z","enabled":true,"nextRunAt":null,"createdAt":"now","createdByAgentId":null}
+     "runAt":"2026-07-01T09:00:00.123Z","enabled":true,"description":"Once","timing":"Once","nextRunAt":null,"createdAt":"now","createdByAgentId":null}
     """#
   try await withClient(handler: { request in
     let body = try requestJSON(request)

@@ -17370,12 +17370,12 @@ public enum Operations {
                 /// - Remark: Generated from `#/paths/v1/agents/{id}/coding-jobs/{name}/history/GET/responses/200/content`.
                 @frozen public enum Body: Sendable, Hashable {
                     /// - Remark: Generated from `#/paths/v1/agents/{id}/coding-jobs/{name}/history/GET/responses/200/content/application\/json`.
-                    case json(Components.Schemas.TranscriptPage)
+                    case json(Components.Schemas.JobHistoryPage)
                     /// The associated value of the enum case if `self` is `.json`.
                     ///
                     /// - Throws: An error if `self` is not `.json`.
                     /// - SeeAlso: `.json`.
-                    public var json: Components.Schemas.TranscriptPage {
+                    public var json: Components.Schemas.JobHistoryPage {
                         get throws {
                             switch self {
                             case let .json(body):
@@ -21847,12 +21847,12 @@ public enum Operations {
                 /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/{name}/history/GET/responses/200/content`.
                 @frozen public enum Body: Sendable, Hashable {
                     /// - Remark: Generated from `#/paths/v1/agents/{id}/desktop-jobs/{name}/history/GET/responses/200/content/application\/json`.
-                    case json(Components.Schemas.TranscriptPage)
+                    case json(Components.Schemas.JobHistoryPage)
                     /// The associated value of the enum case if `self` is `.json`.
                     ///
                     /// - Throws: An error if `self` is not `.json`.
                     /// - SeeAlso: `.json`.
-                    public var json: Components.Schemas.TranscriptPage {
+                    public var json: Components.Schemas.JobHistoryPage {
                         get throws {
                             switch self {
                             case let .json(body):
@@ -78034,6 +78034,8 @@ public enum Operations {
                         public var createdByAgentId: Swift.String?
                         /// - Remark: Generated from `#/paths/v1/schedules/{id}/PATCH/responses/200/content/json/cron`.
                         public var cron: Swift.String?
+                        /// - Remark: Generated from `#/paths/v1/schedules/{id}/PATCH/responses/200/content/json/description`.
+                        public var description: Swift.String
                         /// - Remark: Generated from `#/paths/v1/schedules/{id}/PATCH/responses/200/content/json/enabled`.
                         public var enabled: Swift.Bool
                         /// The event source whose events start this automation; set instead of `cron` and `runAt`.
@@ -78063,6 +78065,8 @@ public enum Operations {
                         public var timeoutSeconds: Swift.Int
                         /// - Remark: Generated from `#/paths/v1/schedules/{id}/PATCH/responses/200/content/json/timezone`.
                         public var timezone: Swift.String
+                        /// - Remark: Generated from `#/paths/v1/schedules/{id}/PATCH/responses/200/content/json/timing`.
+                        public var timing: Swift.String
                         /// Creates a new `JsonPayload`.
                         ///
                         /// - Parameters:
@@ -78071,6 +78075,7 @@ public enum Operations {
                         ///   - createdAt:
                         ///   - createdByAgentId:
                         ///   - cron:
+                        ///   - description:
                         ///   - enabled:
                         ///   - eventSourceId: The event source whose events start this automation; set instead of `cron` and `runAt`.
                         ///   - id:
@@ -78082,12 +78087,14 @@ public enum Operations {
                         ///   - runAt:
                         ///   - timeoutSeconds:
                         ///   - timezone:
+                        ///   - timing:
                         public init(
                             agentId: Swift.String,
                             command: Swift.String? = nil,
                             createdAt: Swift.String,
                             createdByAgentId: Swift.String? = nil,
                             cron: Swift.String? = nil,
+                            description: Swift.String,
                             enabled: Swift.Bool,
                             eventSourceId: Swift.String? = nil,
                             id: Swift.String,
@@ -78098,13 +78105,15 @@ public enum Operations {
                             prompt: Swift.String,
                             runAt: Swift.String? = nil,
                             timeoutSeconds: Swift.Int,
-                            timezone: Swift.String
+                            timezone: Swift.String,
+                            timing: Swift.String
                         ) {
                             self.agentId = agentId
                             self.command = command
                             self.createdAt = createdAt
                             self.createdByAgentId = createdByAgentId
                             self.cron = cron
+                            self.description = description
                             self.enabled = enabled
                             self.eventSourceId = eventSourceId
                             self.id = id
@@ -78116,6 +78125,7 @@ public enum Operations {
                             self.runAt = runAt
                             self.timeoutSeconds = timeoutSeconds
                             self.timezone = timezone
+                            self.timing = timing
                         }
                         public enum CodingKeys: String, CodingKey {
                             case agentId
@@ -78123,6 +78133,7 @@ public enum Operations {
                             case createdAt
                             case createdByAgentId
                             case cron
+                            case description
                             case enabled
                             case eventSourceId
                             case id
@@ -78134,6 +78145,7 @@ public enum Operations {
                             case runAt
                             case timeoutSeconds
                             case timezone
+                            case timing
                         }
                     }
                     /// - Remark: Generated from `#/paths/v1/schedules/{id}/PATCH/responses/200/content/application\/json`.
@@ -87662,7 +87674,7 @@ public enum Operations {
                                 public var callsOthers: Swift.Bool
                                 /// - Remark: Generated from `#/paths/v1/voice-gateway/GET/responses/200/content/json/config/LinesPayload/callsOwner`.
                                 public var callsOwner: Swift.Bool
-                                /// The name callers hear; null uses the bot's name.
+                                /// The caller name sent to the telephone system; null uses the bot's name.
                                 ///
                                 /// - Remark: Generated from `#/paths/v1/voice-gateway/GET/responses/200/content/json/config/LinesPayload/displayName`.
                                 public var displayName: Swift.String?
@@ -87674,7 +87686,7 @@ public enum Operations {
                                 ///   - botId:
                                 ///   - callsOthers: Whether the line's bot may ask to call people other than the owner, each call after the owner approved it. Absent means false.
                                 ///   - callsOwner:
-                                ///   - displayName: The name callers hear; null uses the bot's name.
+                                ///   - displayName: The caller name sent to the telephone system; null uses the bot's name.
                                 ///   - username:
                                 public init(
                                     botId: Swift.String,
@@ -88440,7 +88452,7 @@ public enum Operations {
                         public var callsOthers: Swift.Bool
                         /// - Remark: Generated from `#/paths/v1/voice-gateway/PUT/requestBody/json/LinesPayload/callsOwner`.
                         public var callsOwner: Swift.Bool
-                        /// The name callers hear; null uses the bot's name.
+                        /// The caller name sent to the telephone system; null uses the bot's name.
                         ///
                         /// - Remark: Generated from `#/paths/v1/voice-gateway/PUT/requestBody/json/LinesPayload/displayName`.
                         public var displayName: Swift.String?
@@ -88452,7 +88464,7 @@ public enum Operations {
                         ///   - botId:
                         ///   - callsOthers: Whether the line's bot may ask to call people other than the owner, each call after the owner approved it. Absent means false.
                         ///   - callsOwner:
-                        ///   - displayName: The name callers hear; null uses the bot's name.
+                        ///   - displayName: The caller name sent to the telephone system; null uses the bot's name.
                         ///   - username:
                         public init(
                             botId: Swift.String,
@@ -88591,7 +88603,7 @@ public enum Operations {
                                 public var callsOthers: Swift.Bool
                                 /// - Remark: Generated from `#/paths/v1/voice-gateway/PUT/responses/200/content/json/config/LinesPayload/callsOwner`.
                                 public var callsOwner: Swift.Bool
-                                /// The name callers hear; null uses the bot's name.
+                                /// The caller name sent to the telephone system; null uses the bot's name.
                                 ///
                                 /// - Remark: Generated from `#/paths/v1/voice-gateway/PUT/responses/200/content/json/config/LinesPayload/displayName`.
                                 public var displayName: Swift.String?
@@ -88603,7 +88615,7 @@ public enum Operations {
                                 ///   - botId:
                                 ///   - callsOthers: Whether the line's bot may ask to call people other than the owner, each call after the owner approved it. Absent means false.
                                 ///   - callsOwner:
-                                ///   - displayName: The name callers hear; null uses the bot's name.
+                                ///   - displayName: The caller name sent to the telephone system; null uses the bot's name.
                                 ///   - username:
                                 public init(
                                     botId: Swift.String,

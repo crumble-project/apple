@@ -145,11 +145,13 @@ public struct AutomationDraft: Identifiable, Sendable {
     let cronRun = trigger.cron.flatMap { cron in
       zone.flatMap { CronExpression(cron)?.next(after: now, in: $0) }
     }
+    let description = old?.description ?? preview(now: now)?.text ?? "Saving…"
     return Schedule(
       id: id, agentId: agentID, name: trimmed(name), cron: trigger.cron,
       prompt: kind == .prompt ? trimmed(prompt) : "", kind: kind, command: kind == .script ? command : nil,
       timeoutSeconds: timeout, notify: notify, timezone: trimmed(timezone), runAt: trigger.runAt,
       eventSourceId: trigger.eventSourceId, enabled: enabled,
+      description: description, timing: enabled ? description : "Paused · " + description,
       nextRunAt: trigger.runAt ?? cronRun?.ISO8601Format(), createdByAgentId: old?.createdByAgentId)
   }
 

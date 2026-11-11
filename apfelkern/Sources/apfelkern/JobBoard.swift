@@ -148,9 +148,23 @@ public final class JobBoard {
       do {
         let page = try await client.jobHistory(
           open.kind, agentID: open.agentID, name: open.name, before: "", limit: 100)
+        var missing = Set(open.items.filter(isUnfinishedStep).map(\.id))
+        missing.subtract(page.items.map(\.id))
+        var olderItems: [CodingJobItem] = []
+        var next = page.hasMore == true ? page.oldestEntryId : nil
+        while !missing.isEmpty, let cursor = next, !cursor.isEmpty {
+          let older = try await client.jobHistory(
+            open.kind, agentID: open.agentID, name: open.name, before: cursor, limit: 100)
+          olderItems.append(contentsOf: older.items)
+          missing.subtract(older.items.map(\.id))
+          next = older.hasMore == true ? older.oldestEntryId : nil
+          if next == cursor { break }
+        }
         // Changed as a copy: reading the observed property while writing it is an exclusivity violation.
         guard var current = history, current.id == open.id else { return }
-        current.messages = mergeMessages(current.messages, page.messages ?? [])
+        let updates = Dictionary(olderItems.map { ($0.id, $0) }, uniquingKeysWith: { _, latest in latest })
+        current.items = current.items.map { updates[$0.id] ?? $0 }
+        current.items = mergeJobItems(current.items, page.items)
         if !current.loaded {
           current.hasMore = page.hasMore ?? false
           current.oldestEntryID = page.oldestEntryId ?? ""
@@ -173,7 +187,7 @@ public final class JobBoard {
         let page = try await client.jobHistory(
           open.kind, agentID: open.agentID, name: open.name, before: open.oldestEntryID, limit: 100)
         guard var current = history, current.id == open.id else { return }
-        current.messages = mergeMessages(current.messages, page.messages ?? [])
+        current.items = mergeJobItems(page.items, current.items)
         current.hasMore = page.hasMore ?? false
         current.oldestEntryID = page.oldestEntryId ?? ""
         current.loadingOlder = false
@@ -245,4 +259,14 @@ public final class JobBoard {
       refresh(.coding, agentID: agentID, client: client)
     }
   }
+}
+
+private func mergeJobItems(_ existing: [CodingJobItem], _ incoming: [CodingJobItem]) -> [CodingJobItem] {
+  let incomingIDs = Set(incoming.map(\.id))
+  return existing.filter { !incomingIDs.contains($0.id) } + incoming
+}
+
+private func isUnfinishedStep(_ item: CodingJobItem) -> Bool {
+  guard case .tool(let tool) = item else { return false }
+  return !tool.finished
 }

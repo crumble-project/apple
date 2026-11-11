@@ -172,7 +172,7 @@ struct JobSheet: View {
   @State private var desktop: BotDesktopTarget?
   let job: JobHistory
 
-  private var items: [CodingJobItem] { CodingJobItem.items(from: job.messages) }
+  private var items: [CodingJobItem] { job.items }
   private var current: Job? { model.jobs[Job.id(job.kind, job.name)] }
   private var working: Bool { current?.isWorking ?? false }
   private var exporting: Binding<Bool> {
@@ -317,25 +317,17 @@ private struct CodingToolStep: View {
   @State private var open = false
 
   private var icon: String {
-    switch tool.name {
-    case "bash": "terminal"
-    case "read": "doc.text"
-    case "write": "square.and.pencil"
-    case "edit": "pencil"
-    case "computer_use": JobKind.desktop.icon
+    switch tool.icon {
+    case "terminal": "terminal"
+    case "file": "doc.text"
+    case "pencil": "pencil"
+    case "pointer": JobKind.desktop.icon
     default: "wrench.and.screwdriver"
     }
   }
 
   private var verb: String {
-    switch tool.name {
-    case "bash": "Ran"
-    case "read": "Read"
-    case "write": "Wrote"
-    case "edit": "Edited"
-    case "computer_use": "Used the bot desktop"
-    default: tool.name.capitalized
-    }
+    tool.label
   }
 
   private var summary: some View {

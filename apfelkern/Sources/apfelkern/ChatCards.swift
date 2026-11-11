@@ -114,10 +114,10 @@ public func shownInChat(_ message: Message) -> Bool {
 }
 
 private func hasAssistantText(_ message: Message) -> Bool {
-  guard case .array(let blocks)? = message.blocks else { return !contentText(message.blocks).isEmpty }
+  guard let blocks = message.blocks else { return !message.text.isEmpty }
   return blocks.contains {
-    $0["type"]?.stringValue == "text"
-      && !($0["text"]?.stringValue ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    guard case .text(let text) = $0 else { return false }
+    return !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
   }
 }
 

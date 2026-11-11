@@ -35,7 +35,7 @@ extension Message {
   init(wire: Components.Schemas.TranscriptMessage) throws {
     self.init(
       id: wire.id, entryId: wire.entryId, role: wire.role, content: .string(wire.content),
-      blocks: try wire.blocks.map { try JSONValue(wire: $0) }, kind: wire.kind,
+      blocks: try wire.blocks.map { try JSONDecoder().decode([TranscriptBlock].self, from: JSONEncoder().encode($0)) }, kind: wire.kind,
       replyTo: wire.replyTo, replyPreview: wire.replyPreview,
       origin: wire.origin.map {
         MessageOrigin(kind: $0.kind, name: $0.name, agentId: $0.agentId, via: $0.via, source: $0.source)
@@ -72,7 +72,7 @@ extension ChatSnapshot {
   init(wire: Components.Schemas.ChatSnapshot) throws {
     self.init(
       messages: try wire.value1.messages.map(Message.init(wire:)), status: wire.value2.status.rawValue,
-      partial: wire.value2.partial, error: wire.value2.error, agentId: wire.value2.agentId,
+      partial: wire.value2.partial, working: wire.value2.working.rawValue, error: wire.value2.error, agentId: wire.value2.agentId,
       hasMore: wire.value1.hasMore, oldestEntryId: wire.value1.oldestEntryId)
   }
 }
@@ -120,7 +120,7 @@ extension Schedule {
               prompt: wire.prompt, kind: ScheduleKind(wire: wire.kind), command: wire.command,
               timeoutSeconds: wire.timeoutSeconds, notify: wire.notify, timezone: wire.timezone,
               runAt: wire.runAt, eventSourceId: wire.eventSourceId, enabled: wire.enabled,
-              nextRunAt: wire.nextRunAt, createdByAgentId: wire.createdByAgentId)
+              description: wire.description, timing: wire.timing, nextRunAt: wire.nextRunAt, createdByAgentId: wire.createdByAgentId)
   }
 }
 
@@ -174,5 +174,24 @@ extension MCPServer {
     self.init(wire: wire.value1)
     authenticated = wire.value2.authenticated
     auth = wire.value2.auth.rawValue
+  }
+}
+
+extension JobHistoryPage {
+  init(wire: Components.Schemas.JobHistoryPage) throws {
+    items = try wire.value2.items.map { item in
+      switch item {
+      case .case1(let value): return .task(id: value.id, text: value.text)
+      case .case2(let value): return .reply(id: value.id, text: value.text)
+      case .case3(let value):
+        let result = try value.result.map(Message.init(wire:))
+        return .tool(CodingJobItem.Tool(id: value.id, name: value.tool, label: value.label,
+          icon: value.icon.rawValue, subject: value.subject ?? "", output: result?.text ?? "",
+          isError: result?.isError == true, finished: result != nil))
+      }
+    }
+    messages = try wire.value1.messages.map(Message.init(wire:))
+    hasMore = wire.value1.hasMore
+    oldestEntryId = wire.value1.oldestEntryId
   }
 }

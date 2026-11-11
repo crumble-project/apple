@@ -62,14 +62,14 @@ extension APIClientTests {
     let model = AppModel(
       client: StubProtocol.client { request in
         request.url?.path == "/v1/agents/a1/coding-jobs/fix/history"
-          ? (200, #"{"messages":[{"id":"1","entryId":"e1","role":"user","content":"Fix it"}],"#
+          ? (200, #"{"messages":[{"id":"1","entryId":"e1","role":"user","content":"Fix it"}],"items":[{"kind":"task","id":"1","text":"Fix it"}],"#
             + #""hasMore":false,"oldestEntryId":null}"#)
           : (404, "")
       })
     model.updateSelectedAgent("a1")
     model.openJob(.coding, "fix")
     await waitFor { model.jobHistory?.loaded == true }
-    #expect(model.jobHistory?.messages.map(\.text) == ["Fix it"])
+    #expect(model.jobHistory?.items == [.task(id: "1", text: "Fix it")])
     #expect(model.jobPollDelay == .seconds(15))
   }
 

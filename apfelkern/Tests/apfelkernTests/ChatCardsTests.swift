@@ -70,39 +70,11 @@ struct ChatCardsTests {
         #expect(message.origin?.source == "GitHub")
     }
 
-    private func call(_ names: String...) -> Message {
-        let blocks = names.map { JSONValue.object(["type": .string("toolCall"), "name": .string($0)]) }
-        return Message(id: "c", role: "assistant", blocks: .array(blocks))
-    }
-
-    @Test func workingReadsTheTurn() {
-        let running = ChatSnapshot(status: "running")
-        let cases: [(Message?, Working)] = [
-            (nil, .thinking),
-            (Message(id: "u", role: "user"), .thinking),
-            (call("web_search", "memory"), .searching),
-            (call("history_read"), .searching),
-            (call("memory"), .remembering),
-            (call("bash"), .tinkering),
-            (Message(id: "t", role: "toolResult", isError: true), .struggling),
-            (Message(id: "t", role: "toolResult"), .thinking)
-        ]
-        for (last, working) in cases {
-            #expect(Working(snapshot: running, messages: last.map { [$0] } ?? []) == working)
-        }
-    }
-
-    @Test func workingIgnoresTheOwnersPendingMessage() {
-        let pending = Message(id: "p", role: "user", deliveryState: .sending)
-        #expect(Working(snapshot: ChatSnapshot(status: "running"), messages: [call("memory"), pending]) == .remembering)
-    }
-
-    @Test func workingFollowsTheStatus() {
+    @Test func workingUsesTheServerProjection() {
         #expect(Working(snapshot: nil, messages: []) == .idle)
-        #expect(Working(snapshot: ChatSnapshot(status: "idle"), messages: []) == .idle)
-        #expect(Working(snapshot: ChatSnapshot(status: "failed"), messages: []) == .failed)
-        #expect(Working(snapshot: ChatSnapshot(status: "running", partial: "Hi"), messages: [call("bash")]) == .writing)
-        #expect(Working(snapshot: ChatSnapshot(status: "running", partial: " \n"), messages: []) == .thinking)
+        for value in [Working.thinking, .writing, .searching, .remembering, .tinkering, .struggling, .failed] {
+            #expect(Working(snapshot: ChatSnapshot(working: value.rawValue), messages: []) == value)
+        }
     }
 
     @Test func workingLabelsMatchTheWeb() {

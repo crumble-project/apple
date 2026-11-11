@@ -42,7 +42,7 @@ func memoryFixture(_ source: String) -> String {
 
 func chatFixture(_ agentID: String = "a1", status: String = "idle") -> String {
     JSONValue.object([
-        "agentId": .string(agentID), "status": .string(status), "messages": .array([]),
+        "agentId": .string(agentID), "status": .string(status), "working": .string(status == "running" ? "thinking" : status), "messages": .array([]),
         "hasMore": .bool(false), "oldestEntryId": .null, "conversationId": .string("c1"),
         "conversation": .object([
             "id": .string("c1"), "agentId": .string(agentID), "title": .string("Chat"),

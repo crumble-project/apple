@@ -83,7 +83,7 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
   public var entryId: String?
   public var role: String
   public var content: JSONValue?
-  public var blocks: JSONValue?
+  public var blocks: [TranscriptBlock]?
   public var kind: String?
   public var replyTo: String?
   public var replyPreview: String?
@@ -108,7 +108,7 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
 
   public init(
     id: String, entryId: String? = nil, role: String, content: JSONValue? = nil,
-    blocks: JSONValue? = nil, kind: String? = nil,
+    blocks: [TranscriptBlock]? = nil, kind: String? = nil,
     replyTo: String? = nil, replyPreview: String? = nil, origin: MessageOrigin? = nil,
     communication: BotCommunication? = nil, jobQuestion: JobQuestionEvent? = nil,
     heldAction: HeldActionEvent? = nil, call: CallEvent? = nil, timestamp: Int64? = nil,
@@ -147,7 +147,7 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
     entryId = try container.decodeIfPresent(String.self, forKey: .entryId)
     role = try container.decodeIfPresent(String.self, forKey: .role) ?? ""
     content = try container.decodeIfPresent(JSONValue.self, forKey: .content)
-    blocks = try container.decodeIfPresent(JSONValue.self, forKey: .blocks)
+    blocks = try container.decodeIfPresent([TranscriptBlock].self, forKey: .blocks)
     kind = try container.decodeIfPresent(String.self, forKey: .kind)
     replyTo = try container.decodeIfPresent(String.self, forKey: .replyTo)
     replyPreview = try container.decodeIfPresent(String.self, forKey: .replyPreview)
@@ -207,6 +207,7 @@ public struct ChatSnapshot: Codable, Sendable {
   public var messages: [Message]?
   public var status: String?
   public var partial: String?
+  public var working: String?
   public var error: String?
   public var agentId: String?
   public var hasMore: Bool?
@@ -225,6 +226,7 @@ public struct ChatSnapshot: Codable, Sendable {
     messages: [Message]? = nil,
     status: String? = nil,
     partial: String? = nil,
+    working: String? = nil,
     error: String? = nil,
     agentId: String? = nil,
     hasMore: Bool? = nil,
@@ -233,6 +235,7 @@ public struct ChatSnapshot: Codable, Sendable {
     self.messages = messages
     self.status = status
     self.partial = partial
+    self.working = working
     self.error = error
     self.agentId = agentId
     self.hasMore = hasMore
@@ -253,5 +256,43 @@ public struct ChatHistoryResponse: Codable, Sendable {
     self.messages = messages
     self.hasMore = hasMore
     self.oldestEntryId = oldestEntryId
+  }
+}
+
+public enum TranscriptBlock: Codable, Hashable, Sendable {
+  case text(String), thinking(String, Bool?), image(String), toolCall(id: String, name: String, arguments: JSONValue)
+
+  private enum Keys: String, CodingKey { case type, text, thinking, redacted, mimeType, id, name, arguments }
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: Keys.self)
+    switch try container.decode(String.self, forKey: .type) {
+    case "text": self = .text(try container.decode(String.self, forKey: .text))
+    case "thinking":
+      self = .thinking(try container.decode(String.self, forKey: .thinking),
+                       try container.decodeIfPresent(Bool.self, forKey: .redacted))
+    case "image": self = .image(try container.decode(String.self, forKey: .mimeType))
+    case "toolCall":
+      self = .toolCall(id: try container.decode(String.self, forKey: .id),
+                       name: try container.decode(String.self, forKey: .name),
+                       arguments: try container.decode(JSONValue.self, forKey: .arguments))
+    default:
+      throw DecodingError.dataCorruptedError(forKey: .type, in: container, debugDescription: "Unknown transcript block")
+    }
+  }
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: Keys.self)
+    switch self {
+    case .text(let text): try container.encode("text", forKey: .type)
+      try container.encode(text, forKey: .text)
+    case .thinking(let thinking, let redacted): try container.encode("thinking", forKey: .type)
+      try container.encode(thinking, forKey: .thinking)
+      try container.encodeIfPresent(redacted, forKey: .redacted)
+    case .image(let mimeType): try container.encode("image", forKey: .type)
+      try container.encode(mimeType, forKey: .mimeType)
+    case .toolCall(let id, let name, let arguments): try container.encode("toolCall", forKey: .type)
+      try container.encode(id, forKey: .id)
+      try container.encode(name, forKey: .name)
+      try container.encode(arguments, forKey: .arguments)
+    }
   }
 }

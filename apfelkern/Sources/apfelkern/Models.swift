@@ -316,6 +316,8 @@ public struct Schedule: Codable, Identifiable, Hashable, Sendable {
   /// The event source whose events start this automation; set instead of `cron` and `runAt`.
   public var eventSourceId: String?
   public var enabled: Bool
+  public var description: String
+  public var timing: String
   public var nextRunAt: String?
   /// The bot that saved this automation. Nil when the owner saved it.
   public var createdByAgentId: String?
@@ -334,6 +336,8 @@ public struct Schedule: Codable, Identifiable, Hashable, Sendable {
     runAt: String? = nil,
     eventSourceId: String? = nil,
     enabled: Bool,
+    description: String = "",
+    timing: String = "",
     nextRunAt: String? = nil,
     createdByAgentId: String? = nil
   ) {
@@ -350,6 +354,8 @@ public struct Schedule: Codable, Identifiable, Hashable, Sendable {
     self.runAt = runAt
     self.eventSourceId = eventSourceId
     self.enabled = enabled
+    self.description = description
+    self.timing = timing
     self.nextRunAt = nextRunAt
     self.createdByAgentId = createdByAgentId
   }

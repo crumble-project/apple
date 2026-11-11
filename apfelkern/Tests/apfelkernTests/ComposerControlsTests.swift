@@ -124,16 +124,9 @@ func aLevelClampsToTheNearestPreferringHigher(level: ThinkingLevel, levels: [Thi
   #expect(PasteContent.fileType(in: [UTType.utf8PlainText.identifier, UTType.json.identifier]) == nil)
 }
 
-@Test func anAutomationsCadenceReadsInWords() {
-  let words = { (cron: String) in
-    cadence(Schedule(id: "s", agentId: "a", name: "n", cron: cron, prompt: "p", timezone: TimeZone.current.identifier,
-                     enabled: true))
-  }
-  #expect(words("*/5 * * * *") == "Every 5 minutes")
-  #expect(words("30 * * * *") == "Every hour at :30")
-  #expect(words("0 8 * * *").hasPrefix("Every day at "))
-  #expect(words("not a cron") == "not a cron")
-  #expect(cadence(Schedule(id: "s", agentId: "a", name: "n", prompt: "p", enabled: true)) == "Once")
+@Test func anAutomationsCadenceUsesTheServerDescription() {
+  let schedule = Schedule(id: "s", agentId: "a", name: "n", prompt: "p", enabled: true, description: "Every day", timing: "Every day")
+  #expect(cadence(schedule) == "Every day")
 }
 
 @Test func aMemoryNamesWhereItCameFrom() {
