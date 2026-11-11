@@ -104,6 +104,7 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
   public var requestId: String?
   /// In a group chat, the pages the sending bot searched or read in the turn that wrote the message.
   public var sources: [MessageSource]?
+  public var presentation: Components.Schemas.MessagePresentation?
   public var deliveryState: MessageDeliveryState
 
   public init(
@@ -115,6 +116,7 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
     attachments: [AttachmentInfo]? = nil, toolName: String? = nil, toolCallId: String? = nil,
     isError: Bool? = nil,
     toolDetails: JSONValue? = nil, requestId: String? = nil, sources: [MessageSource]? = nil,
+    presentation: Components.Schemas.MessagePresentation? = nil,
     deliveryState: MessageDeliveryState = .confirmed
   ) {
     self.id = id
@@ -138,6 +140,7 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
     self.toolDetails = toolDetails
     self.requestId = requestId
     self.sources = sources
+    self.presentation = presentation
     self.deliveryState = deliveryState
   }
 
@@ -165,6 +168,7 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
     toolDetails = try container.decodeIfPresent(JSONValue.self, forKey: .toolDetails)
     requestId = try container.decodeIfPresent(String.self, forKey: .requestId)
     sources = try container.decodeIfPresent([MessageSource].self, forKey: .sources)
+    presentation = try container.decodeIfPresent(Components.Schemas.MessagePresentation.self, forKey: .presentation)
     deliveryState =
       try container.decodeIfPresent(MessageDeliveryState.self, forKey: .deliveryState) ?? .confirmed
   }

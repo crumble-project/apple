@@ -76666,6 +76666,578 @@ public enum Operations {
             }
         }
     }
+    /// - Remark: HTTP `POST /v1/reasoning/preview`.
+    /// - Remark: Generated from `#/paths//v1/reasoning/preview/post(previewReasoning)`.
+    public enum PreviewReasoning {
+        public static let id: Swift.String = "previewReasoning"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/reasoning/preview/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.PreviewReasoning.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.PreviewReasoning.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.PreviewReasoning.Input.Headers
+            /// - Remark: Generated from `#/paths/v1/reasoning/preview/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/reasoning/preview/POST/requestBody/json`.
+                public struct JsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/paths/v1/reasoning/preview/POST/requestBody/json/model`.
+                    public var model: Swift.String
+                    /// - Remark: Generated from `#/paths/v1/reasoning/preview/POST/requestBody/json/provider`.
+                    public var provider: Swift.String
+                    /// - Remark: Generated from `#/paths/v1/reasoning/preview/POST/requestBody/json/thinkingLevel`.
+                    @frozen public enum ThinkingLevelPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                        case off = "off"
+                        case minimal = "minimal"
+                        case low = "low"
+                        case medium = "medium"
+                        case high = "high"
+                        case xhigh = "xhigh"
+                        case max = "max"
+                    }
+                    /// - Remark: Generated from `#/paths/v1/reasoning/preview/POST/requestBody/json/thinkingLevel`.
+                    public var thinkingLevel: Operations.PreviewReasoning.Input.Body.JsonPayload.ThinkingLevelPayload?
+                    /// Creates a new `JsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - model:
+                    ///   - provider:
+                    ///   - thinkingLevel:
+                    public init(
+                        model: Swift.String,
+                        provider: Swift.String,
+                        thinkingLevel: Operations.PreviewReasoning.Input.Body.JsonPayload.ThinkingLevelPayload? = nil
+                    ) {
+                        self.model = model
+                        self.provider = provider
+                        self.thinkingLevel = thinkingLevel
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case model
+                        case provider
+                        case thinkingLevel
+                    }
+                }
+                /// - Remark: Generated from `#/paths/v1/reasoning/preview/POST/requestBody/content/application\/json`.
+                case json(Operations.PreviewReasoning.Input.Body.JsonPayload)
+            }
+            public var body: Operations.PreviewReasoning.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.PreviewReasoning.Input.Headers = .init(),
+                body: Operations.PreviewReasoning.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/reasoning/preview/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/reasoning/preview/POST/responses/200/content/application\/json`.
+                    case json(Components.Schemas.ReasoningPreview)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.ReasoningPreview {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.PreviewReasoning.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.PreviewReasoning.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Success
+            ///
+            /// - Remark: Generated from `#/paths//v1/reasoning/preview/post(previewReasoning)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.PreviewReasoning.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.PreviewReasoning.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct BadRequest: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/reasoning/preview/POST/responses/400/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/reasoning/preview/POST/responses/400/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.PreviewReasoning.Output.BadRequest.Body
+                /// Creates a new `BadRequest`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.PreviewReasoning.Output.BadRequest.Body) {
+                    self.body = body
+                }
+            }
+            /// Invalid request or operation
+            ///
+            /// - Remark: Generated from `#/paths//v1/reasoning/preview/post(previewReasoning)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Operations.PreviewReasoning.Output.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Operations.PreviewReasoning.Output.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Unauthorized: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/reasoning/preview/POST/responses/401/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/reasoning/preview/POST/responses/401/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.PreviewReasoning.Output.Unauthorized.Body
+                /// Creates a new `Unauthorized`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.PreviewReasoning.Output.Unauthorized.Body) {
+                    self.body = body
+                }
+            }
+            /// Missing, expired, or invalid account session
+            ///
+            /// - Remark: Generated from `#/paths//v1/reasoning/preview/post(previewReasoning)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Operations.PreviewReasoning.Output.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Operations.PreviewReasoning.Output.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct NotFound: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/reasoning/preview/POST/responses/404/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/reasoning/preview/POST/responses/404/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.PreviewReasoning.Output.NotFound.Body
+                /// Creates a new `NotFound`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.PreviewReasoning.Output.NotFound.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//v1/reasoning/preview/post(previewReasoning)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Operations.PreviewReasoning.Output.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Operations.PreviewReasoning.Output.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct MethodNotAllowed: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/reasoning/preview/POST/responses/405/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/reasoning/preview/POST/responses/405/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.PreviewReasoning.Output.MethodNotAllowed.Body
+                /// Creates a new `MethodNotAllowed`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.PreviewReasoning.Output.MethodNotAllowed.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource is read-only
+            ///
+            /// - Remark: Generated from `#/paths//v1/reasoning/preview/post(previewReasoning)/responses/405`.
+            ///
+            /// HTTP response code: `405 methodNotAllowed`.
+            case methodNotAllowed(Operations.PreviewReasoning.Output.MethodNotAllowed)
+            /// The associated value of the enum case if `self` is `.methodNotAllowed`.
+            ///
+            /// - Throws: An error if `self` is not `.methodNotAllowed`.
+            /// - SeeAlso: `.methodNotAllowed`.
+            public var methodNotAllowed: Operations.PreviewReasoning.Output.MethodNotAllowed {
+                get throws {
+                    switch self {
+                    case let .methodNotAllowed(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "methodNotAllowed",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Conflict: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/reasoning/preview/POST/responses/409/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/reasoning/preview/POST/responses/409/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.PreviewReasoning.Output.Conflict.Body
+                /// Creates a new `Conflict`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.PreviewReasoning.Output.Conflict.Body) {
+                    self.body = body
+                }
+            }
+            /// Conflicting request
+            ///
+            /// - Remark: Generated from `#/paths//v1/reasoning/preview/post(previewReasoning)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Operations.PreviewReasoning.Output.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Operations.PreviewReasoning.Output.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ContentTooLarge: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/reasoning/preview/POST/responses/413/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/reasoning/preview/POST/responses/413/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.PreviewReasoning.Output.ContentTooLarge.Body
+                /// Creates a new `ContentTooLarge`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.PreviewReasoning.Output.ContentTooLarge.Body) {
+                    self.body = body
+                }
+            }
+            /// Request body exceeds the size limit
+            ///
+            /// - Remark: Generated from `#/paths//v1/reasoning/preview/post(previewReasoning)/responses/413`.
+            ///
+            /// HTTP response code: `413 contentTooLarge`.
+            case contentTooLarge(Operations.PreviewReasoning.Output.ContentTooLarge)
+            /// The associated value of the enum case if `self` is `.contentTooLarge`.
+            ///
+            /// - Throws: An error if `self` is not `.contentTooLarge`.
+            /// - SeeAlso: `.contentTooLarge`.
+            public var contentTooLarge: Operations.PreviewReasoning.Output.ContentTooLarge {
+                get throws {
+                    switch self {
+                    case let .contentTooLarge(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "contentTooLarge",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct InternalServerError: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/reasoning/preview/POST/responses/500/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/reasoning/preview/POST/responses/500/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.PreviewReasoning.Output.InternalServerError.Body
+                /// Creates a new `InternalServerError`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.PreviewReasoning.Output.InternalServerError.Body) {
+                    self.body = body
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//v1/reasoning/preview/post(previewReasoning)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Operations.PreviewReasoning.Output.InternalServerError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Operations.PreviewReasoning.Output.InternalServerError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ServiceUnavailable: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/reasoning/preview/POST/responses/503/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/reasoning/preview/POST/responses/503/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.PreviewReasoning.Output.ServiceUnavailable.Body
+                /// Creates a new `ServiceUnavailable`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.PreviewReasoning.Output.ServiceUnavailable.Body) {
+                    self.body = body
+                }
+            }
+            /// Service unavailable
+            ///
+            /// - Remark: Generated from `#/paths//v1/reasoning/preview/post(previewReasoning)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Operations.PreviewReasoning.Output.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Operations.PreviewReasoning.Output.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case plainText
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "text/plain":
+                    self = .plainText
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .plainText:
+                    return "text/plain"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .plainText
+                ]
+            }
+        }
+    }
     /// - Remark: HTTP `GET /v1/schedules`.
     /// - Remark: Generated from `#/paths//v1/schedules/get(listSchedules)`.
     public enum ListSchedules {
@@ -77878,6 +78450,574 @@ public enum Operations {
             }
         }
     }
+    /// - Remark: HTTP `POST /v1/schedules/preview`.
+    /// - Remark: Generated from `#/paths//v1/schedules/preview/post(previewSchedule)`.
+    public enum PreviewSchedule {
+        public static let id: Swift.String = "previewSchedule"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/schedules/preview/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.PreviewSchedule.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.PreviewSchedule.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.PreviewSchedule.Input.Headers
+            /// - Remark: Generated from `#/paths/v1/schedules/preview/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/schedules/preview/POST/requestBody/json`.
+                public struct JsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/paths/v1/schedules/preview/POST/requestBody/json/cron`.
+                    public var cron: Swift.String?
+                    /// - Remark: Generated from `#/paths/v1/schedules/preview/POST/requestBody/json/eventSourceId`.
+                    public var eventSourceId: Swift.String?
+                    /// - Remark: Generated from `#/paths/v1/schedules/preview/POST/requestBody/json/runAt`.
+                    public var runAt: Foundation.Date?
+                    /// - Remark: Generated from `#/paths/v1/schedules/preview/POST/requestBody/json/timezone`.
+                    public var timezone: Swift.String
+                    /// Creates a new `JsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - cron:
+                    ///   - eventSourceId:
+                    ///   - runAt:
+                    ///   - timezone:
+                    public init(
+                        cron: Swift.String? = nil,
+                        eventSourceId: Swift.String? = nil,
+                        runAt: Foundation.Date? = nil,
+                        timezone: Swift.String
+                    ) {
+                        self.cron = cron
+                        self.eventSourceId = eventSourceId
+                        self.runAt = runAt
+                        self.timezone = timezone
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case cron
+                        case eventSourceId
+                        case runAt
+                        case timezone
+                    }
+                }
+                /// - Remark: Generated from `#/paths/v1/schedules/preview/POST/requestBody/content/application\/json`.
+                case json(Operations.PreviewSchedule.Input.Body.JsonPayload)
+            }
+            public var body: Operations.PreviewSchedule.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.PreviewSchedule.Input.Headers = .init(),
+                body: Operations.PreviewSchedule.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/schedules/preview/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/schedules/preview/POST/responses/200/content/application\/json`.
+                    case json(Components.Schemas.SchedulePreview)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.SchedulePreview {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.PreviewSchedule.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.PreviewSchedule.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Success
+            ///
+            /// - Remark: Generated from `#/paths//v1/schedules/preview/post(previewSchedule)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.PreviewSchedule.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.PreviewSchedule.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct BadRequest: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/schedules/preview/POST/responses/400/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/schedules/preview/POST/responses/400/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.PreviewSchedule.Output.BadRequest.Body
+                /// Creates a new `BadRequest`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.PreviewSchedule.Output.BadRequest.Body) {
+                    self.body = body
+                }
+            }
+            /// Invalid request or operation
+            ///
+            /// - Remark: Generated from `#/paths//v1/schedules/preview/post(previewSchedule)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Operations.PreviewSchedule.Output.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Operations.PreviewSchedule.Output.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Unauthorized: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/schedules/preview/POST/responses/401/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/schedules/preview/POST/responses/401/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.PreviewSchedule.Output.Unauthorized.Body
+                /// Creates a new `Unauthorized`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.PreviewSchedule.Output.Unauthorized.Body) {
+                    self.body = body
+                }
+            }
+            /// Missing, expired, or invalid account session
+            ///
+            /// - Remark: Generated from `#/paths//v1/schedules/preview/post(previewSchedule)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Operations.PreviewSchedule.Output.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Operations.PreviewSchedule.Output.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct NotFound: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/schedules/preview/POST/responses/404/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/schedules/preview/POST/responses/404/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.PreviewSchedule.Output.NotFound.Body
+                /// Creates a new `NotFound`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.PreviewSchedule.Output.NotFound.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//v1/schedules/preview/post(previewSchedule)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Operations.PreviewSchedule.Output.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Operations.PreviewSchedule.Output.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct MethodNotAllowed: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/schedules/preview/POST/responses/405/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/schedules/preview/POST/responses/405/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.PreviewSchedule.Output.MethodNotAllowed.Body
+                /// Creates a new `MethodNotAllowed`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.PreviewSchedule.Output.MethodNotAllowed.Body) {
+                    self.body = body
+                }
+            }
+            /// Resource is read-only
+            ///
+            /// - Remark: Generated from `#/paths//v1/schedules/preview/post(previewSchedule)/responses/405`.
+            ///
+            /// HTTP response code: `405 methodNotAllowed`.
+            case methodNotAllowed(Operations.PreviewSchedule.Output.MethodNotAllowed)
+            /// The associated value of the enum case if `self` is `.methodNotAllowed`.
+            ///
+            /// - Throws: An error if `self` is not `.methodNotAllowed`.
+            /// - SeeAlso: `.methodNotAllowed`.
+            public var methodNotAllowed: Operations.PreviewSchedule.Output.MethodNotAllowed {
+                get throws {
+                    switch self {
+                    case let .methodNotAllowed(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "methodNotAllowed",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Conflict: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/schedules/preview/POST/responses/409/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/schedules/preview/POST/responses/409/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.PreviewSchedule.Output.Conflict.Body
+                /// Creates a new `Conflict`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.PreviewSchedule.Output.Conflict.Body) {
+                    self.body = body
+                }
+            }
+            /// Conflicting request
+            ///
+            /// - Remark: Generated from `#/paths//v1/schedules/preview/post(previewSchedule)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Operations.PreviewSchedule.Output.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Operations.PreviewSchedule.Output.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ContentTooLarge: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/schedules/preview/POST/responses/413/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/schedules/preview/POST/responses/413/content/text\/plain`.
+                    case plainText(OpenAPIRuntime.HTTPBody)
+                    /// The associated value of the enum case if `self` is `.plainText`.
+                    ///
+                    /// - Throws: An error if `self` is not `.plainText`.
+                    /// - SeeAlso: `.plainText`.
+                    public var plainText: OpenAPIRuntime.HTTPBody {
+                        get throws {
+                            switch self {
+                            case let .plainText(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.PreviewSchedule.Output.ContentTooLarge.Body
+                /// Creates a new `ContentTooLarge`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.PreviewSchedule.Output.ContentTooLarge.Body) {
+                    self.body = body
+                }
+            }
+            /// Request body exceeds the size limit
+            ///
+            /// - Remark: Generated from `#/paths//v1/schedules/preview/post(previewSchedule)/responses/413`.
+            ///
+            /// HTTP response code: `413 contentTooLarge`.
+            case contentTooLarge(Operations.PreviewSchedule.Output.ContentTooLarge)
+            /// The associated value of the enum case if `self` is `.contentTooLarge`.
+            ///
+            /// - Throws: An error if `self` is not `.contentTooLarge`.
+            /// - SeeAlso: `.contentTooLarge`.
+            public var contentTooLarge: Operations.PreviewSchedule.Output.ContentTooLarge {
+                get throws {
+                    switch self {
+                    case let .contentTooLarge(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "contentTooLarge",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct InternalServerError: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/schedules/preview/POST/responses/500/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/schedules/preview/POST/responses/500/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.PreviewSchedule.Output.InternalServerError.Body
+                /// Creates a new `InternalServerError`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.PreviewSchedule.Output.InternalServerError.Body) {
+                    self.body = body
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//v1/schedules/preview/post(previewSchedule)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Operations.PreviewSchedule.Output.InternalServerError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Operations.PreviewSchedule.Output.InternalServerError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct ServiceUnavailable: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/schedules/preview/POST/responses/503/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/schedules/preview/POST/responses/503/content/application\/json`.
+                    case json(Components.Schemas._Error)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas._Error {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.PreviewSchedule.Output.ServiceUnavailable.Body
+                /// Creates a new `ServiceUnavailable`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.PreviewSchedule.Output.ServiceUnavailable.Body) {
+                    self.body = body
+                }
+            }
+            /// Service unavailable
+            ///
+            /// - Remark: Generated from `#/paths//v1/schedules/preview/post(previewSchedule)/responses/503`.
+            ///
+            /// HTTP response code: `503 serviceUnavailable`.
+            case serviceUnavailable(Operations.PreviewSchedule.Output.ServiceUnavailable)
+            /// The associated value of the enum case if `self` is `.serviceUnavailable`.
+            ///
+            /// - Throws: An error if `self` is not `.serviceUnavailable`.
+            /// - SeeAlso: `.serviceUnavailable`.
+            public var serviceUnavailable: Operations.PreviewSchedule.Output.ServiceUnavailable {
+                get throws {
+                    switch self {
+                    case let .serviceUnavailable(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "serviceUnavailable",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case plainText
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "text/plain":
+                    self = .plainText
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .plainText:
+                    return "text/plain"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .plainText
+                ]
+            }
+        }
+    }
     /// - Remark: HTTP `PATCH /v1/schedules/{id}`.
     /// - Remark: Generated from `#/paths//v1/schedules/{id}/patch(updateSchedule)`.
     public enum UpdateSchedule {
@@ -78055,6 +79195,8 @@ public enum Operations {
                         public var name: Swift.String
                         /// - Remark: Generated from `#/paths/v1/schedules/{id}/PATCH/responses/200/content/json/nextRunAt`.
                         public var nextRunAt: Swift.String?
+                        /// - Remark: Generated from `#/paths/v1/schedules/{id}/PATCH/responses/200/content/json/nextRunLabel`.
+                        public var nextRunLabel: Swift.String
                         /// - Remark: Generated from `#/paths/v1/schedules/{id}/PATCH/responses/200/content/json/notify`.
                         public var notify: Swift.Bool
                         /// - Remark: Generated from `#/paths/v1/schedules/{id}/PATCH/responses/200/content/json/prompt`.
@@ -78082,6 +79224,7 @@ public enum Operations {
                         ///   - kind:
                         ///   - name:
                         ///   - nextRunAt:
+                        ///   - nextRunLabel:
                         ///   - notify:
                         ///   - prompt:
                         ///   - runAt:
@@ -78101,6 +79244,7 @@ public enum Operations {
                             kind: Operations.UpdateSchedule.Output.Ok.Body.JsonPayload.KindPayload,
                             name: Swift.String,
                             nextRunAt: Swift.String? = nil,
+                            nextRunLabel: Swift.String,
                             notify: Swift.Bool,
                             prompt: Swift.String,
                             runAt: Swift.String? = nil,
@@ -78120,6 +79264,7 @@ public enum Operations {
                             self.kind = kind
                             self.name = name
                             self.nextRunAt = nextRunAt
+                            self.nextRunLabel = nextRunLabel
                             self.notify = notify
                             self.prompt = prompt
                             self.runAt = runAt
@@ -78140,6 +79285,7 @@ public enum Operations {
                             case kind
                             case name
                             case nextRunAt
+                            case nextRunLabel
                             case notify
                             case prompt
                             case runAt

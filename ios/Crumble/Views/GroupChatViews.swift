@@ -262,10 +262,10 @@ struct GroupBotMessage: View {
   }
 
   private var bubble: some View {
-    let reply = SourceCitations.split(message.text, sources: message.sources ?? [])
+    let text = message.presentation?.text ?? message.text
     return VStack(alignment: .leading, spacing: 6) {
-      MarkdownText(text: reply.text).textSelection(.enabled)
-      ForEach(reply.chips, id: \.href) { SourceChipLink(chip: $0) }
+      MarkdownText(text: text).textSelection(.enabled)
+      ForEach(message.presentation?.citations ?? [], id: \.href) { SourceChipLink(chip: $0) }
     }
     .bubble(owner: false, tail: place.endsRun)
     .fixedSize(horizontal: false, vertical: true)
@@ -284,12 +284,12 @@ struct GroupBotMessage: View {
 
 /// A page the reply's turn read, opened in the browser.
 struct SourceChipLink: View {
-  let chip: SourceChip
+  let chip: Components.Schemas.Citation
 
   var body: some View {
     if let url = URL(string: chip.href) {
       Link(destination: url) {
-        Label(chip.title.nilIfEmpty ?? chip.href, systemImage: "link")
+        Label(chip.site, systemImage: "link")
           .font(.callout).lineLimit(1)
       }
     }

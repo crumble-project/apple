@@ -44,6 +44,14 @@ public struct AutomationsPage: View {
       }
     }
     .padding(.top, 8)
+    .task(id: [client?.baseURL ?? "", client?.token ?? ""]) {
+      guard let client else { return }
+      while !Task.isCancelled {
+        do { try await Task.sleep(for: .seconds(60)) } catch { return }
+        guard !Task.isCancelled else { return }
+        board.refresh(client: client)
+      }
+    }
     .confirmationDialog(
       "Delete \(deleting?.name ?? "")?",
       isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
@@ -193,7 +201,7 @@ private struct AutomationRow: View {
         Text(cadence(schedule, sources: sources)).font(.caption).foregroundStyle(.secondary)
         HStack(spacing: 8) {
           status
-          Text("Next run: \(nextRunLabel(schedule))").foregroundStyle(.secondary)
+          Text("Next run: \(schedule.nextRunLabel)").foregroundStyle(.secondary)
         }
         .font(.caption)
         if let error {

@@ -1,44 +1,18 @@
+import Foundation
 import Observation
 
-/// How much a bot reasons before it answers, lowest first as in the contract.
-public enum ThinkingLevel: String, CaseIterable, Codable, Identifiable, Sendable {
-  case off, minimal, low, medium, high, xhigh, max
-
-  public var id: String { rawValue }
-
-  public var title: String {
-    switch self {
-    case .off: "Off"
-    case .minimal: "Minimal"
-    case .low: "Low"
-    case .medium: "Medium"
-    case .high: "High"
-    case .xhigh: "Extra high"
-    case .max: "Maximum"
-    }
-  }
-
-  /// The level a turn runs at: the nearest supported one, preferring higher, as Pi AI's `clampThinkingLevel`.
-  public func clamped(to levels: [ThinkingLevel]) -> ThinkingLevel {
-    guard !levels.contains(self) else { return self }
-    let lower = Self.allCases.prefix { $0 != self }
-    let higher = Self.allCases.dropFirst(lower.count + 1)
-    return higher.first(where: levels.contains) ?? lower.last(where: levels.contains) ?? levels.first ?? .off
-  }
-
-  /// What a model supports. As on the web, a model the server doesn't list offers every level.
-  public static func available(for model: String?, in models: [ModelSummary]) -> [ThinkingLevel] {
-    let id = model?.trimmingCharacters(in: .whitespacesAndNewlines)
-    return models.first { $0.id == id }?.thinkingLevels ?? allCases
-  }
-}
+public typealias ThinkingLevel = Components.Schemas.ReasoningOption.ValuePayload
 
 /// The reasoning control in a bot chat's composer. A choice shows on the bot at once and rolls back if the
-/// server refuses it. Model lists from an earlier connection are dropped.
+/// server refuses it. Previews from an earlier connection are dropped.
 @MainActor @Observable
 public final class ReasoningBoard {
-  private var models: [String: [ModelSummary]] = [:]
+  private var previews: [String: Components.Schemas.ReasoningPreview] = [:]
+  private var previewKeys: [String: String] = [:]
+  private var previewLevels: [String: String] = [:]
   private var connection = 0
+  private var requests: [String: UUID] = [:]
+  public private(set) var pendingLevels: [String: String] = [:]
   /// Bots with a write on its way; a second could land out of order.
   public private(set) var saving: Set<String> = []
 
@@ -46,29 +20,42 @@ public final class ReasoningBoard {
 
   public func reset() {
     connection += 1
-    models = [:]
+    previews = [:]
+    previewKeys = [:]
+    previewLevels = [:]
+    requests = [:]
+    pendingLevels = [:]
     saving = []
   }
 
-  /// Reads the provider's models again each time, because a new key or sign-in changes them.
-  public func load(provider: String, client: APIClient) async {
-    let loadedFor = connection
-    let loaded = try? await client.models(provider: provider)
-    guard !Task.isCancelled, loadedFor == connection else { return }
-    models[provider] = loaded ?? models[provider] ?? []
+  public func previewKey(of bot: Agent, client: APIClient?) -> String {
+    optionKey(of: bot, client: client) + "\u{0}" + (bot.inference?.thinkingLevel ?? "off")
   }
 
-  /// Empty until the models arrive, which keeps the control hidden. As on the web, a model the server
-  /// doesn't list offers every level.
-  public func levels(of bot: Agent) -> [ThinkingLevel] {
-    guard let provider = bot.provider, let models = models[provider] else { return [] }
-    return ThinkingLevel.available(for: bot.model, in: models)
+  private func optionKey(of bot: Agent, client: APIClient?) -> String {
+    [client?.baseURL ?? "", client?.token ?? "", bot.id, bot.provider ?? "", bot.model ?? ""].joined(separator: "\u{0}")
   }
 
-  /// The level the bot's turns run at, which a model that lacks the saved one clamps.
-  public func level(of bot: Agent) -> ThinkingLevel {
-    let saved = bot.inference.flatMap { ThinkingLevel(rawValue: $0.thinkingLevel) } ?? .off
-    return saved.clamped(to: levels(of: bot))
+  public func preview(of bot: Agent, client: APIClient?) -> Components.Schemas.ReasoningPreview? {
+    guard previewKeys[bot.id] == optionKey(of: bot, client: client) else { return nil }
+    let level = bot.inference?.thinkingLevel ?? "off"
+    guard previewLevels[bot.id] == level || pendingLevels[bot.id] != nil else { return nil }
+    return previews[bot.id]
+  }
+
+  public func loadPreview(bot: Agent, client: APIClient) async {
+    let version = connection
+    let key = optionKey(of: bot, client: client)
+    let request = UUID()
+    requests[bot.id] = request
+    let level = bot.inference?.thinkingLevel ?? "off"
+    let result = try? await client.previewReasoning(
+      provider: bot.provider ?? "", model: bot.model ?? "", level: level)
+    guard !Task.isCancelled, version == connection, requests[bot.id] == request, let result else { return }
+    previewKeys[bot.id] = key
+    previews[bot.id] = result
+    previewLevels[bot.id] = level
+    if !saving.contains(bot.id), pendingLevels[bot.id] == level { pendingLevels[bot.id] = nil }
   }
 
   public func choose(_ level: ThinkingLevel, for id: String, host: some BotListHost) {
@@ -84,16 +71,21 @@ public final class ReasoningBoard {
       key: "reasoning:\(id)",
       update: { [self] in
         saving.insert(id)
+        requests[id] = nil
+        pendingLevels[id] = level.rawValue
         show(chosen)
       },
       rollback: { [self] in
         saving.remove(id)
+        pendingLevels[id] = nil
         show(previous)
       },
       work: { [self] client in
         let updated = try await client.updateAgent(id, patch: ["inference": body])
         return { [self] in
           saving.remove(id)
+          let level = updated.inference?.thinkingLevel ?? "off"
+          pendingLevels[id] = previewLevels[id] == level ? nil : level
           show(updated.inference)
         }
       })

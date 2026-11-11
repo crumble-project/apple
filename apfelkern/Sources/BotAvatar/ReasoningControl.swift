@@ -18,23 +18,25 @@ public struct ReasoningControl: View {
   public var body: some View {
     // A ZStack, because a Group would run the task on each branch and on none while hidden.
     ZStack {
-      let levels = board.levels(of: bot)
-      if levels.count >= 2 { menu(levels) }
+      if let preview = board.preview(of: bot, client: client), preview.options.count >= 2 { menu(preview) }
     }
-    .task(id: "\(bot.id) \(bot.provider ?? "")") {
-      if let client, let provider = bot.provider { await board.load(provider: provider, client: client) }
+    .task(id: board.previewKey(of: bot, client: client)) {
+      if let client { await board.loadPreview(bot: bot, client: client) }
     }
   }
 
-  private func menu(_ levels: [ThinkingLevel]) -> some View {
-    let level = board.level(of: bot)
+  private func menu(_ preview: Components.Schemas.ReasoningPreview) -> some View {
+    let level = board.pendingLevels[bot.id] ?? preview.effectiveLevel.rawValue
+    let title = preview.options.first { $0.value.rawValue == level }?.label ?? level
     return Menu {
-      Picker("Reasoning", selection: Binding(get: { level }, set: { choose($0) })) {
-        ForEach(levels) { Text($0.title).tag($0) }
+      Picker("Reasoning", selection: Binding(get: { level }, set: { value in
+        if let choice = ThinkingLevel(rawValue: value) { choose(choice) }
+      })) {
+        ForEach(preview.options, id: \.value) { Text($0.label).tag($0.value.rawValue) }
       }
       .pickerStyle(.inline)
     } label: {
-      label(level)
+      label(title)
     }
     .menuStyle(.button)
     #if os(macOS)
@@ -47,17 +49,17 @@ public struct ReasoningControl: View {
     .fixedSize()
     .disabled(board.saving.contains(bot.id))
     .accessibilityLabel("Reasoning")
-    .accessibilityValue(level.title)
+    .accessibilityValue(title)
     .help("Reasoning")
   }
 
   /// macOS draws its own indicator and keeps only the title of a menu's label.
-  @ViewBuilder private func label(_ level: ThinkingLevel) -> some View {
+  @ViewBuilder private func label(_ title: String) -> some View {
     #if os(macOS)
-      Text(level.title).font(.caption.weight(.medium)).lineLimit(1)
+      Text(title).font(.caption.weight(.medium)).lineLimit(1)
     #else
       HStack(spacing: 3) {
-        Text(level.title)
+        Text(title)
         Image(systemName: "chevron.up.chevron.down").imageScale(.small)
       }
       .font(.caption.weight(.medium))

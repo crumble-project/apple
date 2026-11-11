@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Use server previews for automation timing and reasoning, and server-projected citation text and sites.
+
 - Use the shared generated transcript and job history types.
 
 - Use server-projected job steps, working status, and automation timing.

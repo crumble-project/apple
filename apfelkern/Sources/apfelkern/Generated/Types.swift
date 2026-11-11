@@ -550,12 +550,18 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `PUT /v1/push/devices/{installationId}/presence`.
     /// - Remark: Generated from `#/paths//v1/push/devices/{installationId}/presence/put(putPushPresence)`.
     func putPushPresence(_ input: Operations.PutPushPresence.Input) async throws -> Operations.PutPushPresence.Output
+    /// - Remark: HTTP `POST /v1/reasoning/preview`.
+    /// - Remark: Generated from `#/paths//v1/reasoning/preview/post(previewReasoning)`.
+    func previewReasoning(_ input: Operations.PreviewReasoning.Input) async throws -> Operations.PreviewReasoning.Output
     /// - Remark: HTTP `GET /v1/schedules`.
     /// - Remark: Generated from `#/paths//v1/schedules/get(listSchedules)`.
     func listSchedules(_ input: Operations.ListSchedules.Input) async throws -> Operations.ListSchedules.Output
     /// - Remark: HTTP `POST /v1/schedules`.
     /// - Remark: Generated from `#/paths//v1/schedules/post(createSchedule)`.
     func createSchedule(_ input: Operations.CreateSchedule.Input) async throws -> Operations.CreateSchedule.Output
+    /// - Remark: HTTP `POST /v1/schedules/preview`.
+    /// - Remark: Generated from `#/paths//v1/schedules/preview/post(previewSchedule)`.
+    func previewSchedule(_ input: Operations.PreviewSchedule.Input) async throws -> Operations.PreviewSchedule.Output
     /// - Remark: HTTP `PATCH /v1/schedules/{id}`.
     /// - Remark: Generated from `#/paths//v1/schedules/{id}/patch(updateSchedule)`.
     func updateSchedule(_ input: Operations.UpdateSchedule.Input) async throws -> Operations.UpdateSchedule.Output
@@ -2253,6 +2259,17 @@ extension APIProtocol {
             body: body
         ))
     }
+    /// - Remark: HTTP `POST /v1/reasoning/preview`.
+    /// - Remark: Generated from `#/paths//v1/reasoning/preview/post(previewReasoning)`.
+    public func previewReasoning(
+        headers: Operations.PreviewReasoning.Input.Headers = .init(),
+        body: Operations.PreviewReasoning.Input.Body
+    ) async throws -> Operations.PreviewReasoning.Output {
+        try await previewReasoning(Operations.PreviewReasoning.Input(
+            headers: headers,
+            body: body
+        ))
+    }
     /// - Remark: HTTP `GET /v1/schedules`.
     /// - Remark: Generated from `#/paths//v1/schedules/get(listSchedules)`.
     public func listSchedules(
@@ -2271,6 +2288,17 @@ extension APIProtocol {
         body: Operations.CreateSchedule.Input.Body
     ) async throws -> Operations.CreateSchedule.Output {
         try await createSchedule(Operations.CreateSchedule.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `POST /v1/schedules/preview`.
+    /// - Remark: Generated from `#/paths//v1/schedules/preview/post(previewSchedule)`.
+    public func previewSchedule(
+        headers: Operations.PreviewSchedule.Input.Headers = .init(),
+        body: Operations.PreviewSchedule.Input.Body
+    ) async throws -> Operations.PreviewSchedule.Output {
+        try await previewSchedule(Operations.PreviewSchedule.Input(
             headers: headers,
             body: body
         ))

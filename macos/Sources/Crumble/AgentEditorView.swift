@@ -108,7 +108,7 @@ struct AgentEditorView: View {
                     }
                 }
             ReasoningField(
-                levels: ThinkingLevel.available(for: draft.model, in: model.models), thinking: $draft.thinking)
+                draftID: draft.id, provider: draft.provider, model: draft.model, client: model.client, thinking: $draft.thinking)
         } header: {
             Text("Model")
         } footer: {

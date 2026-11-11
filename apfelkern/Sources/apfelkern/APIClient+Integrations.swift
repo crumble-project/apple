@@ -1,6 +1,20 @@
 import Foundation
 
 extension APIClient {
+  public func previewSchedule(_ input: Operations.PreviewSchedule.Input.Body.JsonPayload)
+    async throws -> Components.Schemas.SchedulePreview {
+    try await invoke { try await $0.previewSchedule(.init(body: .json(input))).ok.body.json }
+  }
+
+  public func previewReasoning(provider: String, model: String, level: String)
+    async throws -> Components.Schemas.ReasoningPreview {
+    let value = Operations.PreviewReasoning.Input.Body.JsonPayload.ThinkingLevelPayload(rawValue: level)
+    return try await invoke {
+      try await $0.previewReasoning(.init(body: .json(.init(model: model, provider: provider, thinkingLevel: value))))
+        .ok.body.json
+    }
+  }
+
   public func providers() async throws -> [ProviderStatus] {
     try await invoke {
       try await $0.listProviders(.init()).ok.body.json.map {

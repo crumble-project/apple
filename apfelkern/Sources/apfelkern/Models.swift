@@ -172,7 +172,7 @@ public struct ModelSummary: Codable, Hashable, Sendable {
   public var name: String?
   public var contextWindow: Int?
   public var reasoning: Bool?
-  /// Lowest first; a bot's level outside them runs at the nearest one.
+  /// Levels listed for this model.
   public var thinkingLevels: [ThinkingLevel]
 
   public init(
@@ -319,6 +319,7 @@ public struct Schedule: Codable, Identifiable, Hashable, Sendable {
   public var description: String
   public var timing: String
   public var nextRunAt: String?
+  public var nextRunLabel: String
   /// The bot that saved this automation. Nil when the owner saved it.
   public var createdByAgentId: String?
 
@@ -339,6 +340,7 @@ public struct Schedule: Codable, Identifiable, Hashable, Sendable {
     description: String = "",
     timing: String = "",
     nextRunAt: String? = nil,
+    nextRunLabel: String = "—",
     createdByAgentId: String? = nil
   ) {
     self.id = id
@@ -357,6 +359,7 @@ public struct Schedule: Codable, Identifiable, Hashable, Sendable {
     self.description = description
     self.timing = timing
     self.nextRunAt = nextRunAt
+    self.nextRunLabel = nextRunLabel
     self.createdByAgentId = createdByAgentId
   }
 }

@@ -36,6 +36,10 @@ public struct AutomationDraft: Identifiable, Sendable {
   public var timezone = TimeZone.current.identifier
   public var onEvent = false
   public var eventSourceId = ""
+  public var preview: Components.Schemas.SchedulePreview?
+  public var previewInputUsed: Operations.PreviewSchedule.Input.Body.JsonPayload?
+  public var previewServer: String?
+  public var previewToken: String?
 
   public init(agentID: String) {
     scheduleID = ""
@@ -103,9 +107,7 @@ public struct AutomationDraft: Identifiable, Sendable {
       guard let timeout = Int(trimmed(timeoutSeconds)), (1...AutomationLimits.maxTimeoutSeconds).contains(timeout)
       else { return "Timeout must be between 1 and \(AutomationLimits.maxTimeoutSeconds) seconds." }
     }
-    if onEvent { return eventSourceId.isEmpty ? "Choose an event source." : nil }
-    if repeats, trimmed(cron).isEmpty { return "Choose either a recurring cron or a one-time run time." }
-    return zone == nil ? "Choose a valid time zone." : nil
+    return nil
   }
 
   /// Exactly one is set, as the server requires.
@@ -142,40 +144,30 @@ public struct AutomationDraft: Identifiable, Sendable {
   /// The row to show until the server answers.
   public func provisional(id: String, replacing old: Schedule?, now: Date = .now) -> Schedule {
     let trigger = trigger
-    let cronRun = trigger.cron.flatMap { cron in
-      zone.flatMap { CronExpression(cron)?.next(after: now, in: $0) }
-    }
-    let description = old?.description ?? preview(now: now)?.text ?? "Saving…"
+    let currentPreview = previewInputUsed == previewInput ? preview : nil
+    let description = currentPreview?.description ?? old?.description ?? "Saving…"
     return Schedule(
       id: id, agentId: agentID, name: trimmed(name), cron: trigger.cron,
       prompt: kind == .prompt ? trimmed(prompt) : "", kind: kind, command: kind == .script ? command : nil,
       timeoutSeconds: timeout, notify: notify, timezone: trimmed(timezone), runAt: trigger.runAt,
       eventSourceId: trigger.eventSourceId, enabled: enabled,
-      description: description, timing: enabled ? description : "Paused · " + description,
-      nextRunAt: trigger.runAt ?? cronRun?.ISO8601Format(), createdByAgentId: old?.createdByAgentId)
+      description: description, timing: old?.timing ?? "Saving…",
+      nextRunAt: currentPreview?.nextRunAt ?? trigger.runAt ?? old?.nextRunAt, nextRunLabel: old?.nextRunLabel ?? "—", createdByAgentId: old?.createdByAgentId)
   }
 
-  /// The line under the When section; nil for an event automation, which has no next run.
-  public func preview(now: Date = .now) -> AutomationPreview? {
-    guard !onEvent else { return nil }
-    guard let zone else { return AutomationPreview(text: "Choose a valid time zone.", isProblem: true) }
-    let zoneName = trimmed(timezone)
-    guard repeats else {
-      return runDate < now
-        ? AutomationPreview(text: "This time has passed.", isProblem: true)
-        : AutomationPreview(text: "Runs \(humanRun(runDate, zone: zone, now: now)) (\(zoneName))", isProblem: false)
-    }
-    guard let expression = CronExpression(cron) else {
-      return AutomationPreview(text: "The server checks this schedule when you save.", isProblem: false)
-    }
-    guard let run = expression.next(after: now, in: zone) else {
-      return AutomationPreview(text: "This schedule never runs.", isProblem: true)
-    }
-    return AutomationPreview(text: "Next run \(humanRun(run, zone: zone, now: now)) (\(zoneName))", isProblem: false)
+  public func currentPreview(client: APIClient?) -> Components.Schemas.SchedulePreview? {
+    guard let client, previewServer == client.baseURL, previewToken == client.token,
+          previewInputUsed == previewInput else { return nil }
+    return preview
   }
-}
 
-public struct AutomationPreview: Equatable, Sendable {
-  public var text: String
-  public var isProblem: Bool
+  public func previewReady(client: APIClient?) -> Bool {
+    currentPreview(client: client)?.isProblem == false
+  }
+
+  public var previewInput: Operations.PreviewSchedule.Input.Body.JsonPayload {
+    .init(cron: onEvent || !repeats ? nil : trimmed(cron),
+          eventSourceId: onEvent ? eventSourceId : nil,
+          runAt: !onEvent && !repeats ? runDate : nil, timezone: trimmed(timezone))
+  }
 }

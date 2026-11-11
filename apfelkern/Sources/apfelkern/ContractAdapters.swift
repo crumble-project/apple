@@ -55,7 +55,7 @@ extension Message {
                        kind: $0.kind.rawValue)
       }, toolName: wire.toolName, toolCallId: wire.toolCallId, isError: wire.isError,
       toolDetails: try wire.toolDetails.map { try JSONValue(wire: $0) }, requestId: wire.requestId,
-      sources: wire.sources?.map { MessageSource(url: $0.url, title: $0.title) })
+      sources: wire.sources?.map { MessageSource(url: $0.url, title: $0.title) }, presentation: wire.presentation)
   }
 }
 
@@ -120,7 +120,7 @@ extension Schedule {
               prompt: wire.prompt, kind: ScheduleKind(wire: wire.kind), command: wire.command,
               timeoutSeconds: wire.timeoutSeconds, notify: wire.notify, timezone: wire.timezone,
               runAt: wire.runAt, eventSourceId: wire.eventSourceId, enabled: wire.enabled,
-              description: wire.description, timing: wire.timing, nextRunAt: wire.nextRunAt, createdByAgentId: wire.createdByAgentId)
+              description: wire.description, timing: wire.timing, nextRunAt: wire.nextRunAt, nextRunLabel: wire.nextRunLabel, createdByAgentId: wire.createdByAgentId)
   }
 }
 

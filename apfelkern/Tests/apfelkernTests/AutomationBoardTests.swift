@@ -13,13 +13,23 @@ private func wire(
     {"id":"\#(id)","agentId":"a1","name":"\#(name)","prompt":"\#(prompt)","kind":"\#(kind)",
      "command":\#(text(command)),"timeoutSeconds":\#(timeout),"notify":\#(notify),"cron":\#(text(cron)),
      "timezone":"Europe/Berlin","runAt":\#(text(runAt)),"eventSourceId":\#(text(source)),
-     "enabled":\#(enabled),"description":"Once","timing":"Once","nextRunAt":\#(text(next)),"createdAt":"2026-11-05T10:00:00.000Z",
+     "enabled":\#(enabled),"description":"Once","timing":"Once","nextRunLabel":"Server next","nextRunAt":\#(text(next)),"createdAt":"2026-11-05T10:00:00.000Z",
      "createdByAgentId":null}
     """#
 }
 
 private func json(_ text: String, status: Int = 200, delay: TimeInterval = 0) -> StubResponse {
   StubResponse(status: status, body: Data(text.utf8), delay: delay)
+}
+
+@MainActor
+private func previewReady(_ board: AutomationBoard, _ client: APIClient) {
+  guard var draft = board.draft else { return }
+  draft.preview = .init(description: "Server schedule", isProblem: false, nextRunAt: nil, text: "Ready")
+  draft.previewInputUsed = draft.previewInput
+  draft.previewServer = client.baseURL
+  draft.previewToken = client.token
+  board.draft = draft
 }
 
 @MainActor
@@ -47,7 +57,9 @@ private func savedUnchanged(_ schedule: String) async throws -> JSONValue {
     let board = AutomationBoard()
     board.refresh(client: client)
     try await wait { board.isLoaded }
+    #expect(board.schedules[0].nextRunLabel == "Server next")
     board.edit(board.schedules[0])
+    previewReady(board, client)
     board.saveDraft(client: client)
     #expect(board.saveError.isEmpty)
     #expect(board.draft == nil)
@@ -129,6 +141,7 @@ private func savedUnchanged(_ schedule: String) async throws -> JSONValue {
     try await wait { board.isLoaded }
     board.edit(board.schedules[0])
     board.draft?.name = "New name"
+    previewReady(board, client)
     board.saveDraft(client: client)
     board.refresh(client: client)
     try await Task.sleep(for: .milliseconds(30))
@@ -148,6 +161,7 @@ private func savedUnchanged(_ schedule: String) async throws -> JSONValue {
     board.draft?.name = "Morning"
     board.draft?.prompt = "Say hi"
     board.draft?.runDate = .now.addingTimeInterval(600)
+    previewReady(board, client)
     board.saveDraft(client: client)
     #expect(board.draft == nil)
     #expect(board.schedules.map(\.name) == ["Morning"])
@@ -169,6 +183,7 @@ private func savedUnchanged(_ schedule: String) async throws -> JSONValue {
     board.draft?.name = "Morning"
     board.draft?.prompt = "A long prompt"
     board.draft?.runDate = .now.addingTimeInterval(600)
+    previewReady(board, client)
     board.saveDraft(client: client)
     board.openNew(agentID: "a1")
     board.draft?.name = "Typing"
@@ -197,9 +212,13 @@ private func savedUnchanged(_ schedule: String) async throws -> JSONValue {
     board.draft?.name = "Issues"
     board.draft?.prompt = "Triage"
     board.draft?.onEvent = true
+    previewReady(board, client)
+    board.draft?.preview?.isProblem = true
+    board.draft?.preview?.text = "Choose an event source."
     board.saveDraft(client: client)
     #expect(board.saveError == "Choose an event source.")
     board.draft?.eventSourceId = "src1"
+    previewReady(board, client)
     board.saveDraft(client: client)
     try await wait { !sent.withLock { $0.isEmpty } }
   })
@@ -276,18 +295,6 @@ private func savedUnchanged(_ schedule: String) async throws -> JSONValue {
   #expect(Schedule(id: "6", agentId: "a", name: "e", prompt: "p", eventSourceId: "s", enabled: true).status == .active)
 }
 
-@Test func nextRunReadsInWordsNearbyAndADashWhenPaused() {
-  let now = Date(timeIntervalSince1970: 1_800_000_000)
-  let schedule = { (seconds: TimeInterval, enabled: Bool) in
-    Schedule(
-      id: "s", agentId: "a", name: "n", cron: "* * * * *", prompt: "p", enabled: enabled,
-      nextRunAt: now.addingTimeInterval(seconds).ISO8601Format())
-  }
-  #expect(nextRunLabel(schedule(300, true), now: now) == "in 5 minutes")
-  #expect(nextRunLabel(schedule(7200, true), now: now) == "in 2 hours")
-  #expect(nextRunLabel(schedule(300, false), now: now) == "—")
-}
-
 @Test func timingNamesEventSourcesAndPausedAutomations() {
   let event = Schedule(id: "s", agentId: "a", name: "n", prompt: "p", eventSourceId: "src", enabled: false, description: "On event · Issues", timing: "Paused · On event · Issues")
   #expect(cadence(event) == "On event · Issues")
@@ -332,49 +339,35 @@ private func savedUnchanged(_ schedule: String) async throws -> JSONValue {
   #expect(recurrence.days == [3])
 }
 
-private let berlin = TimeZone(identifier: "Europe/Berlin") ?? .gmt
-
-private func instant(_ text: String) throws -> Date { try #require(automationRunDate(text)) }
-
-@Test func cronFindsTheNextRunInItsZone() throws {
-  let from = try instant("2026-11-06T10:30:00Z")
-  #expect(CronExpression("0 9 * * *")?.next(after: from, in: berlin) == (try instant("2026-11-07T08:00:00Z")))
-  #expect(CronExpression("*/15 * * * *")?.next(after: from, in: berlin) == (try instant("2026-11-06T10:45:00Z")))
-  #expect(CronExpression("0 9 * * MON-FRI")?.next(after: from, in: berlin) == (try instant("2026-11-09T08:00:00Z")))
-  #expect(CronExpression("0 0 1 JAN *")?.next(after: from, in: berlin) == (try instant("2026-12-31T23:00:00Z")))
-  #expect(CronExpression("0 0 29 2 *")?.next(after: from, in: berlin) == (try instant("2028-02-28T23:00:00Z")))
-  // Both set means either: the 15th, or the Monday that comes first.
-  #expect(CronExpression("0 12 15 * 1")?.next(after: from, in: berlin) == (try instant("2026-11-09T11:00:00Z")))
+@Test @MainActor func savingRequiresCurrentSuccessfulPreview() async throws {
+  try await withClient(handler: { _ in json("[]") }, test: { client in
+    let board = AutomationBoard()
+    board.openNew(agentID: "a")
+    board.draft?.name = "Morning"
+    board.draft?.prompt = "Hello"
+    board.saveDraft(client: client)
+    #expect(board.draft != nil)
+    #expect(board.saveError == "Check the schedule before saving.")
+    previewReady(board, client)
+    board.draft?.timezone = "Other/Zone"
+    board.saveDraft(client: client)
+    #expect(board.draft != nil)
+    previewReady(board, client)
+    board.draft?.preview?.isProblem = true
+    board.draft?.preview?.text = "Server warning"
+    board.saveDraft(client: client)
+    #expect(board.draft != nil)
+    #expect(board.saveError == "Server warning")
+  })
 }
 
-@Test func cronSkipsATimeTheClockChangeRemoves() throws {
-  let from = try instant("2027-03-27T12:00:00Z")
-  #expect(CronExpression("30 2 * * *")?.next(after: from, in: berlin) == (try instant("2027-03-29T00:30:00Z")))
-}
-
-@Test func cronSaysWhenItCantTell() throws {
-  #expect(CronExpression("0 0 L * *") == nil)
-  #expect(CronExpression("@daily") == nil)
-  #expect(CronExpression("not a cron") == nil)
-  #expect(CronExpression("0 0 31 2 *")?.next(after: .now, in: berlin) == nil)
-}
-
-@Test func thePreviewSaysWhatTheScheduleWillDo() throws {
-  let now = try instant("2026-11-06T10:30:00Z")
+@Test func provisionalScheduleUsesOnlyAMatchingServerPreview() {
   var draft = AutomationDraft(agentID: "a")
-  draft.timezone = "Europe/Berlin"
-  draft.when = .daily
-  #expect(draft.preview(now: now)?.text.hasPrefix("Next run tomorrow at ") == true)
-  #expect(draft.preview(now: now)?.text.hasSuffix("(Europe/Berlin)") == true)
-  draft.cron = "0 0 31 2 *"
-  #expect(draft.preview(now: now) == AutomationPreview(text: "This schedule never runs.", isProblem: true))
-  draft.cron = "0 0 L * *"
-  #expect(draft.preview(now: now)?.isProblem == false)
-  draft.when = .once
-  draft.runDate = now.addingTimeInterval(-60)
-  #expect(draft.preview(now: now) == AutomationPreview(text: "This time has passed.", isProblem: true))
-  draft.onEvent = true
-  #expect(draft.preview(now: now) == nil)
+  draft.preview = .init(description: "Server schedule", isProblem: false, nextRunAt: nil, text: "Server preview")
+  draft.previewInputUsed = draft.previewInput
+  #expect(draft.provisional(id: "pending", replacing: nil).description == "Server schedule")
+  draft.timezone = "Other/Zone"
+  #expect(draft.provisional(id: "pending", replacing: nil).description == "Saving…")
 }
 
 @Test func aDraftExplainsWhatStopsItSaving() {
@@ -389,10 +382,12 @@ private func instant(_ text: String) throws -> Date { try #require(automationRun
   draft.timeoutSeconds = "90"
   #expect(draft.problem == nil)
   draft.timezone = "Not/AZone"
-  #expect(draft.problem == "Choose a valid time zone.")
+  #expect(draft.problem == nil)
   draft.onEvent = true
-  #expect(draft.problem == "Choose an event source.")
+  #expect(draft.problem == nil)
 }
+
+private func instant(_ text: String) throws -> Date { try #require(automationRunDate(text)) }
 
 @Test func aPickerShowsASavedRunAtItsOwnInstant() throws {
   let schedule = Schedule(
@@ -427,6 +422,7 @@ private func instant(_ text: String) throws -> Date { try #require(automationRun
     board.draft?.name = "Morning"
     board.draft?.prompt = "Say hi"
     var failures = 0
+    previewReady(board, client)
     board.saveDraft(client: client) { failures += 1 }
     try await wait { board.draft != nil }
     #expect(failures == 1)

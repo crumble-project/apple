@@ -175,7 +175,7 @@ extension AgentEditorView {
   private var inferenceSection: some View {
     Section {
       ReasoningField(
-        levels: ThinkingLevel.available(for: draft.model, in: model.models), thinking: $draft.thinking)
+        draftID: draft.id, provider: draft.provider, model: draft.model, client: model.client, thinking: $draft.thinking)
       LabeledContent("Temperature") {
         TextField("Optional, 0–2", text: $draft.temperature)
           .labelsHidden()

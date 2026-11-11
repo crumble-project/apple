@@ -171,6 +171,10 @@ public final class AutomationBoard {
       saveError = problem
       return
     }
+    guard form.previewReady(client: client) else {
+      saveError = form.currentPreview(client: client)?.text ?? "Check the schedule before saving."
+      return
+    }
     let id = form.isNew ? "pending-schedule-" + UUID().uuidString : form.scheduleID
     guard pending[id] == nil else { return }
     let version = scope
@@ -217,7 +221,6 @@ public final class AutomationBoard {
     let id = schedule.id
     guard schedule.enabled != enabled, !isPending(id), var row = schedules.first(where: { $0.id == id }) else { return }
     row.enabled = enabled
-    row.timing = enabled ? row.description : "Paused · " + row.description
     pending[id] = row
     errors[id] = nil
     let version = scope

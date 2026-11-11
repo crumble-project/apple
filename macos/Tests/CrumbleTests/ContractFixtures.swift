@@ -65,7 +65,7 @@ func executionFixture() -> String {
 func scheduleFixture(_ source: String) -> String {
     fixtureJSON(source, defaults: [
         "kind": .string("prompt"), "command": .null, "timeoutSeconds": .number(60), "notify": .bool(true),
-        "eventSourceId": .null, "cron": .null, "runAt": .null, "nextRunAt": .null, "createdByAgentId": .null,
+        "eventSourceId": .null, "cron": .null, "runAt": .null, "nextRunLabel": .string("—"), "nextRunAt": .null, "createdByAgentId": .null,
         "createdAt": .string(fixtureDate)
     ])
 }

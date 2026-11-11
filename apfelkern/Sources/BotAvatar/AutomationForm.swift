@@ -11,10 +11,11 @@ public struct AutomationFormSections: View {
   let sourcesLoaded: Bool
   /// Where sources are added: the web client's Event relay settings.
   let eventRelayURL: URL?
+  let client: APIClient?
 
   public init(
     draft: Binding<AutomationDraft>, agents: [Agent], capabilities: ServerCapabilities?, sources: [EventSource],
-    sourcesLoaded: Bool, eventRelayURL: URL?
+    sourcesLoaded: Bool, eventRelayURL: URL?, client: APIClient?
   ) {
     _draft = draft
     self.agents = agents
@@ -22,6 +23,7 @@ public struct AutomationFormSections: View {
     self.sources = sources
     self.sourcesLoaded = sourcesLoaded
     self.eventRelayURL = eventRelayURL
+    self.client = client
   }
 
   private func canScript(_ agentID: String) -> Bool {
@@ -52,7 +54,7 @@ public struct AutomationFormSections: View {
     }
     if draft.kind == .script { scriptSection } else { promptSection }
     AutomationWhenSection(
-      draft: $draft, sources: sources, sourcesLoaded: sourcesLoaded, eventRelayURL: eventRelayURL)
+      draft: $draft, sources: sources, sourcesLoaded: sourcesLoaded, eventRelayURL: eventRelayURL, client: client)
     Section {
       Toggle("Enabled", isOn: $draft.enabled)
     }
@@ -108,6 +110,14 @@ private struct AutomationWhenSection: View {
   let sources: [EventSource]
   let sourcesLoaded: Bool
   let eventRelayURL: URL?
+  let client: APIClient?
+  @State private var activeKey: PreviewKey?
+  @State private var previewError = false
+  @State private var retry = 0
+
+  private var key: PreviewKey {
+    PreviewKey(id: draft.id, server: client?.baseURL, token: client?.token, input: draft.previewInput, retry: retry)
+  }
 
   var body: some View {
     Section {
@@ -120,11 +130,39 @@ private struct AutomationWhenSection: View {
     } header: {
       Text("When")
     } footer: {
-      if let preview = draft.preview() {
+      if let preview = draft.currentPreview(client: client) {
         Text(preview.text).foregroundStyle(preview.isProblem ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
+      } else if activeKey == key, previewError {
+        HStack {
+          Text("Could not check the schedule.").foregroundStyle(.red)
+          Button("Retry") { retry += 1 }
+        }
+      } else {
+        ProgressView("Checking schedule…")
       }
     }
     .environment(\.timeZone, draft.zone ?? .current)
+    .task(id: key) {
+      let requested = key
+      activeKey = requested
+      previewError = false
+      draft.preview = nil
+      draft.previewInputUsed = nil
+      draft.previewServer = nil
+      draft.previewToken = nil
+      guard let client else { previewError = true; return }
+      do {
+        try await Task.sleep(for: .milliseconds(250))
+        let result = try await client.previewSchedule(requested.input)
+        guard !Task.isCancelled, activeKey == requested, key == requested else { return }
+        draft.preview = result
+        draft.previewInputUsed = requested.input
+        draft.previewServer = client.baseURL
+        draft.previewToken = client.token
+      } catch {
+        if !Task.isCancelled, activeKey == requested, key == requested { previewError = true }
+      }
+    }
   }
 
   @ViewBuilder private var eventFields: some View {
@@ -160,7 +198,6 @@ private struct AutomationWhenSection: View {
         .onChange(of: draft.cron) { _, cron in
           if cron.count > AutomationLimits.cron { draft.cron = String(cron.prefix(AutomationLimits.cron)) }
         }
-      Text(cronPhrase(draft.cron, timezone: draft.timezone)).font(.caption).foregroundStyle(.secondary)
     default:
       if let recurrence = draft.recurrence { RecurrenceFields(recurrence: recurrence, draft: $draft) }
     }
@@ -235,4 +272,12 @@ private struct RecurrenceFields: View {
       }
     }
   }
+}
+
+private struct PreviewKey: Hashable {
+  let id: UUID
+  let server: String?
+  let token: String?
+  let input: Operations.PreviewSchedule.Input.Body.JsonPayload
+  let retry: Int
 }

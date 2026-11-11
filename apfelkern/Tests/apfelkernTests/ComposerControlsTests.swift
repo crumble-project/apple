@@ -5,13 +5,6 @@ import UniformTypeIdentifiers
 
 @testable import apfelkern
 
-private let modelsJSON = """
-  [{"provider":"openai","id":"o4","name":"o4","contextWindow":1000,"reasoning":true,
-    "thinkingLevels":["low","medium","high"]},
-   {"provider":"openai","id":"gpt","name":"gpt","contextWindow":1000,"reasoning":false,
-    "thinkingLevels":["off"]}]
-  """
-
 private func json(_ text: String, status: Int = 200, delay: TimeInterval = 0) -> StubResponse {
   StubResponse(status: status, body: Data(text.utf8), delay: delay)
 }
@@ -28,31 +21,50 @@ private func bot(model: String, level: String = "off", tools: [String]? = nil) -
     inference: Inference(thinkingLevel: level, temperature: 0.5))
 }
 
-@Test(arguments: [
-  (ThinkingLevel.medium, [ThinkingLevel.low, .medium], ThinkingLevel.medium),
-  (.off, [.low, .high], .low),
-  (.medium, [.low, .high], .high),
-  (.max, [.low, .high], .high),
-  (.high, [], .off)
-])
-func aLevelClampsToTheNearestPreferringHigher(level: ThinkingLevel, levels: [ThinkingLevel], result: ThinkingLevel) {
-  #expect(level.clamped(to: levels) == result)
+@Test @MainActor func reasoningUsesTheServerPreview() async throws {
+  try await withClient(handler: { _ in
+    json(#"{"options":[{"value":"low","label":"Server low"}],"effectiveLevel":"low"}"#)
+  }, test: { client in
+    let board = ReasoningBoard()
+    let agent = bot(model: "o4", level: "off")
+    await board.loadPreview(bot: agent, client: client)
+    #expect(board.preview(of: agent, client: client)?.options.first?.label == "Server low")
+    #expect(board.preview(of: agent, client: client)?.effectiveLevel == .low)
+    #expect(board.preview(of: bot(model: "other"), client: client) == nil)
+    board.reset()
+    #expect(board.preview(of: agent, client: client) == nil)
+  })
 }
 
-@Test @MainActor func reasoningFollowsTheModelsLevels() async throws {
-  try await withClient(handler: { _ in json(modelsJSON) }, test: { client in
+@Test @MainActor func staleReasoningPreviewCannotReplaceNewerChoice() async throws {
+  try await withClient(handler: { request in
+    let level = try requestJSON(request)["thinkingLevel"]?.stringValue ?? "off"
+    let label = level == "low" ? "Old" : "New"
+    return json(#"{"options":[{"value":"high","label":"\#(label)"}],"effectiveLevel":"high"}"#,
+                delay: level == "low" ? 0.15 : 0.01)
+  }, test: { client in
     let board = ReasoningBoard()
-    #expect(board.levels(of: bot(model: "o4")).isEmpty)
+    let old = bot(model: "o4", level: "low")
+    let newer = bot(model: "o4", level: "high")
+    let first = Task { await board.loadPreview(bot: old, client: client) }
+    try await Task.sleep(for: .milliseconds(20))
+    await board.loadPreview(bot: newer, client: client)
+    await first.value
+    #expect(board.preview(of: newer, client: client)?.options.first?.label == "New")
+  })
+}
 
-    await board.load(provider: "openai", client: client)
-    #expect(board.levels(of: bot(model: "o4")) == [.low, .medium, .high])
-    #expect(board.level(of: bot(model: "o4", level: "off")) == .low)
-    #expect(board.level(of: bot(model: "o4", level: "xhigh")) == .high)
-    #expect(board.levels(of: bot(model: "gpt")) == [.off])
-    #expect(board.levels(of: bot(model: "unlisted")) == ThinkingLevel.allCases)
-
+@Test @MainActor func reasoningPreviewFromAnOldConnectionIsDropped() async throws {
+  try await withClient(handler: { _ in
+    json(#"{"options":[{"value":"low","label":"Old"}],"effectiveLevel":"low"}"#, delay: 0.1)
+  }, test: { client in
+    let board = ReasoningBoard()
+    let agent = bot(model: "o4", level: "low")
+    let pending = Task { await board.loadPreview(bot: agent, client: client) }
+    try await Task.sleep(for: .milliseconds(20))
     board.reset()
-    #expect(board.levels(of: bot(model: "o4")).isEmpty)
+    await pending.value
+    #expect(board.preview(of: agent, client: client) == nil)
   })
 }
 

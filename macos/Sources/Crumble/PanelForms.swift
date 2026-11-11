@@ -73,13 +73,14 @@ struct AutomationFormView: View {
                 draft: $draft, agents: model.agents, capabilities: model.capabilities,
                 sources: model.connectedServices.eventSources.sources,
                 sourcesLoaded: model.connectedServices.eventSources.isLoaded,
-                eventRelayURL: model.client?.webSettingsURL(.eventRelay))
+                eventRelayURL: model.client?.webSettingsURL(.eventRelay), client: model.client)
         }
         .formStyle(.grouped)
         .frame(width: 480, height: 560)
         .toolbar {
             SheetActions(
-                onCancel: model.automationBoard.closeDraft, onSave: model.saveAutomation, saveDisabled: false)
+                onCancel: model.automationBoard.closeDraft, onSave: model.saveAutomation,
+                saveDisabled: !draft.previewReady(client: model.client))
         }
     }
 }

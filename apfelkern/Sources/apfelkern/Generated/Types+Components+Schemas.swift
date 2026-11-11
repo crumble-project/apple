@@ -1715,6 +1715,35 @@ extension Components {
                 try self.value2.encode(to: encoder)
             }
         }
+        /// - Remark: Generated from `#/components/schemas/Citation`.
+        public struct Citation: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/Citation/href`.
+            public var href: Swift.String
+            /// - Remark: Generated from `#/components/schemas/Citation/site`.
+            public var site: Swift.String
+            /// - Remark: Generated from `#/components/schemas/Citation/title`.
+            public var title: Swift.String
+            /// Creates a new `Citation`.
+            ///
+            /// - Parameters:
+            ///   - href:
+            ///   - site:
+            ///   - title:
+            public init(
+                href: Swift.String,
+                site: Swift.String,
+                title: Swift.String
+            ) {
+                self.href = href
+                self.site = site
+                self.title = title
+            }
+            public enum CodingKeys: String, CodingKey {
+                case href
+                case site
+                case title
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/CodingJob`.
         public struct CodingJob: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/CodingJob/conversationId`.
@@ -3612,6 +3641,8 @@ extension Components {
                 }
                 /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/origin`.
                 public var origin: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.OriginPayload?
+                /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/presentation`.
+                public var presentation: Components.Schemas.MessagePresentation?
                 /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/replyPreview`.
                 public var replyPreview: Swift.String?
                 /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/replyTo`.
@@ -3706,6 +3737,7 @@ extension Components {
                 ///   - jobQuestion:
                 ///   - kind:
                 ///   - origin:
+                ///   - presentation:
                 ///   - replyPreview:
                 ///   - replyTo:
                 ///   - requestId:
@@ -3730,6 +3762,7 @@ extension Components {
                     jobQuestion: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.JobQuestionPayload? = nil,
                     kind: Swift.String? = nil,
                     origin: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.OriginPayload? = nil,
+                    presentation: Components.Schemas.MessagePresentation? = nil,
                     replyPreview: Swift.String? = nil,
                     replyTo: Swift.String? = nil,
                     requestId: Swift.String? = nil,
@@ -3754,6 +3787,7 @@ extension Components {
                     self.jobQuestion = jobQuestion
                     self.kind = kind
                     self.origin = origin
+                    self.presentation = presentation
                     self.replyPreview = replyPreview
                     self.replyTo = replyTo
                     self.requestId = requestId
@@ -3779,6 +3813,7 @@ extension Components {
                     case jobQuestion
                     case kind
                     case origin
+                    case presentation
                     case replyPreview
                     case replyTo
                     case requestId
@@ -3840,6 +3875,10 @@ extension Components {
                         Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.OriginPayload.self,
                         forKey: .origin
                     )
+                    self.presentation = try container.decodeIfPresent(
+                        Components.Schemas.MessagePresentation.self,
+                        forKey: .presentation
+                    )
                     self.replyPreview = try container.decodeIfPresent(
                         Swift.String.self,
                         forKey: .replyPreview
@@ -3893,6 +3932,7 @@ extension Components {
                         "jobQuestion",
                         "kind",
                         "origin",
+                        "presentation",
                         "replyPreview",
                         "replyTo",
                         "requestId",
@@ -3954,6 +3994,10 @@ extension Components {
                     try container.encodeIfPresent(
                         self.origin,
                         forKey: .origin
+                    )
+                    try container.encodeIfPresent(
+                        self.presentation,
+                        forKey: .presentation
                     )
                     try container.encodeIfPresent(
                         self.replyPreview,
@@ -5125,6 +5169,8 @@ extension Components {
                 }
                 /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/origin`.
                 public var origin: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.OriginPayload?
+                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/presentation`.
+                public var presentation: Components.Schemas.MessagePresentation?
                 /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/replyPreview`.
                 public var replyPreview: Swift.String?
                 /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/replyTo`.
@@ -5219,6 +5265,7 @@ extension Components {
                 ///   - jobQuestion:
                 ///   - kind:
                 ///   - origin:
+                ///   - presentation:
                 ///   - replyPreview:
                 ///   - replyTo:
                 ///   - requestId:
@@ -5243,6 +5290,7 @@ extension Components {
                     jobQuestion: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.JobQuestionPayload? = nil,
                     kind: Swift.String? = nil,
                     origin: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.OriginPayload? = nil,
+                    presentation: Components.Schemas.MessagePresentation? = nil,
                     replyPreview: Swift.String? = nil,
                     replyTo: Swift.String? = nil,
                     requestId: Swift.String? = nil,
@@ -5267,6 +5315,7 @@ extension Components {
                     self.jobQuestion = jobQuestion
                     self.kind = kind
                     self.origin = origin
+                    self.presentation = presentation
                     self.replyPreview = replyPreview
                     self.replyTo = replyTo
                     self.requestId = requestId
@@ -5292,6 +5341,7 @@ extension Components {
                     case jobQuestion
                     case kind
                     case origin
+                    case presentation
                     case replyPreview
                     case replyTo
                     case requestId
@@ -5353,6 +5403,10 @@ extension Components {
                         Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.OriginPayload.self,
                         forKey: .origin
                     )
+                    self.presentation = try container.decodeIfPresent(
+                        Components.Schemas.MessagePresentation.self,
+                        forKey: .presentation
+                    )
                     self.replyPreview = try container.decodeIfPresent(
                         Swift.String.self,
                         forKey: .replyPreview
@@ -5406,6 +5460,7 @@ extension Components {
                         "jobQuestion",
                         "kind",
                         "origin",
+                        "presentation",
                         "replyPreview",
                         "replyTo",
                         "requestId",
@@ -5467,6 +5522,10 @@ extension Components {
                     try container.encodeIfPresent(
                         self.origin,
                         forKey: .origin
+                    )
+                    try container.encodeIfPresent(
+                        self.presentation,
+                        forKey: .presentation
                     )
                     try container.encodeIfPresent(
                         self.replyPreview,
@@ -7654,6 +7713,29 @@ extension Components {
                 case via
             }
         }
+        /// - Remark: Generated from `#/components/schemas/MessagePresentation`.
+        public struct MessagePresentation: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MessagePresentation/citations`.
+            public var citations: [Components.Schemas.Citation]
+            /// - Remark: Generated from `#/components/schemas/MessagePresentation/text`.
+            public var text: Swift.String
+            /// Creates a new `MessagePresentation`.
+            ///
+            /// - Parameters:
+            ///   - citations:
+            ///   - text:
+            public init(
+                citations: [Components.Schemas.Citation],
+                text: Swift.String
+            ) {
+                self.citations = citations
+                self.text = text
+            }
+            public enum CodingKeys: String, CodingKey {
+                case citations
+                case text
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/Model`.
         public struct Model: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/Model/contextWindow`.
@@ -8658,6 +8740,72 @@ extension Components {
                 case transports
             }
         }
+        /// - Remark: Generated from `#/components/schemas/ReasoningOption`.
+        public struct ReasoningOption: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ReasoningOption/label`.
+            public var label: Swift.String
+            /// - Remark: Generated from `#/components/schemas/ReasoningOption/value`.
+            @frozen public enum ValuePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case off = "off"
+                case minimal = "minimal"
+                case low = "low"
+                case medium = "medium"
+                case high = "high"
+                case xhigh = "xhigh"
+                case max = "max"
+            }
+            /// - Remark: Generated from `#/components/schemas/ReasoningOption/value`.
+            public var value: Components.Schemas.ReasoningOption.ValuePayload
+            /// Creates a new `ReasoningOption`.
+            ///
+            /// - Parameters:
+            ///   - label:
+            ///   - value:
+            public init(
+                label: Swift.String,
+                value: Components.Schemas.ReasoningOption.ValuePayload
+            ) {
+                self.label = label
+                self.value = value
+            }
+            public enum CodingKeys: String, CodingKey {
+                case label
+                case value
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/ReasoningPreview`.
+        public struct ReasoningPreview: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ReasoningPreview/effectiveLevel`.
+            @frozen public enum EffectiveLevelPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case off = "off"
+                case minimal = "minimal"
+                case low = "low"
+                case medium = "medium"
+                case high = "high"
+                case xhigh = "xhigh"
+                case max = "max"
+            }
+            /// - Remark: Generated from `#/components/schemas/ReasoningPreview/effectiveLevel`.
+            public var effectiveLevel: Components.Schemas.ReasoningPreview.EffectiveLevelPayload
+            /// - Remark: Generated from `#/components/schemas/ReasoningPreview/options`.
+            public var options: [Components.Schemas.ReasoningOption]
+            /// Creates a new `ReasoningPreview`.
+            ///
+            /// - Parameters:
+            ///   - effectiveLevel:
+            ///   - options:
+            public init(
+                effectiveLevel: Components.Schemas.ReasoningPreview.EffectiveLevelPayload,
+                options: [Components.Schemas.ReasoningOption]
+            ) {
+                self.effectiveLevel = effectiveLevel
+                self.options = options
+            }
+            public enum CodingKeys: String, CodingKey {
+                case effectiveLevel
+                case options
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/ReplyEvent`.
         public struct ReplyEvent: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/ReplyEvent/agentId`.
@@ -8841,6 +8989,8 @@ extension Components {
             public var name: Swift.String
             /// - Remark: Generated from `#/components/schemas/Schedule/nextRunAt`.
             public var nextRunAt: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/Schedule/nextRunLabel`.
+            public var nextRunLabel: Swift.String
             /// - Remark: Generated from `#/components/schemas/Schedule/notify`.
             public var notify: Swift.Bool
             /// - Remark: Generated from `#/components/schemas/Schedule/prompt`.
@@ -8868,6 +9018,7 @@ extension Components {
             ///   - kind:
             ///   - name:
             ///   - nextRunAt:
+            ///   - nextRunLabel:
             ///   - notify:
             ///   - prompt:
             ///   - runAt:
@@ -8887,6 +9038,7 @@ extension Components {
                 kind: Components.Schemas.Schedule.KindPayload,
                 name: Swift.String,
                 nextRunAt: Swift.String? = nil,
+                nextRunLabel: Swift.String,
                 notify: Swift.Bool,
                 prompt: Swift.String,
                 runAt: Swift.String? = nil,
@@ -8906,6 +9058,7 @@ extension Components {
                 self.kind = kind
                 self.name = name
                 self.nextRunAt = nextRunAt
+                self.nextRunLabel = nextRunLabel
                 self.notify = notify
                 self.prompt = prompt
                 self.runAt = runAt
@@ -8926,12 +9079,48 @@ extension Components {
                 case kind
                 case name
                 case nextRunAt
+                case nextRunLabel
                 case notify
                 case prompt
                 case runAt
                 case timeoutSeconds
                 case timezone
                 case timing
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/SchedulePreview`.
+        public struct SchedulePreview: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SchedulePreview/description`.
+            public var description: Swift.String
+            /// - Remark: Generated from `#/components/schemas/SchedulePreview/isProblem`.
+            public var isProblem: Swift.Bool
+            /// - Remark: Generated from `#/components/schemas/SchedulePreview/nextRunAt`.
+            public var nextRunAt: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/SchedulePreview/text`.
+            public var text: Swift.String
+            /// Creates a new `SchedulePreview`.
+            ///
+            /// - Parameters:
+            ///   - description:
+            ///   - isProblem:
+            ///   - nextRunAt:
+            ///   - text:
+            public init(
+                description: Swift.String,
+                isProblem: Swift.Bool,
+                nextRunAt: Swift.String? = nil,
+                text: Swift.String
+            ) {
+                self.description = description
+                self.isProblem = isProblem
+                self.nextRunAt = nextRunAt
+                self.text = text
+            }
+            public enum CodingKeys: String, CodingKey {
+                case description
+                case isProblem
+                case nextRunAt
+                case text
             }
         }
         /// - Remark: Generated from `#/components/schemas/ScheduleRun`.
@@ -10029,6 +10218,8 @@ extension Components {
             public var kind: Swift.String?
             /// - Remark: Generated from `#/components/schemas/TranscriptMessage/origin`.
             public var origin: Components.Schemas.MessageOrigin?
+            /// - Remark: Generated from `#/components/schemas/TranscriptMessage/presentation`.
+            public var presentation: Components.Schemas.MessagePresentation?
             /// - Remark: Generated from `#/components/schemas/TranscriptMessage/replyPreview`.
             public var replyPreview: Swift.String?
             /// - Remark: Generated from `#/components/schemas/TranscriptMessage/replyTo`.
@@ -10095,6 +10286,7 @@ extension Components {
             ///   - jobQuestion: On a `job-question` event: the job that asked the owner the question in `content`. Whether it still waits is the job's `question` in its listing.
             ///   - kind: The entry's kind. Events include bot-message, job-question, held-action, job-failure, reset, compaction, call-started (content: the greeting of a call the bot placed, or Call started), and call-ended (content: how the call ended, when it woke no bot turn). Clients may receive other values later.
             ///   - origin:
+            ///   - presentation:
             ///   - replyPreview:
             ///   - replyTo:
             ///   - requestId:
@@ -10118,6 +10310,7 @@ extension Components {
                 jobQuestion: Components.Schemas.TranscriptMessage.JobQuestionPayload? = nil,
                 kind: Swift.String? = nil,
                 origin: Components.Schemas.MessageOrigin? = nil,
+                presentation: Components.Schemas.MessagePresentation? = nil,
                 replyPreview: Swift.String? = nil,
                 replyTo: Swift.String? = nil,
                 requestId: Swift.String? = nil,
@@ -10141,6 +10334,7 @@ extension Components {
                 self.jobQuestion = jobQuestion
                 self.kind = kind
                 self.origin = origin
+                self.presentation = presentation
                 self.replyPreview = replyPreview
                 self.replyTo = replyTo
                 self.requestId = requestId
@@ -10165,6 +10359,7 @@ extension Components {
                 case jobQuestion
                 case kind
                 case origin
+                case presentation
                 case replyPreview
                 case replyTo
                 case requestId

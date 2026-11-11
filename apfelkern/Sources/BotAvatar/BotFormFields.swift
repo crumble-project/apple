@@ -3,22 +3,50 @@ import SwiftUI
 
 /// The bot form's reasoning level, limited to what the model supports and hidden with no choice to make.
 public struct ReasoningField: View {
-  let levels: [ThinkingLevel]
+  let draftID: UUID
+  let provider: String
+  let model: String
+  let client: APIClient?
   @Binding var thinking: String
+  @State private var preview: Components.Schemas.ReasoningPreview?
+  @State private var context = ""
+  @State private var pending = false
 
-  public init(levels: [ThinkingLevel], thinking: Binding<String>) {
-    self.levels = levels
+  public init(draftID: UUID, provider: String, model: String, client: APIClient?, thinking: Binding<String>) {
+    self.draftID = draftID
+    self.provider = provider
+    self.model = model
+    self.client = client
     _thinking = thinking
   }
 
-  private var level: ThinkingLevel {
-    (ThinkingLevel(rawValue: thinking) ?? .off).clamped(to: levels)
+  private var contextKey: String {
+    [draftID.uuidString, client?.baseURL ?? "", client?.token ?? "", provider, model].joined(separator: "\u{0}")
   }
 
   public var body: some View {
-    if levels.count > 1 {
-      Picker("Reasoning", selection: Binding(get: { level }, set: { thinking = $0.rawValue })) {
-        ForEach(levels) { Text($0.title).tag($0) }
+    Group {
+      if context == contextKey, let preview, preview.options.count > 1 {
+        let selected = pending ? thinking : preview.effectiveLevel.rawValue
+        Picker("Reasoning", selection: Binding(get: { selected }, set: { thinking = $0 })) {
+          ForEach(preview.options, id: \.value) { Text($0.label).tag($0.value.rawValue) }
+        }
+      }
+    }
+    .task(id: contextKey + "\u{0}" + thinking) {
+      let key = contextKey
+      let level = thinking
+      if context != key { preview = nil; context = key }
+      pending = true
+      guard let client else { pending = false; return }
+      do {
+        try await Task.sleep(for: .milliseconds(250))
+        let loaded = try await client.previewReasoning(provider: provider, model: model, level: level)
+        guard !Task.isCancelled, contextKey == key, thinking == level else { return }
+        preview = loaded
+        pending = false
+      } catch {
+        if !Task.isCancelled, contextKey == key { pending = false }
       }
     }
   }
