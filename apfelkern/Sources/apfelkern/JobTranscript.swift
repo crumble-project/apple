@@ -40,16 +40,16 @@ public struct JobTranscript: Hashable, Sendable, Transferable {
     return blocks.compactMap { block in
       switch block {
       case .text(let text):
-        return text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : text
-      case .toolCall(_, let name, let arguments):
-        guard !name.isEmpty else { return nil }
-        return "### \(name)\n\n\(fenced(json(arguments), info: "json"))"
+        return text.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : text.text
+      case .toolCall(let call):
+        guard !call.name.isEmpty else { return nil }
+        return "### \(call.name)\n\n\(fenced(json(call.arguments), info: "json"))"
       default: return nil
       }
     }
   }
 
-  private static func json(_ value: JSONValue) -> String {
+  private static func json(_ value: some Encodable) -> String {
     let encoder = JSONEncoder()
     encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
     return (try? encoder.encode(value)).flatMap { String(bytes: $0, encoding: .utf8) } ?? "{}"

@@ -290,21 +290,21 @@ private struct CodingJobItemView: View {
 
   var body: some View {
     switch item {
-    case .task(_, let text):
+    case .task(let task):
       VStack(alignment: .leading, spacing: 4) {
         Text("Task").font(.caption).foregroundStyle(.secondary)
-        Text(text)
+        Text(task.text)
           .textSelection(.enabled)
           .padding(.horizontal, 14)
           .padding(.vertical, 10)
           .background(Color.accentColor.opacity(0.12), in: .rect(cornerRadius: 14))
       }
       .accessibilityElement(children: .combine)
-    case .reply(_, let text):
-      MarkdownText(text: text)
+    case .reply(let reply):
+      MarkdownText(text: reply.text)
         .textSelection(.enabled)
         .frame(maxWidth: .infinity, alignment: .leading)
-    case .tool(let tool):
+    case .step(let tool):
       CodingToolStep(tool: tool)
     }
   }
@@ -313,16 +313,16 @@ private struct CodingJobItemView: View {
 /// One tool call: what ran (a command or a file). Tap it to see the whole output, which a phone
 /// has no room to show for every step.
 private struct CodingToolStep: View {
-  let tool: CodingJobItem.Tool
+  let tool: CodingJobStep
   @State private var open = false
 
   private var icon: String {
     switch tool.icon {
-    case "terminal": "terminal"
-    case "file": "doc.text"
-    case "pencil": "pencil"
-    case "pointer": JobKind.desktop.icon
-    default: "wrench.and.screwdriver"
+    case .terminal: "terminal"
+    case .file: "doc.text"
+    case .pencil: "pencil"
+    case .pointer: JobKind.desktop.icon
+    case .tool: "wrench.and.screwdriver"
     }
   }
 
@@ -339,7 +339,7 @@ private struct CodingToolStep: View {
           .foregroundStyle(tool.isError ? .red : .secondary)
           .frame(width: 18)
         Text(verb).foregroundStyle(.secondary)
-        Text(tool.subject).font(.caption.monospaced()).lineLimit(open ? nil : 2)
+        Text(tool.subject ?? "").font(.caption.monospaced()).lineLimit(open ? nil : 2)
         if !tool.finished { ProgressView().controlSize(.mini) }
         Spacer(minLength: 0)
       }
@@ -349,7 +349,7 @@ private struct CodingToolStep: View {
     }
     .buttonStyle(.plain)
     .disabled(!tool.finished)
-    .accessibilityLabel("\(verb) \(tool.subject)\(tool.isError ? ", failed" : "")")
+    .accessibilityLabel("\(verb) \(tool.subject ?? "")\(tool.isError ? ", failed" : "")")
     .accessibilityValue(open ? "Expanded" : "Collapsed")
   }
 

@@ -164,8 +164,8 @@ func aRequestNamesItsState(status: CallRequest.Status, outcome: CallRequest.Outc
 }
 
 @Test func theTranscriptKeepsWhatWasSaid() {
-  let blocks: [TranscriptBlock] = [.text("Hi")]
-  let silent: [TranscriptBlock] = [.toolCall(id: "t", name: "tool", arguments: .object([:]))]
+  let blocks: [TranscriptBlock] = [.text(.init(text: "Hi", _type: .text))]
+  let silent: [TranscriptBlock] = [.toolCall(.init(arguments: .init(), id: "t", name: "tool", _type: .toolCall))]
   let lines = callTranscriptLines([
     Message(id: "1", role: "user", content: .string("Hello?")),
     Message(id: "2", role: "assistant", content: .string("Hi"), blocks: blocks),

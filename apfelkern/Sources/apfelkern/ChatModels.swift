@@ -216,10 +216,7 @@ public struct ChatSnapshot: Codable, Sendable {
   public var isRunning: Bool { status == "running" }
 
   public init(from decoder: Decoder) throws {
-    let event = try Components.Schemas.EventChatSnapshot(from: decoder)
-    let wire = try JSONDecoder().decode(
-      Components.Schemas.ChatSnapshot.self, from: JSONEncoder().encode(event))
-    try self.init(wire: wire)
+    try self.init(wire: Components.Schemas.ChatSnapshot(from: decoder))
   }
 
   public init(
@@ -259,40 +256,4 @@ public struct ChatHistoryResponse: Codable, Sendable {
   }
 }
 
-public enum TranscriptBlock: Codable, Hashable, Sendable {
-  case text(String), thinking(String, Bool?), image(String), toolCall(id: String, name: String, arguments: JSONValue)
-
-  private enum Keys: String, CodingKey { case type, text, thinking, redacted, mimeType, id, name, arguments }
-  public init(from decoder: Decoder) throws {
-    let container = try decoder.container(keyedBy: Keys.self)
-    switch try container.decode(String.self, forKey: .type) {
-    case "text": self = .text(try container.decode(String.self, forKey: .text))
-    case "thinking":
-      self = .thinking(try container.decode(String.self, forKey: .thinking),
-                       try container.decodeIfPresent(Bool.self, forKey: .redacted))
-    case "image": self = .image(try container.decode(String.self, forKey: .mimeType))
-    case "toolCall":
-      self = .toolCall(id: try container.decode(String.self, forKey: .id),
-                       name: try container.decode(String.self, forKey: .name),
-                       arguments: try container.decode(JSONValue.self, forKey: .arguments))
-    default:
-      throw DecodingError.dataCorruptedError(forKey: .type, in: container, debugDescription: "Unknown transcript block")
-    }
-  }
-  public func encode(to encoder: Encoder) throws {
-    var container = encoder.container(keyedBy: Keys.self)
-    switch self {
-    case .text(let text): try container.encode("text", forKey: .type)
-      try container.encode(text, forKey: .text)
-    case .thinking(let thinking, let redacted): try container.encode("thinking", forKey: .type)
-      try container.encode(thinking, forKey: .thinking)
-      try container.encodeIfPresent(redacted, forKey: .redacted)
-    case .image(let mimeType): try container.encode("image", forKey: .type)
-      try container.encode(mimeType, forKey: .mimeType)
-    case .toolCall(let id, let name, let arguments): try container.encode("toolCall", forKey: .type)
-      try container.encode(id, forKey: .id)
-      try container.encode(name, forKey: .name)
-      try container.encode(arguments, forKey: .arguments)
-    }
-  }
-}
+public typealias TranscriptBlock = Components.Schemas.TranscriptBlock

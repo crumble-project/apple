@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Use generated transcript block and job history item types directly.
+
 - Use server-projected job steps, working status, and automation timing.
 
 - Add outside calls: `CallRequest` (a bot's proposal to call someone other than the owner, read from a `request_call` result or `APIClient.callRequests(_:)`), `approveCallRequest`, `declineCallRequest`, and `callRequestTranscript`, and `CallRequestBoard`, whose decisions show pending until the server confirms and whose refused approval exposes the server's text. `CallEvent` gains `callee`, and `shownInChat(_:)` hides the `call-started` event of an outside call and shows a call request card. Add `CallRequest.stateLabel`, `callRequest(for:in:)`, `callNoticeDetail(_:request:)`, and `callTranscriptLines(_:)`. `noticeTitle(_:)` names a `call_request` notice **Call request**.

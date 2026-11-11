@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Use the shared generated transcript and job history types.
+
 - Use server-projected job steps, working status, and automation timing.
 
 - **Settings** no longer configures the server. Providers, the judge and vision models, web search, credentials and logins across bots, password managers, Integrations, Coding, Users, message gateways, and the event relay are set up in Crumble on the web. **Server Settings** opens it in the browser, and links that led to those pages, such as **Provider Settings…** under a failed reply, open the matching web page.

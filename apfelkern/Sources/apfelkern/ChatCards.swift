@@ -117,7 +117,7 @@ private func hasAssistantText(_ message: Message) -> Bool {
   guard let blocks = message.blocks else { return !message.text.isEmpty }
   return blocks.contains {
     guard case .text(let text) = $0 else { return false }
-    return !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    return !text.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
   }
 }
 

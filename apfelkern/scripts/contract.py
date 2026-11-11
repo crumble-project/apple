@@ -51,6 +51,47 @@ def project(node, schemas=None):
     return result
 
 
+def lift_event_definitions(event, event_name, schemas):
+    definitions = event.pop("$defs", {})
+    names = {name: name if name in schemas else event_name + name for name in definitions}
+
+    def rewrite(value):
+        if isinstance(value, list):
+            return [rewrite(item) for item in value]
+        if not isinstance(value, dict):
+            return value
+        result = {key: rewrite(item) for key, item in value.items()}
+        ref = value.get("$ref")
+        if isinstance(ref, str) and ref.startswith("#/$defs/"):
+            pointer = ref.removeprefix("#/$defs/").split("/")
+            name = pointer[0].replace("~1", "/").replace("~0", "~")
+            target = names[name].replace("~", "~0").replace("/", "~1")
+            result["$ref"] = "/".join(["#/components/schemas", target, *pointer[1:]])
+        return result
+
+    def comparable(value):
+        if isinstance(value, list):
+            return [comparable(item) for item in value]
+        if not isinstance(value, dict):
+            return value
+        return {key: comparable(item) for key, item in value.items()
+                if key != "discriminator" and not (key == "additionalProperties" and item is True)}
+
+    for name, definition in definitions.items():
+        lifted = rewrite(definition)
+        target = names[name]
+        if target in schemas:
+            existing = schemas[target]
+            if (lifted.get("discriminator") is not None and existing.get("discriminator") is not None
+                    and lifted["discriminator"] != existing["discriminator"]):
+                raise ValueError(f"Event discriminator {name} conflicts with OpenAPI component")
+            if comparable(project(lifted)) != comparable(project(existing)):
+                raise ValueError(f"Event definition {name} conflicts with OpenAPI component")
+        else:
+            schemas[target] = lifted
+    return rewrite(event)
+
+
 def generate(directory):
     cache = ROOT / ".build" / f"openapi-generator-{VERSION}"
     if not cache.exists():
@@ -65,7 +106,9 @@ def generate(directory):
     binary_dir = subprocess.check_output(["swift", "build", "--package-path", str(cache), "-c", "release", "--show-bin-path"], text=True).strip()
     document = json.loads((ROOT / "Contract" / "openapi.json").read_text())
     for name, asset in [("EventChatSnapshot", "chat-snapshot.schema.json"), ("EventGroupChatSnapshot", "group-chat-snapshot.schema.json"), ("EventActivity", "activity-event.schema.json"), ("EventHeartbeat", "heartbeat.schema.json"), ("EventDesktopControl", "desktop-control.schema.json")]:
-        document["components"]["schemas"][name] = project(json.loads((ROOT / "Contract" / asset).read_text()))
+        schemas = document["components"]["schemas"]
+        event = json.loads((ROOT / "Contract" / asset).read_text())
+        schemas[name] = lift_event_definitions(event, name, schemas)
     document = project(document, document["components"]["schemas"])
     source = directory / "openapi.json"
     source.write_text(json.dumps(document, sort_keys=True, indent=2) + "\n")

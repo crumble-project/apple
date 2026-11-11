@@ -3138,364 +3138,8 @@ extension Components {
                 public typealias AttachmentsPayload = [Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.AttachmentsPayloadPayload]
                 /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/attachments`.
                 public var attachments: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.AttachmentsPayload?
-                /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/BlocksPayload`.
-                @frozen public enum BlocksPayloadPayload: Codable, Hashable, Sendable {
-                    /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/BlocksPayload/case1`.
-                    public struct Case1Payload: Codable, Hashable, Sendable {
-                        /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/BlocksPayload/case1/text`.
-                        public var text: Swift.String
-                        /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/BlocksPayload/case1/type`.
-                        @frozen public enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                            case text = "text"
-                        }
-                        /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/BlocksPayload/case1/type`.
-                        public var _type: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case1Payload._TypePayload
-                        /// A container of undocumented properties.
-                        public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
-                        /// Creates a new `Case1Payload`.
-                        ///
-                        /// - Parameters:
-                        ///   - text:
-                        ///   - _type:
-                        ///   - additionalProperties: A container of undocumented properties.
-                        public init(
-                            text: Swift.String,
-                            _type: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case1Payload._TypePayload,
-                            additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()
-                        ) {
-                            self.text = text
-                            self._type = _type
-                            self.additionalProperties = additionalProperties
-                        }
-                        public enum CodingKeys: String, CodingKey {
-                            case text
-                            case _type = "type"
-                        }
-                        public init(from decoder: any Swift.Decoder) throws {
-                            let container = try decoder.container(keyedBy: CodingKeys.self)
-                            self.text = try container.decode(
-                                Swift.String.self,
-                                forKey: .text
-                            )
-                            self._type = try container.decode(
-                                Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case1Payload._TypePayload.self,
-                                forKey: ._type
-                            )
-                            additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
-                                "text",
-                                "type"
-                            ])
-                        }
-                        public func encode(to encoder: any Swift.Encoder) throws {
-                            var container = encoder.container(keyedBy: CodingKeys.self)
-                            try container.encode(
-                                self.text,
-                                forKey: .text
-                            )
-                            try container.encode(
-                                self._type,
-                                forKey: ._type
-                            )
-                            try encoder.encodeAdditionalProperties(additionalProperties)
-                        }
-                    }
-                    /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/BlocksPayload/case1`.
-                    case case1(Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case1Payload)
-                    /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/BlocksPayload/case2`.
-                    public struct Case2Payload: Codable, Hashable, Sendable {
-                        /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/BlocksPayload/case2/redacted`.
-                        public var redacted: Swift.Bool?
-                        /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/BlocksPayload/case2/thinking`.
-                        public var thinking: Swift.String
-                        /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/BlocksPayload/case2/type`.
-                        @frozen public enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                            case thinking = "thinking"
-                        }
-                        /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/BlocksPayload/case2/type`.
-                        public var _type: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case2Payload._TypePayload
-                        /// A container of undocumented properties.
-                        public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
-                        /// Creates a new `Case2Payload`.
-                        ///
-                        /// - Parameters:
-                        ///   - redacted:
-                        ///   - thinking:
-                        ///   - _type:
-                        ///   - additionalProperties: A container of undocumented properties.
-                        public init(
-                            redacted: Swift.Bool? = nil,
-                            thinking: Swift.String,
-                            _type: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case2Payload._TypePayload,
-                            additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()
-                        ) {
-                            self.redacted = redacted
-                            self.thinking = thinking
-                            self._type = _type
-                            self.additionalProperties = additionalProperties
-                        }
-                        public enum CodingKeys: String, CodingKey {
-                            case redacted
-                            case thinking
-                            case _type = "type"
-                        }
-                        public init(from decoder: any Swift.Decoder) throws {
-                            let container = try decoder.container(keyedBy: CodingKeys.self)
-                            self.redacted = try container.decodeIfPresent(
-                                Swift.Bool.self,
-                                forKey: .redacted
-                            )
-                            self.thinking = try container.decode(
-                                Swift.String.self,
-                                forKey: .thinking
-                            )
-                            self._type = try container.decode(
-                                Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case2Payload._TypePayload.self,
-                                forKey: ._type
-                            )
-                            additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
-                                "redacted",
-                                "thinking",
-                                "type"
-                            ])
-                        }
-                        public func encode(to encoder: any Swift.Encoder) throws {
-                            var container = encoder.container(keyedBy: CodingKeys.self)
-                            try container.encodeIfPresent(
-                                self.redacted,
-                                forKey: .redacted
-                            )
-                            try container.encode(
-                                self.thinking,
-                                forKey: .thinking
-                            )
-                            try container.encode(
-                                self._type,
-                                forKey: ._type
-                            )
-                            try encoder.encodeAdditionalProperties(additionalProperties)
-                        }
-                    }
-                    /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/BlocksPayload/case2`.
-                    case case2(Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case2Payload)
-                    /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/BlocksPayload/case3`.
-                    public struct Case3Payload: Codable, Hashable, Sendable {
-                        /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/BlocksPayload/case3/mimeType`.
-                        public var mimeType: Swift.String
-                        /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/BlocksPayload/case3/type`.
-                        @frozen public enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                            case image = "image"
-                        }
-                        /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/BlocksPayload/case3/type`.
-                        public var _type: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case3Payload._TypePayload
-                        /// A container of undocumented properties.
-                        public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
-                        /// Creates a new `Case3Payload`.
-                        ///
-                        /// - Parameters:
-                        ///   - mimeType:
-                        ///   - _type:
-                        ///   - additionalProperties: A container of undocumented properties.
-                        public init(
-                            mimeType: Swift.String,
-                            _type: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case3Payload._TypePayload,
-                            additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()
-                        ) {
-                            self.mimeType = mimeType
-                            self._type = _type
-                            self.additionalProperties = additionalProperties
-                        }
-                        public enum CodingKeys: String, CodingKey {
-                            case mimeType
-                            case _type = "type"
-                        }
-                        public init(from decoder: any Swift.Decoder) throws {
-                            let container = try decoder.container(keyedBy: CodingKeys.self)
-                            self.mimeType = try container.decode(
-                                Swift.String.self,
-                                forKey: .mimeType
-                            )
-                            self._type = try container.decode(
-                                Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case3Payload._TypePayload.self,
-                                forKey: ._type
-                            )
-                            additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
-                                "mimeType",
-                                "type"
-                            ])
-                        }
-                        public func encode(to encoder: any Swift.Encoder) throws {
-                            var container = encoder.container(keyedBy: CodingKeys.self)
-                            try container.encode(
-                                self.mimeType,
-                                forKey: .mimeType
-                            )
-                            try container.encode(
-                                self._type,
-                                forKey: ._type
-                            )
-                            try encoder.encodeAdditionalProperties(additionalProperties)
-                        }
-                    }
-                    /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/BlocksPayload/case3`.
-                    case case3(Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case3Payload)
-                    /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/BlocksPayload/case4`.
-                    public struct Case4Payload: Codable, Hashable, Sendable {
-                        /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/BlocksPayload/case4/arguments`.
-                        public struct ArgumentsPayload: Codable, Hashable, Sendable {
-                            /// A container of undocumented properties.
-                            public var additionalProperties: [String: OpenAPIRuntime.OpenAPIValueContainer]
-                            /// Creates a new `ArgumentsPayload`.
-                            ///
-                            /// - Parameters:
-                            ///   - additionalProperties: A container of undocumented properties.
-                            public init(additionalProperties: [String: OpenAPIRuntime.OpenAPIValueContainer] = .init()) {
-                                self.additionalProperties = additionalProperties
-                            }
-                            public init(from decoder: any Swift.Decoder) throws {
-                                additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [])
-                            }
-                            public func encode(to encoder: any Swift.Encoder) throws {
-                                try encoder.encodeAdditionalProperties(additionalProperties)
-                            }
-                        }
-                        /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/BlocksPayload/case4/arguments`.
-                        public var arguments: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case4Payload.ArgumentsPayload
-                        /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/BlocksPayload/case4/id`.
-                        public var id: Swift.String
-                        /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/BlocksPayload/case4/name`.
-                        public var name: Swift.String
-                        /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/BlocksPayload/case4/type`.
-                        @frozen public enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                            case toolCall = "toolCall"
-                        }
-                        /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/BlocksPayload/case4/type`.
-                        public var _type: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case4Payload._TypePayload
-                        /// A container of undocumented properties.
-                        public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
-                        /// Creates a new `Case4Payload`.
-                        ///
-                        /// - Parameters:
-                        ///   - arguments:
-                        ///   - id:
-                        ///   - name:
-                        ///   - _type:
-                        ///   - additionalProperties: A container of undocumented properties.
-                        public init(
-                            arguments: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case4Payload.ArgumentsPayload,
-                            id: Swift.String,
-                            name: Swift.String,
-                            _type: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case4Payload._TypePayload,
-                            additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()
-                        ) {
-                            self.arguments = arguments
-                            self.id = id
-                            self.name = name
-                            self._type = _type
-                            self.additionalProperties = additionalProperties
-                        }
-                        public enum CodingKeys: String, CodingKey {
-                            case arguments
-                            case id
-                            case name
-                            case _type = "type"
-                        }
-                        public init(from decoder: any Swift.Decoder) throws {
-                            let container = try decoder.container(keyedBy: CodingKeys.self)
-                            self.arguments = try container.decode(
-                                Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case4Payload.ArgumentsPayload.self,
-                                forKey: .arguments
-                            )
-                            self.id = try container.decode(
-                                Swift.String.self,
-                                forKey: .id
-                            )
-                            self.name = try container.decode(
-                                Swift.String.self,
-                                forKey: .name
-                            )
-                            self._type = try container.decode(
-                                Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case4Payload._TypePayload.self,
-                                forKey: ._type
-                            )
-                            additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
-                                "arguments",
-                                "id",
-                                "name",
-                                "type"
-                            ])
-                        }
-                        public func encode(to encoder: any Swift.Encoder) throws {
-                            var container = encoder.container(keyedBy: CodingKeys.self)
-                            try container.encode(
-                                self.arguments,
-                                forKey: .arguments
-                            )
-                            try container.encode(
-                                self.id,
-                                forKey: .id
-                            )
-                            try container.encode(
-                                self.name,
-                                forKey: .name
-                            )
-                            try container.encode(
-                                self._type,
-                                forKey: ._type
-                            )
-                            try encoder.encodeAdditionalProperties(additionalProperties)
-                        }
-                    }
-                    /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/BlocksPayload/case4`.
-                    case case4(Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case4Payload)
-                    public init(from decoder: any Swift.Decoder) throws {
-                        var errors: [any Swift.Error] = []
-                        do {
-                            self = .case1(try .init(from: decoder))
-                            return
-                        } catch {
-                            errors.append(error)
-                        }
-                        do {
-                            self = .case2(try .init(from: decoder))
-                            return
-                        } catch {
-                            errors.append(error)
-                        }
-                        do {
-                            self = .case3(try .init(from: decoder))
-                            return
-                        } catch {
-                            errors.append(error)
-                        }
-                        do {
-                            self = .case4(try .init(from: decoder))
-                            return
-                        } catch {
-                            errors.append(error)
-                        }
-                        throw Swift.DecodingError.failedToDecodeOneOfSchema(
-                            type: Self.self,
-                            codingPath: decoder.codingPath,
-                            errors: errors
-                        )
-                    }
-                    public func encode(to encoder: any Swift.Encoder) throws {
-                        switch self {
-                        case let .case1(value):
-                            try value.encode(to: encoder)
-                        case let .case2(value):
-                            try value.encode(to: encoder)
-                        case let .case3(value):
-                            try value.encode(to: encoder)
-                        case let .case4(value):
-                            try value.encode(to: encoder)
-                        }
-                    }
-                }
                 /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/blocks`.
-                public typealias BlocksPayload = [Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload]
-                /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/blocks`.
-                public var blocks: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.BlocksPayload?
+                public var blocks: [Components.Schemas.TranscriptBlock]?
                 /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/call`.
                 public struct CallPayload: Codable, Hashable, Sendable {
                     /// - Remark: Generated from `#/components/schemas/EventChatSnapshot/MessagesPayload/call/callId`.
@@ -4075,7 +3719,7 @@ extension Components {
                 ///   - additionalProperties: A container of undocumented properties.
                 public init(
                     attachments: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.AttachmentsPayload? = nil,
-                    blocks: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.BlocksPayload? = nil,
+                    blocks: [Components.Schemas.TranscriptBlock]? = nil,
                     call: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.CallPayload? = nil,
                     communication: Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.CommunicationPayload? = nil,
                     content: Swift.String,
@@ -4153,7 +3797,7 @@ extension Components {
                         forKey: .attachments
                     )
                     self.blocks = try container.decodeIfPresent(
-                        Components.Schemas.EventChatSnapshot.MessagesPayloadPayload.BlocksPayload.self,
+                        [Components.Schemas.TranscriptBlock].self,
                         forKey: .blocks
                     )
                     self.call = try container.decodeIfPresent(
@@ -5007,364 +4651,8 @@ extension Components {
                 public typealias AttachmentsPayload = [Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.AttachmentsPayloadPayload]
                 /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/attachments`.
                 public var attachments: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.AttachmentsPayload?
-                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/BlocksPayload`.
-                @frozen public enum BlocksPayloadPayload: Codable, Hashable, Sendable {
-                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/BlocksPayload/case1`.
-                    public struct Case1Payload: Codable, Hashable, Sendable {
-                        /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/BlocksPayload/case1/text`.
-                        public var text: Swift.String
-                        /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/BlocksPayload/case1/type`.
-                        @frozen public enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                            case text = "text"
-                        }
-                        /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/BlocksPayload/case1/type`.
-                        public var _type: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case1Payload._TypePayload
-                        /// A container of undocumented properties.
-                        public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
-                        /// Creates a new `Case1Payload`.
-                        ///
-                        /// - Parameters:
-                        ///   - text:
-                        ///   - _type:
-                        ///   - additionalProperties: A container of undocumented properties.
-                        public init(
-                            text: Swift.String,
-                            _type: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case1Payload._TypePayload,
-                            additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()
-                        ) {
-                            self.text = text
-                            self._type = _type
-                            self.additionalProperties = additionalProperties
-                        }
-                        public enum CodingKeys: String, CodingKey {
-                            case text
-                            case _type = "type"
-                        }
-                        public init(from decoder: any Swift.Decoder) throws {
-                            let container = try decoder.container(keyedBy: CodingKeys.self)
-                            self.text = try container.decode(
-                                Swift.String.self,
-                                forKey: .text
-                            )
-                            self._type = try container.decode(
-                                Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case1Payload._TypePayload.self,
-                                forKey: ._type
-                            )
-                            additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
-                                "text",
-                                "type"
-                            ])
-                        }
-                        public func encode(to encoder: any Swift.Encoder) throws {
-                            var container = encoder.container(keyedBy: CodingKeys.self)
-                            try container.encode(
-                                self.text,
-                                forKey: .text
-                            )
-                            try container.encode(
-                                self._type,
-                                forKey: ._type
-                            )
-                            try encoder.encodeAdditionalProperties(additionalProperties)
-                        }
-                    }
-                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/BlocksPayload/case1`.
-                    case case1(Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case1Payload)
-                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/BlocksPayload/case2`.
-                    public struct Case2Payload: Codable, Hashable, Sendable {
-                        /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/BlocksPayload/case2/redacted`.
-                        public var redacted: Swift.Bool?
-                        /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/BlocksPayload/case2/thinking`.
-                        public var thinking: Swift.String
-                        /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/BlocksPayload/case2/type`.
-                        @frozen public enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                            case thinking = "thinking"
-                        }
-                        /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/BlocksPayload/case2/type`.
-                        public var _type: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case2Payload._TypePayload
-                        /// A container of undocumented properties.
-                        public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
-                        /// Creates a new `Case2Payload`.
-                        ///
-                        /// - Parameters:
-                        ///   - redacted:
-                        ///   - thinking:
-                        ///   - _type:
-                        ///   - additionalProperties: A container of undocumented properties.
-                        public init(
-                            redacted: Swift.Bool? = nil,
-                            thinking: Swift.String,
-                            _type: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case2Payload._TypePayload,
-                            additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()
-                        ) {
-                            self.redacted = redacted
-                            self.thinking = thinking
-                            self._type = _type
-                            self.additionalProperties = additionalProperties
-                        }
-                        public enum CodingKeys: String, CodingKey {
-                            case redacted
-                            case thinking
-                            case _type = "type"
-                        }
-                        public init(from decoder: any Swift.Decoder) throws {
-                            let container = try decoder.container(keyedBy: CodingKeys.self)
-                            self.redacted = try container.decodeIfPresent(
-                                Swift.Bool.self,
-                                forKey: .redacted
-                            )
-                            self.thinking = try container.decode(
-                                Swift.String.self,
-                                forKey: .thinking
-                            )
-                            self._type = try container.decode(
-                                Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case2Payload._TypePayload.self,
-                                forKey: ._type
-                            )
-                            additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
-                                "redacted",
-                                "thinking",
-                                "type"
-                            ])
-                        }
-                        public func encode(to encoder: any Swift.Encoder) throws {
-                            var container = encoder.container(keyedBy: CodingKeys.self)
-                            try container.encodeIfPresent(
-                                self.redacted,
-                                forKey: .redacted
-                            )
-                            try container.encode(
-                                self.thinking,
-                                forKey: .thinking
-                            )
-                            try container.encode(
-                                self._type,
-                                forKey: ._type
-                            )
-                            try encoder.encodeAdditionalProperties(additionalProperties)
-                        }
-                    }
-                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/BlocksPayload/case2`.
-                    case case2(Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case2Payload)
-                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/BlocksPayload/case3`.
-                    public struct Case3Payload: Codable, Hashable, Sendable {
-                        /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/BlocksPayload/case3/mimeType`.
-                        public var mimeType: Swift.String
-                        /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/BlocksPayload/case3/type`.
-                        @frozen public enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                            case image = "image"
-                        }
-                        /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/BlocksPayload/case3/type`.
-                        public var _type: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case3Payload._TypePayload
-                        /// A container of undocumented properties.
-                        public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
-                        /// Creates a new `Case3Payload`.
-                        ///
-                        /// - Parameters:
-                        ///   - mimeType:
-                        ///   - _type:
-                        ///   - additionalProperties: A container of undocumented properties.
-                        public init(
-                            mimeType: Swift.String,
-                            _type: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case3Payload._TypePayload,
-                            additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()
-                        ) {
-                            self.mimeType = mimeType
-                            self._type = _type
-                            self.additionalProperties = additionalProperties
-                        }
-                        public enum CodingKeys: String, CodingKey {
-                            case mimeType
-                            case _type = "type"
-                        }
-                        public init(from decoder: any Swift.Decoder) throws {
-                            let container = try decoder.container(keyedBy: CodingKeys.self)
-                            self.mimeType = try container.decode(
-                                Swift.String.self,
-                                forKey: .mimeType
-                            )
-                            self._type = try container.decode(
-                                Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case3Payload._TypePayload.self,
-                                forKey: ._type
-                            )
-                            additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
-                                "mimeType",
-                                "type"
-                            ])
-                        }
-                        public func encode(to encoder: any Swift.Encoder) throws {
-                            var container = encoder.container(keyedBy: CodingKeys.self)
-                            try container.encode(
-                                self.mimeType,
-                                forKey: .mimeType
-                            )
-                            try container.encode(
-                                self._type,
-                                forKey: ._type
-                            )
-                            try encoder.encodeAdditionalProperties(additionalProperties)
-                        }
-                    }
-                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/BlocksPayload/case3`.
-                    case case3(Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case3Payload)
-                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/BlocksPayload/case4`.
-                    public struct Case4Payload: Codable, Hashable, Sendable {
-                        /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/BlocksPayload/case4/arguments`.
-                        public struct ArgumentsPayload: Codable, Hashable, Sendable {
-                            /// A container of undocumented properties.
-                            public var additionalProperties: [String: OpenAPIRuntime.OpenAPIValueContainer]
-                            /// Creates a new `ArgumentsPayload`.
-                            ///
-                            /// - Parameters:
-                            ///   - additionalProperties: A container of undocumented properties.
-                            public init(additionalProperties: [String: OpenAPIRuntime.OpenAPIValueContainer] = .init()) {
-                                self.additionalProperties = additionalProperties
-                            }
-                            public init(from decoder: any Swift.Decoder) throws {
-                                additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [])
-                            }
-                            public func encode(to encoder: any Swift.Encoder) throws {
-                                try encoder.encodeAdditionalProperties(additionalProperties)
-                            }
-                        }
-                        /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/BlocksPayload/case4/arguments`.
-                        public var arguments: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case4Payload.ArgumentsPayload
-                        /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/BlocksPayload/case4/id`.
-                        public var id: Swift.String
-                        /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/BlocksPayload/case4/name`.
-                        public var name: Swift.String
-                        /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/BlocksPayload/case4/type`.
-                        @frozen public enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                            case toolCall = "toolCall"
-                        }
-                        /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/BlocksPayload/case4/type`.
-                        public var _type: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case4Payload._TypePayload
-                        /// A container of undocumented properties.
-                        public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
-                        /// Creates a new `Case4Payload`.
-                        ///
-                        /// - Parameters:
-                        ///   - arguments:
-                        ///   - id:
-                        ///   - name:
-                        ///   - _type:
-                        ///   - additionalProperties: A container of undocumented properties.
-                        public init(
-                            arguments: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case4Payload.ArgumentsPayload,
-                            id: Swift.String,
-                            name: Swift.String,
-                            _type: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case4Payload._TypePayload,
-                            additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()
-                        ) {
-                            self.arguments = arguments
-                            self.id = id
-                            self.name = name
-                            self._type = _type
-                            self.additionalProperties = additionalProperties
-                        }
-                        public enum CodingKeys: String, CodingKey {
-                            case arguments
-                            case id
-                            case name
-                            case _type = "type"
-                        }
-                        public init(from decoder: any Swift.Decoder) throws {
-                            let container = try decoder.container(keyedBy: CodingKeys.self)
-                            self.arguments = try container.decode(
-                                Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case4Payload.ArgumentsPayload.self,
-                                forKey: .arguments
-                            )
-                            self.id = try container.decode(
-                                Swift.String.self,
-                                forKey: .id
-                            )
-                            self.name = try container.decode(
-                                Swift.String.self,
-                                forKey: .name
-                            )
-                            self._type = try container.decode(
-                                Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case4Payload._TypePayload.self,
-                                forKey: ._type
-                            )
-                            additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [
-                                "arguments",
-                                "id",
-                                "name",
-                                "type"
-                            ])
-                        }
-                        public func encode(to encoder: any Swift.Encoder) throws {
-                            var container = encoder.container(keyedBy: CodingKeys.self)
-                            try container.encode(
-                                self.arguments,
-                                forKey: .arguments
-                            )
-                            try container.encode(
-                                self.id,
-                                forKey: .id
-                            )
-                            try container.encode(
-                                self.name,
-                                forKey: .name
-                            )
-                            try container.encode(
-                                self._type,
-                                forKey: ._type
-                            )
-                            try encoder.encodeAdditionalProperties(additionalProperties)
-                        }
-                    }
-                    /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/BlocksPayload/case4`.
-                    case case4(Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload.Case4Payload)
-                    public init(from decoder: any Swift.Decoder) throws {
-                        var errors: [any Swift.Error] = []
-                        do {
-                            self = .case1(try .init(from: decoder))
-                            return
-                        } catch {
-                            errors.append(error)
-                        }
-                        do {
-                            self = .case2(try .init(from: decoder))
-                            return
-                        } catch {
-                            errors.append(error)
-                        }
-                        do {
-                            self = .case3(try .init(from: decoder))
-                            return
-                        } catch {
-                            errors.append(error)
-                        }
-                        do {
-                            self = .case4(try .init(from: decoder))
-                            return
-                        } catch {
-                            errors.append(error)
-                        }
-                        throw Swift.DecodingError.failedToDecodeOneOfSchema(
-                            type: Self.self,
-                            codingPath: decoder.codingPath,
-                            errors: errors
-                        )
-                    }
-                    public func encode(to encoder: any Swift.Encoder) throws {
-                        switch self {
-                        case let .case1(value):
-                            try value.encode(to: encoder)
-                        case let .case2(value):
-                            try value.encode(to: encoder)
-                        case let .case3(value):
-                            try value.encode(to: encoder)
-                        case let .case4(value):
-                            try value.encode(to: encoder)
-                        }
-                    }
-                }
                 /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/blocks`.
-                public typealias BlocksPayload = [Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.BlocksPayloadPayload]
-                /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/blocks`.
-                public var blocks: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.BlocksPayload?
+                public var blocks: [Components.Schemas.TranscriptBlock]?
                 /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/call`.
                 public struct CallPayload: Codable, Hashable, Sendable {
                     /// - Remark: Generated from `#/components/schemas/EventGroupChatSnapshot/MessagesPayload/call/callId`.
@@ -5944,7 +5232,7 @@ extension Components {
                 ///   - additionalProperties: A container of undocumented properties.
                 public init(
                     attachments: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.AttachmentsPayload? = nil,
-                    blocks: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.BlocksPayload? = nil,
+                    blocks: [Components.Schemas.TranscriptBlock]? = nil,
                     call: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.CallPayload? = nil,
                     communication: Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.CommunicationPayload? = nil,
                     content: Swift.String,
@@ -6022,7 +5310,7 @@ extension Components {
                         forKey: .attachments
                     )
                     self.blocks = try container.decodeIfPresent(
-                        Components.Schemas.EventGroupChatSnapshot.MessagesPayloadPayload.BlocksPayload.self,
+                        [Components.Schemas.TranscriptBlock].self,
                         forKey: .blocks
                     )
                     self.call = try container.decodeIfPresent(
@@ -6964,197 +6252,62 @@ extension Components {
                 case id
             }
         }
+        /// - Remark: Generated from `#/components/schemas/JobHistoryItem`.
+        @frozen public enum JobHistoryItem: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/JobHistoryItem/JobReplyItem`.
+            case reply(Components.Schemas.JobReplyItem)
+            /// - Remark: Generated from `#/components/schemas/JobHistoryItem/JobStepItem`.
+            case step(Components.Schemas.JobStepItem)
+            /// - Remark: Generated from `#/components/schemas/JobHistoryItem/JobTaskItem`.
+            case task(Components.Schemas.JobTaskItem)
+            public enum CodingKeys: String, CodingKey {
+                case kind
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                let discriminator = try container.decode(
+                    Swift.String.self,
+                    forKey: .kind
+                )
+                switch discriminator {
+                case "reply":
+                    self = .reply(try .init(from: decoder))
+                case "step":
+                    self = .step(try .init(from: decoder))
+                case "task":
+                    self = .task(try .init(from: decoder))
+                default:
+                    throw Swift.DecodingError.unknownOneOfDiscriminator(
+                        discriminatorKey: CodingKeys.kind,
+                        discriminatorValue: discriminator,
+                        codingPath: decoder.codingPath
+                    )
+                }
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                switch self {
+                case let .reply(value):
+                    try value.encode(to: encoder)
+                case let .step(value):
+                    try value.encode(to: encoder)
+                case let .task(value):
+                    try value.encode(to: encoder)
+                }
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/JobHistoryPage`.
         public struct JobHistoryPage: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/JobHistoryPage/value1`.
             public var value1: Components.Schemas.TranscriptPage
             /// - Remark: Generated from `#/components/schemas/JobHistoryPage/value2`.
             public struct Value2Payload: Codable, Hashable, Sendable {
-                /// - Remark: Generated from `#/components/schemas/JobHistoryPage/value2/ItemsPayload`.
-                @frozen public enum ItemsPayloadPayload: Codable, Hashable, Sendable {
-                    /// - Remark: Generated from `#/components/schemas/JobHistoryPage/value2/ItemsPayload/case1`.
-                    public struct Case1Payload: Codable, Hashable, Sendable {
-                        /// - Remark: Generated from `#/components/schemas/JobHistoryPage/value2/ItemsPayload/case1/id`.
-                        public var id: Swift.String
-                        /// - Remark: Generated from `#/components/schemas/JobHistoryPage/value2/ItemsPayload/case1/kind`.
-                        @frozen public enum KindPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                            case task = "task"
-                        }
-                        /// - Remark: Generated from `#/components/schemas/JobHistoryPage/value2/ItemsPayload/case1/kind`.
-                        public var kind: Components.Schemas.JobHistoryPage.Value2Payload.ItemsPayloadPayload.Case1Payload.KindPayload
-                        /// - Remark: Generated from `#/components/schemas/JobHistoryPage/value2/ItemsPayload/case1/text`.
-                        public var text: Swift.String
-                        /// Creates a new `Case1Payload`.
-                        ///
-                        /// - Parameters:
-                        ///   - id:
-                        ///   - kind:
-                        ///   - text:
-                        public init(
-                            id: Swift.String,
-                            kind: Components.Schemas.JobHistoryPage.Value2Payload.ItemsPayloadPayload.Case1Payload.KindPayload,
-                            text: Swift.String
-                        ) {
-                            self.id = id
-                            self.kind = kind
-                            self.text = text
-                        }
-                        public enum CodingKeys: String, CodingKey {
-                            case id
-                            case kind
-                            case text
-                        }
-                    }
-                    /// - Remark: Generated from `#/components/schemas/JobHistoryPage/value2/ItemsPayload/case1`.
-                    case case1(Components.Schemas.JobHistoryPage.Value2Payload.ItemsPayloadPayload.Case1Payload)
-                    /// - Remark: Generated from `#/components/schemas/JobHistoryPage/value2/ItemsPayload/case2`.
-                    public struct Case2Payload: Codable, Hashable, Sendable {
-                        /// - Remark: Generated from `#/components/schemas/JobHistoryPage/value2/ItemsPayload/case2/id`.
-                        public var id: Swift.String
-                        /// - Remark: Generated from `#/components/schemas/JobHistoryPage/value2/ItemsPayload/case2/kind`.
-                        @frozen public enum KindPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                            case reply = "reply"
-                        }
-                        /// - Remark: Generated from `#/components/schemas/JobHistoryPage/value2/ItemsPayload/case2/kind`.
-                        public var kind: Components.Schemas.JobHistoryPage.Value2Payload.ItemsPayloadPayload.Case2Payload.KindPayload
-                        /// - Remark: Generated from `#/components/schemas/JobHistoryPage/value2/ItemsPayload/case2/text`.
-                        public var text: Swift.String
-                        /// Creates a new `Case2Payload`.
-                        ///
-                        /// - Parameters:
-                        ///   - id:
-                        ///   - kind:
-                        ///   - text:
-                        public init(
-                            id: Swift.String,
-                            kind: Components.Schemas.JobHistoryPage.Value2Payload.ItemsPayloadPayload.Case2Payload.KindPayload,
-                            text: Swift.String
-                        ) {
-                            self.id = id
-                            self.kind = kind
-                            self.text = text
-                        }
-                        public enum CodingKeys: String, CodingKey {
-                            case id
-                            case kind
-                            case text
-                        }
-                    }
-                    /// - Remark: Generated from `#/components/schemas/JobHistoryPage/value2/ItemsPayload/case2`.
-                    case case2(Components.Schemas.JobHistoryPage.Value2Payload.ItemsPayloadPayload.Case2Payload)
-                    /// - Remark: Generated from `#/components/schemas/JobHistoryPage/value2/ItemsPayload/case3`.
-                    public struct Case3Payload: Codable, Hashable, Sendable {
-                        /// - Remark: Generated from `#/components/schemas/JobHistoryPage/value2/ItemsPayload/case3/icon`.
-                        @frozen public enum IconPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                            case terminal = "terminal"
-                            case file = "file"
-                            case pencil = "pencil"
-                            case pointer = "pointer"
-                            case tool = "tool"
-                        }
-                        /// - Remark: Generated from `#/components/schemas/JobHistoryPage/value2/ItemsPayload/case3/icon`.
-                        public var icon: Components.Schemas.JobHistoryPage.Value2Payload.ItemsPayloadPayload.Case3Payload.IconPayload
-                        /// - Remark: Generated from `#/components/schemas/JobHistoryPage/value2/ItemsPayload/case3/id`.
-                        public var id: Swift.String
-                        /// - Remark: Generated from `#/components/schemas/JobHistoryPage/value2/ItemsPayload/case3/kind`.
-                        @frozen public enum KindPayload: String, Codable, Hashable, Sendable, CaseIterable {
-                            case step = "step"
-                        }
-                        /// - Remark: Generated from `#/components/schemas/JobHistoryPage/value2/ItemsPayload/case3/kind`.
-                        public var kind: Components.Schemas.JobHistoryPage.Value2Payload.ItemsPayloadPayload.Case3Payload.KindPayload
-                        /// - Remark: Generated from `#/components/schemas/JobHistoryPage/value2/ItemsPayload/case3/label`.
-                        public var label: Swift.String
-                        /// - Remark: Generated from `#/components/schemas/JobHistoryPage/value2/ItemsPayload/case3/result`.
-                        public var result: Components.Schemas.TranscriptMessage?
-                        /// - Remark: Generated from `#/components/schemas/JobHistoryPage/value2/ItemsPayload/case3/subject`.
-                        public var subject: Swift.String?
-                        /// - Remark: Generated from `#/components/schemas/JobHistoryPage/value2/ItemsPayload/case3/tool`.
-                        public var tool: Swift.String
-                        /// Creates a new `Case3Payload`.
-                        ///
-                        /// - Parameters:
-                        ///   - icon:
-                        ///   - id:
-                        ///   - kind:
-                        ///   - label:
-                        ///   - result:
-                        ///   - subject:
-                        ///   - tool:
-                        public init(
-                            icon: Components.Schemas.JobHistoryPage.Value2Payload.ItemsPayloadPayload.Case3Payload.IconPayload,
-                            id: Swift.String,
-                            kind: Components.Schemas.JobHistoryPage.Value2Payload.ItemsPayloadPayload.Case3Payload.KindPayload,
-                            label: Swift.String,
-                            result: Components.Schemas.TranscriptMessage? = nil,
-                            subject: Swift.String? = nil,
-                            tool: Swift.String
-                        ) {
-                            self.icon = icon
-                            self.id = id
-                            self.kind = kind
-                            self.label = label
-                            self.result = result
-                            self.subject = subject
-                            self.tool = tool
-                        }
-                        public enum CodingKeys: String, CodingKey {
-                            case icon
-                            case id
-                            case kind
-                            case label
-                            case result
-                            case subject
-                            case tool
-                        }
-                    }
-                    /// - Remark: Generated from `#/components/schemas/JobHistoryPage/value2/ItemsPayload/case3`.
-                    case case3(Components.Schemas.JobHistoryPage.Value2Payload.ItemsPayloadPayload.Case3Payload)
-                    public init(from decoder: any Swift.Decoder) throws {
-                        var errors: [any Swift.Error] = []
-                        do {
-                            self = .case1(try .init(from: decoder))
-                            return
-                        } catch {
-                            errors.append(error)
-                        }
-                        do {
-                            self = .case2(try .init(from: decoder))
-                            return
-                        } catch {
-                            errors.append(error)
-                        }
-                        do {
-                            self = .case3(try .init(from: decoder))
-                            return
-                        } catch {
-                            errors.append(error)
-                        }
-                        throw Swift.DecodingError.failedToDecodeOneOfSchema(
-                            type: Self.self,
-                            codingPath: decoder.codingPath,
-                            errors: errors
-                        )
-                    }
-                    public func encode(to encoder: any Swift.Encoder) throws {
-                        switch self {
-                        case let .case1(value):
-                            try value.encode(to: encoder)
-                        case let .case2(value):
-                            try value.encode(to: encoder)
-                        case let .case3(value):
-                            try value.encode(to: encoder)
-                        }
-                    }
-                }
                 /// - Remark: Generated from `#/components/schemas/JobHistoryPage/value2/items`.
-                public typealias ItemsPayload = [Components.Schemas.JobHistoryPage.Value2Payload.ItemsPayloadPayload]
-                /// - Remark: Generated from `#/components/schemas/JobHistoryPage/value2/items`.
-                public var items: Components.Schemas.JobHistoryPage.Value2Payload.ItemsPayload
+                public var items: [Components.Schemas.JobHistoryItem]
                 /// Creates a new `Value2Payload`.
                 ///
                 /// - Parameters:
                 ///   - items:
-                public init(items: Components.Schemas.JobHistoryPage.Value2Payload.ItemsPayload) {
+                public init(items: [Components.Schemas.JobHistoryItem]) {
                     self.items = items
                 }
                 public enum CodingKeys: String, CodingKey {
@@ -7182,6 +6335,137 @@ extension Components {
             public func encode(to encoder: any Swift.Encoder) throws {
                 try self.value1.encode(to: encoder)
                 try self.value2.encode(to: encoder)
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/JobReplyItem`.
+        public struct JobReplyItem: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/JobReplyItem/id`.
+            public var id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/JobReplyItem/kind`.
+            @frozen public enum KindPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case reply = "reply"
+            }
+            /// - Remark: Generated from `#/components/schemas/JobReplyItem/kind`.
+            public var kind: Components.Schemas.JobReplyItem.KindPayload
+            /// - Remark: Generated from `#/components/schemas/JobReplyItem/text`.
+            public var text: Swift.String
+            /// Creates a new `JobReplyItem`.
+            ///
+            /// - Parameters:
+            ///   - id:
+            ///   - kind:
+            ///   - text:
+            public init(
+                id: Swift.String,
+                kind: Components.Schemas.JobReplyItem.KindPayload,
+                text: Swift.String
+            ) {
+                self.id = id
+                self.kind = kind
+                self.text = text
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case kind
+                case text
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/JobStepItem`.
+        public struct JobStepItem: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/JobStepItem/icon`.
+            @frozen public enum IconPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case terminal = "terminal"
+                case file = "file"
+                case pencil = "pencil"
+                case pointer = "pointer"
+                case tool = "tool"
+            }
+            /// - Remark: Generated from `#/components/schemas/JobStepItem/icon`.
+            public var icon: Components.Schemas.JobStepItem.IconPayload
+            /// - Remark: Generated from `#/components/schemas/JobStepItem/id`.
+            public var id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/JobStepItem/kind`.
+            @frozen public enum KindPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case step = "step"
+            }
+            /// - Remark: Generated from `#/components/schemas/JobStepItem/kind`.
+            public var kind: Components.Schemas.JobStepItem.KindPayload
+            /// - Remark: Generated from `#/components/schemas/JobStepItem/label`.
+            public var label: Swift.String
+            /// - Remark: Generated from `#/components/schemas/JobStepItem/result`.
+            public var result: Components.Schemas.TranscriptMessage?
+            /// - Remark: Generated from `#/components/schemas/JobStepItem/subject`.
+            public var subject: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/JobStepItem/tool`.
+            public var tool: Swift.String
+            /// Creates a new `JobStepItem`.
+            ///
+            /// - Parameters:
+            ///   - icon:
+            ///   - id:
+            ///   - kind:
+            ///   - label:
+            ///   - result:
+            ///   - subject:
+            ///   - tool:
+            public init(
+                icon: Components.Schemas.JobStepItem.IconPayload,
+                id: Swift.String,
+                kind: Components.Schemas.JobStepItem.KindPayload,
+                label: Swift.String,
+                result: Components.Schemas.TranscriptMessage? = nil,
+                subject: Swift.String? = nil,
+                tool: Swift.String
+            ) {
+                self.icon = icon
+                self.id = id
+                self.kind = kind
+                self.label = label
+                self.result = result
+                self.subject = subject
+                self.tool = tool
+            }
+            public enum CodingKeys: String, CodingKey {
+                case icon
+                case id
+                case kind
+                case label
+                case result
+                case subject
+                case tool
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/JobTaskItem`.
+        public struct JobTaskItem: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/JobTaskItem/id`.
+            public var id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/JobTaskItem/kind`.
+            @frozen public enum KindPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case task = "task"
+            }
+            /// - Remark: Generated from `#/components/schemas/JobTaskItem/kind`.
+            public var kind: Components.Schemas.JobTaskItem.KindPayload
+            /// - Remark: Generated from `#/components/schemas/JobTaskItem/text`.
+            public var text: Swift.String
+            /// Creates a new `JobTaskItem`.
+            ///
+            /// - Parameters:
+            ///   - id:
+            ///   - kind:
+            ///   - text:
+            public init(
+                id: Swift.String,
+                kind: Components.Schemas.JobTaskItem.KindPayload,
+                text: Swift.String
+            ) {
+                self.id = id
+                self.kind = kind
+                self.text = text
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case kind
+                case text
             }
         }
         /// The model that judges now: a classifier, or a small chat model when no key reaches one. Null when no model is available; then only commit points are held.
@@ -10525,213 +9809,88 @@ extension Components {
                 case reply
             }
         }
+        /// - Remark: Generated from `#/components/schemas/TranscriptBlock`.
+        @frozen public enum TranscriptBlock: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/TranscriptBlock/TranscriptImageBlock`.
+            case image(Components.Schemas.TranscriptImageBlock)
+            /// - Remark: Generated from `#/components/schemas/TranscriptBlock/TranscriptTextBlock`.
+            case text(Components.Schemas.TranscriptTextBlock)
+            /// - Remark: Generated from `#/components/schemas/TranscriptBlock/TranscriptThinkingBlock`.
+            case thinking(Components.Schemas.TranscriptThinkingBlock)
+            /// - Remark: Generated from `#/components/schemas/TranscriptBlock/TranscriptToolCallBlock`.
+            case toolCall(Components.Schemas.TranscriptToolCallBlock)
+            public enum CodingKeys: String, CodingKey {
+                case _type = "type"
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                let discriminator = try container.decode(
+                    Swift.String.self,
+                    forKey: ._type
+                )
+                switch discriminator {
+                case "image":
+                    self = .image(try .init(from: decoder))
+                case "text":
+                    self = .text(try .init(from: decoder))
+                case "thinking":
+                    self = .thinking(try .init(from: decoder))
+                case "toolCall":
+                    self = .toolCall(try .init(from: decoder))
+                default:
+                    throw Swift.DecodingError.unknownOneOfDiscriminator(
+                        discriminatorKey: CodingKeys._type,
+                        discriminatorValue: discriminator,
+                        codingPath: decoder.codingPath
+                    )
+                }
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                switch self {
+                case let .image(value):
+                    try value.encode(to: encoder)
+                case let .text(value):
+                    try value.encode(to: encoder)
+                case let .thinking(value):
+                    try value.encode(to: encoder)
+                case let .toolCall(value):
+                    try value.encode(to: encoder)
+                }
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/TranscriptImageBlock`.
+        public struct TranscriptImageBlock: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/TranscriptImageBlock/mimeType`.
+            public var mimeType: Swift.String
+            /// - Remark: Generated from `#/components/schemas/TranscriptImageBlock/type`.
+            @frozen public enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case image = "image"
+            }
+            /// - Remark: Generated from `#/components/schemas/TranscriptImageBlock/type`.
+            public var _type: Components.Schemas.TranscriptImageBlock._TypePayload
+            /// Creates a new `TranscriptImageBlock`.
+            ///
+            /// - Parameters:
+            ///   - mimeType:
+            ///   - _type:
+            public init(
+                mimeType: Swift.String,
+                _type: Components.Schemas.TranscriptImageBlock._TypePayload
+            ) {
+                self.mimeType = mimeType
+                self._type = _type
+            }
+            public enum CodingKeys: String, CodingKey {
+                case mimeType
+                case _type = "type"
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/TranscriptMessage`.
         public struct TranscriptMessage: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/TranscriptMessage/attachments`.
             public var attachments: [Components.Schemas.AttachmentInfo]?
-            /// - Remark: Generated from `#/components/schemas/TranscriptMessage/BlocksPayload`.
-            @frozen public enum BlocksPayloadPayload: Codable, Hashable, Sendable {
-                /// - Remark: Generated from `#/components/schemas/TranscriptMessage/BlocksPayload/case1`.
-                public struct Case1Payload: Codable, Hashable, Sendable {
-                    /// - Remark: Generated from `#/components/schemas/TranscriptMessage/BlocksPayload/case1/text`.
-                    public var text: Swift.String
-                    /// - Remark: Generated from `#/components/schemas/TranscriptMessage/BlocksPayload/case1/type`.
-                    @frozen public enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                        case text = "text"
-                    }
-                    /// - Remark: Generated from `#/components/schemas/TranscriptMessage/BlocksPayload/case1/type`.
-                    public var _type: Components.Schemas.TranscriptMessage.BlocksPayloadPayload.Case1Payload._TypePayload
-                    /// Creates a new `Case1Payload`.
-                    ///
-                    /// - Parameters:
-                    ///   - text:
-                    ///   - _type:
-                    public init(
-                        text: Swift.String,
-                        _type: Components.Schemas.TranscriptMessage.BlocksPayloadPayload.Case1Payload._TypePayload
-                    ) {
-                        self.text = text
-                        self._type = _type
-                    }
-                    public enum CodingKeys: String, CodingKey {
-                        case text
-                        case _type = "type"
-                    }
-                }
-                /// - Remark: Generated from `#/components/schemas/TranscriptMessage/BlocksPayload/case1`.
-                case case1(Components.Schemas.TranscriptMessage.BlocksPayloadPayload.Case1Payload)
-                /// - Remark: Generated from `#/components/schemas/TranscriptMessage/BlocksPayload/case2`.
-                public struct Case2Payload: Codable, Hashable, Sendable {
-                    /// - Remark: Generated from `#/components/schemas/TranscriptMessage/BlocksPayload/case2/redacted`.
-                    public var redacted: Swift.Bool?
-                    /// - Remark: Generated from `#/components/schemas/TranscriptMessage/BlocksPayload/case2/thinking`.
-                    public var thinking: Swift.String
-                    /// - Remark: Generated from `#/components/schemas/TranscriptMessage/BlocksPayload/case2/type`.
-                    @frozen public enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                        case thinking = "thinking"
-                    }
-                    /// - Remark: Generated from `#/components/schemas/TranscriptMessage/BlocksPayload/case2/type`.
-                    public var _type: Components.Schemas.TranscriptMessage.BlocksPayloadPayload.Case2Payload._TypePayload
-                    /// Creates a new `Case2Payload`.
-                    ///
-                    /// - Parameters:
-                    ///   - redacted:
-                    ///   - thinking:
-                    ///   - _type:
-                    public init(
-                        redacted: Swift.Bool? = nil,
-                        thinking: Swift.String,
-                        _type: Components.Schemas.TranscriptMessage.BlocksPayloadPayload.Case2Payload._TypePayload
-                    ) {
-                        self.redacted = redacted
-                        self.thinking = thinking
-                        self._type = _type
-                    }
-                    public enum CodingKeys: String, CodingKey {
-                        case redacted
-                        case thinking
-                        case _type = "type"
-                    }
-                }
-                /// - Remark: Generated from `#/components/schemas/TranscriptMessage/BlocksPayload/case2`.
-                case case2(Components.Schemas.TranscriptMessage.BlocksPayloadPayload.Case2Payload)
-                /// - Remark: Generated from `#/components/schemas/TranscriptMessage/BlocksPayload/case3`.
-                public struct Case3Payload: Codable, Hashable, Sendable {
-                    /// - Remark: Generated from `#/components/schemas/TranscriptMessage/BlocksPayload/case3/mimeType`.
-                    public var mimeType: Swift.String
-                    /// - Remark: Generated from `#/components/schemas/TranscriptMessage/BlocksPayload/case3/type`.
-                    @frozen public enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                        case image = "image"
-                    }
-                    /// - Remark: Generated from `#/components/schemas/TranscriptMessage/BlocksPayload/case3/type`.
-                    public var _type: Components.Schemas.TranscriptMessage.BlocksPayloadPayload.Case3Payload._TypePayload
-                    /// Creates a new `Case3Payload`.
-                    ///
-                    /// - Parameters:
-                    ///   - mimeType:
-                    ///   - _type:
-                    public init(
-                        mimeType: Swift.String,
-                        _type: Components.Schemas.TranscriptMessage.BlocksPayloadPayload.Case3Payload._TypePayload
-                    ) {
-                        self.mimeType = mimeType
-                        self._type = _type
-                    }
-                    public enum CodingKeys: String, CodingKey {
-                        case mimeType
-                        case _type = "type"
-                    }
-                }
-                /// - Remark: Generated from `#/components/schemas/TranscriptMessage/BlocksPayload/case3`.
-                case case3(Components.Schemas.TranscriptMessage.BlocksPayloadPayload.Case3Payload)
-                /// - Remark: Generated from `#/components/schemas/TranscriptMessage/BlocksPayload/case4`.
-                public struct Case4Payload: Codable, Hashable, Sendable {
-                    /// - Remark: Generated from `#/components/schemas/TranscriptMessage/BlocksPayload/case4/arguments`.
-                    public struct ArgumentsPayload: Codable, Hashable, Sendable {
-                        /// A container of undocumented properties.
-                        public var additionalProperties: [String: OpenAPIRuntime.OpenAPIValueContainer]
-                        /// Creates a new `ArgumentsPayload`.
-                        ///
-                        /// - Parameters:
-                        ///   - additionalProperties: A container of undocumented properties.
-                        public init(additionalProperties: [String: OpenAPIRuntime.OpenAPIValueContainer] = .init()) {
-                            self.additionalProperties = additionalProperties
-                        }
-                        public init(from decoder: any Swift.Decoder) throws {
-                            additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [])
-                        }
-                        public func encode(to encoder: any Swift.Encoder) throws {
-                            try encoder.encodeAdditionalProperties(additionalProperties)
-                        }
-                    }
-                    /// - Remark: Generated from `#/components/schemas/TranscriptMessage/BlocksPayload/case4/arguments`.
-                    public var arguments: Components.Schemas.TranscriptMessage.BlocksPayloadPayload.Case4Payload.ArgumentsPayload
-                    /// - Remark: Generated from `#/components/schemas/TranscriptMessage/BlocksPayload/case4/id`.
-                    public var id: Swift.String
-                    /// - Remark: Generated from `#/components/schemas/TranscriptMessage/BlocksPayload/case4/name`.
-                    public var name: Swift.String
-                    /// - Remark: Generated from `#/components/schemas/TranscriptMessage/BlocksPayload/case4/type`.
-                    @frozen public enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
-                        case toolCall = "toolCall"
-                    }
-                    /// - Remark: Generated from `#/components/schemas/TranscriptMessage/BlocksPayload/case4/type`.
-                    public var _type: Components.Schemas.TranscriptMessage.BlocksPayloadPayload.Case4Payload._TypePayload
-                    /// Creates a new `Case4Payload`.
-                    ///
-                    /// - Parameters:
-                    ///   - arguments:
-                    ///   - id:
-                    ///   - name:
-                    ///   - _type:
-                    public init(
-                        arguments: Components.Schemas.TranscriptMessage.BlocksPayloadPayload.Case4Payload.ArgumentsPayload,
-                        id: Swift.String,
-                        name: Swift.String,
-                        _type: Components.Schemas.TranscriptMessage.BlocksPayloadPayload.Case4Payload._TypePayload
-                    ) {
-                        self.arguments = arguments
-                        self.id = id
-                        self.name = name
-                        self._type = _type
-                    }
-                    public enum CodingKeys: String, CodingKey {
-                        case arguments
-                        case id
-                        case name
-                        case _type = "type"
-                    }
-                }
-                /// - Remark: Generated from `#/components/schemas/TranscriptMessage/BlocksPayload/case4`.
-                case case4(Components.Schemas.TranscriptMessage.BlocksPayloadPayload.Case4Payload)
-                public init(from decoder: any Swift.Decoder) throws {
-                    var errors: [any Swift.Error] = []
-                    do {
-                        self = .case1(try .init(from: decoder))
-                        return
-                    } catch {
-                        errors.append(error)
-                    }
-                    do {
-                        self = .case2(try .init(from: decoder))
-                        return
-                    } catch {
-                        errors.append(error)
-                    }
-                    do {
-                        self = .case3(try .init(from: decoder))
-                        return
-                    } catch {
-                        errors.append(error)
-                    }
-                    do {
-                        self = .case4(try .init(from: decoder))
-                        return
-                    } catch {
-                        errors.append(error)
-                    }
-                    throw Swift.DecodingError.failedToDecodeOneOfSchema(
-                        type: Self.self,
-                        codingPath: decoder.codingPath,
-                        errors: errors
-                    )
-                }
-                public func encode(to encoder: any Swift.Encoder) throws {
-                    switch self {
-                    case let .case1(value):
-                        try value.encode(to: encoder)
-                    case let .case2(value):
-                        try value.encode(to: encoder)
-                    case let .case3(value):
-                        try value.encode(to: encoder)
-                    case let .case4(value):
-                        try value.encode(to: encoder)
-                    }
-                }
-            }
             /// - Remark: Generated from `#/components/schemas/TranscriptMessage/blocks`.
-            public typealias BlocksPayload = [Components.Schemas.TranscriptMessage.BlocksPayloadPayload]
-            /// - Remark: Generated from `#/components/schemas/TranscriptMessage/blocks`.
-            public var blocks: Components.Schemas.TranscriptMessage.BlocksPayload?
+            public var blocks: [Components.Schemas.TranscriptBlock]?
             /// On a `call-started` or `call-ended` event: the call.
             ///
             /// - Remark: Generated from `#/components/schemas/TranscriptMessage/call`.
@@ -10948,7 +10107,7 @@ extension Components {
             ///   - toolName:
             public init(
                 attachments: [Components.Schemas.AttachmentInfo]? = nil,
-                blocks: Components.Schemas.TranscriptMessage.BlocksPayload? = nil,
+                blocks: [Components.Schemas.TranscriptBlock]? = nil,
                 call: Components.Schemas.TranscriptMessage.CallPayload? = nil,
                 communication: Components.Schemas.BotCommunication? = nil,
                 content: Swift.String,
@@ -11045,6 +10204,123 @@ extension Components {
                 case hasMore
                 case messages
                 case oldestEntryId
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/TranscriptTextBlock`.
+        public struct TranscriptTextBlock: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/TranscriptTextBlock/text`.
+            public var text: Swift.String
+            /// - Remark: Generated from `#/components/schemas/TranscriptTextBlock/type`.
+            @frozen public enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case text = "text"
+            }
+            /// - Remark: Generated from `#/components/schemas/TranscriptTextBlock/type`.
+            public var _type: Components.Schemas.TranscriptTextBlock._TypePayload
+            /// Creates a new `TranscriptTextBlock`.
+            ///
+            /// - Parameters:
+            ///   - text:
+            ///   - _type:
+            public init(
+                text: Swift.String,
+                _type: Components.Schemas.TranscriptTextBlock._TypePayload
+            ) {
+                self.text = text
+                self._type = _type
+            }
+            public enum CodingKeys: String, CodingKey {
+                case text
+                case _type = "type"
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/TranscriptThinkingBlock`.
+        public struct TranscriptThinkingBlock: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/TranscriptThinkingBlock/redacted`.
+            public var redacted: Swift.Bool?
+            /// - Remark: Generated from `#/components/schemas/TranscriptThinkingBlock/thinking`.
+            public var thinking: Swift.String
+            /// - Remark: Generated from `#/components/schemas/TranscriptThinkingBlock/type`.
+            @frozen public enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case thinking = "thinking"
+            }
+            /// - Remark: Generated from `#/components/schemas/TranscriptThinkingBlock/type`.
+            public var _type: Components.Schemas.TranscriptThinkingBlock._TypePayload
+            /// Creates a new `TranscriptThinkingBlock`.
+            ///
+            /// - Parameters:
+            ///   - redacted:
+            ///   - thinking:
+            ///   - _type:
+            public init(
+                redacted: Swift.Bool? = nil,
+                thinking: Swift.String,
+                _type: Components.Schemas.TranscriptThinkingBlock._TypePayload
+            ) {
+                self.redacted = redacted
+                self.thinking = thinking
+                self._type = _type
+            }
+            public enum CodingKeys: String, CodingKey {
+                case redacted
+                case thinking
+                case _type = "type"
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/TranscriptToolCallBlock`.
+        public struct TranscriptToolCallBlock: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/TranscriptToolCallBlock/arguments`.
+            public struct ArgumentsPayload: Codable, Hashable, Sendable {
+                /// A container of undocumented properties.
+                public var additionalProperties: [String: OpenAPIRuntime.OpenAPIValueContainer]
+                /// Creates a new `ArgumentsPayload`.
+                ///
+                /// - Parameters:
+                ///   - additionalProperties: A container of undocumented properties.
+                public init(additionalProperties: [String: OpenAPIRuntime.OpenAPIValueContainer] = .init()) {
+                    self.additionalProperties = additionalProperties
+                }
+                public init(from decoder: any Swift.Decoder) throws {
+                    additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [])
+                }
+                public func encode(to encoder: any Swift.Encoder) throws {
+                    try encoder.encodeAdditionalProperties(additionalProperties)
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/TranscriptToolCallBlock/arguments`.
+            public var arguments: Components.Schemas.TranscriptToolCallBlock.ArgumentsPayload
+            /// - Remark: Generated from `#/components/schemas/TranscriptToolCallBlock/id`.
+            public var id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/TranscriptToolCallBlock/name`.
+            public var name: Swift.String
+            /// - Remark: Generated from `#/components/schemas/TranscriptToolCallBlock/type`.
+            @frozen public enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case toolCall = "toolCall"
+            }
+            /// - Remark: Generated from `#/components/schemas/TranscriptToolCallBlock/type`.
+            public var _type: Components.Schemas.TranscriptToolCallBlock._TypePayload
+            /// Creates a new `TranscriptToolCallBlock`.
+            ///
+            /// - Parameters:
+            ///   - arguments:
+            ///   - id:
+            ///   - name:
+            ///   - _type:
+            public init(
+                arguments: Components.Schemas.TranscriptToolCallBlock.ArgumentsPayload,
+                id: Swift.String,
+                name: Swift.String,
+                _type: Components.Schemas.TranscriptToolCallBlock._TypePayload
+            ) {
+                self.arguments = arguments
+                self.id = id
+                self.name = name
+                self._type = _type
+            }
+            public enum CodingKeys: String, CodingKey {
+                case arguments
+                case id
+                case name
+                case _type = "type"
             }
         }
         /// - Remark: Generated from `#/components/schemas/VisionChoice`.

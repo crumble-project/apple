@@ -69,7 +69,7 @@ extension APIClientTests {
     model.updateSelectedAgent("a1")
     model.openJob(.coding, "fix")
     await waitFor { model.jobHistory?.loaded == true }
-    #expect(model.jobHistory?.items == [.task(id: "1", text: "Fix it")])
+    #expect(model.jobHistory?.items == [.task(.init(id: "1", kind: .task, text: "Fix it"))])
     #expect(model.jobPollDelay == .seconds(15))
   }
 

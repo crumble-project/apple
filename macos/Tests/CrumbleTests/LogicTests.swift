@@ -75,10 +75,10 @@ struct LogicTests {
     }
 
     @Test func chatHidesToolActivity() {
-        let tool = Message(id: "a1:1:0", role: "assistant", blocks: [.toolCall(id: "t", name: "tool", arguments: .object([:]))])
+        let tool = Message(id: "a1:1:0", role: "assistant", blocks: [.toolCall(.init(arguments: .init(), id: "t", name: "tool", _type: .toolCall))])
         let reply = Message(
             id: "a1:1:1", role: "assistant", content: .string("Hi"),
-            blocks: [.text("Hi")])
+            blocks: [.text(.init(text: "Hi", _type: .text))])
         #expect(!shownInChat(tool))
         #expect(shownInChat(reply))
     }

@@ -267,6 +267,6 @@ private func mergeJobItems(_ existing: [CodingJobItem], _ incoming: [CodingJobIt
 }
 
 private func isUnfinishedStep(_ item: CodingJobItem) -> Bool {
-  guard case .tool(let tool) = item else { return false }
+  guard case .step(let tool) = item else { return false }
   return !tool.finished
 }

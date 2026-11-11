@@ -42,7 +42,7 @@ extension APIClientTests {
         model.selectedAgentID = "a1"
         model.openJob(.coding, "fix")
         await waitForJobs { model.jobHistory?.loaded == true }
-        #expect(model.jobHistory?.items == [.task(id: "a1:1:0", text: "Fix it")])
+        #expect(model.jobHistory?.items == [.task(.init(id: "a1:1:0", kind: .task, text: "Fix it"))])
         #expect(model.jobHistory?.hasMore == true)
         #expect(model.jobHistory?.oldestEntryID == "a1:1")
     }
@@ -65,10 +65,10 @@ extension APIClientTests {
         finished = true
         board.loadHistory(client: client)
         await waitForJobs {
-            guard case .tool(let tool)? = board.history?.items.first else { return false }
+            guard case .step(let tool)? = board.history?.items.first else { return false }
             return tool.finished
         }
-        guard case .tool(let tool)? = board.history?.items.first else { Issue.record("missing step"); return }
+        guard case .step(let tool)? = board.history?.items.first else { Issue.record("missing step"); return }
         #expect(tool.finished && tool.output == "Done")
     }
 
@@ -89,10 +89,10 @@ extension APIClientTests {
         shifted = true
         board.loadHistory(client: client)
         await waitForJobs {
-            guard case .tool(let tool)? = board.history?.items.first else { return false }
+            guard case .step(let tool)? = board.history?.items.first else { return false }
             return tool.finished
         }
-        guard case .tool(let tool)? = board.history?.items.first else { Issue.record("missing step"); return }
+        guard case .step(let tool)? = board.history?.items.first else { Issue.record("missing step"); return }
         #expect(tool.finished && tool.output == "Done")
     }
 
@@ -154,7 +154,7 @@ extension APIClientTests {
 
         model.openJob(.desktop, "github")
         await waitForJobs { model.jobHistory?.loaded == true }
-        #expect(model.jobHistory?.items == [.task(id: "a1:3:0", text: "Log in")])
+        #expect(model.jobHistory?.items == [.task(.init(id: "a1:3:0", kind: .task, text: "Log in"))])
     }
 
     private static let questionJob =

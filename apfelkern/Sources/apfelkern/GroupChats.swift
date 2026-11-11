@@ -75,10 +75,7 @@ public struct GroupChatSnapshot: Codable, Sendable {
   }
 
   public init(from decoder: Decoder) throws {
-    let event = try Components.Schemas.EventGroupChatSnapshot(from: decoder)
-    let wire = try JSONDecoder().decode(
-      Components.Schemas.GroupChatSnapshot.self, from: JSONEncoder().encode(event))
-    try self.init(wire: wire)
+    try self.init(wire: Components.Schemas.GroupChatSnapshot(from: decoder))
   }
 }
 

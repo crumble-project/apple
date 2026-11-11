@@ -95,50 +95,24 @@ public struct JobQuestionEvent: Codable, Hashable, Sendable {
 }
 
 /// One readable step of a coding job's history.
-public enum CodingJobItem: Identifiable, Hashable, Sendable, Decodable {
-  case task(id: String, text: String)
-  case reply(id: String, text: String)
-  case tool(Tool)
+public typealias CodingJobItem = Components.Schemas.JobHistoryItem
+public typealias CodingJobStep = Components.Schemas.JobStepItem
 
-  public struct Tool: Hashable, Sendable {
-    public var id: String
-    public var name: String
-    public var label: String = ""
-    public var icon: String = "tool"
-    /// The command a `bash` call ran, or the path a file call touched.
-    public var subject: String
-    public var output: String
-    public var isError: Bool
-    public var finished: Bool
-
-    /// The whole output as an expanded step shows it.
-    public var shownOutput: String {
-      output.trimmingCharacters(in: .newlines).nilIfEmpty ?? "No output."
-    }
-  }
-
+extension Components.Schemas.JobHistoryItem: Identifiable {
   public var id: String {
     switch self {
-    case .task(let id, _), .reply(let id, _): id
-    case .tool(let tool): tool.id
+    case .task(let item): item.id
+    case .reply(let item): item.id
+    case .step(let item): item.id
     }
   }
+}
 
-  private enum CodingKeys: String, CodingKey { case kind, id, text, tool, label, icon, subject, result }
-
-  public init(from decoder: Decoder) throws {
-    let values = try decoder.container(keyedBy: CodingKeys.self)
-    let id = try values.decode(String.self, forKey: .id)
-    switch try values.decode(String.self, forKey: .kind) {
-    case "task": self = .task(id: id, text: try values.decode(String.self, forKey: .text))
-    case "reply": self = .reply(id: id, text: try values.decode(String.self, forKey: .text))
-    case "step":
-      let result = try values.decodeIfPresent(Message.self, forKey: .result)
-      self = .tool(Tool(id: id, name: try values.decode(String.self, forKey: .tool),
-        label: try values.decode(String.self, forKey: .label), icon: try values.decode(String.self, forKey: .icon),
-        subject: try values.decodeIfPresent(String.self, forKey: .subject) ?? "",
-        output: result?.text ?? "", isError: result?.isError == true, finished: result != nil))
-    default: throw DecodingError.dataCorruptedError(forKey: .kind, in: values, debugDescription: "Unknown job item")
-    }
+extension Components.Schemas.JobStepItem {
+  public var finished: Bool { result != nil }
+  public var isError: Bool { result?.isError == true }
+  public var output: String { result?.content ?? "" }
+  public var shownOutput: String {
+    output.trimmingCharacters(in: .newlines).nilIfEmpty ?? "No output."
   }
 }

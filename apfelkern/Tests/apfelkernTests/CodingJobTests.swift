@@ -30,17 +30,22 @@ private func decode(_ json: String) throws -> Message {
   let json = #"{"kind":"step","id":"t1","tool":"bash","label":"Ran","icon":"terminal","subject":"swift test","#
     + #""result":{"id":"r","entryId":"e","role":"toolResult","content":"boom","isError":true}}"#
   let item = try JSONDecoder().decode(CodingJobItem.self, from: Data(json.utf8))
-  guard case .tool(let tool) = item else { Issue.record("expected a step"); return }
+  guard case .step(let tool) = item else { Issue.record("expected a step"); return }
   #expect(tool.subject == "swift test" && tool.output == "boom" && tool.isError && tool.finished)
 }
 
-@Test func shownOutputKeepsEveryLine() {
-  func tool(_ output: String) -> CodingJobItem.Tool {
-    CodingJobItem.Tool(id: "t", name: "bash", subject: "", output: output, isError: false, finished: true)
+@Test func shownOutputKeepsEveryLine() throws {
+  func tool(_ output: String) throws -> CodingJobStep {
+    let json = #"{"kind":"step","id":"t","tool":"bash","label":"Ran","icon":"terminal","result":{"id":"r","entryId":"e","role":"toolResult","content":"#
+      + String(decoding: try JSONEncoder().encode(output), as: UTF8.self) + "}}"
+    guard case .step(let step) = try JSONDecoder().decode(CodingJobItem.self, from: Data(json.utf8)) else {
+      throw CocoaError(.coderInvalidValue)
+    }
+    return step
   }
   let lines = (1...500).map(String.init).joined(separator: "\n")
-  #expect(tool(lines + "\n\n").shownOutput == lines)
-  #expect(tool("\n").shownOutput == "No output.")
+  #expect(try tool(lines + "\n\n").shownOutput == lines)
+  #expect(try tool("\n").shownOutput == "No output.")
 }
 
 @Test func draftDefaultsCodingOff() {

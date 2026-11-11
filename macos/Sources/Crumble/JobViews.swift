@@ -351,10 +351,10 @@ private struct CodingJobItemView: View {
 
     var body: some View {
         switch item {
-        case .task(_, let text):
+        case .task(let task):
             VStack(alignment: .leading, spacing: 4) {
                 Text("Task").font(.system(size: 12)).foregroundStyle(.secondary)
-                Text(text)
+                Text(task.text)
                     .font(Palette.messageFont)
                     .textSelection(.enabled)
                     .padding(.horizontal, 14)
@@ -362,13 +362,13 @@ private struct CodingJobItemView: View {
                     .background(Color.accentColor.opacity(0.12), in: .rect(cornerRadius: 14))
             }
             .accessibilityElement(children: .combine)
-        case .reply(_, let text):
-            MarkdownText(text: text)
+        case .reply(let reply):
+            MarkdownText(text: reply.text)
                 .font(Palette.messageFont)
                 .lineSpacing(Palette.messageLineSpacing)
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
-        case .tool(let tool):
+        case .step(let tool):
             CodingToolStep(tool: tool)
         }
     }
@@ -376,16 +376,16 @@ private struct CodingJobItemView: View {
 
 /// One tool call: what ran (a command or a file). Click it to see the whole output.
 private struct CodingToolStep: View {
-    let tool: CodingJobItem.Tool
+    let tool: CodingJobStep
     @State private var open = false
 
     private var icon: String {
         switch tool.icon {
-        case "terminal": "terminal"
-        case "file": "doc.text"
-        case "pencil": "pencil"
-        case "pointer": JobKind.desktop.icon
-        default: "wrench.and.screwdriver"
+        case .terminal: "terminal"
+        case .file: "doc.text"
+        case .pencil: "pencil"
+        case .pointer: JobKind.desktop.icon
+        case .tool: "wrench.and.screwdriver"
         }
     }
 
@@ -402,7 +402,7 @@ private struct CodingToolStep: View {
                     .foregroundStyle(tool.isError ? .red : .secondary)
                     .frame(width: 16)
                 Text(verb).foregroundStyle(.secondary)
-                Text(tool.subject)
+                Text(tool.subject ?? "")
                     .font(.system(size: 12.5, design: .monospaced))
                     .lineLimit(open ? nil : 4)
                 if !tool.finished { ProgressView().controlSize(.mini) }
@@ -418,7 +418,7 @@ private struct CodingToolStep: View {
         }
         .buttonStyle(.plain)
         .disabled(!tool.finished)
-        .accessibilityLabel("\(verb) \(tool.subject)\(tool.isError ? ", failed" : "")")
+        .accessibilityLabel("\(verb) \(tool.subject ?? "")\(tool.isError ? ", failed" : "")")
         .accessibilityValue(open ? "Expanded" : "Collapsed")
     }
 
