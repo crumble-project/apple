@@ -46,6 +46,7 @@ extension AppModel {
 
     /// Opens the bot's one continuous chat and follows its event stream.
     func selectAgent(_ id: String) {
+        rememberSelectedChat()
         leaveGroup()
         cancelStream()
         stopFollowingBackgroundChat(id)
@@ -54,9 +55,10 @@ extension AppModel {
         selectedAgentID = id
         route = .agent(id)
         snapshot = nil
-        messages = delivery.messages(botID: id)
-        hasMore = false
-        oldestEntryID = ""
+        let cached = chatCache[id]
+        messages = (cached?.messages ?? []) + delivery.messages(botID: id)
+        hasMore = cached?.hasMore ?? false
+        oldestEntryID = cached?.oldestEntryID ?? ""
         loadingOlder = false
         replyTo = nil
         jobBoard.select(id)

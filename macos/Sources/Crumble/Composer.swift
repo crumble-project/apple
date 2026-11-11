@@ -41,7 +41,8 @@ struct Composer: View {
         .padding(.horizontal, 28)
         .padding(.bottom, 16)
         .frame(maxWidth: .infinity)
-        .onAppear { focused = true }
+        .onAppear { if !model.sidebarFocused { focused = true } }
+        .onChange(of: model.composerFocusRequest) { focused = true }
         .fileImporter(
             isPresented: $importing, allowedContentTypes: [.image, .text, .sourceCode, .json, .xml],
             allowsMultipleSelection: true

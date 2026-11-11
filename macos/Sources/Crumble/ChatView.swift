@@ -80,15 +80,15 @@ struct ChatView: View {
             .padding(.vertical, 20)
             .frame(maxWidth: .infinity)
         }
+        // The chat switch crossfades; its scroll position must not animate, or it slides up from the top.
+        .transaction { $0.animation = nil }
         .defaultScrollAnchor(.bottom)
         .defaultScrollAnchor(.bottom, for: .sizeChanges)
         .jumpToLatest()
         .headerBand {
             ChatHeader(title: agent.name, help: detailsShown ? "Hide Details" : "Show Details", action: showDetails) {
                 let state = model.botState(agent)
-                BotAvatarView(
-                    agent: agent, size: 62, state: state, live: pointerInside || state == .working,
-                    followsPointer: pointerInside)
+                CalmAvatar(agent: agent, size: 62, state: state, active: pointerInside)
             }
         }
         .overlay {
@@ -101,7 +101,8 @@ struct ChatView: View {
         .task(id: model.callRequestBoard.needsPolling) { await model.watchCallRequests() }
         .task(id: model.botSecretBoard.needsPolling) { await model.watchBotSecrets() }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            if model.snapshot != nil { Composer(target: .chat(agent, model: model)) }
+            // Present while the chat loads, so nothing shifts when it arrives; sending waits for it.
+            Composer(target: .chat(agent, model: model))
         }
         .navigationTitle(agent.name)
         .toolbar(removing: .title)
@@ -179,10 +180,17 @@ extension ChatView {
 struct EmptyChatView: View {
     @Environment(AppModel.self) private var model
     let agent: Agent
+    @State private var slow = false
 
     var body: some View {
         if model.snapshot == nil {
+            // A quick load shouldn't flash a spinner; only one that takes a moment shows it.
             ProgressView()
+                .opacity(slow ? 1 : 0)
+                .task {
+                    try? await Task.sleep(for: .milliseconds(400))
+                    slow = true
+                }
         } else {
             VStack(spacing: 4) {
                 Text("Say hello to \(agent.name)").font(.system(size: 15, weight: .medium))

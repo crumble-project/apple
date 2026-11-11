@@ -29,9 +29,7 @@ struct DetailsPanel: View {
 
     private var header: some View {
         VStack(spacing: 6) {
-            BotAvatarView(
-                agent: agent, size: 72, state: model.botState(agent), live: avatarHovered,
-                followsPointer: avatarHovered)
+            CalmAvatar(agent: agent, size: 72, state: model.botState(agent), active: avatarHovered)
                 .onHover { avatarHovered = $0 }
                 .padding(.bottom, 4)
             Text(agent.name).font(.system(size: 17, weight: .semibold))

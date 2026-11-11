@@ -76,6 +76,8 @@ struct GroupChatView: View {
             .padding(.vertical, 20)
             .frame(maxWidth: .infinity)
         }
+        // The chat switch crossfades; its scroll position must not animate, or it slides up from the top.
+        .transaction { $0.animation = nil }
         .defaultScrollAnchor(.bottom)
         .defaultScrollAnchor(.bottom, for: .sizeChanges)
         .jumpToLatest()
@@ -102,7 +104,8 @@ struct GroupChatView: View {
             }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            if model.groupSnapshot != nil { Composer(target: composerTarget) }
+            // Present while the chat loads, so nothing shifts when it arrives; sending waits for it.
+            Composer(target: composerTarget)
         }
         .navigationTitle(group.name)
         .toolbar(removing: .title)
