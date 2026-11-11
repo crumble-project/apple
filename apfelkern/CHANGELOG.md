@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- `BotAvatarView` gains `followsPointer`: a live avatar looks and turns toward the pointer anywhere in its window. It defaults to off.
 - Use server previews for automation timing and reasoning, and server-projected citation text and sites.
 
 - Use generated transcript block and job history item types directly.
