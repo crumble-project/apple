@@ -25,6 +25,25 @@ Workflows in `.github/workflows` run only when their directory or `apfelkern` ch
 - `macos.yml`: runs `swift test` and `swiftlint` for the macOS app.
 - `ios.yml`: builds the unsigned iOS app and test targets and runs `swiftlint` (simulator tests run locally).
 
+## Releases
+
+A `vMAJOR.MINOR.PATCH` tag runs `release.yml`, which releases both apps at that version. MINOR and PATCH stay below 100, and the build number is `MAJOR×10000 + MINOR×100 + PATCH`.
+
+- **macOS:** `macos/scripts/release.sh` signs `Crumble.app` with Developer ID, notarizes and staples it, and the workflow attaches `Crumble-VERSION-macOS.zip` to a GitHub release.
+- **iOS:** `ios/scripts/release.sh` archives the app and uploads it to App Store Connect, where it becomes a TestFlight build. Xcode signs it with a cloud-managed distribution certificate.
+
+Both scripts also run locally with the same environment variables. The workflow needs these repository secrets:
+
+| Secret | Contents |
+| --- | --- |
+| `APP_STORE_CONNECT_KEY_ID` | Key ID of an App Store Connect API key with the Admin role |
+| `APP_STORE_CONNECT_ISSUER_ID` | The API key's issuer ID |
+| `APP_STORE_CONNECT_KEY_BASE64` | The key's `.p8` file, base64-encoded |
+| `DEVELOPER_ID_CERTIFICATE_BASE64` | A Developer ID Application certificate and its private key as a `.p12`, base64-encoded |
+| `DEVELOPER_ID_CERTIFICATE_PASSWORD` | The `.p12` password |
+
+The app `ng.crumbli.ios` must exist in App Store Connect before the first upload.
+
 The canonical glossary is [`bot/GLOSSARY.md`](https://github.com/crumble-project/bot/blob/main/GLOSSARY.md).
 
 ## License
