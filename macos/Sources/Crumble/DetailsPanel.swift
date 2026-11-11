@@ -10,35 +10,64 @@ struct DetailsPanel: View {
     @Environment(AppModel.self) private var model
     @Environment(\.openWindow) private var openWindow
     let agent: Agent
+    /// Avatars draw on the CPU every frame, so the portrait comes alive only under the pointer.
+    @State private var avatarHovered = false
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 22) {
                 header
+                settingsRow
                 desktopPreview
                 automations
             }
-            .padding(16)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
         }
         .task(id: agent.id) { model.loadAgentDetails(agent.id) }
     }
 
     private var header: some View {
-        VStack(spacing: 8) {
-            BotAvatarView(agent: agent, size: 84, state: model.botState(agent), live: true)
-            Text(agent.name).font(.title3.weight(.semibold))
+        VStack(spacing: 6) {
+            BotAvatarView(
+                agent: agent, size: 72, state: model.botState(agent), live: avatarHovered,
+                followsPointer: avatarHovered)
+                .onHover { avatarHovered = $0 }
+                .padding(.bottom, 4)
+            Text(agent.name).font(.system(size: 17, weight: .semibold))
             Text(agent.description?.nilIfEmpty ?? (agent.enabled ? "Ready" : "Paused"))
-                .font(.caption)
+                .font(.system(size: 12))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
-        .padding(.top, 24)
+        .padding(.top, 28)
         .frame(maxWidth: .infinity)
     }
 
+    private var settingsRow: some View {
+        Button {
+            model.openEditor(agentID: agent.id)
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "gearshape").foregroundStyle(.secondary).frame(width: 16)
+                Text("Bot settings").font(.system(size: 13))
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right").font(.system(size: 11, weight: .medium)).foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .card()
+    }
+
     private func section(_ title: String, @ViewBuilder content: () -> some View) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(title).font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 4)
             content()
         }
     }
@@ -58,20 +87,30 @@ struct DetailsPanel: View {
         let board = model.automationBoard
         let items = board.schedules(on: agent.id)
         return section("Automations") {
-            if !board.isLoaded {
-                ProgressView().controlSize(.small)
-            } else if items.isEmpty {
-                Text("No automations yet").font(.subheadline).foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 0) {
+                if !board.isLoaded {
+                    ProgressView().controlSize(.small).padding(12)
+                } else if items.isEmpty {
+                    Text("No automations yet")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                        .padding(12)
+                }
+                ForEach(Array(items.enumerated()), id: \.element.id) { index, schedule in
+                    if index > 0 { Divider().padding(.leading, 12) }
+                    automationRow(schedule).padding(12)
+                }
             }
-            ForEach(items) { automationRow($0) }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .card()
         }
     }
 
     private func automationRow(_ schedule: Schedule) -> some View {
         let board = model.automationBoard
-        return HStack(alignment: .top, spacing: 12) {
+        return HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 1) {
-                Text(schedule.name).font(.subheadline.weight(.medium)).lineLimit(1)
+                Text(schedule.name).font(.system(size: 13, weight: .medium)).lineLimit(1)
                 Text(automationTiming(schedule, sources: model.connectedServices.eventSources.sources))
                     .font(.caption)
                     .foregroundStyle(.secondary)

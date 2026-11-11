@@ -32,6 +32,9 @@ struct CrumbleApp: App {
                 CommandPaletteButton(model: model).keyboardShortcut("k")
             }
             CommandGroup(replacing: .appSettings) { SettingsButton().keyboardShortcut(",") }
+            #if DEBUG
+                SampleJobCommands(model: model)
+            #endif
         }
 
         // A plain window rather than a Settings scene: those lay their toolbar out as a row of tabs
@@ -110,84 +113,97 @@ func sheetBinding<Draft: Identifiable & Sendable>(_ source: Binding<Draft?>, for
 
 struct SidebarView: View {
     @Environment(AppModel.self) private var model
-    @State private var search = ""
-
-    private var filteredGroups: [GroupChat] {
-        guard !search.isEmpty else { return model.groupChats }
-        return model.groupChats.filter { $0.name.localizedStandardContains(search) }
-    }
-
-    private var filteredAgents: [Agent] {
-        guard !search.isEmpty else { return model.agents }
-        return model.agents.filter {
-            $0.name.localizedStandardContains(search) || ($0.lastMessage ?? "").localizedStandardContains(search)
-        }
-    }
 
     var body: some View {
         List(selection: Binding(get: { model.route }, set: { model.navigate(to: $0) })) {
-            Section("Bots") {
-                ForEach(filteredAgents) { agent in
-                    AgentRow(agent: agent)
-                        .tag(Route.agent(agent.id))
-                        .disabled(model.pendingMutations.contains("agent:\(agent.id)"))
-                }
+            // One list: a group's stacked avatars already set it apart from a bot.
+            ForEach(model.agents) { agent in
+                AgentRow(agent: agent)
+                    .tag(Route.agent(agent.id))
+                    .disabled(model.pendingMutations.contains("agent:\(agent.id)"))
             }
-            Section {
-                ForEach(filteredGroups) { group in
-                    GroupRow(group: group)
-                        .tag(Route.group(group.id))
-                        .disabled(model.pendingMutations.contains("group:\(group.id)") || group.id.hasPrefix("local:"))
-                }
-                if model.groupChats.isEmpty {
-                    Text(model.agents.count < GroupDraft.memberRange.lowerBound
-                        ? "Create two bots to start a group chat" : "No group chats yet")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                }
-            } header: {
-                HStack {
-                    Text("Group Chats")
-                    Spacer()
-                    Button("New Group Chat", systemImage: "plus") { model.createGroup() }
-                        .labelStyle(.iconOnly)
-                        .buttonStyle(.borderless)
-                        .disabled(model.agents.count < GroupDraft.memberRange.lowerBound)
-                        .help("New Group Chat (⇧⌘N)")
-                }
+            ForEach(model.groupChats) { group in
+                GroupRow(group: group)
+                    .tag(Route.group(group.id))
+                    .disabled(model.pendingMutations.contains("group:\(group.id)") || group.id.hasPrefix("local:"))
             }
         }
         .listStyle(.sidebar)
-        .searchable(text: $search, placement: .sidebar, prompt: "Search")
+        .scrollContentBackground(.hidden)
+        .background(Palette.chrome)
         .overlay {
-            if filteredAgents.isEmpty {
-                Text(model.agents.isEmpty ? "No agents yet" : "No results").foregroundStyle(.secondary)
+            if model.agents.isEmpty && !model.loading {
+                Text("No agents yet").foregroundStyle(.secondary)
             }
         }
+        .toolbar(removing: .sidebarToggle)
         .toolbar {
+            ToolbarSpacer(.flexible)
             ToolbarItem(placement: .primaryAction) {
-                Button("New Agent", systemImage: "square.and.pencil") { model.createAgent() }
-                    .help("New Agent (⌘N)")
+                Button("Search", systemImage: "magnifyingglass") { model.commandPaletteOpen = true }
+                    .help("Search (⌘K)")
+            }
+            ToolbarSpacer(.fixed)
+            ToolbarItem(placement: .primaryAction) {
+                // A click makes a bot; holding it offers a group chat too.
+                Menu {
+                    Button("New Agent") { model.createAgent() }
+                    Button("New Group Chat") { model.createGroup() }
+                        .disabled(model.agents.count < GroupDraft.memberRange.lowerBound)
+                } label: {
+                    Label("New Agent", systemImage: "plus")
+                } primaryAction: {
+                    model.createAgent()
+                }
+                .menuIndicator(.hidden)
+                .help("New Agent (⌘N). Hold for a group chat (⇧⌘N).")
             }
         }
-        .safeAreaInset(edge: .bottom) {
-            HStack {
+        .safeAreaInset(edge: .bottom, spacing: 0) { AccountFooter() }
+    }
+}
+
+/// Who is signed in, how the connection is doing, and the way to Settings.
+struct AccountFooter: View {
+    @Environment(AppModel.self) private var model
+
+    private var name: String {
+        let account = model.serverAccountBoard.account
+        return account?.name.nilIfEmpty ?? account?.email.nilIfEmpty ?? "Crumble"
+    }
+
+    private var initials: String {
+        name.split(separator: " ").prefix(2).compactMap(\.first).map(String.init).joined().uppercased()
+    }
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Text(initials)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.secondary)
+                .frame(width: 30, height: 30)
+                .background(Palette.bubble, in: .circle)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(name).font(.system(size: 13, weight: .medium)).lineLimit(1)
                 if model.loading || !model.streamStatus.isEmpty { ConnectionStatus() }
-                Spacer(minLength: 0)
-                SettingsButton()
-                    .labelStyle(.iconOnly)
-                    .buttonStyle(.borderless)
-                    .frame(width: 40, height: 40)
-                    .help("Settings (⌘,)")
             }
-            .padding(.horizontal, 8)
+            Spacer(minLength: 0)
+            SettingsButton()
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
+                .frame(width: 30, height: 30)
+                .help("Settings (⌘,)")
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
     }
 }
 
 struct AgentRow: View {
     @Environment(AppModel.self) private var model
     let agent: Agent
+    @State private var hovered = false
 
     /// A short description reads as a label beside the name; longer ones stay in the profile.
     private var label: String? {
@@ -196,14 +212,15 @@ struct AgentRow: View {
     }
 
     var body: some View {
-        HStack(spacing: 11) {
+        HStack(spacing: 10) {
             let state = model.botState(agent)
-            // Only the open and working bots animate: a long sidebar shouldn't repaint every bot.
+            // Avatars draw on the CPU every frame, so a bot here animates only while it works or is hovered.
             BotAvatarView(
-                agent: agent, size: 38, state: state, live: state == .working || model.route == .agent(agent.id))
-            VStack(alignment: .leading, spacing: 2) {
+                agent: agent, size: 44, state: state, live: state == .working || hovered, followsPointer: hovered)
+            VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: 6) {
                     Text(agent.name)
+                        .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(agent.enabled ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
                         .lineLimit(1)
                         .layoutPriority(1)
@@ -214,14 +231,15 @@ struct AgentRow: View {
                     }
                 }
                 Text(preview(agent.lastMessage ?? "").nilIfEmpty ?? "No messages yet")
-                    .font(.callout)
+                    .font(.system(size: 12.5))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
             Spacer(minLength: 0)
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, 5)
         .contentShape(Rectangle())
+        .onHover { hovered = $0 }
     }
 
     private func chip(_ text: String) -> some View {
@@ -243,11 +261,10 @@ struct ConnectionStatus: View {
             if !model.streamStatus.isEmpty { (model.streamStatus, .red) } else if model.loading {
                 ("Syncing…", .secondary)
             } else { ("Connected", .green) }
-        HStack(spacing: 6) {
-            Circle().fill(color).frame(width: 7, height: 7)
+        HStack(spacing: 5) {
+            Circle().fill(color).frame(width: 6, height: 6)
             Text(status).font(.caption).foregroundStyle(.secondary).lineLimit(1)
         }
-        .padding(.horizontal, 10)
     }
 }
 

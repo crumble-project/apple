@@ -11,19 +11,19 @@ struct GroupRow: View {
     private var members: [Agent] { group.memberIds.compactMap { id in model.agents.first { $0.id == id } } }
 
     var body: some View {
-        HStack(spacing: 11) {
+        HStack(spacing: 10) {
             ZStack(alignment: .topLeading) {
                 ForEach(Array(members.prefix(2).enumerated()), id: \.element.id) { index, agent in
-                    BotAvatarView(agent: agent, size: 26, state: .idle)
-                        .offset(x: CGFloat(index) * 12, y: CGFloat(index) * 12)
+                    BotAvatarView(agent: agent, size: 31, state: .idle)
+                        .offset(x: CGFloat(index) * 13, y: CGFloat(index) * 13)
                 }
             }
-            .frame(width: 38, height: 38, alignment: .topLeading)
+            .frame(width: 44, height: 44, alignment: .topLeading)
             .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(group.name).lineLimit(1)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(group.name).font(.system(size: 13, weight: .medium)).lineLimit(1)
                 Text(members.map(\.name).formatted(.list(type: .and)))
-                    .font(.callout)
+                    .font(.system(size: 12.5))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
@@ -79,7 +79,11 @@ struct GroupChatView: View {
         .defaultScrollAnchor(.bottom)
         .defaultScrollAnchor(.bottom, for: .sizeChanges)
         .jumpToLatest()
-        .scrollEdgeEffectStyle(.soft, for: .all)
+        .headerBand {
+            ChatHeader(
+                title: group.name, help: "Edit Group", action: { model.editGroup(group) },
+                avatar: { GroupMembersStrip(group: group) })
+        }
         .overlay {
             if rows.isEmpty {
                 if model.groupSnapshot == nil {
@@ -104,7 +108,6 @@ struct GroupChatView: View {
         .toolbar(removing: .title)
         .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         .toolbar {
-            ToolbarItem(placement: .navigation) { GroupMembersStrip(group: group) }
             ToolbarSpacer(.flexible)
             ToolbarItem(placement: .primaryAction) {
                 Button("Edit Group", systemImage: "person.2.badge.gearshape") { model.editGroup(group) }
@@ -138,12 +141,12 @@ struct GroupMembersStrip: View {
     let group: GroupChat
 
     var body: some View {
-        HStack(spacing: 4) {
-            Text(group.name).font(.headline).padding(.trailing, 6)
+        // Overlapping, as Messages stacks a group's people above its name.
+        HStack(spacing: -17) {
             ForEach(group.memberIds, id: \.self) { id in
                 if let agent = model.agents.first(where: { $0.id == id }) {
                     let status = model.groupSnapshot?.activity.member(id)?.status ?? .idle
-                    BotAvatarView(agent: agent, size: 22, state: status == .running ? .working : .idle)
+                    BotAvatarView(agent: agent, size: 52, state: status == .running ? .working : .idle)
                         .opacity(status == .disabled ? 0.4 : 1)
                         .help(status.label(for: agent.name))
                         .accessibilityLabel(status.label(for: agent.name))
@@ -182,7 +185,7 @@ struct GroupChatRowView: View {
                 TypingDots()
                     .padding(.horizontal, 15)
                     .padding(.vertical, 14)
-                    .background(Palette.bubble, in: .rect(cornerRadius: 18))
+                    .background(Palette.bubble, in: .rect(cornerRadius: 16))
                 Spacer()
             }
             .accessibilityElement(children: .ignore)

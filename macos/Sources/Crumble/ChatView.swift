@@ -62,6 +62,8 @@ struct ChatView: View {
     @Environment(AppModel.self) private var model
     @AppStorage("showsDetails") private var showsDetails = true
     @State private var width: CGFloat = 0
+    /// Avatars draw on the CPU every frame, so the header's comes alive only while the pointer is in the chat.
+    @State private var pointerInside = false
     let agent: Agent
 
     var body: some View {
@@ -81,18 +83,23 @@ struct ChatView: View {
         .defaultScrollAnchor(.bottom)
         .defaultScrollAnchor(.bottom, for: .sizeChanges)
         .jumpToLatest()
-        .scrollEdgeEffectStyle(.soft, for: .all)
+        .headerBand {
+            ChatHeader(title: agent.name, help: detailsShown ? "Hide Details" : "Show Details", action: showDetails) {
+                let state = model.botState(agent)
+                BotAvatarView(
+                    agent: agent, size: 62, state: state, live: pointerInside || state == .working,
+                    followsPointer: pointerInside)
+            }
+        }
         .overlay {
             if rows.isEmpty { EmptyChatView(agent: agent) }
         }
+        .onHover { pointerInside = $0 }
         .task(id: model.jobPollDelay) { await model.watchJobs() }
         .task(id: model.heldActionBoard.needsPolling) { await model.watchHeldActions() }
         .task(id: model.botRequestBoard.needsPolling) { await model.watchBotRequests() }
         .task(id: model.callRequestBoard.needsPolling) { await model.watchCallRequests() }
         .task(id: model.botSecretBoard.needsPolling) { await model.watchBotSecrets() }
-        .background(alignment: .top) {
-            DitherGlow(color: agent.color).frame(height: 150).ignoresSafeArea(edges: .top)
-        }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if model.snapshot != nil { Composer(target: .chat(agent, model: model)) }
         }
@@ -103,22 +110,8 @@ struct ChatView: View {
             // With the title removed nothing pushes the button to the trailing edge.
             ToolbarSpacer(.flexible)
             ToolbarItem(placement: .primaryAction) {
-                Button {
-                    model.openEditor(agentID: agent.id)
-                } label: {
-                    Label("Bot Settings", systemImage: "gearshape")
-                }
-                .help("Bot Settings")
-            }
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    showDetails()
-                } label: {
-                    Label("Details", systemImage: "sidebar.trailing")
-                }
-                .help(
-                    showsDetails && model.jobHistory == nil && model.openCall == nil
-                        ? "Hide Details" : "Show Details")
+                Button(panelTitle, systemImage: panelShown ? "xmark" : "sidebar.trailing") { togglePanel() }
+                    .help(panelTitle)
             }
         }
         .safeAreaInset(edge: .trailing, spacing: 0) { rightPanel }
@@ -141,12 +134,34 @@ extension ChatView {
     }
 
     private func panelColumn(width: CGFloat, @ViewBuilder content: () -> some View) -> some View {
-        HStack(spacing: 0) {
-            Divider()
-            content()
-                .frame(width: width)
-                .frame(maxHeight: .infinity)
-                .background(.background)
+        // The panel's color and edge run up under the toolbar so its close button sits on the panel.
+        content()
+            .frame(width: width)
+            .frame(maxHeight: .infinity)
+            .background { Palette.chrome.ignoresSafeArea() }
+            .overlay(alignment: .leading) {
+                Rectangle().fill(Palette.hairline).frame(width: 1).ignoresSafeArea()
+            }
+    }
+
+    fileprivate var detailsShown: Bool { showsDetails && model.jobHistory == nil && model.openCall == nil }
+    fileprivate var panelShown: Bool { showsDetails || model.jobHistory != nil || model.openCall != nil }
+
+    fileprivate var panelTitle: String {
+        if model.openCall != nil { return "Close Call" }
+        if model.jobHistory != nil { return "Close Job" }
+        return showsDetails ? "Hide Details" : "Show Details"
+    }
+
+    /// The toolbar's button closes whatever the panel shows; a closed call or job gives the column
+    /// back to the details if they were showing.
+    fileprivate func togglePanel() {
+        if model.openCall != nil {
+            model.closeCall()
+        } else if model.jobHistory != nil {
+            model.closeJob()
+        } else {
+            showsDetails.toggle()
         }
     }
 
@@ -211,7 +226,7 @@ struct ChatRowView: View {
                 TypingDots()
                     .padding(.horizontal, 15)
                     .padding(.vertical, 14)
-                    .background(Palette.bubble, in: .rect(cornerRadius: 18))
+                    .background(Palette.bubble, in: .rect(cornerRadius: 16))
                 Text(label).font(.system(size: 13)).foregroundStyle(.secondary)
                 Spacer()
             }

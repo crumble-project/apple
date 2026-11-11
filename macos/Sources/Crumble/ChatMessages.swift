@@ -103,15 +103,17 @@ struct MessageView: View {
     private var receivedMessage: some View {
         let text = message.presentation?.text ?? message.text
         return HStack(alignment: .center, spacing: 6) {
-            VStack(alignment: .leading, spacing: 6) {
-                MarkdownText(text: text)
-                    .font(Palette.messageFont)
-                    .lineSpacing(Palette.messageLineSpacing)
-                    .textSelection(.enabled)
-                ForEach(message.presentation?.citations ?? [], id: \.href) { SourceChipLink(chip: $0) }
+            WidthCap(Palette.bubbleWidth) {
+                VStack(alignment: .leading, spacing: 6) {
+                    MarkdownText(text: text)
+                        .font(Palette.messageFont)
+                        .lineSpacing(Palette.messageLineSpacing)
+                        .textSelection(.enabled)
+                    ForEach(message.presentation?.citations ?? [], id: \.href) { SourceChipLink(chip: $0) }
+                }
+                .bubble(owner: false)
+                .fixedSize(horizontal: false, vertical: true)
             }
-            .bubble(owner: false)
-            .fixedSize(horizontal: false, vertical: true)
             .contextMenu { menu }
             actions
             Spacer(minLength: 56)
