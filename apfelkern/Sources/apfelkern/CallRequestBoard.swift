@@ -54,6 +54,9 @@ public final class CallRequestBoard {
     requests.first { $0.id == request.id } ?? request
   }
 
+  /// The server listed the request, so its card shows the server's state rather than the saved one.
+  public func isLoaded(_ id: String) -> Bool { requests.contains { $0.id == id } }
+
   public func decision(for id: String) -> CallRequestDecision {
     decisions[id] ?? CallRequestDecision()
   }

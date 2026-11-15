@@ -53,7 +53,7 @@ extension Message {
       attachments: wire.files?.compactMap(AttachmentInfo.init(wire:)), toolName: wire.toolName,
       toolCallId: wire.toolCallId, isError: wire.isError,
       toolDetails: try wire.toolDetails.map { try JSONValue(wire: $0) }, requestId: wire.requestId,
-      presentation: wire.presentation)
+      presentation: wire.presentation, replyReferences: wire.replyReferences.map(ReplyReference.init(wire:)))
   }
 }
 

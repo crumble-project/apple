@@ -117,7 +117,6 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
   private var tapRouter = NotificationTapRouter()
   private var history = NotificationHistory(keys: UserDefaults.standard.stringArray(forKey: "push.seen") ?? [])
   private var started = false
-  private var backgroundTask = UIBackgroundTaskIdentifier.invalid
 
   func start(model: AppModel) {
     self.model = model
@@ -129,13 +128,13 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
     started = true
     push.didUpdate = { [weak self] in self?.routePendingTap() }
     connectionChanged()
+    setForeground(UIApplication.shared.applicationState == .active)
     refreshAuthorization(requestIfNeeded: true)
   }
 
   func connectionChanged() {
     guard started else { return }
     push.setConnection(model?.client)
-    updatePresence()
   }
 
   /// Unregisters this device while the session still works, before it's signed out.
@@ -166,29 +165,9 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
     }
   }
 
-  func updatePresence(active: Bool? = nil) {
+  func setForeground(_ active: Bool) {
     guard started else { return }
-    let isActive = active ?? (UIApplication.shared.applicationState == .active)
-    let agentID: String? = if case .agent(let id) = model?.route { id } else { nil }
-    push.setPresence(active: isActive, agentID: agentID)
-    if !isActive, backgroundTask == .invalid {
-      // A finite grace period lets the presence update finish as iOS suspends the app.
-      backgroundTask = UIApplication.shared.beginBackgroundTask(
-        withName: "Update notification presence"
-      ) { [weak self] in
-        Task { @MainActor in self?.finishPresenceUpdate() }
-      }
-      Task {
-        await push.waitForSync()
-        finishPresenceUpdate()
-      }
-    }
-  }
-
-  private func finishPresenceUpdate() {
-    guard backgroundTask != .invalid else { return }
-    UIApplication.shared.endBackgroundTask(backgroundTask)
-    backgroundTask = .invalid
+    push.setForeground(active)
   }
 
   func routePendingTap() {

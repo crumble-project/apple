@@ -81,6 +81,7 @@ struct ChatView: View {
     .defaultScrollAnchor(.bottom, for: .sizeChanges)
     .jumpToLatest()
     .keepsContentSwipe()
+    .chatAttention(.bot(agent.id), ready: model.snapshot != nil)
     .overlay {
       if rows.isEmpty { EmptyChatView(agent: agent) }
     }

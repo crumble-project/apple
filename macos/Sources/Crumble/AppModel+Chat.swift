@@ -114,6 +114,7 @@ extension AppModel {
 
     /// Keeps older pages the owner already loaded; snapshots only carry the newest page.
     func applySnapshot(_ incoming: ChatSnapshot) {
+        snapshotRevision += 1
         updateRunningBot(selectedAgentID, running: incoming.isRunning)
         let incomingMessages = incoming.messages ?? []
         let acknowledged = Set(incomingMessages.compactMap(\.requestId))
@@ -211,6 +212,7 @@ extension AppModel {
             let index = agents.firstIndex(where: { $0.id == event.agentId }) {
             agents[index].lastMessage = lastMessage
         }
+        refreshReplyReferences(after: event, active: attentionActive)
         let context = NotificationContext(windowOnScreen: mainWindowOnScreen(), route: route)
         guard let client, let note = notification(for: event, in: context) else { return }
         unread.add(event)

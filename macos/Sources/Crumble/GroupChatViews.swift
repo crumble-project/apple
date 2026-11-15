@@ -80,6 +80,7 @@ struct GroupChatView: View {
         .defaultScrollAnchor(.bottom, for: .sizeChanges)
         .jumpToLatest()
         .scrollEdgeEffectStyle(.soft, for: .all)
+        .chatAttention(.group(group.id), ready: model.groupSnapshot != nil)
         .overlay {
             if rows.isEmpty {
                 if model.groupSnapshot == nil {
@@ -249,6 +250,7 @@ struct GroupBotMessage: View {
                 .font(Palette.messageFont)
                 .lineSpacing(Palette.messageLineSpacing)
                 .textSelection(.enabled)
+                .replySurface(message, .text, ready: message.showsReplyText)
             ForEach(message.citations, id: \.href) { CitationLink(citation: $0) }
         }
         .bubble(owner: false)

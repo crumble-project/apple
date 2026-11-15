@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Attachments work with the current server: files upload before their message and a retry uploads only those that failed. A file deleted from the chat's library shows **File deleted** instead of its preview.
+- While the main window is active, the app tells the server which chat it shows, so a reply there sends no push to your iPhone or other devices. Replies you've seen on screen count as seen everywhere, and a waiting card counts once it shows its request. Switching to another window or app, leaving the chat, or signing out clears it.
 - Automation timing, next runs, and the editor's next-run line come from the server, so they read as on the web, and the list's next runs stay current while it's open. **Save** is unavailable while the server says a schedule can't run; if the server can't be asked, saving still works. Reasoning levels in the composer and the bot form, cited pages under a reply, a job's steps, and what a working bot is doing come from the server too.
 
 - **Settings** no longer configures the server. Providers, the judge and vision models, web search, credentials and logins across bots, password managers, Integrations, Coding, Users, message gateways, and the event relay are set up in Crumble on the web. **Server Settings on the Web** in **General** opens it in the browser, and links that led to those pages, such as **Provider Settings…** under a failed reply, open the matching web page.

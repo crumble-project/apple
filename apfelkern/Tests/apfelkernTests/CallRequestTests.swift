@@ -200,7 +200,9 @@ func aRequestNamesItsState(status: CallRequest.Status, outcome: CallRequest.Outc
     #expect(board.current(request).status == .pending)
     board.refreshIfChanged(messages: [try toolResult()], client: client)
     #expect(board.needsPolling)
+    #expect(!board.isLoaded(request.id))
     try await wait { board.current(request).status == .calling }
+    #expect(board.isLoaded(request.id))
     #expect(board.needsPolling)
     try await stop(board)
   })

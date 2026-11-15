@@ -135,7 +135,9 @@ private func showing(_ request: BotRequest, client: APIClient) async throws -> B
     #expect(board.current(request).status == .pending)
     board.refreshIfChanged(messages: [try toolResult()], client: client)
     #expect(board.needsPolling)
+    #expect(!board.isLoaded(request.id))
     try await wait { board.current(request).status == .declined }
+    #expect(board.isLoaded(request.id))
     #expect(!board.needsPolling)
     try await stop(board)
   })

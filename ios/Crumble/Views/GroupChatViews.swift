@@ -93,6 +93,7 @@ struct GroupChatView: View {
     .defaultScrollAnchor(.bottom, for: .sizeChanges)
     .jumpToLatest()
     .keepsContentSwipe()
+    .chatAttention(.group(group.id), ready: model.groupSnapshot != nil)
     .overlay {
       if rows.isEmpty {
         if model.groupSnapshot == nil {
@@ -264,6 +265,7 @@ struct GroupBotMessage: View {
   private var bubble: some View {
     VStack(alignment: .leading, spacing: 6) {
       MarkdownText(text: message.presentedText).textSelection(.enabled)
+        .replySurface(message, .text, ready: message.showsReplyText)
       ForEach(message.citations, id: \.href) { CitationLink(citation: $0) }
     }
     .bubble(owner: false, tail: place.endsRun)

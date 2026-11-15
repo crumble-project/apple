@@ -104,6 +104,8 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
   public var requestId: String?
   /// A bot reply as the server presents it: its text without citation links, and the pages it cited.
   public var presentation: MessagePresentation?
+  /// Notification replies this message shows, each naming the exact surface whose display acknowledges it.
+  public var replyReferences: [ReplyReference]
   public var deliveryState: MessageDeliveryState
 
   public init(
@@ -115,7 +117,7 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
     attachments: [AttachmentInfo]? = nil, toolName: String? = nil, toolCallId: String? = nil,
     isError: Bool? = nil,
     toolDetails: JSONValue? = nil, requestId: String? = nil, presentation: MessagePresentation? = nil,
-    deliveryState: MessageDeliveryState = .confirmed
+    replyReferences: [ReplyReference] = [], deliveryState: MessageDeliveryState = .confirmed
   ) {
     self.id = id
     self.entryId = entryId
@@ -138,6 +140,7 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
     self.toolDetails = toolDetails
     self.requestId = requestId
     self.presentation = presentation
+    self.replyReferences = replyReferences
     self.deliveryState = deliveryState
   }
 
@@ -165,6 +168,7 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
     toolDetails = try container.decodeIfPresent(JSONValue.self, forKey: .toolDetails)
     requestId = try container.decodeIfPresent(String.self, forKey: .requestId)
     presentation = try container.decodeIfPresent(MessagePresentation.self, forKey: .presentation)
+    replyReferences = try container.decodeIfPresent([ReplyReference].self, forKey: .replyReferences) ?? []
     deliveryState =
       try container.decodeIfPresent(MessageDeliveryState.self, forKey: .deliveryState) ?? .confirmed
   }

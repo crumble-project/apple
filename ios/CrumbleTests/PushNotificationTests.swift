@@ -85,8 +85,6 @@ extension APIClientTests {
         (200, #"{"serverId":"server-a","transports":{"apns":true,"fcm":false}}"#)
       case ("PUT", "/v1/push/devices/\(controller.installationID)"):
         (200, #"{"serverId":"server-a","remoteDelivery":true}"#)
-      case ("PUT", "/v1/push/devices/\(controller.installationID)/presence"):
-        (204, "")
       default: (404, "")
       }
     }
@@ -99,7 +97,7 @@ extension APIClientTests {
     #expect(controller.remoteDelivery)
     let registrationRequest = try #require(StubProtocol.requests.first { $0.httpMethod == "PUT" })
     #expect(try pushDeviceBody(registrationRequest).token == "01fe")
-    controller.setPresence(active: false, agentID: nil)
+    controller.setForeground(false)
     await controller.waitForSync()
   }
 
@@ -111,8 +109,6 @@ extension APIClientTests {
         (200, #"{"serverId":"old-server","transports":{"apns":true,"fcm":false}}"#)
       case ("PUT", "/v1/push/devices/\(controller.installationID)"):
         (200, #"{"serverId":"old-server","remoteDelivery":true}"#)
-      case ("PUT", "/v1/push/devices/\(controller.installationID)/presence"):
-        (204, "")
       default: (404, "")
       }
     }
@@ -132,8 +128,6 @@ extension APIClientTests {
         (200, #"{"serverId":"new-server","transports":{"apns":true,"fcm":false}}"#)
       case ("PUT", "/v1/push/devices/\(controller.installationID)"):
         (200, #"{"serverId":"new-server","remoteDelivery":false}"#)
-      case ("PUT", "/v1/push/devices/\(controller.installationID)/presence"):
-        (204, "")
       default: (404, "")
       }
     }
@@ -154,8 +148,6 @@ extension APIClientTests {
         (200, #"{"serverId":"server-a","transports":{"apns":true,"fcm":false}}"#)
       case ("PUT", "/v1/push/devices/\(controller.installationID)"):
         (200, #"{"serverId":"server-a","remoteDelivery":true}"#)
-      case ("PUT", "/v1/push/devices/\(controller.installationID)/presence"):
-        (204, "")
       default: (404, "")
       }
     }
@@ -172,7 +164,7 @@ extension APIClientTests {
     #expect(registrations.count == 2)
     #expect(try pushDeviceBody(registrations[0]).token == "01")
     #expect(try pushDeviceBody(registrations[1]).token == "02a0")
-    controller.setPresence(active: false, agentID: nil)
+    controller.setForeground(false)
     await controller.waitForSync()
   }
 
@@ -193,7 +185,7 @@ extension APIClientTests {
     await controller.waitForSync()
     #expect(!controller.remoteDelivery)
     #expect(controller.status.contains("Server identity changed"))
-    controller.setPresence(active: false, agentID: nil)
+    controller.setForeground(false)
     await controller.waitForSync()
   }
 }

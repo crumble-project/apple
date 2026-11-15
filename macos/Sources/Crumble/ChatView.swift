@@ -82,6 +82,7 @@ struct ChatView: View {
         .defaultScrollAnchor(.bottom, for: .sizeChanges)
         .jumpToLatest()
         .scrollEdgeEffectStyle(.soft, for: .all)
+        .chatAttention(.bot(agent.id), ready: model.snapshot != nil)
         .overlay {
             if rows.isEmpty { EmptyChatView(agent: agent) }
         }

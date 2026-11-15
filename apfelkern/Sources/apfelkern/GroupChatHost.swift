@@ -42,9 +42,13 @@ public protocol GroupChatHost: AnyObject, Sendable {
   var deletedFiles: DeletedFiles { get set }
   var errorText: String { get set }
   var streamStatus: String { get set }
+  /// Counts snapshots applied to the open chat, so a late reload can tell a newer one overtook it.
+  var snapshotRevision: Int { get set }
 
   /// Stops the open bot chat's stream and clears its selection, so a group can take its place.
   func leaveBotChat()
+  /// Merges a bot chat snapshot into the open bot chat, keeping older pages and messages still sending.
+  func applySnapshot(_ incoming: ChatSnapshot)
   func request(_ work: @escaping @MainActor (APIClient) async throws -> (@MainActor () -> Void)?)
   func optimisticMutation(
     key: String,
@@ -134,6 +138,7 @@ extension GroupChatHost {
 
   /// Keeps older pages the owner already loaded; snapshots only carry the newest page.
   public func applyGroupSnapshot(_ incoming: GroupChatSnapshot) {
+    snapshotRevision += 1
     let key = GroupChat.deliveryKey(selectedGroupID)
     delivery.acknowledge(botID: key, requestIDs: Set(incoming.messages.compactMap(\.requestId)))
     let known = Set(messages.map(\.id))
@@ -186,6 +191,34 @@ extension GroupChatHost {
       }
       try? await Task.sleep(for: backoff)
       backoff = min(backoff * 2, .seconds(8))
+    }
+  }
+
+  /// A live reply can arrive before the open chat's snapshot names its event, so the chat on screen reloads its
+  /// newest page. A snapshot that lands first, a newer reload, or a new selection or connection drops this one; the
+  /// merge keeps drafts and messages still sending.
+  public func refreshReplyReferences(after event: ActivityEvent, active: Bool) {
+    guard event.type == "reply", active, !streamsSuspended, let client, let chat = route?.attentionChat,
+      chat == event.attentionChat
+    else { return }
+    snapshotRevision += 1
+    let revision = snapshotRevision
+    let version = selectionVersion
+    let generation = generation
+    Task {
+      @MainActor func current() -> Bool {
+        self.generation == generation && selectionVersion == version && snapshotRevision == revision
+          && route?.attentionChat == chat
+      }
+      switch chat.kind {
+      case .bot:
+        guard let snapshot = try? await client.chat(chat.id), current(), selectedAgentID == chat.id else { return }
+        applySnapshot(snapshot)
+      case .group:
+        guard let snapshot = try? await client.groupChat(chat.id), current(), selectedGroupID == chat.id
+        else { return }
+        applyGroupSnapshot(snapshot)
+      }
     }
   }
 

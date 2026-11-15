@@ -18,7 +18,9 @@ final class AppModel {
 
   var agents: [Agent] = []
   var capabilities: ServerCapabilities?
-  var route: Route?
+  var route: Route? {
+    didSet { if route != oldValue { updateChatAttention() } }
+  }
   var botDesktop: BotDesktopTarget?
   private(set) var selectedAgentID = ""
   var selectionVersion = 0
@@ -96,6 +98,14 @@ final class AppModel {
   var streamsSuspended = false
   var chatStreamVersion = 0
   var activityVersion = 0
+  /// Which chat the scene shows, for the server's push suppression, and which replies the owner saw.
+  let chatAttention = ChatAttention()
+  /// The scene is in the foreground and active.
+  @ObservationIgnored var attentionActive = false {
+    didSet { if attentionActive != oldValue { updateChatAttention() } }
+  }
+  @ObservationIgnored var attentionGrace = UIBackgroundTaskIdentifier.invalid
+  @ObservationIgnored var snapshotRevision = 0
 
   var agentMemories: [String: [Memory]] = [:]
   var memoryLoadVersion = 0
@@ -295,6 +305,7 @@ extension AppModel {
     groupDraft = nil
     messages = []
     client = candidate
+    updateChatAttention()
     Notifier.shared.connectionChanged()
     activeRequests = 0
     loading = false
@@ -348,7 +359,10 @@ extension AppModel {
   func signOut() {
     guard let client, !accountBoard.isSigningOut else { return }
     Task {
-      let outcome = await accountBoard.signOut(client: client) { await Notifier.shared.releaseConnection() }
+      let outcome = await accountBoard.signOut(client: client) {
+        await self.chatAttention.disconnect(client)
+        await Notifier.shared.releaseConnection()
+      }
       Keychain.delete("server-token")
       token = ""
       applyConnection(APIClient(baseURL: client.baseURL, token: ""))

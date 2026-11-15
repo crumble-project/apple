@@ -14,8 +14,6 @@ extension APIClientTests {
       (200, #"{"serverId":"\#(serverID)","transports":{"apns":true,"fcm":false}}"#)
     case ("PUT", "/v1/push/devices/\(installationID)"):
       remoteDelivery.map { (200, #"{"serverId":"\#(serverID)","remoteDelivery":\#($0)}"#) } ?? (404, "")
-    case ("PUT", "/v1/push/devices/\(installationID)/presence"):
-      remoteDelivery == nil ? (404, "") : (204, "")
     case ("DELETE", "/v1/push/devices/\(installationID)"):
       (deletionStatus, deletionStatus == 503 ? "busy" : "")
     default: (404, "")
@@ -52,7 +50,7 @@ extension APIClientTests {
         request, installationID: controller.installationID,
         serverID: "new", remoteDelivery: false)
     }
-    controller.setPresence(active: false, agentID: nil)
+    controller.setForeground(false)
     await controller.waitForSync()
     #expect(StubProtocol.requests.contains { $0.httpMethod == "PUT" && $0.url?.host == "new.test" })
     #expect(!controller.remoteDelivery)
@@ -109,7 +107,7 @@ extension APIClientTests {
         request, installationID: controller.installationID,
         serverID: "same", remoteDelivery: false)
     }
-    controller.setPresence(active: false, agentID: nil)
+    controller.setForeground(false)
     await controller.waitForSync()
     #expect(!controller.remoteDelivery)
   }
@@ -130,8 +128,6 @@ extension APIClientTests {
         (200, #"{"serverId":"server-a","transports":{"apns":true,"fcm":false}}"#)
       case ("PUT", "/v1/push/devices/\(controller.installationID)"):
         (200, #"{"serverId":"server-a","remoteDelivery":true}"#)
-      case ("PUT", "/v1/push/devices/\(controller.installationID)/presence"):
-        (204, "")
       case ("DELETE", "/v1/push/devices/\(controller.installationID)"):
         (204, "")
       default: (404, "")
@@ -147,7 +143,7 @@ extension APIClientTests {
     #expect(!controller.enabled)
     #expect(!controller.remoteDelivery)
     #expect(StubProtocol.requests.contains { $0.httpMethod == "DELETE" })
-    controller.setPresence(active: false, agentID: nil)
+    controller.setForeground(false)
     await controller.waitForSync()
   }
 
@@ -159,8 +155,6 @@ extension APIClientTests {
         (200, #"{"serverId":"server-a","transports":{"apns":true,"fcm":false}}"#)
       case ("PUT", "/v1/push/devices/\(controller.installationID)"):
         (200, #"{"serverId":"server-a","remoteDelivery":true}"#)
-      case ("PUT", "/v1/push/devices/\(controller.installationID)/presence"):
-        (204, "")
       default: (404, "")
       }
     }
@@ -196,8 +190,6 @@ extension APIClientTests {
         (200, #"{"serverId":"server-a","transports":{"apns":false,"fcm":false}}"#)
       case ("PUT", "/v1/push/devices/\(controller.installationID)"):
         (200, #"{"serverId":"server-a","remoteDelivery":false}"#)
-      case ("PUT", "/v1/push/devices/\(controller.installationID)/presence"):
-        (204, "")
       default: (404, "")
       }
     }
@@ -207,7 +199,7 @@ extension APIClientTests {
     await controller.waitForSync()
     #expect(!controller.remoteDelivery)
     #expect(controller.status.contains("Alerts work while the app is open"))
-    controller.setPresence(active: false, agentID: nil)
+    controller.setForeground(false)
     await controller.waitForSync()
   }
 

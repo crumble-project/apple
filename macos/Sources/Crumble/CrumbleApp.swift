@@ -54,6 +54,8 @@ struct CrumbleApp: App {
 struct ContentView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.openWindow) private var openWindow
+    /// The main window is key or main in the active app; another window, a minimized one, or another app isn't.
+    @Environment(\.appearsActive) private var appearsActive
 
     var body: some View {
         @Bindable var model = model
@@ -73,6 +75,8 @@ struct ContentView: View {
             model.notifier.openMainWindow = { openWindow(id: "main") }
         }
         .onChange(of: model.route) { model.markChatSeen() }
+        .onChange(of: appearsActive, initial: true) { _, active in model.attentionActive = active }
+        .onDisappear { model.attentionActive = false }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             model.markChatSeen()
         }

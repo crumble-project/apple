@@ -74,6 +74,7 @@ struct ContractTransport: ClientTransport {
     case Operations.UpdateEventRelay.id: allowed = ["url"]
     case Operations.UpdateJudgeModel.id: allowed = ["judgeModel"]
     case Operations.UpdateVisionModel.id: allowed = ["visionModel"]
+    case Operations.PutChatAttentionView.id: allowed = ["chat"]
     default: allowed = []
     }
     guard nullFields.isSubset(of: allowed), let body = request.httpBody,

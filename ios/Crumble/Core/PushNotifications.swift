@@ -41,8 +41,6 @@ final class PushController {
   private let bundleID: String
   private let environment: String
   private var client: APIClient?
-  private var active = false
-  private var agentID: String?
   private var revision = 0
   private var worker: Task<Void, Never>?
   private var heartbeat: Task<Void, Never>?
@@ -128,9 +126,8 @@ final class PushController {
     status = "APNs registration failed. Check signing and network access; retry on return to the app."
   }
 
-  func setPresence(active: Bool, agentID: String?) {
-    self.active = active
-    self.agentID = active ? agentID : nil
+  /// While the app is in the foreground, registration and pending cleanup retry every 30 seconds.
+  func setForeground(_ active: Bool) {
     heartbeat?.cancel()
     heartbeat = nil
     if active {
