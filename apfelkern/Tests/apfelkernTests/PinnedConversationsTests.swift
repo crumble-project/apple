@@ -4,63 +4,53 @@ import Testing
 @testable import apfelkern
 
 @Suite struct PinnedConversationsTests {
-  private func defaults() throws -> UserDefaults {
-    let name = "PinnedConversationsTests.\(UUID().uuidString)"
-    let defaults = try #require(UserDefaults(suiteName: name))
-    defaults.removePersistentDomain(forName: name)
-    return defaults
-  }
+  private let all: [Route] = [.agent("1"), .agent("2"), .group("g"), .agent("3")]
 
   @Test func pinsKeepTheirOrderAndLeaveTheRestInTheirs() {
-    var pins = PinnedConversations(server: "https://a")
-    let all: [Route] = [.agent("1"), .agent("2"), .group("g"), .agent("3")]
-    pins.pin(.agent("3"), among: Set(all))
-    pins.pin(.group("g"), among: Set(all))
+    let existing = Set(all)
+    var pins = PinnedConversations()
+    pins = pins.pinning(.agent("3"), among: existing)
+    pins = pins.pinning(.group("g"), among: existing)
     let split = pins.split(all) { $0 }
     #expect(split.pinned == [.agent("3"), .group("g")])
     #expect(split.unpinned == [.agent("1"), .agent("2")])
-    pins.unpin(.agent("3"))
+    pins = pins.unpinning(.agent("3"), among: existing)
     #expect(!pins.contains(.agent("3")))
-    #expect(pins.split(all) { $0 }.pinned == [.group("g")])
+    #expect(pins.keys == ["group:g"])
   }
 
   @Test func onlySavedChatsCanBePinned() {
-    let pins = PinnedConversations(server: "https://a")
+    let pins = PinnedConversations()
     #expect(!pins.canPin(.memory, among: [.memory]))
     #expect(!pins.canPin(.group("local:1"), among: [.group("local:1")]))
     #expect(pins.canPin(.agent("1"), among: [.agent("1")]))
   }
 
   @Test func nineIsTheLimitAndGoneConversationsDontCount() {
-    var pins = PinnedConversations(server: "https://a")
     let nine = Set((1...9).map { Route.agent("\($0)") })
-    for route in nine { pins.pin(route, among: nine.union([.agent("10")])) }
+    var pins = PinnedConversations()
+    let existing = nine.union([.agent("10")])
+    for route in nine.sorted(by: { "\($0)" < "\($1)" }) { pins = pins.pinning(route, among: existing) }
     #expect(!pins.canPin(.agent("10"), among: nine.union([.agent("10")])))
     let afterDelete = nine.subtracting([.agent("1")]).union([.agent("10")])
     #expect(pins.canPin(.agent("10"), among: afterDelete))
-    pins.pin(.agent("10"), among: afterDelete)
+    pins = pins.pinning(.agent("10"), among: afterDelete)
     #expect(pins.contains(.agent("10")))
     #expect(!pins.contains(.agent("1")))
   }
 
-  @Test func pinsAreSavedPerServer() throws {
-    let store = try defaults()
-    var pins = PinnedConversations(server: "https://a", defaults: store)
-    pins.pin(.agent("1"), among: [.agent("1")])
-    #expect(PinnedConversations(server: "https://a", defaults: store).contains(.agent("1")))
-    #expect(!PinnedConversations(server: "https://b", defaults: store).contains(.agent("1")))
+  @Test func changesDropKeysForMissingConversations() {
+    let pins = PinnedConversations(keys: ["agent:gone", "agent:1"])
+    #expect(pins.pinning(.agent("2"), among: [.agent("1"), .agent("2")]).keys == ["agent:1", "agent:2"])
+    #expect(pins.unpinning(.agent("2"), among: [.agent("1")]).keys == ["agent:1"])
   }
-}
 
-@Suite struct PinnedConversationMoveTests {
   @Test func aDraggedPinTakesItsTargetsPlace() {
-    var pins = PinnedConversations(server: "https://a")
-    let all: [Route] = [.agent("1"), .agent("2"), .agent("3")]
-    for route in all { pins.pin(route, among: Set(all)) }
-    pins.move(.agent("3"), to: .agent("1"))
-    #expect(pins.split(all) { $0 }.pinned == [.agent("3"), .agent("1"), .agent("2")])
-    pins.move(.agent("3"), to: .agent("2"))
-    #expect(pins.split(all) { $0 }.pinned == [.agent("1"), .agent("2"), .agent("3")])
+    let existing = Set(all)
+    let pins = PinnedConversations(keys: ["agent:1", "agent:2", "agent:3"])
+    let moved = pins.moving(.agent("3"), to: .agent("1"), among: existing)
+    #expect(moved.keys == ["agent:3", "agent:1", "agent:2"])
+    #expect(moved.moving(.agent("3"), to: .agent("2"), among: existing).keys == ["agent:1", "agent:2", "agent:3"])
   }
 
   @Test func keysRoundTrip() {

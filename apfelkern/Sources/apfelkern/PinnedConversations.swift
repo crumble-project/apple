@@ -1,30 +1,20 @@
 import Foundation
 
-/// Conversations pinned above the list, like Messages, in the order they were pinned.
-/// Pins live on this device and belong to one server, so a different server starts unpinned.
-public struct PinnedConversations: Equatable {
-  /// Messages allows nine pins: three rows of three.
+/// Conversations pinned above the list, like Messages, in the order they were pinned or arranged.
+/// The account keeps the keys, so every app shows the same pins. Every change returns the whole new
+/// list, cut down to conversations that exist, so a pin for a deleted chat leaves with the next change.
+public struct PinnedConversations: Equatable, Sendable {
+  /// Messages allows nine pins: three rows of three. The server refuses more.
   public static let limit = 9
-  private static let storageKey = "crumble.pinnedConversations"
-  /// Pinned route keys by server URL.
-  private var keys: [String: [String]]
-  private let defaults: UserDefaults?
-  public var server: String
+  /// `agent:<id>` and `group:<id>`, first pin first.
+  public private(set) var keys: [String]
 
-  public init(server: String = "", defaults: UserDefaults? = nil) {
-    self.server = server
-    self.defaults = defaults
-    keys = defaults?.dictionary(forKey: Self.storageKey) as? [String: [String]] ?? [:]
+  public init(keys: [String] = []) {
+    self.keys = keys
   }
-
-  public static func == (left: Self, right: Self) -> Bool {
-    left.server == right.server && left.keys == right.keys
-  }
-
-  private var current: [String] { keys[server] ?? [] }
 
   public func contains(_ route: Route) -> Bool {
-    Self.key(route).map(current.contains) ?? false
+    Self.key(route).map(keys.contains) ?? false
   }
 
   /// Only chats can be pinned, and only while fewer than `limit` of the conversations that exist are.
@@ -33,32 +23,31 @@ public struct PinnedConversations: Equatable {
     return existing.filter(contains).count < Self.limit
   }
 
-  /// Pins `route` after the others. Pins whose conversation is gone are dropped on the way.
-  public mutating func pin(_ route: Route, among existing: Set<Route>) {
-    guard canPin(route, among: existing), let key = Self.key(route) else { return }
-    let live = Set(existing.compactMap(Self.key))
-    save(current.filter(live.contains) + [key])
+  /// `route` pinned after the others.
+  public func pinning(_ route: Route, among existing: Set<Route>) -> Self {
+    guard canPin(route, among: existing), let key = Self.key(route) else { return self }
+    return Self(keys: live(among: existing) + [key])
   }
 
-  /// Moves pinned `route` into `target`'s place, the way a dragged pin pushes the others aside.
-  public mutating func move(_ route: Route, to target: Route) {
+  public func unpinning(_ route: Route, among existing: Set<Route>) -> Self {
+    let key = Self.key(route)
+    return Self(keys: live(among: existing).filter { $0 != key })
+  }
+
+  /// Pinned `route` moved into `target`'s place, the way a dragged pin pushes the others aside.
+  public func moving(_ route: Route, to target: Route, among existing: Set<Route>) -> Self {
+    var list = live(among: existing)
     guard let key = Self.key(route), let targetKey = Self.key(target), key != targetKey,
-      let origin = current.firstIndex(of: key), let destination = current.firstIndex(of: targetKey)
-    else { return }
-    var list = current
+      let origin = list.firstIndex(of: key), let destination = list.firstIndex(of: targetKey)
+    else { return Self(keys: list) }
     list.remove(at: origin)
     list.insert(key, at: destination)
-    save(list)
-  }
-
-  public mutating func unpin(_ route: Route) {
-    guard let key = Self.key(route) else { return }
-    save(current.filter { $0 != key })
+    return Self(keys: list)
   }
 
   /// `items` split into the pinned ones, in pin order, and the rest, in their own order.
   public func split<Item>(_ items: [Item], route: (Item) -> Route) -> (pinned: [Item], unpinned: [Item]) {
-    let order = Dictionary(current.enumerated().map { ($0.element, $0.offset) }) { first, _ in first }
+    let order = Dictionary(keys.enumerated().map { ($0.element, $0.offset) }) { first, _ in first }
     var pinned: [(Int, Item)] = []
     var unpinned: [Item] = []
     for item in items {
@@ -71,12 +60,12 @@ public struct PinnedConversations: Equatable {
     return (pinned.sorted { $0.0 < $1.0 }.map(\.1), unpinned)
   }
 
-  private mutating func save(_ list: [String]) {
-    keys[server] = list.isEmpty ? nil : list
-    defaults?.set(keys, forKey: Self.storageKey)
+  private func live(among existing: Set<Route>) -> [String] {
+    let live = Set(existing.compactMap(Self.key))
+    return keys.filter(live.contains)
   }
 
-  /// A chat route as text, for saving and for dragging; nil for routes that can't be pinned.
+  /// A chat route as text, for the account and for dragging; nil for routes that can't be pinned.
   public static func key(_ route: Route) -> String? {
     switch route {
     case .agent(let id): "agent:\(id)"
