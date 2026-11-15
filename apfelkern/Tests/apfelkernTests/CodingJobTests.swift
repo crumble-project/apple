@@ -127,6 +127,55 @@ private func stepResult(_ history: JobHistory?, _ id: String) -> String? {
   })
 }
 
+@Test @MainActor func anOlderHistoryLoadThatFinishesLateIsDropped() async throws {
+  let loads = Mutex(0)
+  try await withClient(handler: { _ in
+    switch loads.withLock({ $0 += 1; return $0 }) {
+    case 1: historyPage([step("call")])
+    case 2: StubResponse(body: historyPage([step("call")]).body, delay: 0.2)
+    default: historyPage([step("call", result: "done"), #"{"kind":"task","id":"3","text":"Next"}"#])
+    }
+  }, test: { client in
+    let board = JobBoard()
+    board.open(.coding, "fix", agentID: "a1", client: client)
+    await waitFor { board.history?.loaded == true }
+    board.loadHistory(client: client)
+    try await Task.sleep(for: .milliseconds(20))
+    board.loadHistory(client: client)
+    await waitFor { board.history?.items.count == 2 }
+    try await Task.sleep(for: .milliseconds(300))
+    #expect(board.history?.items.map(\.id) == ["call", "3"])
+    #expect(stepResult(board.history, "call") == "done")
+  })
+}
+
+@Test @MainActor func aFailedOlderPageKeepsTheNewestPage() async throws {
+  let refreshed = Mutex(false)
+  try await withClient(handler: { request in
+    let older = request.url?.query?.contains("before=2") == true
+    guard refreshed.withLock({ $0 }) else {
+      return older ? historyPage([step("call")]) : historyPage([#"{"kind":"task","id":"2","text":"Next"}"#],
+        hasMore: true, oldest: "2")
+    }
+    if older { return StubResponse(status: 503, body: Data()) }
+    return historyPage(
+      [#"{"kind":"task","id":"2","text":"Next"}"#, #"{"kind":"task","id":"3","text":"Then"}"#], hasMore: true,
+      oldest: "2")
+  }, test: { client in
+    let board = JobBoard()
+    board.open(.coding, "fix", agentID: "a1", client: client)
+    await waitFor { board.history?.loaded == true }
+    board.loadOlderHistory(client: client)
+    await waitFor { board.history?.items.count == 2 }
+
+    refreshed.withLock { $0 = true }
+    board.loadHistory(client: client)
+    await waitFor { board.history?.items.count == 3 }
+    #expect(board.history?.items.map(\.id) == ["call", "2", "3"])
+    #expect(board.history?.error == "")
+  })
+}
+
 @Test func draftDefaultsCodingOff() {
   #expect(AgentDraft(isNew: true, agentID: "").toolsCoding == false)
 }
