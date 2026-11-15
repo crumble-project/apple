@@ -248,8 +248,6 @@ final class PushController {
       status = response.remoteDelivery
         ? "Push notifications are ready."
         : "Server push delivery is not configured. Alerts work while the app is open."
-      try await client.pushPresence(
-        installationID, active: active, agentId: active ? agentID : nil)
     } catch {
       guard version == revision else { return }
       status = "Push setup could not reach the server. It will retry when the app is active."

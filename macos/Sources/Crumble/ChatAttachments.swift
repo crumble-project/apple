@@ -31,7 +31,8 @@ struct PendingAttachmentChip: View {
     }
 }
 
-/// The files a sent message carries: image thumbnails loaded from the server, text files by name.
+/// The files a sent message carries: image thumbnails loaded from the server, other files by name, and a
+/// placeholder for a file deleted from the chat's library.
 struct SentAttachments: View {
     @Environment(AppModel.self) private var model
     let message: Message
@@ -60,7 +61,7 @@ struct SentAttachments: View {
                             }
                         }
                     } else {
-                        FileLabel(name: file.name)
+                        FileLabel(name: file.deleted ? "File deleted" : file.name)
                     }
                 }
             }

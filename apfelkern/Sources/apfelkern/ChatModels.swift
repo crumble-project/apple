@@ -172,34 +172,38 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
   public var text: String { contentText(content) }
 }
 
-/// A file a sent message carries, as the transcript lists it; image bytes are fetched separately.
+/// A file a message carries, as the transcript lists it; its bytes are fetched by `id` separately.
 public struct AttachmentInfo: Codable, Hashable, Sendable {
+  /// The server's file ID; empty on an optimistic row the server has not confirmed yet.
+  public var id: String
   public var name: String
   public var mimeType: String
   public var size: Int
-  public var kind: String
+  /// The file was deleted from its chat's library; only its ID remains.
+  public var deleted: Bool
 
-  public var isImage: Bool { kind == "image" }
+  /// Previews follow the MIME type; a deleted file has none.
+  public var isImage: Bool { !deleted && mimeType.hasPrefix("image/") }
 
-  public init(
-    name: String,
-    mimeType: String,
-    size: Int,
-    kind: String
-  ) {
+  public init(id: String = "", name: String, mimeType: String, size: Int, deleted: Bool = false) {
+    self.id = id
     self.name = name
     self.mimeType = mimeType
     self.size = size
-    self.kind = kind
+    self.deleted = deleted
   }
-}
 
-/// A file on its way to the server, in the shape the messages endpoint takes.
-public typealias OutgoingAttachment = Operations.SendMessage.Input.Body.JsonPayload.AttachmentsPayloadPayload
+  public static func deleted(_ id: String) -> AttachmentInfo {
+    AttachmentInfo(id: id, name: "", mimeType: "", size: 0, deleted: true)
+  }
 
-extension OutgoingAttachment {
-  public init(name: String, mimeType: String, data: String) {
-    self.init(data: data, mimeType: mimeType, name: name)
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    id = try container.decodeIfPresent(String.self, forKey: .id) ?? ""
+    name = try container.decodeIfPresent(String.self, forKey: .name) ?? ""
+    mimeType = try container.decodeIfPresent(String.self, forKey: .mimeType) ?? ""
+    size = try container.decodeIfPresent(Int.self, forKey: .size) ?? 0
+    deleted = try container.decodeIfPresent(Bool.self, forKey: .deleted) ?? false
   }
 }
 

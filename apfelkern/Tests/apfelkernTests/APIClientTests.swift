@@ -58,7 +58,7 @@ import Testing
   }
 }
 
-@Test func generatedMessagesRetainAttachmentTimeoutAndBody() async throws {
+@Test func generatedMessagesCarryFileIDsWithAttachmentTimeout() async throws {
   let requests = Mutex(0)
   let execution = #"""
     {"id":"run","agentId":"bot","conversationId":"chat","scheduleId":null,"submissionId":null,
@@ -72,14 +72,54 @@ import Testing
     let body = try requestJSON(request)
     #expect(body["timezone"] == .string("Europe/Berlin"))
     #expect(body["replyTo"] == nil)
-    #expect(body["attachments"] == .array([.object([
-      "name": .string("a.png"), "mimeType": .string("image/png"), "data": .string("AQI=")])]))
+    #expect(body["attachments"] == nil)
+    #expect(body["files"] == .array([.string("f1"), .string("f2")]))
     return StubResponse(status: 202, body: Data(execution.utf8))
   }) { client in
     try await client.sendChatMessage("bot", content: "hello", requestID: "request", replyTo: "",
-      attachments: [.init(name: "a.png", mimeType: "image/png", data: "AQI=")], timezone: "Europe/Berlin")
+      files: ["f1", "f2"], timezone: "Europe/Berlin")
   }
   #expect(requests.withLock { $0 } == 1)
+}
+
+private let uploadedFile = #"""
+  {"file":{"id":"0b7c6a9e-7d3f-4c55-9d1a-1f1e5b2f3a40","name":"Trip plan ü.png","mimeType":"image/png",
+   "size":5,"createdAt":"now"},"existed":false}
+  """#
+
+@Test func uploadsSendRawBytesWithTheFileNameAndType() async throws {
+  let bytes = Data([0, 255, 13, 10, 128])
+  let file = PendingAttachment(name: "Trip plan ü+&.png", mimeType: "image/png", data: bytes)
+  let paths = Mutex<[String]>([])
+  try await withClient(handler: { request in
+    paths.withLock { $0.append(request.url?.path ?? "") }
+    #expect(request.httpMethod == "POST")
+    #expect(request.timeoutInterval == 120)
+    #expect(request.value(forHTTPHeaderField: "Content-Type") == "image/png")
+    #expect(request.value(forHTTPHeaderField: "X-File-Name") == "Trip%20plan%20%C3%BC%2B%26.png")
+    #expect(requestBody(request) == bytes)
+    return StubResponse(status: 201, body: Data(uploadedFile.utf8))
+  }) { client in
+    let botFile = try await client.uploadFile("bot", file)
+    let groupFile = try await client.uploadGroupFile("trip", file)
+    #expect([botFile, groupFile] == Array(repeating: "0b7c6a9e-7d3f-4c55-9d1a-1f1e5b2f3a40", count: 2))
+  }
+  #expect(paths.withLock { $0 } == ["/prefix/v1/agents/bot/files", "/prefix/v1/group-chats/trip/files"])
+}
+
+@Test func filesDownloadByID() async throws {
+  let bytes = Data([137, 80, 78, 71])
+  let paths = Mutex<[String]>([])
+  try await withClient(handler: { request in
+    paths.withLock { $0.append(request.url?.path ?? "") }
+    #expect(request.httpMethod == "GET")
+    return StubResponse(contentType: "application/octet-stream", body: bytes)
+  }) { client in
+    let botFile = try await client.file("bot", fileID: "f1")
+    let groupFile = try await client.groupFile("trip", fileID: "f2")
+    #expect([botFile, groupFile] == [bytes, bytes])
+  }
+  #expect(paths.withLock { $0 } == ["/prefix/v1/agents/bot/files/f1", "/prefix/v1/group-chats/trip/files/f2"])
 }
 
 @Test func nullableGeneratedResourceFailsWithoutFabricatingAnAgent() async throws {
@@ -88,27 +128,12 @@ import Testing
   }
 }
 
-@Test func generatedPushOperationsRetainPresenceTimeout() async throws {
-  let requests = Mutex(0)
-  try await withClient(handler: { request in
-    requests.withLock { $0 += 1 }
-    #expect(request.timeoutInterval == 3)
-    #expect(request.httpMethod == "PUT")
-    #expect(request.url?.path == "/prefix/v1/push/devices/installation/presence")
-    let body = try requestJSON(request)
-    #expect(body["agentId"] == .null)
-    return StubResponse(status: 204, body: Data())
-  }) { client in
-    try await client.pushPresence("installation", active: true, agentId: nil, timeout: 3)
-  }
-  #expect(requests.withLock { $0 } == 1)
-}
-
 @Test func generatedSchedulePatchPreservesExplicitNullAndDate() async throws {
   let schedule = #"""
     {"id":"task","agentId":"bot","name":"Task","prompt":"hello","kind":"prompt","command":null,
      "timeoutSeconds":60,"notify":true,"eventSourceId":null,"cron":null,"timezone":"UTC",
-     "runAt":"2026-07-01T09:00:00.123Z","enabled":true,"nextRunAt":null,"createdAt":"now","createdByAgentId":null}
+     "runAt":"2026-07-01T09:00:00.123Z","enabled":true,"nextRunAt":null,"nextRunLabel":"","description":"",
+     "timing":"","createdAt":"now","createdByAgentId":null}
     """#
   try await withClient(handler: { request in
     let body = try requestJSON(request)
@@ -197,13 +222,15 @@ private let groupSnapshot = #"""
    "activity":{"paused":true,"botTurns":8,"members":[
      {"agentId":"ada","status":"running","error":null},{"agentId":"grace","status":"disabled","error":null}]},
    "messages":[
-     {"id":"trip:1:0","entryId":"trip:1","role":"user","content":"Pack light","origin":{"kind":"owner"}},
+     {"id":"trip:1:0","entryId":"trip:1","role":"user","content":"Pack light","origin":{"kind":"owner"},
+      "replyReferences":[]},
      {"id":"trip:2:0","entryId":"trip:2","role":"toolResult","content":"Reacted 👍","toolName":"react",
-      "toolDetails":{"emoji":"👍"},"replyTo":"trip:1","origin":{"kind":"bot","agentId":"ada","name":"Ada"}}],
+      "toolDetails":{"emoji":"👍"},"replyTo":"trip:1","origin":{"kind":"bot","agentId":"ada","name":"Ada"},
+      "replyReferences":[]}],
    "hasMore":false,"oldestEntryId":"trip:1","updatedAt":1}
   """#
 
-@Test func groupMessagesCarryReplyAndAttachments() async throws {
+@Test func groupMessagesCarryReplyAndFileIDs() async throws {
   let requests = Mutex(0)
   try await withClient(handler: { request in
     requests.withLock { $0 += 1 }
@@ -213,13 +240,12 @@ private let groupSnapshot = #"""
     let body = try requestJSON(request)
     #expect(body["content"] == .string("Route attached"))
     #expect(body["replyTo"] == .string("trip:3"))
-    #expect(body["attachments"] == .array([.object([
-      "name": .string("map.png"), "mimeType": .string("image/png"), "data": .string("AQI=")])]))
+    #expect(body["attachments"] == nil)
+    #expect(body["files"] == .array([.string("f1")]))
     return StubResponse(status: 201, body: Data(#"{"requestId":"request","entryId":"trip:4"}"#.utf8))
   }) { client in
     try await client.sendGroupMessage(
-      "trip", content: "Route attached", requestID: "request", replyTo: "trip:3",
-      attachments: [.init(name: "map.png", mimeType: "image/png", data: "AQI=")])
+      "trip", content: "Route attached", requestID: "request", replyTo: "trip:3", files: ["f1"])
   }
   #expect(requests.withLock { $0 } == 1)
 }

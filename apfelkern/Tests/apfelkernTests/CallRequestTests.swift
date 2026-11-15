@@ -182,8 +182,9 @@ func aRequestNamesItsState(status: CallRequest.Status, outcome: CallRequest.Outc
 @Test func theTranscriptComesFromItsEndpoint() async throws {
   try await withClient(handler: { request in
     #expect(request.url?.path == "/prefix/v1/agents/a1/call-requests/r1/transcript")
-    return StubResponse(body: Data(
-      #"{"messages":[{"id":"m1","entryId":"e1","role":"user","content":"Hello?"}],"hasMore":false}"#.utf8))
+    return StubResponse(body: Data((
+      #"{"messages":[{"id":"m1","entryId":"e1","role":"user","content":"Hello?","replyReferences":[]}],"#
+        + #""hasMore":false}"#).utf8))
   }, test: { client in
     let page = try await client.callRequestTranscript("a1", id: "r1")
     #expect(page.messages?.map(\.id) == ["m1"])

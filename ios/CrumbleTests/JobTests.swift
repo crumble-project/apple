@@ -62,7 +62,8 @@ extension APIClientTests {
     let model = AppModel(
       client: StubProtocol.client { request in
         request.url?.path == "/v1/agents/a1/coding-jobs/fix/history"
-          ? (200, #"{"messages":[{"id":"1","entryId":"e1","role":"user","content":"Fix it"}],"#
+          ? (200, #"{"items":[],"messages":[{"id":"1","entryId":"e1","#
+            + #""replyReferences":[],"role":"user","content":"Fix it"}],"#
             + #""hasMore":false,"oldestEntryId":null}"#)
           : (404, "")
       })

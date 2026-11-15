@@ -1,4 +1,5 @@
 import Foundation
+import OpenAPIRuntime
 
 /// A conversation between the owner and two to six bots, with one shared transcript.
 public struct GroupChat: Codable, Identifiable, Hashable, Sendable {
@@ -82,16 +83,6 @@ public struct GroupChatSnapshot: Codable, Sendable {
   }
 }
 
-/// A file on its way into a group chat, in the shape the group messages endpoint takes.
-public typealias OutgoingGroupAttachment =
-  Operations.SendGroupMessage.Input.Body.JsonPayload.AttachmentsPayloadPayload
-
-extension OutgoingGroupAttachment {
-  public init(_ attachment: OutgoingAttachment) {
-    self.init(data: attachment.data, mimeType: attachment.mimeType, name: attachment.name)
-  }
-}
-
 extension GroupChat {
   init(wire: Components.Schemas.GroupChat) {
     self.init(id: wire.id, name: wire.name, memberIds: wire.memberIds, createdAt: wire.createdAt,
@@ -160,14 +151,21 @@ extension APIClient {
     }
   }
 
+  /// Uploads a file into the group's library and returns its ID, which a message then carries in `files`.
+  public func uploadGroupFile(_ id: String, _ file: PendingAttachment) async throws -> String {
+    try await invoke(timeout: 120, headers: ["Content-Type": file.mimeType]) {
+      try await $0.uploadGroupFile(.init(
+        path: .init(id: id), headers: .init(xFileName: file.name),
+        body: .any(HTTPBody(file.data)))).created.body.json.file.id
+    }
+  }
+
   public func sendGroupMessage(
-    _ id: String, content: String, requestID: String, replyTo: String = "",
-    attachments: [OutgoingAttachment] = []
+    _ id: String, content: String, requestID: String, replyTo: String = "", files: [String] = []
   ) async throws {
     let body = Operations.SendGroupMessage.Input.Body.JsonPayload(
-      attachments: attachments.isEmpty ? nil : attachments.map(OutgoingGroupAttachment.init),
-      content: content, replyTo: replyTo.nilIfEmpty, requestId: requestID)
-    try await invoke(timeout: attachments.isEmpty ? 20 : 120) {
+      content: content, files: files.isEmpty ? nil : files, replyTo: replyTo.nilIfEmpty, requestId: requestID)
+    try await invoke(timeout: files.isEmpty ? 20 : 120) {
       _ = try await $0.sendGroupMessage(.init(path: .init(id: id), body: .json(body))).created
     }
   }
@@ -177,10 +175,10 @@ extension APIClient {
     try await invoke { _ = try await $0.stopGroupChat(.init(path: .init(id: id))).noContent }
   }
 
-  public func groupAttachment(_ id: String, entryID: String, index: Int) async throws -> Data {
-    try await invoke {
-      let body = try await $0.getGroupAttachment(.init(
-        path: .init(id: id, entryId: entryID, index: index))).ok.body.any
+  /// A file from the group's library, by the ID a transcript message lists.
+  public func groupFile(_ id: String, fileID: String) async throws -> Data {
+    try await invoke(timeout: 120) {
+      let body = try await $0.getGroupFile(.init(path: .init(id: id, fileId: fileID))).ok.body.binary
       return try await Data(collecting: body, upTo: .max)
     }
   }

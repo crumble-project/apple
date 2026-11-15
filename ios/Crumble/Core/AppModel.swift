@@ -77,7 +77,8 @@ final class AppModel {
   var failedReplyTo = ""
   var failedAttachments: [UUID] = []
   var delivery = BotChatDelivery()
-  /// Sent images, keyed by entry and attachment index; they never change once sent.
+  var deletedFiles = DeletedFiles()
+  /// Sent images, keyed by chat and file ID; a new connection clears them.
   private(set) var attachmentImages: [String: UIImage] = [:]
 
   private var activeRequests = 0
@@ -254,6 +255,8 @@ extension AppModel {
     pendingMutations.removeAll()
     mutationRevision += 1
     resetPendingMessages()
+    deletedFiles.removeAll()
+    attachmentImages = [:]
     agents = []
     capabilities = nil
     jobBoard.reset()

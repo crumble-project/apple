@@ -199,6 +199,18 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v1/agents/{id}/events`.
     /// - Remark: Generated from `#/paths//v1/agents/{id}/events/get(streamChatEvents)`.
     func streamChatEvents(_ input: Operations.StreamChatEvents.Input) async throws -> Operations.StreamChatEvents.Output
+    /// - Remark: HTTP `GET /v1/agents/{id}/files`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/files/get(listFiles)`.
+    func listFiles(_ input: Operations.ListFiles.Input) async throws -> Operations.ListFiles.Output
+    /// - Remark: HTTP `POST /v1/agents/{id}/files`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/files/post(uploadFile)`.
+    func uploadFile(_ input: Operations.UploadFile.Input) async throws -> Operations.UploadFile.Output
+    /// - Remark: HTTP `GET /v1/agents/{id}/files/{fileId}`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/files/{fileId}/get(getFile)`.
+    func getFile(_ input: Operations.GetFile.Input) async throws -> Operations.GetFile.Output
+    /// - Remark: HTTP `DELETE /v1/agents/{id}/files/{fileId}`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/files/{fileId}/delete(deleteFile)`.
+    func deleteFile(_ input: Operations.DeleteFile.Input) async throws -> Operations.DeleteFile.Output
     /// Desktop job actions an intent check held for the owner, newest first, pending and decided.
     ///
     /// - Remark: HTTP `GET /v1/agents/{id}/held-actions`.
@@ -288,6 +300,12 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /v1/changes/{id}/revert`.
     /// - Remark: Generated from `#/paths//v1/changes/{id}/revert/post(revertChange)`.
     func revertChange(_ input: Operations.RevertChange.Input) async throws -> Operations.RevertChange.Output
+    /// - Remark: HTTP `POST /v1/chat-attention/seen`.
+    /// - Remark: Generated from `#/paths//v1/chat-attention/seen/post(postChatAttentionSeen)`.
+    func postChatAttentionSeen(_ input: Operations.PostChatAttentionSeen.Input) async throws -> Operations.PostChatAttentionSeen.Output
+    /// - Remark: HTTP `PUT /v1/chat-attention/views/{viewId}`.
+    /// - Remark: Generated from `#/paths//v1/chat-attention/views/{viewId}/put(putChatAttentionView)`.
+    func putChatAttentionView(_ input: Operations.PutChatAttentionView.Input) async throws -> Operations.PutChatAttentionView.Output
     /// The account's event relay: its URL, whether the Doorstep account token is set (plugin setting `doorstep:token`), and the connection status.
     ///
     /// - Remark: HTTP `GET /v1/event-relay`.
@@ -411,9 +429,6 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `DELETE /v1/group-chats/{id}`.
     /// - Remark: Generated from `#/paths//v1/group-chats/{id}/delete(deleteGroupChat)`.
     func deleteGroupChat(_ input: Operations.DeleteGroupChat.Input) async throws -> Operations.DeleteGroupChat.Output
-    /// - Remark: HTTP `GET /v1/group-chats/{id}/attachments/{entryId}/{index}`.
-    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/attachments/{entryId}/{index}/get(getGroupAttachment)`.
-    func getGroupAttachment(_ input: Operations.GetGroupAttachment.Input) async throws -> Operations.GetGroupAttachment.Output
     /// - Remark: HTTP `GET /v1/group-chats/{id}/chat`.
     /// - Remark: Generated from `#/paths//v1/group-chats/{id}/chat/get(getGroupChatSnapshot)`.
     func getGroupChatSnapshot(_ input: Operations.GetGroupChatSnapshot.Input) async throws -> Operations.GetGroupChatSnapshot.Output
@@ -422,6 +437,18 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v1/group-chats/{id}/events`.
     /// - Remark: Generated from `#/paths//v1/group-chats/{id}/events/get(streamGroupChatEvents)`.
     func streamGroupChatEvents(_ input: Operations.StreamGroupChatEvents.Input) async throws -> Operations.StreamGroupChatEvents.Output
+    /// - Remark: HTTP `GET /v1/group-chats/{id}/files`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/files/get(listGroupFiles)`.
+    func listGroupFiles(_ input: Operations.ListGroupFiles.Input) async throws -> Operations.ListGroupFiles.Output
+    /// - Remark: HTTP `POST /v1/group-chats/{id}/files`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/files/post(uploadGroupFile)`.
+    func uploadGroupFile(_ input: Operations.UploadGroupFile.Input) async throws -> Operations.UploadGroupFile.Output
+    /// - Remark: HTTP `GET /v1/group-chats/{id}/files/{fileId}`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/files/{fileId}/get(getGroupFile)`.
+    func getGroupFile(_ input: Operations.GetGroupFile.Input) async throws -> Operations.GetGroupFile.Output
+    /// - Remark: HTTP `DELETE /v1/group-chats/{id}/files/{fileId}`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/files/{fileId}/delete(deleteGroupFile)`.
+    func deleteGroupFile(_ input: Operations.DeleteGroupFile.Input) async throws -> Operations.DeleteGroupFile.Output
     /// - Remark: HTTP `GET /v1/group-chats/{id}/history`.
     /// - Remark: Generated from `#/paths//v1/group-chats/{id}/history/get(getGroupChatHistory)`.
     func getGroupChatHistory(_ input: Operations.GetGroupChatHistory.Input) async throws -> Operations.GetGroupChatHistory.Output
@@ -547,15 +574,18 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `DELETE /v1/push/devices/{installationId}`.
     /// - Remark: Generated from `#/paths//v1/push/devices/{installationId}/delete(deletePushDevice)`.
     func deletePushDevice(_ input: Operations.DeletePushDevice.Input) async throws -> Operations.DeletePushDevice.Output
-    /// - Remark: HTTP `PUT /v1/push/devices/{installationId}/presence`.
-    /// - Remark: Generated from `#/paths//v1/push/devices/{installationId}/presence/put(putPushPresence)`.
-    func putPushPresence(_ input: Operations.PutPushPresence.Input) async throws -> Operations.PutPushPresence.Output
+    /// - Remark: HTTP `POST /v1/reasoning/preview`.
+    /// - Remark: Generated from `#/paths//v1/reasoning/preview/post(previewReasoning)`.
+    func previewReasoning(_ input: Operations.PreviewReasoning.Input) async throws -> Operations.PreviewReasoning.Output
     /// - Remark: HTTP `GET /v1/schedules`.
     /// - Remark: Generated from `#/paths//v1/schedules/get(listSchedules)`.
     func listSchedules(_ input: Operations.ListSchedules.Input) async throws -> Operations.ListSchedules.Output
     /// - Remark: HTTP `POST /v1/schedules`.
     /// - Remark: Generated from `#/paths//v1/schedules/post(createSchedule)`.
     func createSchedule(_ input: Operations.CreateSchedule.Input) async throws -> Operations.CreateSchedule.Output
+    /// - Remark: HTTP `POST /v1/schedules/preview`.
+    /// - Remark: Generated from `#/paths//v1/schedules/preview/post(previewSchedule)`.
+    func previewSchedule(_ input: Operations.PreviewSchedule.Input) async throws -> Operations.PreviewSchedule.Output
     /// - Remark: HTTP `PATCH /v1/schedules/{id}`.
     /// - Remark: Generated from `#/paths//v1/schedules/{id}/patch(updateSchedule)`.
     func updateSchedule(_ input: Operations.UpdateSchedule.Input) async throws -> Operations.UpdateSchedule.Output
@@ -1234,6 +1264,54 @@ extension APIProtocol {
             headers: headers
         ))
     }
+    /// - Remark: HTTP `GET /v1/agents/{id}/files`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/files/get(listFiles)`.
+    public func listFiles(
+        path: Operations.ListFiles.Input.Path,
+        query: Operations.ListFiles.Input.Query = .init(),
+        headers: Operations.ListFiles.Input.Headers = .init()
+    ) async throws -> Operations.ListFiles.Output {
+        try await listFiles(Operations.ListFiles.Input(
+            path: path,
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `POST /v1/agents/{id}/files`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/files/post(uploadFile)`.
+    public func uploadFile(
+        path: Operations.UploadFile.Input.Path,
+        headers: Operations.UploadFile.Input.Headers,
+        body: Operations.UploadFile.Input.Body
+    ) async throws -> Operations.UploadFile.Output {
+        try await uploadFile(Operations.UploadFile.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/agents/{id}/files/{fileId}`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/files/{fileId}/get(getFile)`.
+    public func getFile(
+        path: Operations.GetFile.Input.Path,
+        headers: Operations.GetFile.Input.Headers = .init()
+    ) async throws -> Operations.GetFile.Output {
+        try await getFile(Operations.GetFile.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `DELETE /v1/agents/{id}/files/{fileId}`.
+    /// - Remark: Generated from `#/paths//v1/agents/{id}/files/{fileId}/delete(deleteFile)`.
+    public func deleteFile(
+        path: Operations.DeleteFile.Input.Path,
+        headers: Operations.DeleteFile.Input.Headers = .init()
+    ) async throws -> Operations.DeleteFile.Output {
+        try await deleteFile(Operations.DeleteFile.Input(
+            path: path,
+            headers: headers
+        ))
+    }
     /// Desktop job actions an intent check held for the owner, newest first, pending and decided.
     ///
     /// - Remark: HTTP `GET /v1/agents/{id}/held-actions`.
@@ -1501,6 +1579,30 @@ extension APIProtocol {
         try await revertChange(Operations.RevertChange.Input(
             path: path,
             headers: headers
+        ))
+    }
+    /// - Remark: HTTP `POST /v1/chat-attention/seen`.
+    /// - Remark: Generated from `#/paths//v1/chat-attention/seen/post(postChatAttentionSeen)`.
+    public func postChatAttentionSeen(
+        headers: Operations.PostChatAttentionSeen.Input.Headers = .init(),
+        body: Operations.PostChatAttentionSeen.Input.Body
+    ) async throws -> Operations.PostChatAttentionSeen.Output {
+        try await postChatAttentionSeen(Operations.PostChatAttentionSeen.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `PUT /v1/chat-attention/views/{viewId}`.
+    /// - Remark: Generated from `#/paths//v1/chat-attention/views/{viewId}/put(putChatAttentionView)`.
+    public func putChatAttentionView(
+        path: Operations.PutChatAttentionView.Input.Path,
+        headers: Operations.PutChatAttentionView.Input.Headers = .init(),
+        body: Operations.PutChatAttentionView.Input.Body
+    ) async throws -> Operations.PutChatAttentionView.Output {
+        try await putChatAttentionView(Operations.PutChatAttentionView.Input(
+            path: path,
+            headers: headers,
+            body: body
         ))
     }
     /// The account's event relay: its URL, whether the Doorstep account token is set (plugin setting `doorstep:token`), and the connection status.
@@ -1818,17 +1920,6 @@ extension APIProtocol {
             headers: headers
         ))
     }
-    /// - Remark: HTTP `GET /v1/group-chats/{id}/attachments/{entryId}/{index}`.
-    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/attachments/{entryId}/{index}/get(getGroupAttachment)`.
-    public func getGroupAttachment(
-        path: Operations.GetGroupAttachment.Input.Path,
-        headers: Operations.GetGroupAttachment.Input.Headers = .init()
-    ) async throws -> Operations.GetGroupAttachment.Output {
-        try await getGroupAttachment(Operations.GetGroupAttachment.Input(
-            path: path,
-            headers: headers
-        ))
-    }
     /// - Remark: HTTP `GET /v1/group-chats/{id}/chat`.
     /// - Remark: Generated from `#/paths//v1/group-chats/{id}/chat/get(getGroupChatSnapshot)`.
     public func getGroupChatSnapshot(
@@ -1854,6 +1945,54 @@ extension APIProtocol {
         try await streamGroupChatEvents(Operations.StreamGroupChatEvents.Input(
             path: path,
             query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/group-chats/{id}/files`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/files/get(listGroupFiles)`.
+    public func listGroupFiles(
+        path: Operations.ListGroupFiles.Input.Path,
+        query: Operations.ListGroupFiles.Input.Query = .init(),
+        headers: Operations.ListGroupFiles.Input.Headers = .init()
+    ) async throws -> Operations.ListGroupFiles.Output {
+        try await listGroupFiles(Operations.ListGroupFiles.Input(
+            path: path,
+            query: query,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `POST /v1/group-chats/{id}/files`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/files/post(uploadGroupFile)`.
+    public func uploadGroupFile(
+        path: Operations.UploadGroupFile.Input.Path,
+        headers: Operations.UploadGroupFile.Input.Headers,
+        body: Operations.UploadGroupFile.Input.Body
+    ) async throws -> Operations.UploadGroupFile.Output {
+        try await uploadGroupFile(Operations.UploadGroupFile.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `GET /v1/group-chats/{id}/files/{fileId}`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/files/{fileId}/get(getGroupFile)`.
+    public func getGroupFile(
+        path: Operations.GetGroupFile.Input.Path,
+        headers: Operations.GetGroupFile.Input.Headers = .init()
+    ) async throws -> Operations.GetGroupFile.Output {
+        try await getGroupFile(Operations.GetGroupFile.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// - Remark: HTTP `DELETE /v1/group-chats/{id}/files/{fileId}`.
+    /// - Remark: Generated from `#/paths//v1/group-chats/{id}/files/{fileId}/delete(deleteGroupFile)`.
+    public func deleteGroupFile(
+        path: Operations.DeleteGroupFile.Input.Path,
+        headers: Operations.DeleteGroupFile.Input.Headers = .init()
+    ) async throws -> Operations.DeleteGroupFile.Output {
+        try await deleteGroupFile(Operations.DeleteGroupFile.Input(
+            path: path,
             headers: headers
         ))
     }
@@ -2240,15 +2379,13 @@ extension APIProtocol {
             headers: headers
         ))
     }
-    /// - Remark: HTTP `PUT /v1/push/devices/{installationId}/presence`.
-    /// - Remark: Generated from `#/paths//v1/push/devices/{installationId}/presence/put(putPushPresence)`.
-    public func putPushPresence(
-        path: Operations.PutPushPresence.Input.Path,
-        headers: Operations.PutPushPresence.Input.Headers = .init(),
-        body: Operations.PutPushPresence.Input.Body
-    ) async throws -> Operations.PutPushPresence.Output {
-        try await putPushPresence(Operations.PutPushPresence.Input(
-            path: path,
+    /// - Remark: HTTP `POST /v1/reasoning/preview`.
+    /// - Remark: Generated from `#/paths//v1/reasoning/preview/post(previewReasoning)`.
+    public func previewReasoning(
+        headers: Operations.PreviewReasoning.Input.Headers = .init(),
+        body: Operations.PreviewReasoning.Input.Body
+    ) async throws -> Operations.PreviewReasoning.Output {
+        try await previewReasoning(Operations.PreviewReasoning.Input(
             headers: headers,
             body: body
         ))
@@ -2271,6 +2408,17 @@ extension APIProtocol {
         body: Operations.CreateSchedule.Input.Body
     ) async throws -> Operations.CreateSchedule.Output {
         try await createSchedule(Operations.CreateSchedule.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// - Remark: HTTP `POST /v1/schedules/preview`.
+    /// - Remark: Generated from `#/paths//v1/schedules/preview/post(previewSchedule)`.
+    public func previewSchedule(
+        headers: Operations.PreviewSchedule.Input.Headers = .init(),
+        body: Operations.PreviewSchedule.Input.Body
+    ) async throws -> Operations.PreviewSchedule.Output {
+        try await previewSchedule(Operations.PreviewSchedule.Input(
             headers: headers,
             body: body
         ))

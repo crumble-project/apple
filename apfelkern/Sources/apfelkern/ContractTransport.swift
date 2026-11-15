@@ -7,6 +7,8 @@ struct ContractTransport: ClientTransport {
   let token: String
   let timeout: TimeInterval
   let nullFields: Set<String>
+  /// Header fields that replace what the generated operation set, such as an upload's real `Content-Type`.
+  var headers: [String: String] = [:]
 
   /// Server-sent event operations, whose responses never finish; every other response is read whole.
   static let streamingOperations: Set<String> = [
@@ -49,6 +51,7 @@ struct ContractTransport: ClientTransport {
     var result = URLRequest(url: url, timeoutInterval: timeout)
     result.httpMethod = request.method.rawValue
     for field in request.headerFields { result.addValue(field.value, forHTTPHeaderField: field.name.rawName) }
+    for (name, value) in headers { result.setValue(value, forHTTPHeaderField: name) }
     if !token.isEmpty { result.setValue("Bearer " + token, forHTTPHeaderField: "Authorization") }
     if let body { result.httpBody = try await Data(collecting: body, upTo: .max) }
     try restoreNullFields(in: &result, operationID: operationID)
@@ -62,7 +65,6 @@ struct ContractTransport: ClientTransport {
     switch operationID {
     case Operations.UpdateSchedule.id, Operations.CreateSchedule.id:
       allowed = ["cron", "runAt", "eventSourceId", "command"]
-    case Operations.PutPushPresence.id: allowed = ["agentId"]
     case Operations.CreateMcpServer.id: allowed = ["agentId"]
     case Operations.UpdateMcpServer.id: allowed = ["oauthClientId", "oauthClientSecret"]
     case Operations.UpdateAgent.id: allowed = ["desktopModel", "webSearchProvider"]
@@ -120,11 +122,13 @@ func decodeUTF8(_ data: Data) -> String {
 
 extension APIClient {
   func invoke<T: Sendable>(
-    timeout: TimeInterval = 20, nullFields: Set<String> = [], _ operation: @Sendable (Client) async throws -> T
+    timeout: TimeInterval = 20, nullFields: Set<String> = [], headers: [String: String] = [:],
+    _ operation: @Sendable (Client) async throws -> T
   ) async throws -> T {
     guard let url = URL(string: baseURL) else { throw URLError(.badURL) }
     let client = Client(serverURL: url, configuration: .init(dateTranscoder: .iso8601WithFractionalSeconds),
-      transport: ContractTransport(session: session, token: token, timeout: timeout, nullFields: nullFields))
+      transport: ContractTransport(
+        session: session, token: token, timeout: timeout, nullFields: nullFields, headers: headers))
     do {
       return try await operation(client)
     } catch let error as ClientError {

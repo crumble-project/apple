@@ -126,7 +126,8 @@ extension AppModel {
     // Rebuild from confirmed transcript rows and append local rows so a delayed snapshot
     // cannot erase a message the user has already seen.
     let local = delivery.messages(botID: selectedAgentID)
-    messages = mergeMessages(messages.filter { $0.deliveryState == .confirmed }, incomingMessages)
+    messages = deletedFiles.reconcile(
+      mergeMessages(messages.filter { $0.deliveryState == .confirmed }, incomingMessages), chat: selectedAgentID)
     messages.append(contentsOf: local)
     refreshJobsIfChanged()
     refreshHeldActionsIfChanged()
@@ -287,7 +288,7 @@ extension AppModel {
         return { [self] in
           guard selectionVersion == version else { return }
           loadingOlder = false
-          messages = mergeMessages(messages, page.messages ?? [])
+          messages = deletedFiles.reconcile(mergeMessages(messages, page.messages ?? []), chat: id)
           refreshHeldActionsIfChanged()
           refreshBotRequestsIfChanged()
           refreshCallRequestsIfChanged()

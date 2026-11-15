@@ -82,12 +82,4 @@ extension APIClient {
   public func unregisterPush(_ installationID: String) async throws {
     try await invoke { _ = try await $0.deletePushDevice(.init(path: .init(installationId: installationID))).noContent }
   }
-
-  public func pushPresence(_ installationID: String, active: Bool, agentId: String?, timeout: TimeInterval = 20)
-    async throws {
-    try await invoke(timeout: timeout, nullFields: agentId == nil ? ["agentId"] : []) {
-      _ = try await $0.putPushPresence(.init(path: .init(installationId: installationID),
-        body: .json(.init(active: active, agentId: agentId)))).noContent
-    }
-  }
 }

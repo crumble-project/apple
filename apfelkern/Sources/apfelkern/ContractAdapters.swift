@@ -50,12 +50,22 @@ extension Message {
         CallEvent(callId: $0.callId, direction: CallEvent.Direction(wire: $0.direction), callee: $0.callee)
       },
       timestamp: wire.timestamp.flatMap(Int64.init(exactly:)),
-      attachments: wire.attachments?.map {
-        AttachmentInfo(name: $0.name, mimeType: $0.mimeType, size: Int(exactly: $0.size) ?? 0,
-                       kind: $0.kind.rawValue)
-      }, toolName: wire.toolName, toolCallId: wire.toolCallId, isError: wire.isError,
+      attachments: wire.files?.compactMap(AttachmentInfo.init(wire:)), toolName: wire.toolName,
+      toolCallId: wire.toolCallId, isError: wire.isError,
       toolDetails: try wire.toolDetails.map { try JSONValue(wire: $0) }, requestId: wire.requestId,
       sources: wire.sources?.map { MessageSource(url: $0.url, title: $0.title) })
+  }
+}
+
+extension AttachmentInfo {
+  init?(wire: Components.Schemas.TranscriptMessage.FilesPayloadPayload) {
+    if let file = wire.value1 {
+      self.init(id: file.id, name: file.name, mimeType: file.mimeType, size: Int(exactly: file.size.rounded()) ?? 0)
+    } else if let file = wire.value2, file.deleted {
+      self = .deleted(file.id)
+    } else {
+      return nil
+    }
   }
 }
 

@@ -11,6 +11,8 @@ import UniformTypeIdentifiers
 final class StubProtocol: URLProtocol, @unchecked Sendable {
   nonisolated(unsafe) static var handler: ((URLRequest) -> (Int, String))?
   nonisolated(unsafe) static var requests: [URLRequest] = []
+  /// Binary bodies by path, such as file downloads, served with status 200 ahead of the handler.
+  nonisolated(unsafe) static var files: [String: Data] = [:]
   nonisolated(unsafe) private static var sessionID = ""
 
   override static func canInit(with request: URLRequest) -> Bool { true }
@@ -34,7 +36,9 @@ final class StubProtocol: URLProtocol, @unchecked Sendable {
     // next session's handler and request log instead of reusing its canned responses.
     let current = recorded.value(forHTTPHeaderField: "X-Crumble-Test-Session") == Self.sessionID
     if current { Self.requests.append(recorded) }
-    let (status, body) = current ? Self.handler?(recorded) ?? (404, "") : (401, "")
+    let file = current ? request.url.flatMap { Self.files[$0.path] } : nil
+    let (status, body) = file.map { _ in (200, "") }
+      ?? (current ? Self.handler?(recorded) ?? (404, "") : (401, ""))
     guard let url = request.url,
       let response = HTTPURLResponse(
         url: url, statusCode: status, httpVersion: "HTTP/1.1", headerFields: nil)
@@ -44,7 +48,7 @@ final class StubProtocol: URLProtocol, @unchecked Sendable {
       return
     }
     client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-    client?.urlProtocol(self, didLoad: Data(body.utf8))
+    client?.urlProtocol(self, didLoad: file ?? Data(body.utf8))
     client?.urlProtocolDidFinishLoading(self)
   }
 
@@ -54,6 +58,7 @@ final class StubProtocol: URLProtocol, @unchecked Sendable {
     -> APIClient {
     self.handler = handler
     requests = []
+    files = [:]
     let configuration = URLSessionConfiguration.ephemeral
     sessionID = UUID().uuidString
     configuration.httpAdditionalHeaders = ["X-Crumble-Test-Session": sessionID]
@@ -158,7 +163,8 @@ struct APIClientTests {
         (
           200,
           ContractFixtures.json(Components.Schemas.TranscriptPage(
-            hasMore: false, messages: [.init(content: "older", entryId: "a1:8", id: "a1:8:0", role: "user")],
+            hasMore: false,
+            messages: [.init(content: "older", entryId: "a1:8", id: "a1:8:0", replyReferences: [], role: "user")],
             oldestEntryId: "a1:8"))
         )
       case "/v1/agents/a1/messages": (202, ContractFixtures.execution())
@@ -178,24 +184,18 @@ struct APIClientTests {
     #expect(body.replyTo == "a1:41")
   }
 
-  @Test func messagesCarryAttachments() async throws {
+  @Test func messagesCarryFileIDs() async throws {
     let client = StubProtocol.client { _ in (202, ContractFixtures.execution()) }
     try await client.sendChatMessage(
-      "a1", content: "", requestID: ContractFixtures.requestID, replyTo: "",
-      attachments: [OutgoingAttachment(name: "dot.png", mimeType: "image/png", data: "AAAA")])
+      "a1", content: "", requestID: ContractFixtures.requestID, replyTo: "", files: ["f1"])
     let body = try JSONDecoder().decode(
       Operations.SendMessage.Input.Body.JsonPayload.self,
       from: try #require(StubProtocol.requests.last?.httpBody))
     #expect(body.replyTo == nil)
-    #expect(body.attachments?.first?.mimeType == "image/png")
-    let message = try JSONDecoder().decode(
-      Message.self,
-      from: Data(
-        #"""
-        {"id":"a1:5:0","role":"user","content":"",
-        "attachments":[{"name":"dot.png","mimeType":"image/png","size":70,"kind":"image"}]}
-        """#
-          .utf8))
+    #expect(body.files == ["f1"])
+    let message = Message(
+      id: "a1:5:0", role: "user", content: .string(""),
+      attachments: [AttachmentInfo(id: "f1", name: "dot.png", mimeType: "image/png", size: 70)])
     #expect(message.attachments?.first?.isImage == true)
     #expect(shownInChat(message))
   }

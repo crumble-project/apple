@@ -16,7 +16,7 @@ struct GroupChatSupportTests {
             Message(id: "2", role: "assistant", content: .string("Booked."), origin: bot),
             Message(
                 id: "3", role: "user", content: .string(""),
-                attachments: [AttachmentInfo(name: "a.png", mimeType: "image/png", size: 1, kind: "image")])
+                attachments: [AttachmentInfo(id: "f1", name: "a.png", mimeType: "image/png", size: 1)])
         ]
         let rows = GroupChatRow.rows(messages: messages, snapshot: nil, agents: [], hasMore: false)
         #expect(rows.map(\.id) == ["2", "3"])
@@ -118,7 +118,7 @@ struct GroupChatSupportTests {
 
     @Test func wireMessagesCarryTheirSources() throws {
         let wire = try JSONDecoder().decode(Components.Schemas.TranscriptMessage.self, from: Data(#"""
-            {"id":"g:1:0","entryId":"g:1","role":"assistant","content":"Hi",
+            {"id":"g:1:0","entryId":"g:1","role":"assistant","content":"Hi","replyReferences":[],
              "sources":[{"url":"https://example.com","title":"Example"}]}
             """#.utf8))
         #expect(try Message(wire: wire).sources == [MessageSource(url: "https://example.com", title: "Example")])

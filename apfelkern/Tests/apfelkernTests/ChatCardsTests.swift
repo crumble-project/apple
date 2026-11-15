@@ -61,7 +61,7 @@ struct ChatCardsTests {
 
     @Test func theWireOriginCarriesGatewayAndSource() throws {
         let wire = """
-            {"id": "1", "entryId": "e", "role": "user", "content": "hi",
+            {"id": "1", "entryId": "e", "role": "user", "content": "hi", "replyReferences": [],
              "origin": {"kind": "owner", "via": "discord", "source": "GitHub"}}
             """
         let message = try Message(

@@ -30,7 +30,8 @@ extension AppModel {
     }
   }
 
-  /// Re-sends a failed optimistic row with its original idempotency key and attachments.
+  /// Re-sends a failed optimistic row with its original idempotency key and attachments, uploading only the files
+  /// an earlier attempt did not.
   func retryMessage(_ message: Message) {
     guard selectedGroupID.isEmpty else { return retryGroupMessage(message) }
     guard message.deliveryState == .failed, let requestID = message.requestId, let client,
@@ -73,9 +74,12 @@ extension AppModel {
     let id = context.id
     let requestID = context.requestID
     do {
+      guard let fileIDs = try await uploadFiles(
+        record, chat: id, requestID: requestID, generation: context.generation,
+        upload: { try await client.uploadFile(id, $0) })
+      else { return }
       try await client.sendChatMessage(
-        id, content: record.content, requestID: requestID, replyTo: record.replyTo,
-        attachments: record.attachments.map(\.outgoing))
+        id, content: record.content, requestID: requestID, replyTo: record.replyTo, files: fileIDs)
       guard generation == context.generation else { return }
       delivery.accepted(botID: id, requestID: requestID)
       guard selectionVersion == context.selection, selectedAgentID == id else { return }
@@ -99,7 +103,7 @@ extension AppModel {
 
   private func failMessage(_ error: Error, id: String, requestID: String, version: Int) -> Bool {
     if selectionVersion == version, selectedAgentID == id { sending = false }
-    guard delivery.fail(botID: id, requestID: requestID) else { return false }
+    guard delivery.fail(botID: id, requestID: requestID, error: error) else { return false }
     if selectionVersion == version, selectedAgentID == id {
       errorText = "Message was not confirmed: " + friendlyError(error)
       if let visible = messages.firstIndex(where: { $0.requestId == requestID }) {
@@ -138,12 +142,8 @@ extension AppModel {
     attachments.removeAll { $0.id == id }
   }
 
-  func attachmentImage(entryID: String, index: Int) -> UIImage? {
-    attachmentImages["\(entryID)/\(index)"]
-  }
-
   func attachmentImage(message: Message, index: Int) -> UIImage? {
-    if let entryID = message.entryId { return attachmentImage(entryID: entryID, index: index) }
+    if message.entryId != nil { return attachmentKey(message, index: index).flatMap { attachmentImages[$0] } }
     guard let requestID = message.requestId,
       let data = delivery.imageData(botID: conversationKey, requestID: requestID, index: index)
     else { return nil }
@@ -151,15 +151,9 @@ extension AppModel {
   }
 
   func loadAttachmentImage(entryID: String, index: Int) async {
-    let key = "\(entryID)/\(index)"
-    guard attachmentImages[key] == nil, let client else { return }
-    guard !entryID.hasPrefix("local:") else { return }
-    let agent = selectedAgentID
-    let group = selectedGroupID
-    let data = group.isEmpty
-      ? try? await client.attachment(agent, entryID: entryID, index: index)
-      : try? await client.groupAttachment(group, entryID: entryID, index: index)
-    guard let data, let image = UIImage(data: data)
+    guard let (key, data) = await downloadAttachment(
+      entryID: entryID, index: index, cached: { attachmentImages[$0] != nil }),
+      let image = UIImage(data: data)
     else { return }
     cacheAttachmentImage(image, key: key)
   }

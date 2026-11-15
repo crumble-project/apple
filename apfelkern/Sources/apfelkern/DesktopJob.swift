@@ -89,7 +89,7 @@ extension APIClient {
       try ChatHistoryResponse(wire: await $0.getDesktopJobHistory(.init(
         path: .init(id: agentID, name: name),
         query: .init(limit: limit > 0 ? limit : nil, before: before.nilIfEmpty)
-      )).ok.body.json)
+      )).ok.body.json.value1)
     }
   }
 }

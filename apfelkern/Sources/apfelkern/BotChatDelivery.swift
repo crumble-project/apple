@@ -20,6 +20,8 @@ public struct BotChatDelivery {
   private struct Pending {
     var send: Send
     var message: Message
+    /// Server file IDs for the attachments an attempt already uploaded, so a retry uploads only the rest.
+    var uploaded: [UUID: String] = [:]
   }
 
   private struct Chat {
@@ -37,8 +39,7 @@ public struct BotChatDelivery {
       replyTo: send.replyTo.nilIfEmpty, replyPreview: send.replyPreview,
       timestamp: Int64(Date().timeIntervalSince1970 * 1000),
       attachments: send.attachments.map {
-        AttachmentInfo(
-          name: $0.name, mimeType: $0.mimeType, size: $0.data.count, kind: $0.isImage ? "image" : "file")
+        AttachmentInfo(name: $0.name, mimeType: $0.mimeType, size: $0.data.count)
       },
       requestId: requestID, deliveryState: .sending
     )
@@ -66,11 +67,38 @@ public struct BotChatDelivery {
     }
   }
 
-  public mutating func fail(botID: String, requestID: String) -> Bool {
+  /// Marks a send failed. When the server rejected it because a file it carries left the library, the next retry
+  /// uploads every attachment again from the bytes the send kept; other failures keep the uploads.
+  public mutating func fail(botID: String, requestID: String, error: Error? = nil) -> Bool {
     guard let index = pendingIndex(botID: botID, requestID: requestID) else { return false }
     chats[botID]?.pending[index].message.deliveryState = .failed
+    if let error, Self.rejectsFiles(error) { chats[botID]?.pending[index].uploaded = [:] }
     clearPreview(botID: botID, requestID: requestID)
     return true
+  }
+
+  /// The file ID an earlier attempt of this send uploaded for one of its attachments.
+  public func uploadedFile(_ attachment: UUID, botID: String, requestID: String) -> String? {
+    pendingIndex(botID: botID, requestID: requestID).flatMap { chats[botID]?.pending[$0].uploaded[attachment] }
+  }
+
+  /// Keeps an upload for the send's retries; false once the send is no longer pending, so its delivery stops.
+  public mutating func recordUpload(_ fileID: String, for attachment: UUID, botID: String, requestID: String)
+    -> Bool {
+    guard let index = pendingIndex(botID: botID, requestID: requestID) else { return false }
+    chats[botID]?.pending[index].uploaded[attachment] = fileID
+    return true
+  }
+
+  public func isPending(botID: String, requestID: String) -> Bool {
+    pendingIndex(botID: botID, requestID: requestID) != nil
+  }
+
+  /// The server's answer to a message that lists a file deleted from, or never in, the chat's library.
+  static func rejectsFiles(_ error: Error) -> Bool {
+    guard let error = error as? APIError, error.statusCode == 400 else { return false }
+    let message = friendlyError(error)
+    return message.contains("File not found in this library") || message.contains(" was deleted from the library")
   }
 
   public mutating func reset() {

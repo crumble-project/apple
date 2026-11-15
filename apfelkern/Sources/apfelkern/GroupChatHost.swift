@@ -12,6 +12,8 @@ public protocol GroupChatHost: AnyObject, Sendable {
   var streamsSuspended: Bool { get }
 
   var route: Route? { get set }
+  /// The open bot chat; empty while a group chat or nothing is open.
+  var selectedAgentID: String { get }
   var selectionVersion: Int { get set }
   var groupChats: [GroupChat] { get set }
   var selectedGroupID: String { get set }
@@ -36,6 +38,8 @@ public protocol GroupChatHost: AnyObject, Sendable {
   var failedReplyTo: String { get set }
   var failedAttachments: [UUID] { get set }
   var delivery: BotChatDelivery { get set }
+  /// Files the open connection's transcripts reported deleted; a new connection clears it.
+  var deletedFiles: DeletedFiles { get set }
   var errorText: String { get set }
   var streamStatus: String { get set }
 
@@ -53,6 +57,11 @@ public protocol GroupChatHost: AnyObject, Sendable {
 
 extension GroupChatHost {
   public var streamsSuspended: Bool { false }
+
+  /// Where the open conversation's optimistic messages live, and the chat its file IDs belong to.
+  public var conversationKey: String {
+    selectedGroupID.isEmpty ? selectedAgentID : GroupChat.deliveryKey(selectedGroupID)
+  }
 
   /// Loads the group list quietly: a failed load leaves the list as it is.
   public func loadGroupChats() {
@@ -128,7 +137,8 @@ extension GroupChatHost {
     let key = GroupChat.deliveryKey(selectedGroupID)
     delivery.acknowledge(botID: key, requestIDs: Set(incoming.messages.compactMap(\.requestId)))
     let known = Set(messages.map(\.id))
-    messages = mergeMessages(messages.filter { $0.deliveryState == .confirmed }, incoming.messages)
+    messages = deletedFiles.reconcile(
+      mergeMessages(messages.filter { $0.deliveryState == .confirmed }, incoming.messages), chat: key)
     messages.append(contentsOf: delivery.messages(botID: key))
     // The first snapshot is history, and the owner's own message is already on screen.
     if groupSnapshot != nil,
@@ -216,8 +226,12 @@ extension GroupChatHost {
     let version = selectionVersion
     return Task {
       do {
+        guard let fileIDs = try await uploadFiles(
+          record, chat: key, requestID: requestID, generation: generation,
+          upload: { try await client.uploadGroupFile(id, $0) })
+        else { return }
         try await client.sendGroupMessage(
-          id, content: content, requestID: requestID, replyTo: reply, attachments: files.map(\.outgoing))
+          id, content: content, requestID: requestID, replyTo: reply, files: fileIDs)
         guard self.generation == generation else { return }
         delivery.accepted(botID: key, requestID: requestID)
         guard selectionVersion == version, selectedGroupID == id else { return }
@@ -235,7 +249,8 @@ extension GroupChatHost {
     }
   }
 
-  /// Re-sends a failed group message with its original idempotency key and attachments.
+  /// Re-sends a failed group message with its original idempotency key and attachments, uploading only the files
+  /// an earlier attempt did not.
   public func retryGroupMessage(_ message: Message) {
     let id = selectedGroupID
     let key = GroupChat.deliveryKey(id)
@@ -254,9 +269,12 @@ extension GroupChatHost {
     let version = selectionVersion
     Task {
       do {
+        guard let fileIDs = try await uploadFiles(
+          record, chat: key, requestID: requestID, generation: generation,
+          upload: { try await client.uploadGroupFile(id, $0) })
+        else { return }
         try await client.sendGroupMessage(
-          id, content: record.content, requestID: requestID, replyTo: record.replyTo,
-          attachments: record.attachments.map(\.outgoing))
+          id, content: record.content, requestID: requestID, replyTo: record.replyTo, files: fileIDs)
         guard self.generation == generation else { return }
         delivery.accepted(botID: key, requestID: requestID)
         if selectionVersion == version, selectedGroupID == id { sending = false }
@@ -270,7 +288,7 @@ extension GroupChatHost {
   private func failGroupMessage(_ error: Error, id: String, requestID: String, version: Int) -> Bool {
     let current = selectionVersion == version && selectedGroupID == id
     if current { sending = false }
-    guard delivery.fail(botID: GroupChat.deliveryKey(id), requestID: requestID) else { return false }
+    guard delivery.fail(botID: GroupChat.deliveryKey(id), requestID: requestID, error: error) else { return false }
     if current {
       errorText = "Message was not confirmed: " + friendlyError(error)
       if let visible = messages.firstIndex(where: { $0.requestId == requestID }) {
@@ -304,7 +322,8 @@ extension GroupChatHost {
         return { [self] in
           guard selectionVersion == version, selectedGroupID == id else { return }
           loadingOlder = false
-          messages = mergeMessages(messages, page.messages ?? [])
+          messages = deletedFiles.reconcile(
+            mergeMessages(messages, page.messages ?? []), chat: GroupChat.deliveryKey(id))
           hasMore = page.hasMore ?? false
           oldestEntryID = page.oldestEntryId ?? ""
         }

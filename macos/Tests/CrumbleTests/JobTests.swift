@@ -13,7 +13,9 @@ extension APIClientTests {
     }
 
     @Test func codingJobHistoryEncodesNameAndPaging() async throws {
-        let client = StubProtocol.client { _ in (200, #"{"messages":[],"hasMore":false,"oldestEntryId":null}"#) }
+        let client = StubProtocol.client { _ in
+            (200, #"{"items":[],"messages":[],"hasMore":false,"oldestEntryId":null}"#)
+        }
         _ = try await client.codingJobHistory("a1", name: "fix login/ui", before: "e:1", limit: 50)
         let url = StubProtocol.requests.first?.url?.absoluteString
         #expect(url == "http://crumble.test/v1/agents/a1/coding-jobs/fix%20login%2Fui/history?limit=50&before=e%3A1")
@@ -35,7 +37,8 @@ extension APIClientTests {
     @MainActor @Test func openingACodingJobLoadsItsHistory() async {
         let model = AppModel(client: StubProtocol.client { request in
             request.url?.path == "/v1/agents/a1/coding-jobs/fix/history"
-                ? (200, #"{"messages":[{"id":"a1:1:0","entryId":"a1:1","role":"user","content":"Fix it"}],"hasMore":true,"#
+                ? (200, #"{"items":[],"messages":[{"id":"a1:1:0","entryId":"a1:1","#
+                    + #""replyReferences":[],"role":"user","content":"Fix it"}],"hasMore":true,"#
                     + #""oldestEntryId":"a1:1"}"#)
                 : (404, "")
         })
@@ -80,7 +83,8 @@ extension APIClientTests {
                 (200, #"{"jobs":[{"name":"github","conversationId":"c2","status":"\#(status)","#
                     + #""usage":{"models":{"m":{"input":1000,"output":500,"cacheRead":0,"cost":{"total":0.002}}}}}]}"#)
             case "/v1/agents/a1/desktop-jobs/github/history":
-                (200, #"{"messages":[{"id":"a1:3:0","entryId":"a1:3","role":"user","content":"Log in"}],"#
+                (200, #"{"items":[],"messages":[{"id":"a1:3:0","entryId":"a1:3","#
+                    + #""replyReferences":[],"role":"user","content":"Log in"}],"#
                     + #""hasMore":false,"oldestEntryId":null}"#)
             default:
                 (404, "")
@@ -134,7 +138,8 @@ extension APIClientTests {
 
     @Test func aTranscriptPageKeepsTheJobQuestionOfItsEvent() async throws {
         let client = StubProtocol.client { _ in
-            (200, #"{"messages":[{"id":"m","entryId":"e","role":"event","kind":"job-question","content":"Which?","#
+            (200, #"{"messages":[{"id":"m","entryId":"e","#
+                + #""replyReferences":[],"role":"event","kind":"job-question","content":"Which?","#
                 + #""jobQuestion":{"id":"q1","kind":"coding","job":"fix"}}],"hasMore":false,"oldestEntryId":null}"#)
         }
         let page = try await client.chatHistory("a1", before: "", limit: 50)
@@ -193,9 +198,11 @@ extension APIClientTests {
         let model = AppModel(client: StubProtocol.client { request in
             guard request.url?.path == "/v1/agents/a1/coding-jobs/fix/history" else { return (404, "") }
             return request.url?.query?.contains("before=") == true
-                ? (200, #"{"messages":[{"id":"1","entryId":"e1","role":"user","content":"First"}],"hasMore":false,"#
+                ? (200, #"{"items":[],"messages":[{"id":"1","entryId":"e1","#
+                    + #""replyReferences":[],"role":"user","content":"First"}],"hasMore":false,"#
                     + #""oldestEntryId":null}"#)
-                : (200, #"{"messages":[{"id":"2","entryId":"e2","role":"user","content":"Second"}],"hasMore":true,"#
+                : (200, #"{"items":[],"messages":[{"id":"2","entryId":"e2","#
+                    + #""replyReferences":[],"role":"user","content":"Second"}],"hasMore":true,"#
                     + #""oldestEntryId":"e2"}"#)
         })
         model.selectedAgentID = "a1"

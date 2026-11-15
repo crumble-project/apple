@@ -13,9 +13,6 @@ public struct PendingAttachment: Identifiable, Hashable, Sendable {
   }
 
   public var isImage: Bool { mimeType.hasPrefix("image/") }
-  public var outgoing: OutgoingAttachment {
-    OutgoingAttachment(name: name, mimeType: mimeType, data: data.base64EncodedString())
-  }
 }
 
 public enum AttachmentLimits {

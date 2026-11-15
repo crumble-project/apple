@@ -13,8 +13,8 @@ extension APIClientTests {
   }
 
   private static let spoken =
-    #"{"messages":[{"id":"1","entryId":"e1","role":"user","content":"Hello?"},"#
-    + #"{"id":"2","entryId":"e2","role":"assistant","content":"Good day.","#
+    #"{"messages":[{"id":"1","entryId":"e1","replyReferences":[],"role":"user","content":"Hello?"},"#
+    + #"{"id":"2","entryId":"e2","replyReferences":[],"role":"assistant","content":"Good day.","#
     + #""blocks":[{"type":"text","text":"Good day."}]}],"#
     + #""hasMore":false,"oldestEntryId":null}"#
 
