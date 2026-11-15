@@ -16,7 +16,9 @@ final class AppModel {
   private(set) var client: APIClient?
   private(set) var generation = 0
 
-  var agents: [Agent] = []
+  var agents: [Agent] = [] {
+    didSet { botsLoaded = true }
+  }
   var capabilities: ServerCapabilities?
   var route: Route? {
     didSet { if route != oldValue { updateChatAttention() } }
@@ -26,7 +28,13 @@ final class AppModel {
   var selectionVersion = 0
 
   var conversationSummaries: [Route: ConversationSummary] = [:]
-  var groupChats: [GroupChat] = []
+  var groupChats: [GroupChat] = [] {
+    didSet { groupsLoaded = true }
+  }
+  /// Whether this connection's bot and group lists have arrived. Pins are written whole, cut down to
+  /// the conversations that exist, so writing before both lists load would drop every pin.
+  private(set) var botsLoaded = false
+  private(set) var groupsLoaded = false
   /// The open group chat; empty while a bot chat or nothing is open.
   var selectedGroupID = ""
   /// The open group's chat and members' activity, without its messages, which live in `messages`.
@@ -34,7 +42,8 @@ final class AppModel {
   var groupDraft: GroupDraft?
   var groupStreamTask: Task<Void, Never>?
   var composerDrafts = ComposerDrafts()
-  var pins = PinnedConversations()
+  /// The account's pinned conversations, which every app shares.
+  let pinBoard = PinBoard()
   var groupArrivals = 0
 
   var snapshot: ChatSnapshot?
@@ -128,19 +137,16 @@ final class AppModel {
       composerDrafts = ComposerDrafts(defaults: .standard)
       if let saved = Keychain.read("server-url"), !saved.isEmpty { serverURL = saved }
       if let saved = Keychain.read("server-token") { token = saved }
-      pins = PinnedConversations(defaults: .standard)
     }
     if let url = environment["CRUMBLE_URL"]?.trimmingCharacters(in: .whitespaces), !url.isEmpty {
       serverURL = url.trimmingTrailingSlashes
     }
     if let envToken = environment["CRUMBLE_TOKEN"], !envToken.isEmpty { token = envToken }
     client = APIClient(baseURL: serverURL, token: token)
-    pins.server = client?.baseURL ?? ""
   }
 
   init(client: APIClient) {
     self.client = client
-    pins.server = client.baseURL
   }
 
   var isSignedIn: Bool { client?.token.isEmpty == false && !serverAccountBoard.sessionEnded }
@@ -309,7 +315,10 @@ extension AppModel {
     groupDraft = nil
     messages = []
     client = candidate
-    pins.server = candidate.baseURL
+    // Clearing the lists above marks them loaded; this connection's lists haven't arrived yet.
+    botsLoaded = false
+    groupsLoaded = false
+    pinBoard.reset()
     updateChatAttention()
     Notifier.shared.connectionChanged()
     activeRequests = 0

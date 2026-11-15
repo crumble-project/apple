@@ -26,6 +26,8 @@ extension AppModel {
     }
   }
 
+  private var pins: PinnedConversations { pinBoard.pins }
+
   /// Pinned conversations, in pin order, which sit above the list instead of in it.
   var pinnedConversations: [Conversation] { pins.split(allConversations, route: \.route).pinned }
 
@@ -36,21 +38,32 @@ extension AppModel {
     Set(agents.map { .agent($0.id) } + groupChats.map { .group($0.id) })
   }
 
+  /// Pins change only once the account's pins and both conversation lists are known.
+  private var pinsEditable: Bool { pinBoard.isLoaded && botsLoaded && groupsLoaded }
+
   func isPinned(_ route: Route) -> Bool { pins.contains(route) }
 
-  func canPin(_ route: Route) -> Bool { pins.canPin(route, among: conversationRoutes) }
+  func canPin(_ route: Route) -> Bool { pinsEditable && pins.canPin(route, among: conversationRoutes) }
 
   func setPinned(_ route: Route, _ pinned: Bool) {
-    if pinned { pins.pin(route, among: conversationRoutes) } else { pins.unpin(route) }
+    let routes = conversationRoutes
+    changePins(pinned ? pins.pinning(route, among: routes) : pins.unpinning(route, among: routes))
   }
 
   /// A conversation dragged onto a pin: a pin trades places with it, and an unpinned chat is pinned there.
   func dropOnPin(_ route: Route, target: Route) {
-    if !pins.contains(route) {
+    let routes = conversationRoutes
+    var next = pins
+    if !next.contains(route) {
       guard canPin(route) else { return }
-      pins.pin(route, among: conversationRoutes)
+      next = next.pinning(route, among: routes)
     }
-    pins.move(route, to: target)
+    changePins(next.moving(route, to: target, among: routes))
+  }
+
+  private func changePins(_ next: PinnedConversations) {
+    guard pinsEditable, let client else { return }
+    pinBoard.change(next, client: client) { [weak self] in self?.showNotice($0) }
   }
 
   /// One short read per chat, because the lists carry no time and group chats no preview.
