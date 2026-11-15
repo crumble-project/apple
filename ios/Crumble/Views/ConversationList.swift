@@ -157,6 +157,7 @@ let conversationAvatarSize: CGFloat = 56
 /// One conversation: portrait, name, up to two lines of its latest message, and when that was.
 struct ConversationRow<Avatar: View>: View {
   @Environment(AppModel.self) private var model
+  @Environment(ConversationDrag.self) private var drag
   @Environment(\.isEnabled) private var isEnabled
   let route: Route
   let title: String
@@ -177,6 +178,9 @@ struct ConversationRow<Avatar: View>: View {
         .accessibilityHidden(true)
       avatar
         .frame(width: conversationAvatarSize, height: conversationAvatarSize, alignment: .topLeading)
+        .contentShape(.rect)
+        // Only the portrait drags the row onto the pins, so a swipe anywhere still shows Pin.
+        .draggableConversation(route, drag: drag, model: model)
         .accessibilityHidden(true)
       VStack(alignment: .leading, spacing: 1) {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
@@ -197,7 +201,7 @@ struct ConversationRow<Avatar: View>: View {
       .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
     }
     .contentShape(.rect)
-    // A tap gesture, not a Button: a Button loses its tap to the drag that pins the row.
+    // A tap gesture, not a Button: a Button loses its tap to the portrait's drag.
     .onTapGesture { if isEnabled { model.navigate(to: route) } }
     .opacity(isEnabled ? 1 : 0.5)
     .accessibilityElement(children: .combine)

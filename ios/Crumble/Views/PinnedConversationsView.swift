@@ -338,7 +338,8 @@ extension View {
     modifier(DraggableConversation(route: route, drag: drag, model: model))
   }
 
-  /// Messages' pin: a leading swipe, a context menu item, and dragging the row onto the pins.
+  /// Messages' pin: a leading swipe and a context menu item. The row's portrait drags it onto the
+  /// pins (`ConversationRow`): a drag gesture on the whole row would block the swipe.
   /// `menu` adds the row's own items.
   func pinnable<Menu: View>(
     _ route: Route, model: AppModel, drag: ConversationDrag,
@@ -348,7 +349,6 @@ extension View {
     return
       self
       .opacity(drag.route == route ? 0.4 : 1)
-      .draggableConversation(route, drag: drag, model: model)
       .contextMenu {
         Button("Pin", systemImage: "pin") { withAnimation { model.setPinned(route, true) } }
           .disabled(!canPin)
