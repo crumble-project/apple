@@ -32,6 +32,8 @@ struct GroupRow: View {
         .padding(.vertical, 6)
         .contentShape(Rectangle())
         .contextMenu {
+            PinButton(route: .group(group.id))
+            Divider()
             Button("Edit Group…") { model.editGroup(group) }
             Button("Delete Group…", role: .destructive) { confirmingDelete = true }
         }

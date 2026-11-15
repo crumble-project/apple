@@ -6,19 +6,47 @@ struct SidebarView: View {
     @Environment(AppModel.self) private var model
     @FocusState private var focused: Bool
 
+    /// The account's pins, in order, above the other conversations. Dragging one reorders them.
+    private var pinnedSection: some View {
+        let move: ((IndexSet, Int) -> Void)? =
+            model.canChangePins ? { model.movePins(from: $0, to: $1) } : nil
+        return Section("Pinned") {
+            ForEach(model.pinnedConversations) { conversation in
+                pinnedRow(conversation)
+            }
+            .onMove(perform: move)
+        }
+    }
+
+    @ViewBuilder private func pinnedRow(_ conversation: Conversation) -> some View {
+        switch conversation {
+        case .bot(let agent):
+            AgentRow(agent: agent)
+                .tag(Route.agent(agent.id))
+                .disabled(model.pendingMutations.contains("agent:\(agent.id)"))
+        case .group(let group):
+            GroupRow(group: group)
+                .tag(Route.group(group.id))
+                .disabled(model.pendingMutations.contains("group:\(group.id)"))
+        }
+    }
+
     var body: some View {
         // The system sidebar list: its own selection and arrow keys.
         List(selection: Binding(get: { model.route }, set: { model.navigate(to: $0) })) {
+            if !model.pinnedConversations.isEmpty { pinnedSection }
             // One list: a group's stacked avatars already set it apart from a bot.
-            ForEach(model.agents) { agent in
-                AgentRow(agent: agent)
-                    .tag(Route.agent(agent.id))
-                    .disabled(model.pendingMutations.contains("agent:\(agent.id)"))
-            }
-            ForEach(model.groupChats) { group in
-                GroupRow(group: group)
-                    .tag(Route.group(group.id))
-                    .disabled(model.pendingMutations.contains("group:\(group.id)") || group.id.hasPrefix("local:"))
+            Section {
+                ForEach(model.unpinnedAgents) { agent in
+                    AgentRow(agent: agent)
+                        .tag(Route.agent(agent.id))
+                        .disabled(model.pendingMutations.contains("agent:\(agent.id)"))
+                }
+                ForEach(model.unpinnedGroups) { group in
+                    GroupRow(group: group)
+                        .tag(Route.group(group.id))
+                        .disabled(model.pendingMutations.contains("group:\(group.id)") || group.id.hasPrefix("local:"))
+                }
             }
         }
         .listStyle(.sidebar)
@@ -138,6 +166,7 @@ struct AgentRow: View {
         .padding(.vertical, 5)
         .contentShape(Rectangle())
         .onHover { hovered = $0 }
+        .contextMenu { PinButton(route: .agent(agent.id)) }
     }
 
     private func chip(_ text: String) -> some View {

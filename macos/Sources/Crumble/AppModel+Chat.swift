@@ -13,6 +13,7 @@ extension AppModel {
             return { [self] in
                 guard mutationRevision == revision, pendingMutations.isEmpty else { return }
                 self.agents = agents
+                loadPins(client: client)
                 loadCapabilities()
                 loadAccount()
                 loadGroupChats()
@@ -183,7 +184,7 @@ extension AppModel {
             var backoff = Duration.milliseconds(500)
             while !Task.isCancelled, self.generation == generation {
                 do {
-                    try await client.activityEvents { payload in
+                    try await client.activityEvents(onEvent: { payload in
                         guard let event = try? JSONDecoder().decode(ActivityEvent.self, from: Data(payload.utf8)) else {
                             return
                         }
@@ -195,7 +196,7 @@ extension AppModel {
                             }
                             self.handleActivity(event)
                         }
-                    }
+                    }, onPins: followPins(client: client, generation: generation))
                 } catch {
                     if let apiError = error as? APIError, apiError.statusCode == 401 { return }
                 }
