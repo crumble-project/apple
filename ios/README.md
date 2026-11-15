@@ -21,6 +21,7 @@ Native SwiftUI client for iPhone and iPad, sharing [`../apfelkern`](../apfelkern
 ./scripts/test.sh unit    # Unit tests only
 ./scripts/test.sh ui      # UI tests only
 swiftlint lint            # Lint Swift sources
+./scripts/release.sh      # Archive and upload to TestFlight; see ../README.md#releases
 ```
 
 ## Push notifications

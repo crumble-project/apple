@@ -25,6 +25,7 @@ CRUMBLE_URL="http://127.0.0.1:7338" CRUMBLE_TOKEN="REPLACE_WITH_TOKEN" swift run
 swift test
 swiftlint lint
 ./scripts/check-app-bundle.sh
+./scripts/release.sh                     # Signs, notarizes, and zips a release; see ../README.md#releases
 ./scripts/build-app.sh                     # Builds build/Crumble.app
 CRUMBLE_VARIANT=dev ./scripts/build-app.sh # Builds build/Crumble Dev.app
 ```
