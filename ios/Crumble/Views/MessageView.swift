@@ -154,10 +154,9 @@ struct MessageView: View {
   }
 
   private var incomingMessageContent: some View {
-    let reply = SourceCitations.split(message.text, sources: message.sources ?? [])
-    return VStack(alignment: .leading, spacing: 6) {
-      MarkdownText(text: reply.text).textSelection(.enabled)
-      ForEach(reply.chips, id: \.href) { SourceChipLink(chip: $0) }
+    VStack(alignment: .leading, spacing: 6) {
+      MarkdownText(text: message.presentedText).textSelection(.enabled)
+      ForEach(message.citations, id: \.href) { CitationLink(citation: $0) }
     }
     .bubble(owner: false, tail: place.endsRun)
     .contextMenu { menu }

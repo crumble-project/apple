@@ -42,7 +42,7 @@ extension APIClientTests {
         let second = Agent(id: "a2", name: "Beacon")
         model.selectedAgentID = first.id
         model.route = .agent(first.id)
-        model.applySnapshot(ChatSnapshot(status: "running", agentId: first.id))
+        model.applySnapshot(ChatSnapshot(status: "running", working: .thinking, agentId: first.id))
         model.selectAgent(second.id)
         #expect(model.botState(first) == .working)
         await waitUntil { model.botState(first) == .idle && model.snapshot?.agentId == second.id }

@@ -70,20 +70,3 @@ import Testing
     #expect(!entry(kind: "change", ["isError": .bool(true)]).failed)
   }
 }
-
-@Suite struct ModelReasoningTests {
-  private let models = [
-    ModelSummary(provider: "p", id: "fast", thinkingLevels: [.off]),
-    ModelSummary(provider: "p", id: "deep", thinkingLevels: [.off, .high])
-  ]
-
-  @Test func aListedModelLimitsTheLevels() {
-    #expect(ThinkingLevel.available(for: "deep", in: models) == [.off, .high])
-    #expect(ThinkingLevel.available(for: " deep ", in: models) == [.off, .high])
-  }
-
-  @Test func anUnlistedModelOffersEveryLevel() {
-    #expect(ThinkingLevel.available(for: "other", in: models) == ThinkingLevel.allCases)
-    #expect(ThinkingLevel.available(for: nil, in: models) == ThinkingLevel.allCases)
-  }
-}

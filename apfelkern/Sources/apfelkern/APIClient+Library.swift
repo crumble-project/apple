@@ -61,6 +61,18 @@ extension APIClient {
     }
   }
 
+  /// When a draft trigger would next run, or why it can't, in the server's words.
+  public func previewAutomation(_ request: AutomationPreviewRequest) async throws -> AutomationPreview {
+    try await invoke {
+      let preview = try await $0.previewSchedule(.init(body: .json(.init(
+        cron: request.cron, eventSourceId: request.eventSourceId, runAt: request.runAt, timezone: request.timezone
+      )))).ok.body.json
+      return AutomationPreview(
+        text: preview.text, isProblem: preview.isProblem, description: preview.description,
+        nextRunAt: preview.nextRunAt)
+    }
+  }
+
   public func deleteSchedule(_ id: String) async throws {
     try await invoke { _ = try await $0.deleteSchedule(.init(path: .init(id: id))).noContent }
   }

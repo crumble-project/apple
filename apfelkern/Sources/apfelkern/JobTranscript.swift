@@ -34,18 +34,16 @@ public struct JobTranscript: Hashable, Sendable, Transferable {
   }
 
   private static func assistantSections(of message: Message) -> [String] {
-    guard case .array(let blocks)? = message.blocks else {
-      return message.text.isEmpty ? [] : [message.text]
-    }
+    guard let blocks = message.blocks else { return message.text.isEmpty ? [] : [message.text] }
     return blocks.compactMap { block in
-      switch block["type"]?.stringValue {
-      case "text":
-        let text = block["text"]?.stringValue ?? ""
-        return text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : text
-      case "toolCall":
-        guard let name = block["name"]?.stringValue, !name.isEmpty else { return nil }
-        return "### \(name)\n\n\(fenced(json(block["arguments"] ?? .object([:])), info: "json"))"
-      default:
+      switch block {
+      case .text(let text):
+        return text.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : text.text
+      case .toolCall(let call):
+        guard !call.name.isEmpty else { return nil }
+        let arguments = (try? JSONValue(wire: call.arguments)) ?? .object([:])
+        return "### \(call.name)\n\n\(fenced(json(arguments), info: "json"))"
+      case .thinking, .image:
         return nil
       }
     }

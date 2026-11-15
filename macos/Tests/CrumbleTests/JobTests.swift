@@ -12,6 +12,10 @@ extension APIClientTests {
         }
     }
 
+    private func tasks(in history: JobHistory) -> [String] {
+        history.items.compactMap { if case .task(let task) = $0 { task.text } else { nil } }
+    }
+
     @Test func codingJobHistoryEncodesNameAndPaging() async throws {
         let client = StubProtocol.client { _ in
             (200, #"{"items":[],"messages":[],"hasMore":false,"oldestEntryId":null}"#)
@@ -37,7 +41,8 @@ extension APIClientTests {
     @MainActor @Test func openingACodingJobLoadsItsHistory() async {
         let model = AppModel(client: StubProtocol.client { request in
             request.url?.path == "/v1/agents/a1/coding-jobs/fix/history"
-                ? (200, #"{"items":[],"messages":[{"id":"a1:1:0","entryId":"a1:1","#
+                ? (200, #"{"items":[{"kind":"task","id":"a1:1:0","text":"Fix it"}],"#
+                    + #""messages":[{"id":"a1:1:0","entryId":"a1:1","#
                     + #""replyReferences":[],"role":"user","content":"Fix it"}],"hasMore":true,"#
                     + #""oldestEntryId":"a1:1"}"#)
                 : (404, "")
@@ -45,7 +50,7 @@ extension APIClientTests {
         model.selectedAgentID = "a1"
         model.openJob(.coding, "fix")
         await waitForJobs { model.jobHistory?.loaded == true }
-        #expect(model.jobHistory?.messages.map(\.text) == ["Fix it"])
+        #expect(model.jobHistory.map { tasks(in: $0) } == ["Fix it"])
         #expect(model.jobHistory?.hasMore == true)
         #expect(model.jobHistory?.oldestEntryID == "a1:1")
     }
@@ -83,7 +88,8 @@ extension APIClientTests {
                 (200, #"{"jobs":[{"name":"github","conversationId":"c2","status":"\#(status)","#
                     + #""usage":{"models":{"m":{"input":1000,"output":500,"cacheRead":0,"cost":{"total":0.002}}}}}]}"#)
             case "/v1/agents/a1/desktop-jobs/github/history":
-                (200, #"{"items":[],"messages":[{"id":"a1:3:0","entryId":"a1:3","#
+                (200, #"{"items":[{"kind":"task","id":"a1:3:0","text":"Log in"}],"#
+                    + #""messages":[{"id":"a1:3:0","entryId":"a1:3","#
                     + #""replyReferences":[],"role":"user","content":"Log in"}],"#
                     + #""hasMore":false,"oldestEntryId":null}"#)
             default:
@@ -109,7 +115,7 @@ extension APIClientTests {
 
         model.openJob(.desktop, "github")
         await waitForJobs { model.jobHistory?.loaded == true }
-        #expect(model.jobHistory?.messages.map(\.text) == ["Log in"])
+        #expect(model.jobHistory.map { tasks(in: $0) } == ["Log in"])
     }
 
     private static let questionJob =

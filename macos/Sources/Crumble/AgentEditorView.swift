@@ -108,11 +108,18 @@ struct AgentEditorView: View {
                     }
                 }
             ReasoningField(
-                levels: ThinkingLevel.available(for: draft.model, in: model.models), thinking: $draft.thinking)
+                preview: model.reasoningBoard.preview(
+                    provider: draft.provider, model: draft.model, level: draft.thinking),
+                thinking: $draft.thinking)
         } header: {
             Text("Model")
         } footer: {
             Text(model.modelHint).foregroundStyle(.secondary)
+        }
+        .task(id: [draft.provider, draft.model, draft.thinking]) {
+            guard let client = model.client else { return }
+            await model.reasoningBoard.load(
+                provider: draft.provider, model: draft.model, level: draft.thinking, client: client)
         }
     }
 

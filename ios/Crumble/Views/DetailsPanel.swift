@@ -71,7 +71,7 @@ struct DetailsPanel: View {
           Label {
             VStack(alignment: .leading, spacing: 2) {
               Text(schedule.name).lineLimit(1)
-              Text(automationTiming(schedule, sources: model.connectedServices.eventSources.sources))
+              Text(schedule.timing)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
               if let error = board.errors[schedule.id] { Text(error).font(.subheadline).foregroundStyle(.red) }

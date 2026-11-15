@@ -147,12 +147,13 @@ public final class JobBoard {
     Task {
       do {
         let page = try await client.jobHistory(
-          open.kind, agentID: open.agentID, name: open.name, before: "", limit: 100)
+          open.kind, agentID: open.agentID, name: open.name, before: "", limit: Self.pageSize)
+        let steps = try await refreshedSteps(of: open, newest: page, client: client)
         // Changed as a copy: reading the observed property while writing it is an exclusivity violation.
         guard var current = history, current.id == open.id else { return }
-        current.messages = mergeMessages(current.messages, page.messages ?? [])
+        current.items = mergeJobItems(current.items.map { steps[$0.id] ?? $0 }, page.items)
         if !current.loaded {
-          current.hasMore = page.hasMore ?? false
+          current.hasMore = page.hasMore
           current.oldestEntryID = page.oldestEntryId ?? ""
         }
         current.loaded = true
@@ -165,16 +166,36 @@ public final class JobBoard {
     }
   }
 
+  private static let pageSize = 100
+
+  /// The newest page's items, plus unfinished steps loaded from older pages, read again from those pages:
+  /// a step's result reaches the page that holds its call, which the newest page may have scrolled past.
+  private func refreshedSteps(of open: JobHistory, newest page: JobHistoryPage, client: APIClient)
+    async throws -> [String: JobHistoryItem] {
+    var steps = Dictionary(page.items.map { ($0.id, $0) }, uniquingKeysWith: { _, last in last })
+    var waiting = Set(open.items.filter(\.isUnfinishedStep).map(\.id)).subtracting(steps.keys)
+    var before = page.hasMore ? page.oldestEntryId ?? "" : ""
+    var visited: Set<String> = []
+    while !waiting.isEmpty, !before.isEmpty, visited.insert(before).inserted {
+      let older = try await client.jobHistory(
+        open.kind, agentID: open.agentID, name: open.name, before: before, limit: Self.pageSize)
+      for item in older.items where waiting.remove(item.id) != nil { steps[item.id] = item }
+      before = older.hasMore ? older.oldestEntryId ?? "" : ""
+    }
+    return steps
+  }
+
   public func loadOlderHistory(client: APIClient) {
     guard let open = history, open.hasMore, !open.loadingOlder, !open.oldestEntryID.isEmpty else { return }
     history?.loadingOlder = true
     Task {
       do {
         let page = try await client.jobHistory(
-          open.kind, agentID: open.agentID, name: open.name, before: open.oldestEntryID, limit: 100)
+          open.kind, agentID: open.agentID, name: open.name, before: open.oldestEntryID, limit: Self.pageSize)
         guard var current = history, current.id == open.id else { return }
-        current.messages = mergeMessages(current.messages, page.messages ?? [])
-        current.hasMore = page.hasMore ?? false
+        let known = Set(current.items.map(\.id))
+        current.items = page.items.filter { !known.contains($0.id) } + current.items
+        current.hasMore = page.hasMore
         current.oldestEntryID = page.oldestEntryId ?? ""
         current.loadingOlder = false
         history = current

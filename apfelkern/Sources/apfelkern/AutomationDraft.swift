@@ -92,7 +92,7 @@ public struct AutomationDraft: Identifiable, Sendable {
 
   private func trimmed(_ text: String) -> String { text.trimmingCharacters(in: .whitespacesAndNewlines) }
 
-  /// Why the draft can't be saved; nil when it can.
+  /// Why the draft can't be saved; nil when it can. The server's preview checks the trigger and its zone.
   public var problem: String? {
     if agentID.isEmpty { return "Choose which bot runs this automation." }
     if kind == .prompt, trimmed(name).isEmpty || trimmed(prompt).isEmpty {
@@ -103,9 +103,7 @@ public struct AutomationDraft: Identifiable, Sendable {
       guard let timeout = Int(trimmed(timeoutSeconds)), (1...AutomationLimits.maxTimeoutSeconds).contains(timeout)
       else { return "Timeout must be between 1 and \(AutomationLimits.maxTimeoutSeconds) seconds." }
     }
-    if onEvent { return eventSourceId.isEmpty ? "Choose an event source." : nil }
-    if repeats, trimmed(cron).isEmpty { return "Choose either a recurring cron or a one-time run time." }
-    return zone == nil ? "Choose a valid time zone." : nil
+    return nil
   }
 
   /// Exactly one is set, as the server requires.
@@ -139,41 +137,57 @@ public struct AutomationDraft: Identifiable, Sendable {
     ]
   }
 
-  /// The row to show until the server answers.
-  public func provisional(id: String, replacing old: Schedule?, now: Date = .now) -> Schedule {
+  /// What the server previews: the trigger in its zone.
+  public var previewRequest: AutomationPreviewRequest {
     let trigger = trigger
-    let cronRun = trigger.cron.flatMap { cron in
-      zone.flatMap { CronExpression(cron)?.next(after: now, in: $0) }
-    }
+    return AutomationPreviewRequest(
+      cron: trigger.cron, runAt: trigger.runAt == nil ? nil : runDate, eventSourceId: trigger.eventSourceId,
+      timezone: trimmed(timezone))
+  }
+
+  /// The row to show until the server answers, with the next run the preview found, if any.
+  public func provisional(id: String, replacing old: Schedule?, preview: AutomationPreview? = nil) -> Schedule {
+    let trigger = trigger
+    let saving = "Saving…"
     return Schedule(
       id: id, agentId: agentID, name: trimmed(name), cron: trigger.cron,
       prompt: kind == .prompt ? trimmed(prompt) : "", kind: kind, command: kind == .script ? command : nil,
       timeoutSeconds: timeout, notify: notify, timezone: trimmed(timezone), runAt: trigger.runAt,
       eventSourceId: trigger.eventSourceId, enabled: enabled,
-      nextRunAt: trigger.runAt ?? cronRun?.ISO8601Format(), createdByAgentId: old?.createdByAgentId)
-  }
-
-  /// The line under the When section; nil for an event automation, which has no next run.
-  public func preview(now: Date = .now) -> AutomationPreview? {
-    guard !onEvent else { return nil }
-    guard let zone else { return AutomationPreview(text: "Choose a valid time zone.", isProblem: true) }
-    let zoneName = trimmed(timezone)
-    guard repeats else {
-      return runDate < now
-        ? AutomationPreview(text: "This time has passed.", isProblem: true)
-        : AutomationPreview(text: "Runs \(humanRun(runDate, zone: zone, now: now)) (\(zoneName))", isProblem: false)
-    }
-    guard let expression = CronExpression(cron) else {
-      return AutomationPreview(text: "The server checks this schedule when you save.", isProblem: false)
-    }
-    guard let run = expression.next(after: now, in: zone) else {
-      return AutomationPreview(text: "This schedule never runs.", isProblem: true)
-    }
-    return AutomationPreview(text: "Next run \(humanRun(run, zone: zone, now: now)) (\(zoneName))", isProblem: false)
+      // A one-time run is its own next run, so the row doesn't read as finished before it is saved.
+      nextRunAt: trigger.runAt ?? trigger.cron.flatMap { _ in preview?.nextRunAt ?? old?.nextRunAt },
+      createdByAgentId: old?.createdByAgentId, description: saving, timing: saving, nextRunLabel: saving)
   }
 }
 
+/// A draft trigger the server previews; exactly one of `cron`, `runAt`, and `eventSourceId` is set.
+public struct AutomationPreviewRequest: Hashable, Sendable {
+  public var cron: String?
+  public var runAt: Date?
+  /// Empty while an event automation has no source yet, which the preview names as the problem.
+  public var eventSourceId: String?
+  public var timezone: String
+
+  public init(cron: String? = nil, runAt: Date? = nil, eventSourceId: String? = nil, timezone: String) {
+    self.cron = cron
+    self.runAt = runAt
+    self.eventSourceId = eventSourceId
+    self.timezone = timezone
+  }
+}
+
+/// The server's line under the When section: when the draft next runs, or why it can't.
 public struct AutomationPreview: Equatable, Sendable {
   public var text: String
   public var isProblem: Bool
+  /// The trigger in words, as the saved automation will describe it.
+  public var description: String
+  public var nextRunAt: String?
+
+  public init(text: String, isProblem: Bool, description: String = "", nextRunAt: String? = nil) {
+    self.text = text
+    self.isProblem = isProblem
+    self.description = description
+    self.nextRunAt = nextRunAt
+  }
 }

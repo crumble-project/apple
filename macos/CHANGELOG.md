@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Attachments work with the current server: files upload before their message and a retry uploads only those that failed. A file deleted from the chat's library shows **File deleted** instead of its preview.
+- Automation timing, next runs, and the editor's next-run line come from the server, so they read as on the web, and the list's next runs stay current while it's open. **Save** is unavailable while the server says a schedule can't run; if the server can't be asked, saving still works. Reasoning levels in the composer and the bot form, cited pages under a reply, a job's steps, and what a working bot is doing come from the server too.
 
 - **Settings** no longer configures the server. Providers, the judge and vision models, web search, credentials and logins across bots, password managers, Integrations, Coding, Users, message gateways, and the event relay are set up in Crumble on the web. **Server Settings on the Web** in **General** opens it in the browser, and links that led to those pages, such as **Provider Settings…** under a failed reply, open the matching web page.
 - A bot can ask to call someone other than you. Its **call request** in the chat shows the callee, number, goal, and opening, with **Decline** and **Approve**. Once placed, the call is a row with its state, and clicking it opens the call beside the chat with the goal and the transcript, live while the call goes on. A call's end notice becomes the same row.

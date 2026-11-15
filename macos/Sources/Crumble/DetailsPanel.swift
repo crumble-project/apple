@@ -72,7 +72,7 @@ struct DetailsPanel: View {
         return HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 1) {
                 Text(schedule.name).font(.subheadline.weight(.medium)).lineLimit(1)
-                Text(automationTiming(schedule, sources: model.connectedServices.eventSources.sources))
+                Text(schedule.timing)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 if let error = board.errors[schedule.id] {

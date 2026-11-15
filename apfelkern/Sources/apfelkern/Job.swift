@@ -83,7 +83,7 @@ public struct JobHistory: Identifiable, Sendable {
   public let agentID: String
   public let kind: JobKind
   public let name: String
-  public var messages: [Message] = []
+  public var items: [JobHistoryItem] = []
   public var hasMore = false
   public var oldestEntryID = ""
   public var loaded = false
@@ -100,6 +100,23 @@ public struct JobHistory: Identifiable, Sendable {
     self.agentID = agentID
     self.kind = kind
     self.name = name
+  }
+}
+
+/// A page of a job's history: its transcript messages and the items the server read from them.
+public struct JobHistoryPage: Sendable {
+  public var messages: [Message]
+  public var items: [JobHistoryItem]
+  public var hasMore: Bool
+  public var oldestEntryId: String?
+
+  public init(
+    messages: [Message] = [], items: [JobHistoryItem] = [], hasMore: Bool = false, oldestEntryId: String? = nil
+  ) {
+    self.messages = messages
+    self.items = items
+    self.hasMore = hasMore
+    self.oldestEntryId = oldestEntryId
   }
 }
 
@@ -131,7 +148,7 @@ extension APIClient {
   }
 
   public func jobHistory(_ kind: JobKind, agentID: String, name: String, before: String, limit: Int)
-    async throws -> ChatHistoryResponse {
+    async throws -> JobHistoryPage {
     switch kind {
     case .coding: try await codingJobHistory(agentID, name: name, before: before, limit: limit)
     case .desktop: try await desktopJobHistory(agentID, name: name, before: before, limit: limit)
@@ -144,8 +161,8 @@ extension APIClient {
     var before = ""
     repeat {
       let page = try await jobHistory(kind, agentID: agentID, name: name, before: before, limit: 200)
-      pages.append(page.messages ?? [])
-      before = page.hasMore == true ? page.oldestEntryId ?? "" : ""
+      pages.append(page.messages)
+      before = page.hasMore ? page.oldestEntryId ?? "" : ""
     } while !before.isEmpty
     return pages.reversed().flatMap(\.self)
   }

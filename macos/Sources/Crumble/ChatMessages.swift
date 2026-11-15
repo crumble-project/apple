@@ -101,14 +101,13 @@ struct MessageView: View {
     }
 
     private var receivedMessage: some View {
-        let reply = SourceCitations.split(message.text, sources: message.sources ?? [])
-        return HStack(alignment: .center, spacing: 6) {
+        HStack(alignment: .center, spacing: 6) {
             VStack(alignment: .leading, spacing: 6) {
-                MarkdownText(text: reply.text)
+                MarkdownText(text: message.presentedText)
                     .font(Palette.messageFont)
                     .lineSpacing(Palette.messageLineSpacing)
                     .textSelection(.enabled)
-                ForEach(reply.chips, id: \.href) { SourceChipLink(chip: $0) }
+                ForEach(message.citations, id: \.href) { CitationLink(citation: $0) }
             }
             .bubble(owner: false)
             .fixedSize(horizontal: false, vertical: true)

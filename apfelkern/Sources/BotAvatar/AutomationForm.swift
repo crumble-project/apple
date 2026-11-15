@@ -11,10 +11,13 @@ public struct AutomationFormSections: View {
   let sourcesLoaded: Bool
   /// Where sources are added: the web client's Event relay settings.
   let eventRelayURL: URL?
+  /// The server's preview of the trigger, and how to ask for it again once the trigger changes.
+  let preview: AutomationPreview?
+  let loadPreview: () async -> Void
 
   public init(
     draft: Binding<AutomationDraft>, agents: [Agent], capabilities: ServerCapabilities?, sources: [EventSource],
-    sourcesLoaded: Bool, eventRelayURL: URL?
+    sourcesLoaded: Bool, eventRelayURL: URL?, preview: AutomationPreview?, loadPreview: @escaping () async -> Void
   ) {
     _draft = draft
     self.agents = agents
@@ -22,6 +25,8 @@ public struct AutomationFormSections: View {
     self.sources = sources
     self.sourcesLoaded = sourcesLoaded
     self.eventRelayURL = eventRelayURL
+    self.preview = preview
+    self.loadPreview = loadPreview
   }
 
   private func canScript(_ agentID: String) -> Bool {
@@ -52,7 +57,8 @@ public struct AutomationFormSections: View {
     }
     if draft.kind == .script { scriptSection } else { promptSection }
     AutomationWhenSection(
-      draft: $draft, sources: sources, sourcesLoaded: sourcesLoaded, eventRelayURL: eventRelayURL)
+      draft: $draft, sources: sources, sourcesLoaded: sourcesLoaded, eventRelayURL: eventRelayURL, preview: preview)
+      .task(id: [AnyHashable(draft.id), AnyHashable(draft.previewRequest)]) { await loadPreview() }
     Section {
       Toggle("Enabled", isOn: $draft.enabled)
     }
@@ -108,6 +114,7 @@ private struct AutomationWhenSection: View {
   let sources: [EventSource]
   let sourcesLoaded: Bool
   let eventRelayURL: URL?
+  let preview: AutomationPreview?
 
   var body: some View {
     Section {
@@ -120,7 +127,7 @@ private struct AutomationWhenSection: View {
     } header: {
       Text("When")
     } footer: {
-      if let preview = draft.preview() {
+      if let preview {
         Text(preview.text).foregroundStyle(preview.isProblem ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
       }
     }
@@ -160,7 +167,9 @@ private struct AutomationWhenSection: View {
         .onChange(of: draft.cron) { _, cron in
           if cron.count > AutomationLimits.cron { draft.cron = String(cron.prefix(AutomationLimits.cron)) }
         }
-      Text(cronPhrase(draft.cron, timezone: draft.timezone)).font(.caption).foregroundStyle(.secondary)
+      if let description = preview?.description.nilIfEmpty {
+        Text(description).font(.caption).foregroundStyle(.secondary)
+      }
     default:
       if let recurrence = draft.recurrence { RecurrenceFields(recurrence: recurrence, draft: $draft) }
     }

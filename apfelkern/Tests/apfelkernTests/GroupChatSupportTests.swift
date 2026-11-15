@@ -4,11 +4,6 @@ import Testing
 @testable import apfelkern
 
 struct GroupChatSupportTests {
-    private let sources = [
-        MessageSource(url: "https://Example.com/guide/", title: "The Guide"),
-        MessageSource(url: "https://example.com/other", title: "Other")
-    ]
-
     @Test func groupRowsSkipTurnsWithNothingToShow() {
         let bot = MessageOrigin(kind: "bot", name: "Ada", agentId: "a1")
         let messages = [
@@ -46,38 +41,6 @@ struct GroupChatSupportTests {
         #expect(draft.memberIDs == ["a3", "a2"])
     }
 
-    @Test func onlyParenthesesThatHeldACitationGoAway() {
-        let split = SourceCitations.split(
-            "Call `run()` or run() first (source: [source](https://example.com/guide)) and ( ) stays.",
-            sources: sources)
-        #expect(split.text == "Call `run()` or run() first and ( ) stays.")
-    }
-
-    @Test func aBotChatReplyListsThePagesItsTurnRead() {
-        let page: (String, String) -> JSONValue = { .object(["url": .string($0), "title": .string($1)]) }
-        let result: (String, [JSONValue], Bool) -> Message = { tool, pages, failed in
-            Message(
-                id: UUID().uuidString, role: "toolResult", toolName: tool, isError: failed,
-                toolDetails: .array(pages))
-        }
-        let messages = [
-            Message(id: "ask", role: "user", content: .string("Where?")),
-            result("web_search", [page("https://a.test", "A")], false),
-            result("web_extract", [.object(["url": .string("https://b.test"), "error": .string("Gone")])], false),
-            result("web_search", [page("https://failed.test", "Failed")], true),
-            result("memory_search", [page("https://other.test", "Other")], false),
-            Message(id: "first", role: "assistant", content: .string("Here.")),
-            result("web_extract", [page("https://c.test", "C")], false),
-            Message(id: "second", role: "assistant", content: .string("And here.")),
-            Message(id: "next", role: "user", content: .string("Thanks")),
-            Message(id: "third", role: "assistant", content: .string("Welcome."))
-        ]
-        let replies = SourceCitations.byReply(messages)
-        #expect(replies["first"] == [MessageSource(url: "https://a.test", title: "A")])
-        #expect(replies["second"]?.map(\.title) == ["A", "C"])
-        #expect(replies["third"] == nil)
-    }
-
     @Test func noticeKindFollowsWhatTheReplyWaitsFor() {
         func kind(_ waitingFor: String?) -> NoticeKind {
             NoticeKind(ActivityEvent(type: "reply", agentId: "a", agentName: "A", waitingFor: waitingFor))
@@ -96,32 +59,21 @@ struct GroupChatSupportTests {
         #expect(decoded.waitingFor == "login")
     }
 
-    @Test func citationsOfReadPagesBecomeChipsOnce() {
-        let split = SourceCitations.split(
-            "Pack light ([source](https://example.com/guide), [source](https://EXAMPLE.com/guide/#top)). "
-                + "See [source](https://example.com/other).",
-            sources: sources)
-        #expect(split.text == "Pack light. See.")
-        #expect(split.chips == [
-            SourceChip(href: "https://example.com/guide", title: "The Guide"),
-            SourceChip(href: "https://example.com/other", title: "Other")
-        ])
-    }
-
-    @Test func citationsOfUnknownPagesAndCodeStayInTheText() {
-        let text = "[source](https://elsewhere.com) and `[source](https://example.com/other)`\n"
-            + "```\n[source](https://example.com/guide)\n```"
-        let split = SourceCitations.split(text, sources: sources)
-        #expect(split.text == text)
-        #expect(split.chips.isEmpty)
-    }
-
-    @Test func wireMessagesCarryTheirSources() throws {
+    @Test func aReplyShowsTheServersPresentationAndKeepsItsRawText() throws {
         let wire = try JSONDecoder().decode(Components.Schemas.TranscriptMessage.self, from: Data(#"""
-            {"id":"g:1:0","entryId":"g:1","role":"assistant","content":"Hi","replyReferences":[],
-             "sources":[{"url":"https://example.com","title":"Example"}]}
+            {"id":"g:1:0","entryId":"g:1","role":"assistant","content":"Pack light ([source](https://example.com/a)).",
+             "replyReferences":[],"sources":[{"url":"https://example.com/a","title":"Guide"}],
+             "presentation":{"text":"Pack light.","citations":[
+               {"href":"https://example.com/a","title":"Guide","site":"example.com"}]}}
             """#.utf8))
-        #expect(try Message(wire: wire).sources == [MessageSource(url: "https://example.com", title: "Example")])
+        let message = try Message(wire: wire)
+        #expect(message.text == "Pack light ([source](https://example.com/a)).")
+        #expect(message.presentedText == "Pack light.")
+        #expect(message.citations == [Citation(href: "https://example.com/a", site: "example.com", title: "Guide")])
+
+        let plain = Message(id: "2", role: "assistant", content: .string("See [source](https://example.com/a)."))
+        #expect(plain.presentedText == "See [source](https://example.com/a).")
+        #expect(plain.citations.isEmpty)
     }
 
     @Test func aGroupReplyIsLabelledWithItsBot() {

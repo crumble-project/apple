@@ -25,6 +25,10 @@ extension AppModel {
     automationBoard.saveDraft(client: client) { [self] in showNotice("Automation could not be saved") }
   }
 
+  func loadAutomationPreview() async {
+    if let client { await automationBoard.loadPreview(client: client) }
+  }
+
   func runAutomation(_ schedule: Schedule) {
     guard let client else { return }
     let routeAtStart = route

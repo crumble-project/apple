@@ -70,14 +70,16 @@ struct AutomationFormView: View {
           draft: $draft, agents: model.agents, capabilities: model.capabilities,
           sources: model.connectedServices.eventSources.sources,
           sourcesLoaded: model.connectedServices.eventSources.isLoaded,
-          eventRelayURL: model.client?.webSettingsURL(.eventRelay))
+          eventRelayURL: model.client?.webSettingsURL(.eventRelay),
+          preview: model.automationBoard.draftPreview, loadPreview: model.loadAutomationPreview)
       }
       .formStyle(.grouped)
       .navigationTitle(draft.isNew ? "New Automation" : "Edit Automation")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         SheetActions(
-          onCancel: model.automationBoard.closeDraft, onSave: model.saveAutomation, saveDisabled: false)
+          onCancel: model.automationBoard.closeDraft, onSave: model.saveAutomation,
+          saveDisabled: model.automationBoard.draftPreview?.isProblem == true)
       }
     }
   }

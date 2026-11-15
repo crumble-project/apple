@@ -7,8 +7,7 @@ struct AutomationsPanel: View {
 
     var body: some View {
         AutomationsPage(
-            board: model.automationBoard, agents: model.agents,
-            sources: model.connectedServices.eventSources.sources, client: model.client,
+            board: model.automationBoard, agents: model.agents, client: model.client,
             onCreate: model.openNewAutomation, onRun: model.runAutomation, onOpenBot: { model.selectAgent($0) })
     }
 }

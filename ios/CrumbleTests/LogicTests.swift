@@ -68,10 +68,10 @@ struct LogicTests {
 
   @Test func chatHidesToolActivity() {
     let tool = Message(
-      id: "a1:1:0", role: "assistant", blocks: .array([.object(["type": .string("toolCall")])]))
+      id: "a1:1:0", role: "assistant",
+      blocks: [.toolCall(.init(arguments: .init(), id: "c", name: "bash", _type: .toolCall))])
     let reply = Message(
-      id: "a1:1:1", role: "assistant", content: .string("Hi"),
-      blocks: .array([.object(["type": .string("text"), "text": .string("Hi")])]))
+      id: "a1:1:1", role: "assistant", content: .string("Hi"), blocks: [.text(.init(text: "Hi", _type: .text))])
     #expect(!shownInChat(tool))
     #expect(shownInChat(reply))
   }

@@ -14,7 +14,7 @@ struct LogicTests {
         let second = Agent(id: "a2", name: "Beacon")
         model.selectedAgentID = first.id
         model.route = .agent(first.id)
-        model.applySnapshot(ChatSnapshot(status: "running", agentId: first.id))
+        model.applySnapshot(ChatSnapshot(status: "running", working: .thinking, agentId: first.id))
         #expect(model.botState(first) == .working)
 
         model.selectedAgentID = second.id
@@ -75,10 +75,11 @@ struct LogicTests {
     }
 
     @Test func chatHidesToolActivity() {
-        let tool = Message(id: "a1:1:0", role: "assistant", blocks: .array([.object(["type": .string("toolCall")])]))
+        let tool = Message(
+            id: "a1:1:0", role: "assistant",
+            blocks: [.toolCall(.init(arguments: .init(), id: "c", name: "bash", _type: .toolCall))])
         let reply = Message(
-            id: "a1:1:1", role: "assistant", content: .string("Hi"),
-            blocks: .array([.object(["type": .string("text"), "text": .string("Hi")])]))
+            id: "a1:1:1", role: "assistant", content: .string("Hi"), blocks: [.text(.init(text: "Hi", _type: .text))])
         #expect(!shownInChat(tool))
         #expect(shownInChat(reply))
     }
@@ -183,7 +184,8 @@ struct LogicTests {
 
     @Test func chatRowsKeepPartialAssistantTextHiddenUntilCompletion() throws {
         let rows = ChatRow.rows(
-            messages: [], snapshot: ChatSnapshot(status: "running", partial: "draft"), hasMore: false)
+            messages: [], snapshot: ChatSnapshot(status: "running", working: .writing, partial: "draft"),
+            hasMore: false)
 
         #expect(rows.count == 1)
         guard case .thinking = rows[0] else {

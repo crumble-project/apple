@@ -161,12 +161,12 @@ extension APIClient {
   }
 
   public func codingJobHistory(_ agentID: String, name: String, before: String, limit: Int)
-    async throws -> ChatHistoryResponse {
+    async throws -> JobHistoryPage {
     try await invoke {
-      try ChatHistoryResponse(wire: await $0.getCodingJobHistory(.init(
+      try JobHistoryPage(wire: await $0.getCodingJobHistory(.init(
         path: .init(id: agentID, name: name),
         query: .init(limit: limit > 0 ? limit : nil, before: before.nilIfEmpty)
-      )).ok.body.json.value1)
+      )).ok.body.json)
     }
   }
 
