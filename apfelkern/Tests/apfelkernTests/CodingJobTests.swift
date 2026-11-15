@@ -127,6 +127,47 @@ private func stepResult(_ history: JobHistory?, _ id: String) -> String? {
   })
 }
 
+@Test(arguments: [false, true])
+@MainActor func slowHistoryLoadsFinishWhileTheJobIsPolled(olderPage: Bool) async throws {
+  let requests = Mutex((listings: 0, newest: 0, older: 0))
+  try await withClient(handler: { request in
+    if request.url?.lastPathComponent == "coding-jobs" {
+      requests.withLock { $0.listings += 1 }
+      return StubResponse(body: Data(
+        #"{"jobs":[{"name":"fix","conversationId":"c1","status":"working"}]}"#.utf8))
+    }
+    if request.url?.query?.contains("before=2") == true {
+      requests.withLock { $0.older += 1 }
+      return StubResponse(body: historyPage([step("call", result: "done")]).body, delay: 0.2)
+    }
+    let load = requests.withLock { $0.newest += 1; return $0.newest }
+    if load == 1 { return historyPage([step("call")]) }
+    if olderPage {
+      return historyPage([#"{"kind":"task","id":"2","text":"Next"}"#], hasMore: true, oldest: "2")
+    }
+    return StubResponse(body: historyPage([step("call", result: "done")]).body, delay: 0.2)
+  }, test: { client in
+    let board = JobBoard()
+    board.refresh(.coding, agentID: "a1", client: client)
+    await waitFor { board.jobs["coding/fix"]?.isWorking == true }
+    board.open(.coding, "fix", agentID: "a1", client: client)
+    await waitFor { board.history?.loaded == true }
+
+    let watcher = Task { await board.watch(every: .milliseconds(10), agentID: "a1", client: client) }
+    defer { watcher.cancel() }
+    await waitFor { requests.withLock { olderPage ? $0.older > 0 : $0.newest > 1 } }
+    let listings = requests.withLock { $0.listings }
+    await waitFor { requests.withLock { $0.listings >= listings + 4 } }
+    #expect(requests.withLock { $0.newest } == 2)
+    #expect(requests.withLock { $0.older } == (olderPage ? 1 : 0))
+    #expect(stepResult(board.history, "call") == nil)
+
+    await waitFor { stepResult(board.history, "call") == "done" }
+    #expect(board.jobs["coding/fix"]?.isWorking == true)
+    await waitFor { requests.withLock { $0.newest >= 3 } }
+  })
+}
+
 @Test @MainActor func anOlderHistoryLoadThatFinishesLateIsDropped() async throws {
   let loads = Mutex(0)
   try await withClient(handler: { _ in

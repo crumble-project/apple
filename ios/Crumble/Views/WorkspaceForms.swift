@@ -79,7 +79,7 @@ struct AutomationFormView: View {
       .toolbar {
         SheetActions(
           onCancel: model.automationBoard.closeDraft, onSave: model.saveAutomation,
-          saveDisabled: model.automationBoard.draftPreview?.isProblem == true)
+          saveDisabled: model.automationBoard.draftPreviewProblem != nil)
       }
     }
   }

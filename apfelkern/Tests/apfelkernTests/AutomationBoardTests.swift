@@ -392,6 +392,50 @@ private func savedUnchanged(_ schedule: String) async throws -> JSONValue {
   })
 }
 
+@MainActor
+@Test(arguments: [false, true])
+func aPastTriggerPreviewOnlyBlocksChangedTriggers(changeTrigger: Bool) async throws {
+  let original = wire(
+    "s1", name: "Backup", prompt: "", kind: "script", command: "./backup.sh",
+    runAt: "2020-01-01T10:00:00.123Z")
+  let renamed = original.replacingOccurrences(of: "Backup", with: "Renamed")
+  let sent = Mutex<[JSONValue]>([])
+  try await withClient(handler: { request in
+    if request.url?.path.hasSuffix("/schedules/preview") == true {
+      return json(#"{"description":"Once","text":"This time has passed.","isProblem":true,"nextRunAt":null}"#)
+    }
+    if request.httpMethod == "PATCH" {
+      try sent.withLock { $0.append(try requestJSON(request)) }
+      return json(renamed)
+    }
+    return json("[\(sent.withLock { $0.isEmpty } ? original : renamed)]")
+  }, test: { client in
+    let board = AutomationBoard()
+    board.refresh(client: client)
+    try await wait { board.isLoaded }
+    board.edit(board.schedules[0])
+    board.draft?.name = "Renamed"
+    if changeTrigger { board.draft?.runDate.addTimeInterval(60) }
+    await board.loadPreview(client: client, after: .zero)
+    #expect(board.draftPreview?.isProblem == true)
+    #expect((board.draftPreviewProblem != nil) == changeTrigger)
+    board.saveDraft(client: client)
+    if changeTrigger {
+      #expect(board.saveError == "This time has passed.")
+      #expect(board.draft?.name == "Renamed")
+      #expect(sent.withLock { $0.isEmpty })
+    } else {
+      #expect(board.saveError.isEmpty)
+      #expect(board.draft == nil)
+      try await wait { !sent.withLock { $0.isEmpty } && !board.isPending("s1") }
+      #expect(sent.withLock { $0.first?["name"] } == .string("Renamed"))
+      #expect(sent.withLock { $0.first?["runAt"] } == .string("2020-01-01T10:00:00.123Z"))
+      #expect(board.schedules.first?.name == "Renamed")
+      #expect(board.schedules.first?.nextRunAt == nil)
+    }
+  })
+}
+
 private let preview = #"{"description":"At 09:00 (Europe/Berlin)","text":"Next run tomorrow at 09:00","#
   + #""isProblem":false,"nextRunAt":"2026-11-07T08:00:00.000Z"}"#
 

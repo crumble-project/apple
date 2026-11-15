@@ -36,6 +36,7 @@ public struct AutomationDraft: Identifiable, Sendable {
   public var timezone = TimeZone.current.identifier
   public var onEvent = false
   public var eventSourceId = ""
+  private var savedTrigger: (request: AutomationPreviewRequest, runAt: String?)?
 
   public init(agentID: String) {
     scheduleID = ""
@@ -63,9 +64,12 @@ public struct AutomationDraft: Identifiable, Sendable {
     timezone = schedule.timezone ?? timezone
     onEvent = schedule.eventSourceId != nil
     eventSourceId = schedule.eventSourceId ?? ""
+    savedTrigger = (previewRequest, schedule.runAt)
   }
 
   public var isNew: Bool { scheduleID.isEmpty }
+
+  var hasUnchangedTrigger: Bool { savedTrigger?.request == previewRequest }
 
   public var when: AutomationWhen {
     get {
@@ -115,7 +119,9 @@ public struct AutomationDraft: Identifiable, Sendable {
 
   private var trigger: Trigger {
     if onEvent { return Trigger(eventSourceId: eventSourceId) }
-    return repeats ? Trigger(cron: trimmed(cron)) : Trigger(runAt: runDate.ISO8601Format())
+    if repeats { return Trigger(cron: trimmed(cron)) }
+    let savedRunAt = savedTrigger.flatMap { $0.request.runAt == runDate ? $0.runAt : nil }
+    return Trigger(runAt: savedRunAt ?? runDate.ISO8601Format())
   }
 
   private var timeout: Int {

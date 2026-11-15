@@ -43,6 +43,8 @@ public final class JobBoard {
     agentID = ""
     jobs = [:]
     history = nil
+    historyLoad += 1
+    historyLoading = false
     answers = [:]
     listed = []
     answered = []
@@ -124,7 +126,7 @@ public final class JobBoard {
     while !Task.isCancelled {
       try? await Task.sleep(for: delay)
       guard !Task.isCancelled else { return }
-      if openJobWorks { loadHistory(client: client) }
+      if openJobWorks && !historyLoading { loadHistory(client: client) }
       var kinds: Set<JobKind> = history.map { [$0.kind] } ?? [.coding]
       if questionOpen { kinds.insert(.coding) }
       for kind in kinds { refresh(kind, agentID: agentID, client: client) }
@@ -145,12 +147,17 @@ public final class JobBoard {
   /// Counts history loads, so only the newest one applies; an older load that finishes late would
   /// otherwise cut the items a newer one added.
   private var historyLoad = 0
+  private var historyLoading = false
 
   public func loadHistory(client: APIClient) {
     guard let open = history else { return }
     historyLoad += 1
     let load = historyLoad
+    historyLoading = true
     Task {
+      defer {
+        if load == historyLoad { historyLoading = false }
+      }
       do {
         let page = try await client.jobHistory(
           open.kind, agentID: open.agentID, name: open.name, before: "", limit: Self.pageSize)

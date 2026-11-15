@@ -150,6 +150,11 @@ public final class AutomationBoard {
     return preview.value
   }
 
+  public var draftPreviewProblem: String? {
+    guard let draft, !draft.hasUnchangedTrigger, let preview = draftPreview, preview.isProblem else { return nil }
+    return preview.text
+  }
+
   /// Asks the server about the open draft's trigger once it has held for `delay`. Cancelling the task, as
   /// SwiftUI does when the trigger changes, drops the request; an answer for an earlier trigger, another
   /// draft, or another connection is ignored. A failed request leaves no preview and saving still works.
@@ -201,7 +206,7 @@ public final class AutomationBoard {
     guard let form = draft else { return }
     // Without a preview the server checks the trigger as it saves.
     let preview = draftPreview
-    if let problem = form.problem ?? preview.flatMap({ $0.isProblem ? $0.text : nil }) {
+    if let problem = form.problem ?? draftPreviewProblem {
       saveError = problem
       return
     }
