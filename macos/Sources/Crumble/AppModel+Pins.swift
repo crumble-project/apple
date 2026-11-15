@@ -47,14 +47,9 @@ extension AppModel {
             pinned ? pins.pinning(route, among: conversationRoutes) : pins.unpinning(route, among: conversationRoutes))
     }
 
-    /// A `List` move within the Pinned section: the pin takes the place of the row it lands on.
-    func movePins(from source: IndexSet, to destination: Int) {
-        let routes = pinnedConversations.map(\.route)
-        guard let origin = source.first, routes.indices.contains(origin) else { return }
-        // `destination` counts rows before the move, so a pin moved down lands one row higher.
-        let landing = destination > origin ? destination - 1 : destination
-        guard landing != origin, routes.indices.contains(landing) else { return }
-        changePins(pinBoard.pins.moving(routes[origin], to: routes[landing], among: conversationRoutes))
+    /// A pin dropped on another takes its place, the way Messages' pins push each other aside.
+    func movePin(_ route: Route, to target: Route) {
+        changePins(pinBoard.pins.moving(route, to: target, among: conversationRoutes))
     }
 
     /// The bot list has loaded, so the account's pins can be read and changed.
