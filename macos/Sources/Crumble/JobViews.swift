@@ -11,24 +11,22 @@ struct JobCard: View {
         Button {
             model.openJob(job.kind, job.name)
         } label: {
-            HStack(spacing: 10) {
-                Image(systemName: job.kind.icon)
-                    .font(.system(size: 13))
-                    .foregroundStyle(.secondary)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(job.name).font(.system(size: 14, weight: .medium)).lineLimit(1)
+            HStack(spacing: 12) {
+                JobIcon(kind: job.kind, size: 32)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(job.name).font(.system(size: 13.5, weight: .medium)).lineLimit(1)
                     HStack(spacing: 5) {
                         if job.isWorking { ProgressView().controlSize(.mini) }
                         Text(job.isWorking ? "Working" : "Idle").font(.system(size: 12)).foregroundStyle(.secondary)
                     }
                 }
                 Spacer(minLength: 16)
-                Image(systemName: "chevron.right").font(.caption2.weight(.medium)).foregroundStyle(.tertiary)
+                Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(.tertiary)
             }
-            .padding(.horizontal, 14)
+            .padding(.horizontal, 12)
             .padding(.vertical, 10)
             .frame(maxWidth: 340, alignment: .leading)
-            .background(Palette.bubble, in: .rect(cornerRadius: 14))
+            .card(cornerRadius: 14)
             .contentShape(.rect(cornerRadius: 14))
         }
         .buttonStyle(.plain)
@@ -63,7 +61,7 @@ struct JobQuestionCard: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
             .frame(maxWidth: 340, alignment: .leading)
-            .background(Palette.bubble, in: .rect(cornerRadius: 14))
+            .card(cornerRadius: 14)
             .accessibilityElement(children: .combine)
         }
     }
@@ -96,7 +94,7 @@ struct JobQuestionAnswerView: View {
         }
         .padding(12)
         .frame(maxWidth: 380, alignment: .leading)
-        .background(Palette.bubble, in: .rect(cornerRadius: 14))
+        .card(cornerRadius: 14)
     }
 
     private var header: some View {
@@ -183,6 +181,7 @@ struct JobSheet: View {
     @Environment(\.openWindow) private var openWindow
     let job: JobHistory
     var inPanel = false
+    @State private var expandedSteps: Set<String> = []
 
     private var items: [JobHistoryItem] { job.items }
     private var current: Job? { model.jobs[Job.id(job.kind, job.name)] }
@@ -195,11 +194,7 @@ struct JobSheet: View {
 
     @ViewBuilder var body: some View {
         if inPanel {
-            VStack(spacing: 0) {
-                panelHeader
-                Divider()
-                log
-            }
+            log
         } else {
             log
                 .frame(width: 600, height: 560)
@@ -209,44 +204,66 @@ struct JobSheet: View {
         }
     }
 
+    /// The job laid out like the details panel it replaces: what it is, how it's doing, and what
+    /// can be done with it, above its history. The toolbar closes it.
     private var panelHeader: some View {
-        HStack(spacing: 2) {
-            VStack(alignment: .leading, spacing: 1) {
-                Text(job.name).font(.subheadline.weight(.semibold)).lineLimit(1)
-                if let summary = current?.summary().nilIfEmpty {
-                    Text(summary).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+        VStack(spacing: 6) {
+            JobIcon(kind: job.kind, size: 56).padding(.bottom, 4)
+            Text(job.name).font(.system(size: 17, weight: .semibold)).multilineTextAlignment(.center)
+            HStack(spacing: 5) {
+                if working { ProgressView().controlSize(.mini) }
+                Text(statusLine).font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(1)
+            }
+            HStack(spacing: 8) {
+                actionTile("Refresh", symbol: "arrow.clockwise") { model.loadJobHistory() }
+                actionTile(
+                    "Transcript", symbol: "arrow.down.circle",
+                    help: job.transcriptError.isEmpty ? "Download Transcript" : job.transcriptError
+                ) { model.downloadJobTranscript() }
+                .disabled(job.downloading)
+                if job.kind == .desktop {
+                    actionTile("Desktop", symbol: JobKind.desktop.icon, help: "Open Bot Desktop") {
+                        openWindow(id: BotDesktopView.windowID, value: job.agentID)
+                    }
                 }
             }
-            Spacer(minLength: 8)
-            panelButton("Refresh", symbol: "arrow.clockwise") { model.loadJobHistory() }
-            panelButton(
-                job.transcriptError.isEmpty ? "Download Transcript" : job.transcriptError,
-                symbol: "arrow.down.circle"
-            ) { model.downloadJobTranscript() }
-            .disabled(job.downloading)
-            if job.kind == .desktop {
-                panelButton("Open Bot Desktop", symbol: JobKind.desktop.icon) {
-                    openWindow(id: BotDesktopView.windowID, value: job.agentID)
-                }
-            }
+            .frame(maxWidth: 360)
+            .padding(.top, 12)
         }
-        .padding(.horizontal, 16)
-        .frame(height: 56)
+        .padding(.top, 8)
+        .padding(.bottom, 14)
+        .frame(maxWidth: .infinity)
     }
 
-    private func panelButton(_ title: String, symbol: String, action: @escaping () -> Void) -> some View {
+    private var statusLine: String {
+        let state = working ? "Working" : job.kind.noun.prefix(1).uppercased() + job.kind.noun.dropFirst()
+        return [state, current?.summary().nilIfEmpty].compactMap(\.self).joined(separator: " · ")
+    }
+
+    private func actionTile(
+        _ title: String, symbol: String, help: String? = nil, action: @escaping () -> Void
+    ) -> some View {
         Button(action: action) {
-            Image(systemName: symbol).frame(width: 24, height: 24).contentShape(Rectangle())
+            VStack(spacing: 4) {
+                Image(systemName: symbol).font(.system(size: 15))
+                Text(title).font(.system(size: 11, weight: .medium))
+            }
+            .foregroundStyle(.primary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 9)
+            .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        .foregroundStyle(.secondary)
-        .accessibilityLabel(title)
-        .help(title)
+        .card(cornerRadius: 10)
+        .accessibilityLabel(help ?? title)
+        .help(help ?? title)
     }
 
     private var log: some View {
         ScrollView { entries }
+        .onChange(of: job.id) { expandedSteps.removeAll() }
         .defaultScrollAnchor(.bottom)
+        .defaultScrollAnchor(.top, for: .alignment)
         .overlay { placeholder }
         .safeAreaInset(edge: .top, spacing: 0) {
             if let question = current?.question {
@@ -297,7 +314,8 @@ struct JobSheet: View {
     }
 
     private var entries: some View {
-        LazyVStack(alignment: .leading, spacing: 12) {
+        LazyVStack(alignment: .leading, spacing: 10) {
+            if inPanel { panelHeader }
             if job.hasMore {
                 if job.loadingOlder {
                     ProgressView().controlSize(.small).frame(maxWidth: .infinity)
@@ -315,15 +333,17 @@ struct JobSheet: View {
                     .foregroundStyle(.red)
                     .textSelection(.enabled)
             }
-            ForEach(items) { item in
-                JobItemView(item: item)
-            }
+            ForEach(JobBlock.blocks(items)) { JobBlockView(block: $0, expandedSteps: $expandedSteps) }
             if working && job.loaded {
-                HStack(spacing: 6) {
-                    ProgressView().controlSize(.small)
-                    Text("Working…").foregroundStyle(.secondary)
+                HStack {
+                    TypingDots()
+                        .padding(.horizontal, 15)
+                        .padding(.vertical, 14)
+                        .background(Palette.bubble, in: .rect(cornerRadius: 16))
+                    Spacer()
                 }
-                .accessibilityElement(children: .combine)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Working")
             }
         }
         .padding(20)
@@ -346,92 +366,17 @@ struct JobSheet: View {
     }
 }
 
-private struct JobItemView: View {
-    let item: JobHistoryItem
+/// A job's kind as a rounded tile: the card in the chat and the head of its panel.
+struct JobIcon: View {
+    let kind: JobKind
+    let size: CGFloat
 
     var body: some View {
-        switch item {
-        case .task(let task):
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Task").font(.system(size: 12)).foregroundStyle(.secondary)
-                Text(task.text)
-                    .font(Palette.messageFont)
-                    .textSelection(.enabled)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .background(Color.accentColor.opacity(0.12), in: .rect(cornerRadius: 14))
-            }
-            .accessibilityElement(children: .combine)
-        case .reply(let reply):
-            MarkdownText(text: reply.text)
-                .font(Palette.messageFont)
-                .lineSpacing(Palette.messageLineSpacing)
-                .textSelection(.enabled)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        case .step(let step):
-            JobStepView(step: step)
-        }
-    }
-}
-
-/// One tool call: what ran (a command or a file), as the server labels it. Click it to see the whole output.
-private struct JobStepView: View {
-    let step: JobStepItem
-    @State private var open = false
-
-    private var icon: String {
-        switch step.icon {
-        case .terminal: "terminal"
-        case .file: "doc.text"
-        case .pencil: "pencil"
-        case .pointer: JobKind.desktop.icon
-        case .tool: "wrench.and.screwdriver"
-        }
-    }
-
-    private var subject: String { step.subject ?? "" }
-
-    private var summary: some View {
-        Button {
-            open.toggle()
-        } label: {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Image(systemName: step.isError ? "exclamationmark.triangle.fill" : icon)
-                    .foregroundStyle(step.isError ? .red : .secondary)
-                    .frame(width: 16)
-                Text(step.label).foregroundStyle(.secondary)
-                Text(subject)
-                    .font(.system(size: 12.5, design: .monospaced))
-                    .lineLimit(open ? nil : 4)
-                if !step.finished { ProgressView().controlSize(.mini) }
-                Spacer(minLength: 0)
-                if step.finished {
-                    Image(systemName: open ? "chevron.down" : "chevron.right")
-                        .font(.caption2.weight(.medium))
-                        .foregroundStyle(.tertiary)
-                }
-            }
-            .font(.system(size: 12.5))
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .disabled(!step.finished)
-        .accessibilityLabel("\(step.label) \(subject)\(step.isError ? ", failed" : "")")
-        .accessibilityValue(open ? "Expanded" : "Collapsed")
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            summary
-            if open {
-                Text(step.shownOutput)
-                    .font(.system(size: 12, design: .monospaced))
-                    .foregroundStyle(step.isError ? Color.red : Color.primary)
-                    .textSelection(.enabled)
-                    .padding(10)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.primary.opacity(0.05), in: .rect(cornerRadius: 10))
-            }
-        }
+        Image(systemName: kind.icon)
+            .font(.system(size: size * 0.4, weight: .medium))
+            .foregroundStyle(.secondary)
+            .frame(width: size, height: size)
+            .background(Palette.bubble, in: .rect(cornerRadius: size * 0.28))
+            .accessibilityHidden(true)
     }
 }

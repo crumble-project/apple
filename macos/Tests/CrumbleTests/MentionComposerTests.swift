@@ -41,7 +41,8 @@ struct MentionComposerTests {
         let window = NSWindow(
             contentRect: NSRect(x: -10_000, y: -10_000, width: 700, height: 260), styleMask: [.titled],
             backing: .buffered, defer: false)
-        window.contentView = NSHostingView(rootView: Composer(target: .chat(source, model: model)).environment(model))
+        window.contentView = NSHostingView(
+            rootView: Composer(target: .chat(source, model: model), ready: true).environment(model))
         window.makeKeyAndOrderFront(nil)
         return window
     }

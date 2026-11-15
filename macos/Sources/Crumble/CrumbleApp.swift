@@ -32,6 +32,9 @@ struct CrumbleApp: App {
                 CommandPaletteButton(model: model).keyboardShortcut("k")
             }
             CommandGroup(replacing: .appSettings) { SettingsButton().keyboardShortcut(",") }
+            #if DEBUG
+                SampleJobCommands(model: model)
+            #endif
         }
 
         // A plain window rather than a Settings scene: those lay their toolbar out as a row of tabs
@@ -56,6 +59,7 @@ struct ContentView: View {
     @Environment(\.openWindow) private var openWindow
     /// The main window is key or main in the active app; another window, a minimized one, or another app isn't.
     @Environment(\.appearsActive) private var appearsActive
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         @Bindable var model = model
@@ -90,14 +94,18 @@ struct ContentView: View {
         .sheet(item: $model.groupDraft) { GroupEditorView(draft: sheetBinding($model.groupDraft, for: $0)) }
     }
 
-    @ViewBuilder private var detail: some View {
-        if let group = model.selectedGroup {
-            GroupChatView(group: group)
-        } else if let agent = model.selectedAgent {
-            ChatView(agent: agent)
-        } else {
-            WelcomeView()
+    /// Switching chats crossfades instead of cutting, so the change reads as one motion.
+    private var detail: some View {
+        ZStack {
+            if let group = model.selectedGroup {
+                GroupChatView(group: group).id("group:" + group.id).transition(.opacity)
+            } else if let agent = model.selectedAgent {
+                ChatView(agent: agent).id("agent:" + agent.id).transition(.opacity)
+            } else {
+                WelcomeView()
+            }
         }
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.18), value: model.route)
     }
 }
 
@@ -112,133 +120,6 @@ func sheetBinding<Draft: Identifiable & Sendable>(_ source: Binding<Draft?>, for
     )
 }
 
-struct SidebarView: View {
-    @Environment(AppModel.self) private var model
-    @State private var search = ""
-
-    private var filteredGroups: [GroupChat] {
-        guard !search.isEmpty else { return model.groupChats }
-        return model.groupChats.filter { $0.name.localizedStandardContains(search) }
-    }
-
-    private var filteredAgents: [Agent] {
-        guard !search.isEmpty else { return model.agents }
-        return model.agents.filter {
-            $0.name.localizedStandardContains(search) || ($0.lastMessage ?? "").localizedStandardContains(search)
-        }
-    }
-
-    var body: some View {
-        List(selection: Binding(get: { model.route }, set: { model.navigate(to: $0) })) {
-            Section("Bots") {
-                ForEach(filteredAgents) { agent in
-                    AgentRow(agent: agent)
-                        .tag(Route.agent(agent.id))
-                        .disabled(model.pendingMutations.contains("agent:\(agent.id)"))
-                }
-            }
-            Section {
-                ForEach(filteredGroups) { group in
-                    GroupRow(group: group)
-                        .tag(Route.group(group.id))
-                        .disabled(model.pendingMutations.contains("group:\(group.id)") || group.id.hasPrefix("local:"))
-                }
-                if model.groupChats.isEmpty {
-                    Text(model.agents.count < GroupDraft.memberRange.lowerBound
-                        ? "Create two bots to start a group chat" : "No group chats yet")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                }
-            } header: {
-                HStack {
-                    Text("Group Chats")
-                    Spacer()
-                    Button("New Group Chat", systemImage: "plus") { model.createGroup() }
-                        .labelStyle(.iconOnly)
-                        .buttonStyle(.borderless)
-                        .disabled(model.agents.count < GroupDraft.memberRange.lowerBound)
-                        .help("New Group Chat (⇧⌘N)")
-                }
-            }
-        }
-        .listStyle(.sidebar)
-        .searchable(text: $search, placement: .sidebar, prompt: "Search")
-        .overlay {
-            if filteredAgents.isEmpty {
-                Text(model.agents.isEmpty ? "No agents yet" : "No results").foregroundStyle(.secondary)
-            }
-        }
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button("New Agent", systemImage: "square.and.pencil") { model.createAgent() }
-                    .help("New Agent (⌘N)")
-            }
-        }
-        .safeAreaInset(edge: .bottom) {
-            HStack {
-                if model.loading || !model.streamStatus.isEmpty { ConnectionStatus() }
-                Spacer(minLength: 0)
-                SettingsButton()
-                    .labelStyle(.iconOnly)
-                    .buttonStyle(.borderless)
-                    .frame(width: 40, height: 40)
-                    .help("Settings (⌘,)")
-            }
-            .padding(.horizontal, 8)
-        }
-    }
-}
-
-struct AgentRow: View {
-    @Environment(AppModel.self) private var model
-    let agent: Agent
-
-    /// A short description reads as a label beside the name; longer ones stay in the profile.
-    private var label: String? {
-        guard let description = agent.description?.nilIfEmpty, description.count <= 24 else { return nil }
-        return description
-    }
-
-    var body: some View {
-        HStack(spacing: 11) {
-            let state = model.botState(agent)
-            // Only the open and working bots animate: a long sidebar shouldn't repaint every bot.
-            BotAvatarView(
-                agent: agent, size: 38, state: state, live: state == .working || model.route == .agent(agent.id))
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
-                    Text(agent.name)
-                        .foregroundStyle(agent.enabled ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
-                        .lineLimit(1)
-                        .layoutPriority(1)
-                    if !agent.enabled {
-                        chip("Paused")
-                    } else if let label {
-                        chip(label)
-                    }
-                }
-                Text(preview(agent.lastMessage ?? "").nilIfEmpty ?? "No messages yet")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(.vertical, 6)
-        .contentShape(Rectangle())
-    }
-
-    private func chip(_ text: String) -> some View {
-        Text(text)
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .lineLimit(1)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 1)
-            .background(.quaternary, in: .rect(cornerRadius: 5))
-    }
-}
-
 struct ConnectionStatus: View {
     @Environment(AppModel.self) private var model
 
@@ -247,11 +128,10 @@ struct ConnectionStatus: View {
             if !model.streamStatus.isEmpty { (model.streamStatus, .red) } else if model.loading {
                 ("Syncing…", .secondary)
             } else { ("Connected", .green) }
-        HStack(spacing: 6) {
-            Circle().fill(color).frame(width: 7, height: 7)
+        HStack(spacing: 5) {
+            Circle().fill(color).frame(width: 6, height: 6)
             Text(status).font(.caption).foregroundStyle(.secondary).lineLimit(1)
         }
-        .padding(.horizontal, 10)
     }
 }
 

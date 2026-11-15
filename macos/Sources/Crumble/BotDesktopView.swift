@@ -83,32 +83,31 @@ struct BotDesktopPreviewCard: View {
     @State var preview: BotDesktopPreview
     let open: () -> Void
 
+    private var status: String {
+        if !preview.live { return "Asleep" }
+        if preview.link != nil { return "Awake" }
+        return preview.error.isEmpty ? "Waking…" : "Unavailable"
+    }
+
+    /// A row like the panel's others: name and state, with a small thumbnail of the screen at the end.
     var body: some View {
-        // A ZStack, because a Group would apply onDisappear to each branch and stop the preview as it wakes.
-        ZStack {
-            if preview.live {
-                Button(action: open) { live }
-                    .help("Open the bot desktop")
-                    .accessibilityLabel("Open the bot desktop")
-            } else {
-                Button(action: preview.wake) {
-                    VStack(spacing: 6) {
-                        Image(systemName: "zzz")
-                        Text("Sleeping").font(.callout)
-                        Text("Click to wake").font(.caption).opacity(0.65)
-                    }
-                    .foregroundStyle(.white.opacity(0.7))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .contentShape(.rect)
+        Button(action: preview.live ? open : preview.wake) {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Bot’s desktop").font(.system(size: 13, weight: .medium))
+                    Text(status).font(.system(size: 12)).foregroundStyle(.secondary)
                 }
-                .help("Wake the bot desktop")
-                .accessibilityLabel("Wake the bot desktop")
+                Spacer(minLength: 0)
+                thumbnail
             }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        .aspectRatio(16 / 9, contentMode: .fit)
-        .background(.black)
-        .clipShape(.rect(cornerRadius: 10))
+        .help(preview.live ? "Open the bot desktop" : "Wake the bot desktop")
+        .accessibilityLabel(preview.live ? "Open the bot desktop" : "Wake the bot desktop")
+        .card()
         .onAppear { preview.start() }
         .onDisappear { preview.stop() }
         // The viewer's connection ends while the Mac sleeps, and its link can't reconnect.
@@ -117,22 +116,25 @@ struct BotDesktopPreviewCard: View {
         }
     }
 
-    private var live: some View {
+    private var thumbnail: some View {
         ZStack {
-            Color.black
-            if let link = preview.link {
+            if preview.live, let link = preview.link {
+                Color.black
                 DesktopWebView(url: link, interactive: false)
-            } else if !preview.error.isEmpty {
-                Text(preview.error)
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.7))
-                    .multilineTextAlignment(.center)
-                    .padding(12)
+            } else if preview.live, preview.error.isEmpty {
+                Palette.bubble
+                ProgressView().controlSize(.mini)
             } else {
-                ProgressView().controlSize(.small).tint(.white)
+                Palette.bubble
+                Image(systemName: preview.live ? "exclamationmark.triangle" : "moon.zzz")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary)
             }
         }
-        .contentShape(.rect)
+        .frame(width: 64, height: 40)
+        .clipShape(.rect(cornerRadius: 7))
+        .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(Palette.hairline, lineWidth: 0.5))
+        .help(preview.error)
     }
 }
 

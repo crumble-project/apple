@@ -140,7 +140,8 @@ private struct CallRequestPendingView: View {
     }
 }
 
-/// An outside call beside the chat: its goal, then what was said, live while it goes on.
+/// An outside call beside the chat, laid out like the details panel it replaces: who was called, the
+/// goal, then what was said in the chat's own bubbles, live while it goes on. The toolbar closes it.
 struct CallSheet: View {
     @Environment(AppModel.self) private var model
     let call: OpenCall
@@ -149,59 +150,65 @@ struct CallSheet: View {
     private var request: CallRequest { model.callRequestBoard.current(call.request) }
 
     var body: some View {
-        VStack(spacing: 0) {
-            header
-            Divider()
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Goal").font(.system(size: 12)).foregroundStyle(.secondary)
-                        Text(request.goal).font(.system(size: 14)).textSelection(.enabled)
-                    }
-                    if request.outcome == .failed, let error = request.error?.nilIfEmpty {
-                        Text(error).font(.system(size: 13)).foregroundStyle(.red).textSelection(.enabled)
-                    }
-                    conversation
+        ScrollView {
+            VStack(alignment: .leading, spacing: 22) {
+                header
+                section("Goal") {
+                    Text(request.goal)
+                        .font(.system(size: 13))
+                        .textSelection(.enabled)
+                        .padding(12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .card()
                 }
-                .padding(20)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                if request.outcome == .failed, let error = request.error?.nilIfEmpty {
+                    Text(error).font(.system(size: 13)).foregroundStyle(.red).textSelection(.enabled)
+                }
+                section("Transcript") { conversation }
             }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 20)
         }
         .task(id: call.opening) { await model.watchCallTranscript() }
     }
 
     private var header: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "phone").foregroundStyle(.secondary)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(request.callee).font(.subheadline.weight(.semibold)).lineLimit(1)
-                Text(request.number).font(.system(.caption, design: .monospaced)).foregroundStyle(.secondary)
-            }
-            Spacer(minLength: 8)
-            if let label = request.stateLabel {
-                Text(label).font(.caption).foregroundStyle(.secondary)
-            }
-            Button {
-                model.closeCall()
-            } label: {
-                Image(systemName: "xmark").frame(width: 24, height: 24).contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(.secondary)
-            .accessibilityLabel("Close")
-            .help("Close")
+        VStack(spacing: 6) {
+            Image(systemName: "phone.fill")
+                .font(.system(size: 22))
+                .foregroundStyle(.secondary)
+                .frame(width: 56, height: 56)
+                .background(Palette.bubble, in: .circle)
+                .padding(.bottom, 4)
+            Text(request.callee).font(.system(size: 17, weight: .semibold)).multilineTextAlignment(.center)
+            Text([request.number, request.stateLabel ?? ""].filter { !$0.isEmpty }.joined(separator: " · "))
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+                .textSelection(.enabled)
         }
-        .padding(.horizontal, 16)
-        .frame(height: 56)
+        .padding(.top, 28)
+        .frame(maxWidth: .infinity)
+    }
+
+    private func section(_ title: String, @ViewBuilder content: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 4)
+            content()
+        }
     }
 
     private var conversation: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            line(speaker: botName, text: request.opening, mine: true)
-            ForEach(call.lines) { item in
-                line(
-                    speaker: item.speaker == .bot ? botName : request.callee, text: item.text,
-                    mine: item.speaker == .bot)
+        let lines = [CallLineRow(id: "opening", mine: true, text: request.opening)]
+            + call.lines.map { CallLineRow(id: "\($0.id)", mine: $0.speaker == .bot, text: $0.text) }
+        return VStack(alignment: .leading, spacing: 4) {
+            ForEach(Array(lines.enumerated()), id: \.element.id) { index, item in
+                // As in Messages, a name only where the speaker changes.
+                let turn = index == 0 || lines[index - 1].mine != item.mine
+                line(speaker: turn ? (item.mine ? botName : request.callee) : nil, text: item.text, mine: item.mine)
+                    .padding(.top, turn && index > 0 ? 10 : 0)
             }
             if call.failed {
                 Text("Couldn’t load the transcript.").font(.system(size: 13)).foregroundStyle(.secondary)
@@ -216,22 +223,25 @@ struct CallSheet: View {
         }
     }
 
-    private func line(speaker: String, text: String, mine: Bool) -> some View {
+    private func line(speaker: String?, text: String, mine: Bool) -> some View {
         VStack(alignment: mine ? .trailing : .leading, spacing: 3) {
-            Text(speaker).font(.system(size: 12)).foregroundStyle(.secondary)
+            if let speaker {
+                Text(speaker).font(.system(size: 11)).foregroundStyle(.secondary).padding(.horizontal, 6)
+            }
             Text(text)
                 .font(Palette.messageFont)
+                .lineSpacing(Palette.messageLineSpacing)
                 .textSelection(.enabled)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(
-                    mine ? AnyShapeStyle(Color.primary.opacity(0.07)) : AnyShapeStyle(Color.clear),
-                    in: .rect(cornerRadius: 14)
-                )
-                .overlay {
-                    if !mine { RoundedRectangle(cornerRadius: 14).strokeBorder(.quaternary) }
-                }
+                .bubble(owner: mine)
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .padding(mine ? .leading : .trailing, 40)
         .frame(maxWidth: .infinity, alignment: mine ? .trailing : .leading)
     }
+}
+
+private struct CallLineRow {
+    let id: String
+    let mine: Bool
+    let text: String
 }

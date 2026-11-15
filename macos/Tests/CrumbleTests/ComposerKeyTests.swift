@@ -16,7 +16,8 @@ extension MentionComposerTests {
             contentRect: NSRect(x: -10_000, y: -10_000, width: 600, height: 200), styleMask: [.titled],
             backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
-        window.contentView = NSHostingView(rootView: Composer(target: .chat(agent, model: model)).environment(model))
+        window.contentView = NSHostingView(
+            rootView: Composer(target: .chat(agent, model: model), ready: true).environment(model))
         window.makeKeyAndOrderFront(nil)
         defer { window.close() }
         try await Task.sleep(for: .milliseconds(400))

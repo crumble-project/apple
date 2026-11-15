@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- `BotAvatarView` gains `followsPointer`: a live avatar looks and turns toward the pointer anywhere in its window. It defaults to off.
 - Allow edits to completed one-time automations without changing their trigger or rerunning them. Preserve the saved timestamp, and expose `AutomationBoard.draftPreviewProblem` for both apps' Save buttons.
 - Keep job history updating when a read takes longer than the polling interval. Polling waits for the current history load; explicit refreshes still supersede older loads.
 - Update the contract copy for the server's file library. Messages no longer carry inline base64 attachments: `APIClient.uploadFile(_:_:)` and `uploadGroupFile(_:_:)` upload a `PendingAttachment`'s raw bytes with its name and MIME type and return a file ID, and `sendChatMessage` and `sendGroupMessage` take `files`. `file(_:fileID:)` and `groupFile(_:fileID:)` download by file ID; `groupAttachment` is gone, and `attachment(_:entryID:index:)` remains for desktop screenshots. `OutgoingAttachment`, `OutgoingGroupAttachment`, and `PendingAttachment.outgoing` are gone.

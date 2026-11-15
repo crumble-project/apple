@@ -46,6 +46,7 @@ extension AppModel {
 
     /// Opens the bot's one continuous chat and follows its event stream.
     func selectAgent(_ id: String) {
+        rememberSelectedChat()
         leaveGroup()
         cancelStream()
         stopFollowingBackgroundChat(id)
@@ -54,9 +55,10 @@ extension AppModel {
         selectedAgentID = id
         route = .agent(id)
         snapshot = nil
-        messages = delivery.messages(botID: id)
-        hasMore = false
-        oldestEntryID = ""
+        let cached = chatCache[id]
+        messages = (cached?.messages ?? []) + delivery.messages(botID: id)
+        hasMore = cached?.hasMore ?? false
+        oldestEntryID = cached?.oldestEntryID ?? ""
         loadingOlder = false
         replyTo = nil
         jobBoard.select(id)
@@ -77,8 +79,6 @@ extension AppModel {
             return { [self] in
                 guard selectionVersion == version, selectedAgentID == id else { return }
                 applySnapshot(snapshot)
-                hasMore = snapshot.hasMore ?? false
-                oldestEntryID = snapshot.oldestEntryId ?? ""
                 streamTask = Task { await streamChat(client: client, id: id, version: version) }
             }
         }
@@ -114,6 +114,7 @@ extension AppModel {
 
     /// Keeps older pages the owner already loaded; snapshots only carry the newest page.
     func applySnapshot(_ incoming: ChatSnapshot) {
+        prepareCachedHistory(for: incoming)
         snapshotRevision += 1
         updateRunningBot(selectedAgentID, running: incoming.isRunning)
         let incomingMessages = incoming.messages ?? []
@@ -263,7 +264,7 @@ extension AppModel {
 
     func loadOlder() {
         guard selectedGroupID.isEmpty else { return loadOlderGroupMessages() }
-        guard !loadingOlder, hasMore, !oldestEntryID.isEmpty else { return }
+        guard snapshot != nil, !loadingOlder, hasMore, !oldestEntryID.isEmpty else { return }
         let id = selectedAgentID
         let before = oldestEntryID
         let version = selectionVersion
