@@ -47,7 +47,7 @@ enum ContractFixtures {
       value2: .init(agentId: agentID, conversation: .init(
         agentId: agentID, createdAt: timestamp, id: "conversation-\(agentID)", title: "Chat",
         updatedAt: timestamp), conversationId: "conversation-\(agentID)", partial: "",
-        status: status, updatedAt: 0)))
+        status: status, updatedAt: 0, working: status == .running ? .thinking : .idle)))
   }
 
   static func execution(_ agentID: String = "a1", requestID: String = requestID) -> String {

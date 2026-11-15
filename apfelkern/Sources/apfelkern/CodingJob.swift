@@ -94,94 +94,38 @@ public struct JobQuestionEvent: Codable, Hashable, Sendable {
   }
 }
 
-/// One readable step of a coding job's history.
-public enum CodingJobItem: Identifiable, Hashable, Sendable {
-  case task(id: String, text: String)
-  case reply(id: String, text: String)
-  case tool(Tool)
+/// One readable item of a job's history: its task, a reply, or a tool step with its result once it has one.
+/// The server reads them from the transcript, attaching a result even when it landed on a newer page.
+public typealias JobHistoryItem = Components.Schemas.JobHistoryItem
+public typealias JobStepItem = Components.Schemas.JobStepItem
 
-  public struct Tool: Hashable, Sendable {
-    public var id: String
-    public var name: String
-    /// The command a `bash` call ran, or the path a file call touched.
-    public var subject: String
-    public var output: String
-    public var isError: Bool
-    public var finished: Bool
-
-    /// The whole output as an expanded step shows it.
-    public var shownOutput: String {
-      output.trimmingCharacters(in: .newlines).nilIfEmpty ?? "No output."
-    }
-  }
-
+extension Components.Schemas.JobHistoryItem: Identifiable {
   public var id: String {
     switch self {
-    case .task(let id, _), .reply(let id, _): id
-    case .tool(let tool): tool.id
+    case .task(let task): task.id
+    case .reply(let reply): reply.id
+    case .step(let step): step.id
     }
   }
 
-  /// Turns job history, oldest first, into items: tool results fold into the call they answer.
-  public static func items(from messages: [Message]) -> [CodingJobItem] {
-    var items: [CodingJobItem] = []
-    var open: [String: Int] = [:]
-    for message in messages {
-      switch message.role {
-      case "user":
-        if !message.text.isEmpty { items.append(.task(id: message.id, text: message.text)) }
-      case "assistant":
-        appendAssistantItems(of: message, to: &items, open: &open)
-      case "toolResult":
-        appendResult(of: message, to: &items, open: open)
-      default:
-        break
-      }
-    }
-    return items
+  /// A step still waiting on its tool's result.
+  var isUnfinishedStep: Bool {
+    if case .step(let step) = self { step.result == nil } else { false }
   }
+}
 
-  private static func appendAssistantItems(
-    of message: Message, to items: inout [CodingJobItem], open: inout [String: Int]
-  ) {
-    guard case .array(let blocks)? = message.blocks else {
-      if !message.text.isEmpty { items.append(.reply(id: message.id, text: message.text)) }
-      return
-    }
-    for (index, block) in blocks.enumerated() {
-      let id = "\(message.id):\(index)"
-      switch block["type"]?.stringValue {
-      case "text":
-        let text = (block["text"]?.stringValue ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        if !text.isEmpty { items.append(.reply(id: id, text: text)) }
-      case "toolCall":
-        let arguments = block["arguments"]
-        let subject = arguments?["command"]?.stringValue ?? arguments?["path"]?.stringValue ?? ""
-        if let callID = block["id"]?.stringValue, !callID.isEmpty { open[callID] = items.count }
-        items.append(
-          .tool(
-            Tool(
-              id: id, name: block["name"]?.stringValue ?? "", subject: subject, output: "",
-              isError: false, finished: false)))
-      default:
-        break
-      }
-    }
-  }
+extension Components.Schemas.JobStepItem {
+  public var finished: Bool { result != nil }
+  public var isError: Bool { result?.isError == true }
 
-  private static func appendResult(of message: Message, to items: inout [CodingJobItem], open: [String: Int]) {
-    let failed = message.isError == true
-    if let callID = message.toolCallId, let index = open[callID], case .tool(var tool) = items[index] {
-      tool.output = message.text
-      tool.isError = failed
-      tool.finished = true
-      items[index] = .tool(tool)
-    } else {
-      items.append(
-        .tool(
-          Tool(
-            id: message.id, name: message.toolName ?? "", subject: "", output: message.text, isError: failed,
-            finished: true)))
-    }
+  /// The whole output as an expanded step shows it.
+  public var shownOutput: String {
+    (result?.content ?? "").trimmingCharacters(in: .newlines).nilIfEmpty ?? "No output."
   }
+}
+
+/// Keeps items loaded earlier and those the newest page has scrolled past; the newest page replaces the rest.
+public func mergeJobItems(_ existing: [JobHistoryItem], _ newest: [JobHistoryItem]) -> [JobHistoryItem] {
+  guard let first = newest.first?.id else { return existing }
+  return existing.prefix { $0.id != first } + newest
 }

@@ -1,4 +1,5 @@
 import Foundation
+import OpenAPIRuntime
 
 extension APIClient {
   public func agents() async throws -> [Agent] {
@@ -160,27 +161,45 @@ extension APIClient {
   }
 
   public func codingJobHistory(_ agentID: String, name: String, before: String, limit: Int)
-    async throws -> ChatHistoryResponse {
+    async throws -> JobHistoryPage {
     try await invoke {
-      try ChatHistoryResponse(wire: await $0.getCodingJobHistory(.init(
+      try JobHistoryPage(wire: await $0.getCodingJobHistory(.init(
         path: .init(id: agentID, name: name),
         query: .init(limit: limit > 0 ? limit : nil, before: before.nilIfEmpty)
       )).ok.body.json)
     }
   }
 
+  /// Uploads a file into the bot's library and returns its ID, which a message then carries in `files`.
+  public func uploadFile(_ agentID: String, _ file: PendingAttachment) async throws -> String {
+    try await invoke(timeout: 120, headers: ["Content-Type": file.mimeType]) {
+      try await $0.uploadFile(.init(
+        path: .init(id: agentID), headers: .init(xFileName: file.name),
+        body: .any(HTTPBody(file.data)))).created.body.json.file.id
+    }
+  }
+
   public func sendChatMessage(
     _ agentID: String, content: String, requestID: String, replyTo: String,
-    attachments: [OutgoingAttachment] = [], timezone: String = TimeZone.current.identifier
+    files: [String] = [], timezone: String = TimeZone.current.identifier
   ) async throws {
     let body = Operations.SendMessage.Input.Body.JsonPayload(
-      attachments: attachments.isEmpty ? nil : attachments,
-      content: content, replyTo: replyTo.nilIfEmpty, requestId: requestID, timezone: timezone)
-    try await invoke(timeout: attachments.isEmpty ? 20 : 120) {
+      content: content, files: files.isEmpty ? nil : files, replyTo: replyTo.nilIfEmpty, requestId: requestID,
+      timezone: timezone)
+    try await invoke(timeout: files.isEmpty ? 20 : 120) {
       _ = try await $0.sendMessage(.init(path: .init(id: agentID), body: .json(body))).accepted
     }
   }
 
+  /// A file from the bot's library, by the ID a transcript message lists.
+  public func file(_ agentID: String, fileID: String) async throws -> Data {
+    try await invoke(timeout: 120) {
+      let body = try await $0.getFile(.init(path: .init(id: agentID, fileId: fileID))).ok.body.binary
+      return try await Data(collecting: body, upTo: .max)
+    }
+  }
+
+  /// An image from a transcript entry without a file ID, such as a desktop screenshot.
   public func attachment(_ agentID: String, entryID: String, index: Int) async throws -> Data {
     try await invoke {
       let body = try await $0.getAttachment(.init(

@@ -164,8 +164,8 @@ func aRequestNamesItsState(status: CallRequest.Status, outcome: CallRequest.Outc
 }
 
 @Test func theTranscriptKeepsWhatWasSaid() {
-  let blocks = JSONValue.array([.object(["type": .string("text"), "text": .string("Hi")])])
-  let silent = JSONValue.array([.object(["type": .string("toolCall")])])
+  let blocks: [TranscriptBlock] = [.text(.init(text: "Hi", _type: .text))]
+  let silent: [TranscriptBlock] = [.toolCall(.init(arguments: .init(), id: "c", name: "bash", _type: .toolCall))]
   let lines = callTranscriptLines([
     Message(id: "1", role: "user", content: .string("Hello?")),
     Message(id: "2", role: "assistant", content: .string("Hi"), blocks: blocks),
@@ -182,8 +182,9 @@ func aRequestNamesItsState(status: CallRequest.Status, outcome: CallRequest.Outc
 @Test func theTranscriptComesFromItsEndpoint() async throws {
   try await withClient(handler: { request in
     #expect(request.url?.path == "/prefix/v1/agents/a1/call-requests/r1/transcript")
-    return StubResponse(body: Data(
-      #"{"messages":[{"id":"m1","entryId":"e1","role":"user","content":"Hello?"}],"hasMore":false}"#.utf8))
+    return StubResponse(body: Data((
+      #"{"messages":[{"id":"m1","entryId":"e1","role":"user","content":"Hello?","replyReferences":[]}],"#
+        + #""hasMore":false}"#).utf8))
   }, test: { client in
     let page = try await client.callRequestTranscript("a1", id: "r1")
     #expect(page.messages?.map(\.id) == ["m1"])
@@ -199,7 +200,9 @@ func aRequestNamesItsState(status: CallRequest.Status, outcome: CallRequest.Outc
     #expect(board.current(request).status == .pending)
     board.refreshIfChanged(messages: [try toolResult()], client: client)
     #expect(board.needsPolling)
+    #expect(!board.isLoaded(request.id))
     try await wait { board.current(request).status == .calling }
+    #expect(board.isLoaded(request.id))
     #expect(board.needsPolling)
     try await stop(board)
   })

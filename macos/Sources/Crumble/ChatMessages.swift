@@ -29,7 +29,7 @@ struct MessageView: View {
                 }
             } else if message.kind == HeldActionEvent.messageKind, let held = message.heldAction {
                 HStack {
-                    HeldActionCard(held: held, title: message.text)
+                    HeldActionCard(held: held, title: message.text).replyCard(message)
                     Spacer(minLength: 56)
                 }
             } else if let failure = JobFailure(message: message) {
@@ -81,17 +81,17 @@ struct MessageView: View {
                 }
             } else if let request = BotRequest(message: message) {
                 HStack {
-                    BotRequestCard(request: request)
+                    BotRequestCard(request: request).replyCard(message)
                     Spacer(minLength: 56)
                 }
             } else if let request = CallRequest(message: message) {
                 HStack {
-                    CallRequestCard(request: request)
+                    CallRequestCard(request: request).replyCard(message)
                     Spacer(minLength: 56)
                 }
             } else if let ask = BotSecretAsk(message: message) {
                 HStack {
-                    BotSecretRequestCard(ask: ask)
+                    BotSecretRequestCard(ask: ask).replyCard(message)
                     Spacer(minLength: 56)
                 }
             }
@@ -101,14 +101,14 @@ struct MessageView: View {
     }
 
     private var receivedMessage: some View {
-        let reply = SourceCitations.split(message.text, sources: message.sources ?? [])
-        return HStack(alignment: .center, spacing: 6) {
+        HStack(alignment: .center, spacing: 6) {
             VStack(alignment: .leading, spacing: 6) {
-                MarkdownText(text: reply.text)
+                MarkdownText(text: message.presentedText)
                     .font(Palette.messageFont)
                     .lineSpacing(Palette.messageLineSpacing)
                     .textSelection(.enabled)
-                ForEach(reply.chips, id: \.href) { SourceChipLink(chip: $0) }
+                    .replySurface(message, .text, ready: message.showsReplyText)
+                ForEach(message.citations, id: \.href) { CitationLink(citation: $0) }
             }
             .bubble(owner: false)
             .fixedSize(horizontal: false, vertical: true)

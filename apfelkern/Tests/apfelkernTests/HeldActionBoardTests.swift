@@ -41,10 +41,12 @@ private func waiting(_ client: APIClient, agent: String = "a1") async throws -> 
   board.select(agent)
   board.refreshIfChanged(messages: [heldEvent], client: client)
   #expect(board.state(of: "h1") == .outcome("Loading…"))
+  #expect(!board.isReady("h1"))
   try await wait {
     if case .waiting = board.state(of: "h1") { return true }
     return false
   }
+  #expect(board.isReady("h1"))
   return board
 }
 
@@ -67,6 +69,7 @@ func aDecidedActionSettlesItsCard(status: String, outcome: String) async throws 
     board.select("a1")
     board.refreshIfChanged(messages: [heldEvent], client: client)
     try await wait { board.state(of: "h1") == .outcome(outcome) }
+    #expect(board.isReady("h1"))
     #expect(!board.needsPolling)
   })
 }
@@ -77,6 +80,7 @@ func aDecidedActionSettlesItsCard(status: String, outcome: String) async throws 
     board.select("a1")
     board.refreshIfChanged(messages: [heldEvent], client: client)
     try await wait { board.state(of: "h1") == .outcome("Unavailable") }
+    #expect(!board.isReady("h1"))
   })
 }
 

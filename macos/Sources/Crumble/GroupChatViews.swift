@@ -80,6 +80,7 @@ struct GroupChatView: View {
         .defaultScrollAnchor(.bottom, for: .sizeChanges)
         .jumpToLatest()
         .scrollEdgeEffectStyle(.soft, for: .all)
+        .chatAttention(.group(group.id), ready: model.groupSnapshot != nil)
         .overlay {
             if rows.isEmpty {
                 if model.groupSnapshot == nil {
@@ -244,13 +245,13 @@ struct GroupBotMessage: View {
     }
 
     private var bubble: some View {
-        let reply = SourceCitations.split(message.text, sources: message.sources ?? [])
-        return VStack(alignment: .leading, spacing: 6) {
-            MarkdownText(text: reply.text)
+        VStack(alignment: .leading, spacing: 6) {
+            MarkdownText(text: message.presentedText)
                 .font(Palette.messageFont)
                 .lineSpacing(Palette.messageLineSpacing)
                 .textSelection(.enabled)
-            ForEach(reply.chips, id: \.href) { SourceChipLink(chip: $0) }
+                .replySurface(message, .text, ready: message.showsReplyText)
+            ForEach(message.citations, id: \.href) { CitationLink(citation: $0) }
         }
         .bubble(owner: false)
         .fixedSize(horizontal: false, vertical: true)
@@ -291,18 +292,18 @@ struct GroupBotMessage: View {
     }
 }
 
-/// A page the reply's turn read, opened in the browser.
-struct SourceChipLink: View {
-    let chip: SourceChip
+/// A page the reply cited, opened in the browser.
+struct CitationLink: View {
+    let citation: Citation
 
     var body: some View {
-        if let url = URL(string: chip.href) {
+        if let url = URL(string: citation.href) {
             Link(destination: url) {
-                Label(chip.title.nilIfEmpty ?? chip.href, systemImage: "link")
+                Label(citation.title.nilIfEmpty ?? citation.site, systemImage: "link")
                     .font(.callout)
                     .lineLimit(1)
             }
-            .help(chip.href)
+            .help(citation.href)
         }
     }
 }

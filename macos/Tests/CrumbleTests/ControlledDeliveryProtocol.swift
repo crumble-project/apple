@@ -117,10 +117,13 @@ extension ControlledDeliveryController {
         return false
     }
 
-    func release(_ path: String, body: String) {
+    func release(_ path: String, body: String, status: Int = 200) {
+        release(path, data: Data(body.utf8), status: status)
+    }
+
+    func release(_ path: String, data: Data, status: Int = 200) {
         heldPaths.remove(path)
-        heldRequests.removeValue(forKey: path)?.resume(
-            returning: ControlledHTTPResponse(status: 200, body: Data(body.utf8)))
+        heldRequests.removeValue(forKey: path)?.resume(returning: ControlledHTTPResponse(status: status, body: data))
     }
 }
 

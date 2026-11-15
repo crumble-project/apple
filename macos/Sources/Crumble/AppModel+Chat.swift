@@ -114,6 +114,7 @@ extension AppModel {
 
     /// Keeps older pages the owner already loaded; snapshots only carry the newest page.
     func applySnapshot(_ incoming: ChatSnapshot) {
+        snapshotRevision += 1
         updateRunningBot(selectedAgentID, running: incoming.isRunning)
         let incomingMessages = incoming.messages ?? []
         let acknowledged = Set(incomingMessages.compactMap(\.requestId))
@@ -121,7 +122,8 @@ extension AppModel {
         // Rebuild from confirmed transcript rows and append local rows so a delayed snapshot
         // cannot erase a message the user has already seen.
         let local = delivery.messages(botID: selectedAgentID)
-        messages = mergeMessages(messages.filter { $0.deliveryState == .confirmed }, incomingMessages)
+        messages = deletedFiles.reconcile(
+            mergeMessages(messages.filter { $0.deliveryState == .confirmed }, incomingMessages), chat: selectedAgentID)
         messages.append(contentsOf: local)
         refreshJobsIfChanged()
         refreshHeldActionsIfChanged()
@@ -210,6 +212,7 @@ extension AppModel {
             let index = agents.firstIndex(where: { $0.id == event.agentId }) {
             agents[index].lastMessage = lastMessage
         }
+        refreshReplyReferences(after: event, active: attentionActive)
         let context = NotificationContext(windowOnScreen: mainWindowOnScreen(), route: route)
         guard let client, let note = notification(for: event, in: context) else { return }
         unread.add(event)
@@ -271,7 +274,7 @@ extension AppModel {
                 return { [self] in
                     guard selectionVersion == version else { return }
                     loadingOlder = false
-                    messages = mergeMessages(messages, page.messages ?? [])
+                    messages = deletedFiles.reconcile(mergeMessages(messages, page.messages ?? []), chat: id)
                     refreshHeldActionsIfChanged()
                     refreshBotRequestsIfChanged()
                     refreshCallRequestsIfChanged()
@@ -352,29 +355,17 @@ extension AppModel {
         attachments.removeAll { $0.id == id }
     }
 
-    func attachmentImage(entryID: String, index: Int) -> NSImage? {
-        attachmentImages["\(entryID)/\(index)"]
-    }
-
     func attachmentImage(message: Message, index: Int) -> NSImage? {
-        if let entryID = message.entryId { return attachmentImage(entryID: entryID, index: index) }
-        let key = selectedGroupID.isEmpty ? selectedAgentID : GroupChat.deliveryKey(selectedGroupID)
+        if message.entryId != nil { return attachmentKey(message, index: index).flatMap { attachmentImages[$0] } }
         guard let requestID = message.requestId,
-            let data = delivery.imageData(botID: key, requestID: requestID, index: index)
+            let data = delivery.imageData(botID: conversationKey, requestID: requestID, index: index)
         else { return nil }
         return NSImage(data: data)
     }
 
     func loadAttachmentImage(entryID: String, index: Int) async {
-        let key = "\(entryID)/\(index)"
-        guard attachmentImages[key] == nil, let client else { return }
-        guard !entryID.hasPrefix("local:") else { return }
-        let agent = selectedAgentID
-        let group = selectedGroupID
-        let data = group.isEmpty
-            ? try? await client.attachment(agent, entryID: entryID, index: index)
-            : try? await client.groupAttachment(group, entryID: entryID, index: index)
-        guard let data,
+        guard let (key, data) = await downloadAttachment(
+            entryID: entryID, index: index, cached: { attachmentImages[$0] != nil }),
             let image = NSImage(data: data)
         else { return }
         attachmentImages[key] = image

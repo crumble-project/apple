@@ -35,7 +35,7 @@ extension Message {
   init(wire: Components.Schemas.TranscriptMessage) throws {
     self.init(
       id: wire.id, entryId: wire.entryId, role: wire.role, content: .string(wire.content),
-      blocks: try wire.blocks.map { try JSONValue(wire: $0) }, kind: wire.kind,
+      blocks: wire.blocks, kind: wire.kind,
       replyTo: wire.replyTo, replyPreview: wire.replyPreview,
       origin: wire.origin.map {
         MessageOrigin(kind: $0.kind, name: $0.name, agentId: $0.agentId, via: $0.via, source: $0.source)
@@ -50,12 +50,22 @@ extension Message {
         CallEvent(callId: $0.callId, direction: CallEvent.Direction(wire: $0.direction), callee: $0.callee)
       },
       timestamp: wire.timestamp.flatMap(Int64.init(exactly:)),
-      attachments: wire.attachments?.map {
-        AttachmentInfo(name: $0.name, mimeType: $0.mimeType, size: Int(exactly: $0.size) ?? 0,
-                       kind: $0.kind.rawValue)
-      }, toolName: wire.toolName, toolCallId: wire.toolCallId, isError: wire.isError,
+      attachments: wire.files?.compactMap(AttachmentInfo.init(wire:)), toolName: wire.toolName,
+      toolCallId: wire.toolCallId, isError: wire.isError,
       toolDetails: try wire.toolDetails.map { try JSONValue(wire: $0) }, requestId: wire.requestId,
-      sources: wire.sources?.map { MessageSource(url: $0.url, title: $0.title) })
+      presentation: wire.presentation, replyReferences: wire.replyReferences.map(ReplyReference.init(wire:)))
+  }
+}
+
+extension AttachmentInfo {
+  init?(wire: Components.Schemas.TranscriptMessage.FilesPayloadPayload) {
+    if let file = wire.value1 {
+      self.init(id: file.id, name: file.name, mimeType: file.mimeType, size: Int(exactly: file.size.rounded()) ?? 0)
+    } else if let file = wire.value2, file.deleted {
+      self = .deleted(file.id)
+    } else {
+      return nil
+    }
   }
 }
 
@@ -72,7 +82,8 @@ extension ChatSnapshot {
   init(wire: Components.Schemas.ChatSnapshot) throws {
     self.init(
       messages: try wire.value1.messages.map(Message.init(wire:)), status: wire.value2.status.rawValue,
-      partial: wire.value2.partial, error: wire.value2.error, agentId: wire.value2.agentId,
+      working: Working(rawValue: wire.value2.working.rawValue) ?? .idle, partial: wire.value2.partial,
+      error: wire.value2.error, agentId: wire.value2.agentId,
       hasMore: wire.value1.hasMore, oldestEntryId: wire.value1.oldestEntryId)
   }
 }
@@ -81,6 +92,14 @@ extension ChatHistoryResponse {
   init(wire: Components.Schemas.TranscriptPage) throws {
     self.init(messages: try wire.messages.map(Message.init(wire:)), hasMore: wire.hasMore,
               oldestEntryId: wire.oldestEntryId)
+  }
+}
+
+extension JobHistoryPage {
+  init(wire: Components.Schemas.JobHistoryPage) throws {
+    self.init(
+      messages: try wire.value1.messages.map(Message.init(wire:)), items: wire.value2.items,
+      hasMore: wire.value1.hasMore, oldestEntryId: wire.value1.oldestEntryId)
   }
 }
 
@@ -120,7 +139,8 @@ extension Schedule {
               prompt: wire.prompt, kind: ScheduleKind(wire: wire.kind), command: wire.command,
               timeoutSeconds: wire.timeoutSeconds, notify: wire.notify, timezone: wire.timezone,
               runAt: wire.runAt, eventSourceId: wire.eventSourceId, enabled: wire.enabled,
-              nextRunAt: wire.nextRunAt, createdByAgentId: wire.createdByAgentId)
+              nextRunAt: wire.nextRunAt, createdByAgentId: wire.createdByAgentId,
+              description: wire.description, timing: wire.timing, nextRunLabel: wire.nextRunLabel)
   }
 }
 

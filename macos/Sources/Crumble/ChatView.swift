@@ -24,15 +24,13 @@ enum ChatRow: Identifiable {
         var rows: [ChatRow] = hasMore ? [.older] : []
         var last: Int64 = 0
         let reactions = Reaction.byMessage(messages)
-        let sources = SourceCitations.byReply(messages)
-        for var message in messages where shownInChat(message) {
+        for message in messages where shownInChat(message) {
             if let timestamp = message.timestamp, timestamp > 0 {
                 if timestamp - last > 30 * 60 * 1000 {
                     rows.append(.time(message.id, timeLabel(Date(timeIntervalSince1970: Double(timestamp) / 1000))))
                 }
                 last = timestamp
             }
-            message.sources = sources[message.id]
             rows.append(.message(message, reactions: reactions[message.id] ?? []))
         }
         if let snapshot {
@@ -84,6 +82,7 @@ struct ChatView: View {
         .defaultScrollAnchor(.bottom, for: .sizeChanges)
         .jumpToLatest()
         .scrollEdgeEffectStyle(.soft, for: .all)
+        .chatAttention(.bot(agent.id), ready: model.snapshot != nil)
         .overlay {
             if rows.isEmpty { EmptyChatView(agent: agent) }
         }
@@ -208,7 +207,7 @@ struct ChatRowView: View {
         case .message(let message, let reactions):
             MessageView(message: message, reactions: reactions, botName: agent.name)
         case .thinking:
-            let label = Working(snapshot: model.snapshot, messages: model.messages).label + "…"
+            let label = (model.snapshot?.working ?? .thinking).label + "…"
             HStack(spacing: 10) {
                 TypingDots()
                     .padding(.horizontal, 15)

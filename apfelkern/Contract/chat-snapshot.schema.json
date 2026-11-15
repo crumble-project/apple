@@ -22,7 +22,12 @@
           "content": {
             "type": "string"
           },
-          "blocks": {},
+          "blocks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/TranscriptBlock"
+            }
+          },
           "stopReason": {
             "type": "string"
           },
@@ -37,6 +42,76 @@
           },
           "replyPreview": {
             "type": "string"
+          },
+          "replyReferences": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "eventId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "surface": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "text"
+                        }
+                      },
+                      "required": [
+                        "kind"
+                      ],
+                      "additionalProperties": true
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "tool-card"
+                        },
+                        "toolCallId": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "toolCallId"
+                      ],
+                      "additionalProperties": true
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "held-action"
+                        },
+                        "actionId": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "actionId"
+                      ],
+                      "additionalProperties": true
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "eventId",
+                "surface"
+              ],
+              "additionalProperties": true
+            }
           },
           "origin": {
             "type": "object",
@@ -168,35 +243,52 @@
             ],
             "additionalProperties": true
           },
-          "attachments": {
+          "files": {
             "type": "array",
             "items": {
-              "type": "object",
-              "properties": {
-                "name": {
-                  "type": "string"
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "mimeType": {
+                      "type": "string"
+                    },
+                    "size": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "mimeType",
+                    "size"
+                  ],
+                  "additionalProperties": true
                 },
-                "mimeType": {
-                  "type": "string"
-                },
-                "size": {
-                  "type": "number"
-                },
-                "kind": {
-                  "type": "string",
-                  "enum": [
-                    "image",
-                    "text"
-                  ]
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "deleted": {
+                      "type": "boolean",
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "deleted"
+                  ],
+                  "additionalProperties": true
                 }
-              },
-              "required": [
-                "name",
-                "mimeType",
-                "size",
-                "kind"
-              ],
-              "additionalProperties": true
+              ]
             }
           },
           "toolCallId": {
@@ -209,6 +301,9 @@
             "type": "boolean"
           },
           "toolDetails": {},
+          "presentation": {
+            "$ref": "#/$defs/MessagePresentation"
+          },
           "sources": {
             "type": "array",
             "items": {
@@ -233,7 +328,8 @@
           "id",
           "entryId",
           "role",
-          "content"
+          "content",
+          "replyReferences"
         ],
         "additionalProperties": true
       }
@@ -297,6 +393,19 @@
         "failed"
       ]
     },
+    "working": {
+      "type": "string",
+      "enum": [
+        "idle",
+        "thinking",
+        "writing",
+        "searching",
+        "remembering",
+        "tinkering",
+        "struggling",
+        "failed"
+      ]
+    },
     "updatedAt": {
       "type": "number"
     },
@@ -316,8 +425,146 @@
     "conversation",
     "partial",
     "status",
+    "working",
     "updatedAt",
     "error"
   ],
-  "additionalProperties": true
+  "additionalProperties": true,
+  "$defs": {
+    "TranscriptBlock": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/TranscriptTextBlock"
+        },
+        {
+          "$ref": "#/$defs/TranscriptThinkingBlock"
+        },
+        {
+          "$ref": "#/$defs/TranscriptImageBlock"
+        },
+        {
+          "$ref": "#/$defs/TranscriptToolCallBlock"
+        }
+      ]
+    },
+    "TranscriptTextBlock": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "text"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "text"
+      ],
+      "additionalProperties": true
+    },
+    "TranscriptThinkingBlock": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "thinking"
+        },
+        "thinking": {
+          "type": "string"
+        },
+        "redacted": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "type",
+        "thinking"
+      ],
+      "additionalProperties": true
+    },
+    "TranscriptImageBlock": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "image"
+        },
+        "mimeType": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "mimeType"
+      ],
+      "additionalProperties": true
+    },
+    "TranscriptToolCallBlock": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "toolCall"
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "arguments": {
+          "type": "object",
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "name",
+        "arguments"
+      ],
+      "additionalProperties": true
+    },
+    "MessagePresentation": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "citations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Citation"
+          }
+        }
+      },
+      "required": [
+        "text",
+        "citations"
+      ],
+      "additionalProperties": true
+    },
+    "Citation": {
+      "type": "object",
+      "properties": {
+        "href": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "site": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "href",
+        "title",
+        "site"
+      ],
+      "additionalProperties": true
+    }
+  }
 }

@@ -184,7 +184,7 @@ struct JobSheet: View {
     let job: JobHistory
     var inPanel = false
 
-    private var items: [CodingJobItem] { CodingJobItem.items(from: job.messages) }
+    private var items: [JobHistoryItem] { job.items }
     private var current: Job? { model.jobs[Job.id(job.kind, job.name)] }
     private var working: Bool { current?.isWorking ?? false }
     private var exporting: Binding<Bool> {
@@ -316,7 +316,7 @@ struct JobSheet: View {
                     .textSelection(.enabled)
             }
             ForEach(items) { item in
-                CodingJobItemView(item: item)
+                JobItemView(item: item)
             }
             if working && job.loaded {
                 HStack(spacing: 6) {
@@ -346,15 +346,15 @@ struct JobSheet: View {
     }
 }
 
-private struct CodingJobItemView: View {
-    let item: CodingJobItem
+private struct JobItemView: View {
+    let item: JobHistoryItem
 
     var body: some View {
         switch item {
-        case .task(_, let text):
+        case .task(let task):
             VStack(alignment: .leading, spacing: 4) {
                 Text("Task").font(.system(size: 12)).foregroundStyle(.secondary)
-                Text(text)
+                Text(task.text)
                     .font(Palette.messageFont)
                     .textSelection(.enabled)
                     .padding(.horizontal, 14)
@@ -362,60 +362,50 @@ private struct CodingJobItemView: View {
                     .background(Color.accentColor.opacity(0.12), in: .rect(cornerRadius: 14))
             }
             .accessibilityElement(children: .combine)
-        case .reply(_, let text):
-            MarkdownText(text: text)
+        case .reply(let reply):
+            MarkdownText(text: reply.text)
                 .font(Palette.messageFont)
                 .lineSpacing(Palette.messageLineSpacing)
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
-        case .tool(let tool):
-            CodingToolStep(tool: tool)
+        case .step(let step):
+            JobStepView(step: step)
         }
     }
 }
 
-/// One tool call: what ran (a command or a file). Click it to see the whole output.
-private struct CodingToolStep: View {
-    let tool: CodingJobItem.Tool
+/// One tool call: what ran (a command or a file), as the server labels it. Click it to see the whole output.
+private struct JobStepView: View {
+    let step: JobStepItem
     @State private var open = false
 
     private var icon: String {
-        switch tool.name {
-        case "bash": "terminal"
-        case "read": "doc.text"
-        case "write": "square.and.pencil"
-        case "edit": "pencil"
-        case "computer_use": JobKind.desktop.icon
-        default: "wrench.and.screwdriver"
+        switch step.icon {
+        case .terminal: "terminal"
+        case .file: "doc.text"
+        case .pencil: "pencil"
+        case .pointer: JobKind.desktop.icon
+        case .tool: "wrench.and.screwdriver"
         }
     }
 
-    private var verb: String {
-        switch tool.name {
-        case "bash": "Ran"
-        case "read": "Read"
-        case "write": "Wrote"
-        case "edit": "Edited"
-        case "computer_use": "Used the bot desktop"
-        default: tool.name.capitalized
-        }
-    }
+    private var subject: String { step.subject ?? "" }
 
     private var summary: some View {
         Button {
             open.toggle()
         } label: {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Image(systemName: tool.isError ? "exclamationmark.triangle.fill" : icon)
-                    .foregroundStyle(tool.isError ? .red : .secondary)
+                Image(systemName: step.isError ? "exclamationmark.triangle.fill" : icon)
+                    .foregroundStyle(step.isError ? .red : .secondary)
                     .frame(width: 16)
-                Text(verb).foregroundStyle(.secondary)
-                Text(tool.subject)
+                Text(step.label).foregroundStyle(.secondary)
+                Text(subject)
                     .font(.system(size: 12.5, design: .monospaced))
                     .lineLimit(open ? nil : 4)
-                if !tool.finished { ProgressView().controlSize(.mini) }
+                if !step.finished { ProgressView().controlSize(.mini) }
                 Spacer(minLength: 0)
-                if tool.finished {
+                if step.finished {
                     Image(systemName: open ? "chevron.down" : "chevron.right")
                         .font(.caption2.weight(.medium))
                         .foregroundStyle(.tertiary)
@@ -425,8 +415,8 @@ private struct CodingToolStep: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .disabled(!tool.finished)
-        .accessibilityLabel("\(verb) \(tool.subject)\(tool.isError ? ", failed" : "")")
+        .disabled(!step.finished)
+        .accessibilityLabel("\(step.label) \(subject)\(step.isError ? ", failed" : "")")
         .accessibilityValue(open ? "Expanded" : "Collapsed")
     }
 
@@ -434,9 +424,9 @@ private struct CodingToolStep: View {
         VStack(alignment: .leading, spacing: 6) {
             summary
             if open {
-                Text(tool.shownOutput)
+                Text(step.shownOutput)
                     .font(.system(size: 12, design: .monospaced))
-                    .foregroundStyle(tool.isError ? Color.red : Color.primary)
+                    .foregroundStyle(step.isError ? Color.red : Color.primary)
                     .textSelection(.enabled)
                     .padding(10)
                     .frame(maxWidth: .infinity, alignment: .leading)

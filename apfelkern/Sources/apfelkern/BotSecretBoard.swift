@@ -198,6 +198,11 @@ public final class BotSecretBoard {
     return .outcome(saved ? "Saved" : "Declined")
   }
 
+  /// The card shows the request waiting, saved, or declined rather than loading or unavailable.
+  public func isReady(_ ask: BotSecretAsk) -> Bool {
+    waiting(ask) != nil || answered.contains(ask)
+  }
+
   private func waiting(_ ask: BotSecretAsk) -> BotSecretRequest? {
     requests(ask.kind, agentID: agentID).first(where: ask.matches)
   }

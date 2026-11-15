@@ -140,7 +140,8 @@ extension APIClientTests {
   @MainActor @Test func groupStreamStopsInTheBackgroundAndCatchesUpOnReturn() async {
     let streamed = groupSnapshotFixture.replacingOccurrences(
       of: #""messages":[]"#,
-      with: #""messages":[{"id":"trip:1:0","entryId":"trip:1","role":"assistant","content":"From the stream","#
+      with: #""messages":[{"id":"trip:1:0","entryId":"trip:1","#
+        + #""replyReferences":[],"role":"assistant","content":"From the stream","#
         + #""origin":{"kind":"bot","agentId":"a1","name":"Ada"}}]"#
     ).replacingOccurrences(of: "\n", with: "")
     let model = AppModel(

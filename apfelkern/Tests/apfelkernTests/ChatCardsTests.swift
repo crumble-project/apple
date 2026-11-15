@@ -61,7 +61,7 @@ struct ChatCardsTests {
 
     @Test func theWireOriginCarriesGatewayAndSource() throws {
         let wire = """
-            {"id": "1", "entryId": "e", "role": "user", "content": "hi",
+            {"id": "1", "entryId": "e", "role": "user", "content": "hi", "replyReferences": [],
              "origin": {"kind": "owner", "via": "discord", "source": "GitHub"}}
             """
         let message = try Message(
@@ -70,39 +70,29 @@ struct ChatCardsTests {
         #expect(message.origin?.source == "GitHub")
     }
 
-    private func call(_ names: String...) -> Message {
-        let blocks = names.map { JSONValue.object(["type": .string("toolCall"), "name": .string($0)]) }
-        return Message(id: "c", role: "assistant", blocks: .array(blocks))
-    }
-
-    @Test func workingReadsTheTurn() {
-        let running = ChatSnapshot(status: "running")
-        let cases: [(Message?, Working)] = [
-            (nil, .thinking),
-            (Message(id: "u", role: "user"), .thinking),
-            (call("web_search", "memory"), .searching),
-            (call("history_read"), .searching),
-            (call("memory"), .remembering),
-            (call("bash"), .tinkering),
-            (Message(id: "t", role: "toolResult", isError: true), .struggling),
-            (Message(id: "t", role: "toolResult"), .thinking)
-        ]
-        for (last, working) in cases {
-            #expect(Working(snapshot: running, messages: last.map { [$0] } ?? []) == working)
-        }
-    }
-
-    @Test func workingIgnoresTheOwnersPendingMessage() {
-        let pending = Message(id: "p", role: "user", deliveryState: .sending)
-        #expect(Working(snapshot: ChatSnapshot(status: "running"), messages: [call("memory"), pending]) == .remembering)
-    }
-
-    @Test func workingFollowsTheStatus() {
-        #expect(Working(snapshot: nil, messages: []) == .idle)
-        #expect(Working(snapshot: ChatSnapshot(status: "idle"), messages: []) == .idle)
-        #expect(Working(snapshot: ChatSnapshot(status: "failed"), messages: []) == .failed)
-        #expect(Working(snapshot: ChatSnapshot(status: "running", partial: "Hi"), messages: [call("bash")]) == .writing)
-        #expect(Working(snapshot: ChatSnapshot(status: "running", partial: " \n"), messages: []) == .thinking)
+    @Test func theServersWorkStateAndPresentationArriveOverHTTPAndTheStream() async throws {
+        let snapshot = #"{"agentId":"a1","status":"running","working":"searching","partial":"","updatedAt":0,"#
+            + #""error":null,"hasMore":false,"oldestEntryId":null,"conversationId":"c1","#
+            + #""conversation":{"id":"c1","agentId":"a1","title":"Chat","createdAt":"now","updatedAt":"now"},"#
+            + #""messages":[{"id":"a1:1:0","entryId":"a1:1","role":"assistant","content":"Raw","replyReferences":[],"#
+            + #""blocks":[{"type":"toolCall","id":"c","name":"web_search","arguments":{"query":"x"}}],"#
+            + #""presentation":{"text":"Clean","citations":[]}}]}"#
+        let streamed = try JSONDecoder().decode(ChatSnapshot.self, from: Data(snapshot.utf8))
+        try await withClient(handler: { _ in StubResponse(body: Data(snapshot.utf8)) }, test: { client in
+            let fetched = try await client.chat("a1")
+            for decoded in [streamed, fetched] {
+                #expect(decoded.working == .searching)
+                #expect(decoded.isRunning)
+                #expect(decoded.messages?.first?.presentedText == "Clean")
+                guard case .toolCall(let call)? = decoded.messages?.first?.blocks?.first else {
+                    Issue.record("The tool call block is missing")
+                    continue
+                }
+                #expect(call.name == "web_search")
+            }
+        })
+        #expect(!ChatSnapshot(status: "failed", working: .failed).isRunning)
+        #expect(!ChatSnapshot(status: "idle").isRunning)
     }
 
     @Test func workingLabelsMatchTheWeb() {

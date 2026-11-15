@@ -38,8 +38,9 @@ extension APIClientTests {
         return (model, request)
     }
 
-    private static let page = #"{"messages":[{"id":"t1","entryId":"e:1","role":"user","content":"Hello?"},"#
-        + #"{"id":"t2","entryId":"e:2","role":"assistant","content":"Hi, this is Bot.","#
+    private static let page = #"{"messages":[{"id":"t1","entryId":"e:1","#
+        + #""replyReferences":[],"role":"user","content":"Hello?"},"#
+        + #"{"id":"t2","entryId":"e:2","replyReferences":[],"role":"assistant","content":"Hi, this is Bot.","#
         + #""blocks":[{"type":"text","text":"Hi, this is Bot."}]}],"hasMore":false,"oldestEntryId":null}"#
 
     @MainActor @Test func openingACallLoadsItsTranscript() async throws {

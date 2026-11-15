@@ -29,6 +29,8 @@ public final class AutomationBoard {
   public private(set) var saveError = ""
   /// Failed saves waiting for the open sheet to close.
   private var returned: [(draft: AutomationDraft, error: String)] = []
+  /// The server's preview of the open draft's trigger, and the draft and request it answered.
+  private var preview: (draft: UUID, request: AutomationPreviewRequest, value: AutomationPreview)?
 
   public var view = AutomationsView.automations
   public var filter = AutomationFilter.all
@@ -55,6 +57,7 @@ public final class AutomationBoard {
     draft = nil
     saveError = ""
     returned = []
+    preview = nil
     view = .automations
     filter = .all
     executions = []
@@ -132,6 +135,39 @@ public final class AutomationBoard {
     }
   }
 
+  /// Refreshes the list while it is on screen, so the server's next-run labels stay current.
+  public func follow(client: APIClient, every interval: Duration = .seconds(60)) async {
+    while !Task.isCancelled {
+      try? await Task.sleep(for: interval)
+      guard !Task.isCancelled else { return }
+      if view == .automations { refresh(client: client) }
+    }
+  }
+
+  /// The preview of the open draft; nil while it loads, after it failed, or once the trigger changed.
+  public var draftPreview: AutomationPreview? {
+    guard let draft, let preview, preview.draft == draft.id, preview.request == draft.previewRequest else { return nil }
+    return preview.value
+  }
+
+  public var draftPreviewProblem: String? {
+    guard let draft, !draft.hasUnchangedTrigger, let preview = draftPreview, preview.isProblem else { return nil }
+    return preview.text
+  }
+
+  /// Asks the server about the open draft's trigger once it has held for `delay`. Cancelling the task, as
+  /// SwiftUI does when the trigger changes, drops the request; an answer for an earlier trigger, another
+  /// draft, or another connection is ignored. A failed request leaves no preview and saving still works.
+  public func loadPreview(client: APIClient, after delay: Duration = .milliseconds(250)) async {
+    guard let form = draft, draftPreview == nil else { return }
+    let (version, request) = (scope, form.previewRequest)
+    try? await Task.sleep(for: delay)
+    guard !Task.isCancelled, let loaded = try? await client.previewAutomation(request), !Task.isCancelled,
+      scope == version, draft?.id == form.id, draft?.previewRequest == request
+    else { return }
+    preview = (form.id, request, loaded)
+  }
+
   /// Never replaces an open sheet: it may hold what the owner typed, or a save that came back.
   public func openNew(agentID: String) {
     guard draft == nil else { return }
@@ -152,6 +188,7 @@ public final class AutomationBoard {
   public func closeDraft() {
     draft = nil
     saveError = ""
+    preview = nil
     if !returned.isEmpty {
       let next = returned.removeFirst()
       draft = next.draft
@@ -167,14 +204,16 @@ public final class AutomationBoard {
   /// `failed` runs when the server refuses the save, which gives the draft back.
   public func saveDraft(client: APIClient, failed: @escaping @MainActor () -> Void = {}) {
     guard let form = draft else { return }
-    if let problem = form.problem {
+    // Without a preview the server checks the trigger as it saves.
+    let preview = draftPreview
+    if let problem = form.problem ?? draftPreviewProblem {
       saveError = problem
       return
     }
     let id = form.isNew ? "pending-schedule-" + UUID().uuidString : form.scheduleID
     guard pending[id] == nil else { return }
     let version = scope
-    pending[id] = form.provisional(id: id, replacing: loaded.first { $0.id == id })
+    pending[id] = form.provisional(id: id, replacing: loaded.first { $0.id == id }, preview: preview)
     closeDraft()
     errors[id] = nil
     Task {
@@ -217,6 +256,8 @@ public final class AutomationBoard {
     let id = schedule.id
     guard schedule.enabled != enabled, !isPending(id), var row = schedules.first(where: { $0.id == id }) else { return }
     row.enabled = enabled
+    row.timing = enabled ? row.description : "Paused · " + row.description
+    row.nextRunLabel = enabled ? "Saving…" : "—"
     pending[id] = row
     errors[id] = nil
     let version = scope

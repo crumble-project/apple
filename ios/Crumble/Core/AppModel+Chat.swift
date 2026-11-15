@@ -120,13 +120,15 @@ extension AppModel {
 
   /// Keeps older pages the owner already loaded; snapshots only carry the newest page.
   func applySnapshot(_ incoming: ChatSnapshot) {
+    snapshotRevision += 1
     let incomingMessages = incoming.messages ?? []
     let acknowledged = Set(incomingMessages.compactMap(\.requestId))
     delivery.acknowledge(botID: selectedAgentID, requestIDs: acknowledged)
     // Rebuild from confirmed transcript rows and append local rows so a delayed snapshot
     // cannot erase a message the user has already seen.
     let local = delivery.messages(botID: selectedAgentID)
-    messages = mergeMessages(messages.filter { $0.deliveryState == .confirmed }, incomingMessages)
+    messages = deletedFiles.reconcile(
+      mergeMessages(messages.filter { $0.deliveryState == .confirmed }, incomingMessages), chat: selectedAgentID)
     messages.append(contentsOf: local)
     refreshJobsIfChanged()
     refreshHeldActionsIfChanged()
@@ -257,6 +259,7 @@ extension AppModel {
       agents[index].lastMessage = lastMessage
     }
     if event.type == "reply", let group = event.groupId { noteConversationMoved(.group(group), preview: event.preview) }
+    refreshReplyReferences(after: event, active: attentionActive)
     let context = NotificationContext(
       appActive: UIApplication.shared.applicationState == .active, route: route)
     guard let note = notification(for: event, in: context) else { return }
@@ -287,7 +290,7 @@ extension AppModel {
         return { [self] in
           guard selectionVersion == version else { return }
           loadingOlder = false
-          messages = mergeMessages(messages, page.messages ?? [])
+          messages = deletedFiles.reconcile(mergeMessages(messages, page.messages ?? []), chat: id)
           refreshHeldActionsIfChanged()
           refreshBotRequestsIfChanged()
           refreshCallRequestsIfChanged()

@@ -1,7 +1,7 @@
 import apfelkern
 import SwiftUI
 
-/// The composer's reasoning level, offered when the bot's model takes at least two.
+/// The composer's reasoning level, offered when the server says the bot's model takes at least two.
 public struct ReasoningControl: View {
   let board: ReasoningBoard
   let bot: Agent
@@ -18,23 +18,27 @@ public struct ReasoningControl: View {
   public var body: some View {
     // A ZStack, because a Group would run the task on each branch and on none while hidden.
     ZStack {
-      let levels = board.levels(of: bot)
-      if levels.count >= 2 { menu(levels) }
+      if let preview = board.preview(of: bot), preview.options.count >= 2 { menu(preview) }
     }
-    .task(id: "\(bot.id) \(bot.provider ?? "")") {
-      if let client, let provider = bot.provider { await board.load(provider: provider, client: client) }
+    .task(id: previewInputs) {
+      if let client { await board.load(bot: bot, client: client) }
     }
   }
 
-  private func menu(_ levels: [ThinkingLevel]) -> some View {
-    let level = board.level(of: bot)
-    return Menu {
-      Picker("Reasoning", selection: Binding(get: { level }, set: { choose($0) })) {
-        ForEach(levels) { Text($0.title).tag($0) }
+  /// What the server's preview depends on, including the connection, whose previews a reset drops.
+  private var previewInputs: [String] {
+    [client?.baseURL ?? "", client?.token ?? "", bot.provider ?? "", bot.model ?? "",
+     bot.inference?.thinkingLevel ?? ""]
+  }
+
+  private func menu(_ preview: ReasoningPreview) -> some View {
+    Menu {
+      Picker("Reasoning", selection: Binding(get: { preview.effectiveLevel }, set: { choose($0) })) {
+        ForEach(preview.options) { Text($0.label).tag($0.level) }
       }
       .pickerStyle(.inline)
     } label: {
-      label(level)
+      label(preview.label)
     }
     .menuStyle(.button)
     #if os(macOS)
@@ -47,17 +51,17 @@ public struct ReasoningControl: View {
     .fixedSize()
     .disabled(board.saving.contains(bot.id))
     .accessibilityLabel("Reasoning")
-    .accessibilityValue(level.title)
+    .accessibilityValue(preview.label)
     .help("Reasoning")
   }
 
   /// macOS draws its own indicator and keeps only the title of a menu's label.
-  @ViewBuilder private func label(_ level: ThinkingLevel) -> some View {
+  @ViewBuilder private func label(_ title: String) -> some View {
     #if os(macOS)
-      Text(level.title).font(.caption.weight(.medium)).lineLimit(1)
+      Text(title).font(.caption.weight(.medium)).lineLimit(1)
     #else
       HStack(spacing: 3) {
-        Text(level.title)
+        Text(title)
         Image(systemName: "chevron.up.chevron.down").imageScale(.small)
       }
       .font(.caption.weight(.medium))

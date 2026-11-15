@@ -83,7 +83,7 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
   public var entryId: String?
   public var role: String
   public var content: JSONValue?
-  public var blocks: JSONValue?
+  public var blocks: [TranscriptBlock]?
   public var kind: String?
   public var replyTo: String?
   public var replyPreview: String?
@@ -102,20 +102,22 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
   public var toolDetails: JSONValue?
   /// The idempotency key echoed by the server for owner messages.
   public var requestId: String?
-  /// In a group chat, the pages the sending bot searched or read in the turn that wrote the message.
-  public var sources: [MessageSource]?
+  /// A bot reply as the server presents it: its text without citation links, and the pages it cited.
+  public var presentation: MessagePresentation?
+  /// Notification replies this message shows, each naming the exact surface whose display acknowledges it.
+  public var replyReferences: [ReplyReference]
   public var deliveryState: MessageDeliveryState
 
   public init(
     id: String, entryId: String? = nil, role: String, content: JSONValue? = nil,
-    blocks: JSONValue? = nil, kind: String? = nil,
+    blocks: [TranscriptBlock]? = nil, kind: String? = nil,
     replyTo: String? = nil, replyPreview: String? = nil, origin: MessageOrigin? = nil,
     communication: BotCommunication? = nil, jobQuestion: JobQuestionEvent? = nil,
     heldAction: HeldActionEvent? = nil, call: CallEvent? = nil, timestamp: Int64? = nil,
     attachments: [AttachmentInfo]? = nil, toolName: String? = nil, toolCallId: String? = nil,
     isError: Bool? = nil,
-    toolDetails: JSONValue? = nil, requestId: String? = nil, sources: [MessageSource]? = nil,
-    deliveryState: MessageDeliveryState = .confirmed
+    toolDetails: JSONValue? = nil, requestId: String? = nil, presentation: MessagePresentation? = nil,
+    replyReferences: [ReplyReference] = [], deliveryState: MessageDeliveryState = .confirmed
   ) {
     self.id = id
     self.entryId = entryId
@@ -137,7 +139,8 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
     self.isError = isError
     self.toolDetails = toolDetails
     self.requestId = requestId
-    self.sources = sources
+    self.presentation = presentation
+    self.replyReferences = replyReferences
     self.deliveryState = deliveryState
   }
 
@@ -147,7 +150,7 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
     entryId = try container.decodeIfPresent(String.self, forKey: .entryId)
     role = try container.decodeIfPresent(String.self, forKey: .role) ?? ""
     content = try container.decodeIfPresent(JSONValue.self, forKey: .content)
-    blocks = try container.decodeIfPresent(JSONValue.self, forKey: .blocks)
+    blocks = try container.decodeIfPresent([TranscriptBlock].self, forKey: .blocks)
     kind = try container.decodeIfPresent(String.self, forKey: .kind)
     replyTo = try container.decodeIfPresent(String.self, forKey: .replyTo)
     replyPreview = try container.decodeIfPresent(String.self, forKey: .replyPreview)
@@ -164,55 +167,73 @@ public struct Message: Codable, Identifiable, Hashable, Sendable {
     isError = try container.decodeIfPresent(Bool.self, forKey: .isError)
     toolDetails = try container.decodeIfPresent(JSONValue.self, forKey: .toolDetails)
     requestId = try container.decodeIfPresent(String.self, forKey: .requestId)
-    sources = try container.decodeIfPresent([MessageSource].self, forKey: .sources)
+    presentation = try container.decodeIfPresent(MessagePresentation.self, forKey: .presentation)
+    replyReferences = try container.decodeIfPresent([ReplyReference].self, forKey: .replyReferences) ?? []
     deliveryState =
       try container.decodeIfPresent(MessageDeliveryState.self, forKey: .deliveryState) ?? .confirmed
   }
 
   public var text: String { contentText(content) }
+
+  /// What a reply shows: the server's text with its citations taken out, or the raw text.
+  public var presentedText: String { presentation?.text ?? text }
+
+  /// The pages a reply cited, each once, shown after it instead of as links inside it.
+  public var citations: [Citation] { presentation?.citations ?? [] }
 }
 
-/// A file a sent message carries, as the transcript lists it; image bytes are fetched separately.
+/// A transcript content block, the same generated type over HTTP and the event stream.
+public typealias TranscriptBlock = Components.Schemas.TranscriptBlock
+public typealias MessagePresentation = Components.Schemas.MessagePresentation
+public typealias Citation = Components.Schemas.Citation
+
+/// A file a message carries, as the transcript lists it; its bytes are fetched by `id` separately.
 public struct AttachmentInfo: Codable, Hashable, Sendable {
+  /// The server's file ID; empty on an optimistic row the server has not confirmed yet.
+  public var id: String
   public var name: String
   public var mimeType: String
   public var size: Int
-  public var kind: String
+  /// The file was deleted from its chat's library; only its ID remains.
+  public var deleted: Bool
 
-  public var isImage: Bool { kind == "image" }
+  /// Previews follow the MIME type; a deleted file has none.
+  public var isImage: Bool { !deleted && mimeType.hasPrefix("image/") }
 
-  public init(
-    name: String,
-    mimeType: String,
-    size: Int,
-    kind: String
-  ) {
+  public init(id: String = "", name: String, mimeType: String, size: Int, deleted: Bool = false) {
+    self.id = id
     self.name = name
     self.mimeType = mimeType
     self.size = size
-    self.kind = kind
+    self.deleted = deleted
   }
-}
 
-/// A file on its way to the server, in the shape the messages endpoint takes.
-public typealias OutgoingAttachment = Operations.SendMessage.Input.Body.JsonPayload.AttachmentsPayloadPayload
+  public static func deleted(_ id: String) -> AttachmentInfo {
+    AttachmentInfo(id: id, name: "", mimeType: "", size: 0, deleted: true)
+  }
 
-extension OutgoingAttachment {
-  public init(name: String, mimeType: String, data: String) {
-    self.init(data: data, mimeType: mimeType, name: name)
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    id = try container.decodeIfPresent(String.self, forKey: .id) ?? ""
+    name = try container.decodeIfPresent(String.self, forKey: .name) ?? ""
+    mimeType = try container.decodeIfPresent(String.self, forKey: .mimeType) ?? ""
+    size = try container.decodeIfPresent(Int.self, forKey: .size) ?? 0
+    deleted = try container.decodeIfPresent(Bool.self, forKey: .deleted) ?? false
   }
 }
 
 public struct ChatSnapshot: Codable, Sendable {
   public var messages: [Message]?
   public var status: String?
+  /// What the bot is doing during its turn, as the server reads it from the transcript.
+  public var working: Working
   public var partial: String?
   public var error: String?
   public var agentId: String?
   public var hasMore: Bool?
   public var oldestEntryId: String?
 
-  public var isRunning: Bool { status == "running" }
+  public var isRunning: Bool { working != .idle && working != .failed }
 
   public init(from decoder: Decoder) throws {
     let event = try Components.Schemas.EventChatSnapshot(from: decoder)
@@ -224,6 +245,7 @@ public struct ChatSnapshot: Codable, Sendable {
   public init(
     messages: [Message]? = nil,
     status: String? = nil,
+    working: Working = .idle,
     partial: String? = nil,
     error: String? = nil,
     agentId: String? = nil,
@@ -232,6 +254,7 @@ public struct ChatSnapshot: Codable, Sendable {
   ) {
     self.messages = messages
     self.status = status
+    self.working = working
     self.partial = partial
     self.error = error
     self.agentId = agentId

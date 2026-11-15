@@ -21,9 +21,12 @@ extension AppModel {
         let version = selectionVersion
         return Task {
             do {
+                guard let fileIDs = try await uploadFiles(
+                    record, chat: id, requestID: requestID, generation: generation,
+                    upload: { try await client.uploadFile(id, $0) })
+                else { return }
                 try await client.sendChatMessage(
-                    id, content: content, requestID: requestID, replyTo: reply,
-                    attachments: files.map(\.outgoing))
+                    id, content: content, requestID: requestID, replyTo: reply, files: fileIDs)
                 guard self.generation == generation else { return }
                 delivery.accepted(botID: id, requestID: requestID)
                 guard self.generation == generation, self.selectionVersion == version, selectedAgentID == id else {
@@ -48,7 +51,8 @@ extension AppModel {
         }
     }
 
-    /// Re-sends a failed optimistic row with its original idempotency key and attachments.
+    /// Re-sends a failed optimistic row with its original idempotency key and attachments, uploading only the
+    /// files an earlier attempt did not.
     func retryMessage(_ message: Message) {
         guard selectedGroupID.isEmpty else { return retryGroupMessage(message) }
         guard message.deliveryState == .failed, let requestID = message.requestId, let client,
@@ -67,9 +71,12 @@ extension AppModel {
         let version = selectionVersion
         Task {
             do {
+                guard let fileIDs = try await uploadFiles(
+                    record, chat: id, requestID: requestID, generation: generation,
+                    upload: { try await client.uploadFile(id, $0) })
+                else { return }
                 try await client.sendChatMessage(
-                    id, content: record.content, requestID: requestID,
-                    replyTo: record.replyTo, attachments: record.attachments.map(\.outgoing))
+                    id, content: record.content, requestID: requestID, replyTo: record.replyTo, files: fileIDs)
                 guard self.generation == generation else { return }
                 delivery.accepted(botID: id, requestID: requestID)
                 guard self.generation == generation, self.selectionVersion == version, selectedAgentID == id else {
@@ -103,7 +110,7 @@ extension AppModel {
 
     private func failMessage(_ error: Error, id: String, requestID: String, version: Int) -> Bool {
         if self.selectionVersion == version, selectedAgentID == id { sending = false }
-        guard delivery.fail(botID: id, requestID: requestID) else { return false }
+        guard delivery.fail(botID: id, requestID: requestID, error: error) else { return false }
         if self.selectionVersion == version, selectedAgentID == id {
             errorText = "Message was not confirmed: " + friendlyError(error)
             if let visible = messages.firstIndex(where: { $0.requestId == requestID }) {

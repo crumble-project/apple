@@ -172,10 +172,12 @@ private func field(_ value: JSONValue?, _ key: String) -> JSONValue? {
     board.select("a1")
     let asked = try #require(BotSecretAsk(message: ask()))
     #expect(board.state(of: asked) == .outcome("Loading…"))
+    #expect(!board.isReady(asked))
     board.refreshIfChanged(messages: [ask()], client: client)
     #expect(board.needsPolling)
     try await wait { board.state(of: asked) != .outcome("Loading…") }
     guard case .waiting(let waiting) = board.state(of: asked) else { throw URLError(.badServerResponse) }
+    #expect(board.isReady(asked))
 
     board.add(waiting, kind: .credential, agentID: "a1", client: client)
     #expect(board.draft?.nameLocked == true)
@@ -185,6 +187,7 @@ private func field(_ value: JSONValue?, _ key: String) -> JSONValue? {
     board.saveDraft(client: client)
     #expect(board.draft == nil)
     #expect(board.state(of: asked) == .outcome("Saved"))
+    #expect(board.isReady(asked))
     #expect(!board.needsPolling)
     try await stop(board)
   })
@@ -199,6 +202,7 @@ private func field(_ value: JSONValue?, _ key: String) -> JSONValue? {
     let asked = try #require(BotSecretAsk(message: later))
     try await wait { board.state(of: asked) != .outcome("Loading…") }
     #expect(board.state(of: asked) == .outcome("Declined"))
+    #expect(board.isReady(asked))
     try await stop(board)
   })
 }
@@ -210,6 +214,7 @@ private func field(_ value: JSONValue?, _ key: String) -> JSONValue? {
     board.refreshIfChanged(messages: [ask()], client: client)
     let asked = try #require(BotSecretAsk(message: ask()))
     try await wait { board.state(of: asked) == .outcome("Unavailable") }
+    #expect(!board.isReady(asked))
     #expect(board.needsPolling)
     #expect(board.readError(.credential, agentID: "a1") == "Down")
     try await stop(board)

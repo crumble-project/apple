@@ -14,7 +14,9 @@ final class AppModel {
     private(set) var generation = 0
 
     var agents: [Agent] = []
-    var route: Route?
+    var route: Route? {
+        didSet { if route != oldValue { updateChatAttention() } }
+    }
     var workspaceRoute: Route?
     /// The page the Settings window should show next.
     var settingsTarget: SettingsTarget?
@@ -80,7 +82,8 @@ final class AppModel {
     var failedReplyTo = ""
     var failedAttachments: [UUID] = []
     var delivery = BotChatDelivery()
-    /// Sent images, keyed by entry and attachment index; they never change once sent.
+    var deletedFiles = DeletedFiles()
+    /// Sent images, keyed by chat and file ID; a new connection clears them.
     var attachmentImages: [String: NSImage] = [:]
 
     private var activeRequests = 0
@@ -98,6 +101,13 @@ final class AppModel {
     @ObservationIgnored private var started = false
     @ObservationIgnored private let connectionMonitor = ConnectionMonitor()
     @ObservationIgnored var notifier = Notifier.shared
+    /// Which chat the main window shows, for the server's push suppression, and which replies the owner saw.
+    let chatAttention = ChatAttention()
+    /// The main window is the active window of the active app.
+    @ObservationIgnored var attentionActive = false {
+        didSet { if attentionActive != oldValue { updateChatAttention() } }
+    }
+    @ObservationIgnored var snapshotRevision = 0
 
     var agentMemories: [String: [Memory]] = [:]
     var memoryLoadVersion = 0
@@ -276,7 +286,7 @@ extension AppModel {
     func signOut() {
         guard let client, !accountBoard.isSigningOut else { return }
         Task {
-            let outcome = await accountBoard.signOut(client: client)
+            let outcome = await accountBoard.signOut(client: client) { await self.chatAttention.disconnect(client) }
             Keychain.delete("server-token")
             token = ""
             applyConnection(APIClient(baseURL: client.baseURL, token: ""))
@@ -292,6 +302,8 @@ extension AppModel {
         pendingMutations.removeAll()
         mutationRevision += 1
         resetPendingMessages()
+        deletedFiles.removeAll()
+        attachmentImages = [:]
         agents = []
         agentMemories = [:]
         sharedMemories = []
@@ -329,6 +341,7 @@ extension AppModel {
         groupDraft = nil
         messages = []
         client = candidate
+        updateChatAttention()
         activeRequests = 0
         loading = false
         errorText = ""

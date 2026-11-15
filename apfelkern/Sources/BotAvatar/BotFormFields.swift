@@ -1,24 +1,21 @@
 import apfelkern
 import SwiftUI
 
-/// The bot form's reasoning level, limited to what the model supports and hidden with no choice to make.
+/// The bot form's reasoning level, as the server's preview offers it for the model, and hidden with no choice
+/// to make or no preview. The picker shows the level a turn runs at.
 public struct ReasoningField: View {
-  let levels: [ThinkingLevel]
+  let preview: ReasoningPreview?
   @Binding var thinking: String
 
-  public init(levels: [ThinkingLevel], thinking: Binding<String>) {
-    self.levels = levels
+  public init(preview: ReasoningPreview?, thinking: Binding<String>) {
+    self.preview = preview
     _thinking = thinking
   }
 
-  private var level: ThinkingLevel {
-    (ThinkingLevel(rawValue: thinking) ?? .off).clamped(to: levels)
-  }
-
   public var body: some View {
-    if levels.count > 1 {
-      Picker("Reasoning", selection: Binding(get: { level }, set: { thinking = $0.rawValue })) {
-        ForEach(levels) { Text($0.title).tag($0) }
+    if let preview, preview.options.count > 1 {
+      Picker("Reasoning", selection: Binding(get: { preview.effectiveLevel }, set: { thinking = $0.rawValue })) {
+        ForEach(preview.options) { Text($0.label).tag($0.level) }
       }
     }
   }

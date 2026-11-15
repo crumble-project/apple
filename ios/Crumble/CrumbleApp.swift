@@ -26,19 +26,17 @@ struct CrumbleApp: App {
             model.followActivity()
           }
         }
-        .onChange(of: model.route) { _, _ in
-          Notifier.shared.updatePresence()
-          model.markChatSeen()
-        }
+        .onChange(of: model.route) { _, _ in model.markChatSeen() }
+        .onChange(of: scenePhase, initial: true) { _, phase in model.setSceneActive(phase == .active) }
         .onChange(of: scenePhase) { _, phase in
           guard started else { return }
           if phase == .background {
-            Notifier.shared.updatePresence(active: false)
+            Notifier.shared.setForeground(false)
             model.suspendStreams()
           }
           if phase == .active {
             Notifier.shared.refreshAuthorization()
-            Notifier.shared.updatePresence(active: true)
+            Notifier.shared.setForeground(true)
             model.markChatSeen()
             if model.client?.token.isEmpty == false { model.resumeStreams() }
           }

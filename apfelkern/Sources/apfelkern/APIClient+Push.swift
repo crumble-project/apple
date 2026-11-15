@@ -83,11 +83,23 @@ extension APIClient {
     try await invoke { _ = try await $0.deletePushDevice(.init(path: .init(installationId: installationID))).noContent }
   }
 
-  public func pushPresence(_ installationID: String, active: Bool, agentId: String?, timeout: TimeInterval = 20)
-    async throws {
-    try await invoke(timeout: timeout, nullFields: agentId == nil ? ["agentId"] : []) {
-      _ = try await $0.putPushPresence(.init(path: .init(installationId: installationID),
-        body: .json(.init(active: active, agentId: agentId)))).noContent
+  /// Replaces what one view shows: a chat while it has the owner's attention, or nothing.
+  public func reportChatAttention(view viewID: String, chat: ChatAttentionChat?) async throws {
+    typealias Chat = Operations.PutChatAttentionView.Input.Body.JsonPayload.ChatPayload
+    let wire = chat.map { Chat(id: $0.id, kind: $0.kind == .bot ? .bot : .group) }
+    // An absent chat isn't a clear; the server needs an explicit null.
+    try await invoke(nullFields: chat == nil ? ["chat"] : []) {
+      _ = try await $0.putChatAttentionView(.init(
+        path: .init(viewId: viewID), body: .json(.init(chat: wire)))).noContent
+    }
+  }
+
+  /// Records that the owner saw these replies, 1 to 100 distinct events of one chat.
+  public func markRepliesSeen(_ eventIDs: [String], in chat: ChatAttentionChat) async throws {
+    typealias Chat = Operations.PostChatAttentionSeen.Input.Body.JsonPayload.ChatPayload
+    let wire = Chat(id: chat.id, kind: chat.kind == .bot ? .bot : .group)
+    try await invoke {
+      _ = try await $0.postChatAttentionSeen(.init(body: .json(.init(chat: wire, eventIds: eventIDs)))).noContent
     }
   }
 }

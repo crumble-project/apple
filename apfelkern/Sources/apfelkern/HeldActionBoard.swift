@@ -74,6 +74,12 @@ public final class HeldActionBoard {
     return .outcome(readFailed ? "Unavailable" : "Loading…")
   }
 
+  /// The card shows the action as the server reported it: waiting once a read answered for it, or settled.
+  public func isReady(_ id: String) -> Bool {
+    guard let action = actions[id] else { return false }
+    return action.status != .pending || answered.contains(id)
+  }
+
   public func decision(for id: String) -> HeldActionDecision {
     decisions[id] ?? HeldActionDecision()
   }

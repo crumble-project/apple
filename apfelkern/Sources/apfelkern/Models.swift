@@ -319,6 +319,12 @@ public struct Schedule: Codable, Identifiable, Hashable, Sendable {
   public var nextRunAt: String?
   /// The bot that saved this automation. Nil when the owner saved it.
   public var createdByAgentId: String?
+  /// When it runs, in the server's words: its event source, its cron in words, or its one time.
+  public var description: String
+  /// `description` as the list beside its switch shows it, where a paused one says so.
+  public var timing: String
+  /// When it next runs, close by in words; a dash when paused or finished.
+  public var nextRunLabel: String
 
   public init(
     id: String,
@@ -335,7 +341,10 @@ public struct Schedule: Codable, Identifiable, Hashable, Sendable {
     eventSourceId: String? = nil,
     enabled: Bool,
     nextRunAt: String? = nil,
-    createdByAgentId: String? = nil
+    createdByAgentId: String? = nil,
+    description: String = "",
+    timing: String = "",
+    nextRunLabel: String = ""
   ) {
     self.id = id
     self.agentId = agentId
@@ -352,6 +361,9 @@ public struct Schedule: Codable, Identifiable, Hashable, Sendable {
     self.enabled = enabled
     self.nextRunAt = nextRunAt
     self.createdByAgentId = createdByAgentId
+    self.description = description
+    self.timing = timing
+    self.nextRunLabel = nextRunLabel
   }
 }
 

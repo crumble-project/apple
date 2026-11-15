@@ -62,14 +62,22 @@ extension APIClientTests {
     let model = AppModel(
       client: StubProtocol.client { request in
         request.url?.path == "/v1/agents/a1/coding-jobs/fix/history"
-          ? (200, #"{"messages":[{"id":"1","entryId":"e1","role":"user","content":"Fix it"}],"#
+          ? (200, #"{"items":[{"kind":"task","id":"1","text":"Fix it"},"#
+            + #"{"kind":"step","id":"c1","tool":"bash","label":"Ran","icon":"terminal","subject":"ls"}],"#
+            + #""messages":[{"id":"1","entryId":"e1","#
+            + #""replyReferences":[],"role":"user","content":"Fix it"}],"#
             + #""hasMore":false,"oldestEntryId":null}"#)
           : (404, "")
       })
     model.updateSelectedAgent("a1")
     model.openJob(.coding, "fix")
     await waitFor { model.jobHistory?.loaded == true }
-    #expect(model.jobHistory?.messages.map(\.text) == ["Fix it"])
+    #expect(model.jobHistory?.items.map(\.id) == ["1", "c1"])
+    guard case .step(let step)? = model.jobHistory?.items.last else {
+      Issue.record("The step is missing")
+      return
+    }
+    #expect(step.label == "Ran" && !step.finished)
     #expect(model.jobPollDelay == .seconds(15))
   }
 

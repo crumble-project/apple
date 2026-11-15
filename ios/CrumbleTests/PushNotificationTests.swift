@@ -32,15 +32,14 @@ extension APIClientTests {
     #expect(StubProtocol.requests.first?.value(forHTTPHeaderField: "Authorization") == "Bearer current")
   }
 
-  @Test func pushAPIUsesWireContractForGetPutDeleteAndPresence() async throws {
+  @Test func pushAPIUsesWireContractForGetPutAndDelete() async throws {
     let client = StubProtocol.client(token: "bearer") { request in
       switch (request.httpMethod, request.url?.path) {
       case ("GET", "/v1/push"):
         (200, #"{"serverId":"server-a","transports":{"apns":true,"fcm":false}}"#)
       case ("PUT", "/v1/push/devices/install-1"):
         (200, #"{"serverId":"server-a","remoteDelivery":true}"#)
-      case ("PUT", "/v1/push/devices/install-1/presence"),
-        ("DELETE", "/v1/push/devices/install-1"):
+      case ("DELETE", "/v1/push/devices/install-1"):
         (204, "")
       default: (404, "")
       }
@@ -56,15 +55,11 @@ extension APIClientTests {
         platform: "ios", transport: "apns", token: "aabb", environment: "development", bundleId: "dev.crumble"))
     #expect(registration.remoteDelivery)
 
-    try await client.pushPresence("install-1", active: true, agentId: "a1")
-    try await client.pushPresence("install-1", active: false, agentId: nil)
     try await client.unregisterPush("install-1")
 
     #expect(StubProtocol.requests.map { "\($0.httpMethod ?? "") \($0.url?.path ?? "")" } == [
       "GET /v1/push",
       "PUT /v1/push/devices/install-1",
-      "PUT /v1/push/devices/install-1/presence",
-      "PUT /v1/push/devices/install-1/presence",
       "DELETE /v1/push/devices/install-1"
     ])
     let registrationRequest = StubProtocol.requests[1]
@@ -72,12 +67,6 @@ extension APIClientTests {
     #expect(try pushDeviceBody(registrationRequest) == .init(
       bundleId: "dev.crumble", enabled: true, environment: .development,
       platform: .ios, token: "aabb", transport: .apns))
-    let presence = try #require(StubProtocol.requests[2].httpBody)
-    let active = try JSONDecoder().decode(Operations.PutPushPresence.Input.Body.JsonPayload.self, from: presence)
-    #expect(active.active)
-    #expect(active.agentId == "a1")
-    let inactivePresence = try #require(StubProtocol.requests[3].httpBody)
-    #expect(try #require(String(data: inactivePresence, encoding: .utf8)).contains(#""agentId":null"#))
   }
 
   @MainActor @Test func receivedTokenEncodesBytesAsLowercaseHex() async throws {
@@ -96,8 +85,6 @@ extension APIClientTests {
         (200, #"{"serverId":"server-a","transports":{"apns":true,"fcm":false}}"#)
       case ("PUT", "/v1/push/devices/\(controller.installationID)"):
         (200, #"{"serverId":"server-a","remoteDelivery":true}"#)
-      case ("PUT", "/v1/push/devices/\(controller.installationID)/presence"):
-        (204, "")
       default: (404, "")
       }
     }
@@ -110,7 +97,7 @@ extension APIClientTests {
     #expect(controller.remoteDelivery)
     let registrationRequest = try #require(StubProtocol.requests.first { $0.httpMethod == "PUT" })
     #expect(try pushDeviceBody(registrationRequest).token == "01fe")
-    controller.setPresence(active: false, agentID: nil)
+    controller.setForeground(false)
     await controller.waitForSync()
   }
 
@@ -122,8 +109,6 @@ extension APIClientTests {
         (200, #"{"serverId":"old-server","transports":{"apns":true,"fcm":false}}"#)
       case ("PUT", "/v1/push/devices/\(controller.installationID)"):
         (200, #"{"serverId":"old-server","remoteDelivery":true}"#)
-      case ("PUT", "/v1/push/devices/\(controller.installationID)/presence"):
-        (204, "")
       default: (404, "")
       }
     }
@@ -143,8 +128,6 @@ extension APIClientTests {
         (200, #"{"serverId":"new-server","transports":{"apns":true,"fcm":false}}"#)
       case ("PUT", "/v1/push/devices/\(controller.installationID)"):
         (200, #"{"serverId":"new-server","remoteDelivery":false}"#)
-      case ("PUT", "/v1/push/devices/\(controller.installationID)/presence"):
-        (204, "")
       default: (404, "")
       }
     }
@@ -165,8 +148,6 @@ extension APIClientTests {
         (200, #"{"serverId":"server-a","transports":{"apns":true,"fcm":false}}"#)
       case ("PUT", "/v1/push/devices/\(controller.installationID)"):
         (200, #"{"serverId":"server-a","remoteDelivery":true}"#)
-      case ("PUT", "/v1/push/devices/\(controller.installationID)/presence"):
-        (204, "")
       default: (404, "")
       }
     }
@@ -183,7 +164,7 @@ extension APIClientTests {
     #expect(registrations.count == 2)
     #expect(try pushDeviceBody(registrations[0]).token == "01")
     #expect(try pushDeviceBody(registrations[1]).token == "02a0")
-    controller.setPresence(active: false, agentID: nil)
+    controller.setForeground(false)
     await controller.waitForSync()
   }
 
@@ -204,7 +185,7 @@ extension APIClientTests {
     await controller.waitForSync()
     #expect(!controller.remoteDelivery)
     #expect(controller.status.contains("Server identity changed"))
-    controller.setPresence(active: false, agentID: nil)
+    controller.setForeground(false)
     await controller.waitForSync()
   }
 }

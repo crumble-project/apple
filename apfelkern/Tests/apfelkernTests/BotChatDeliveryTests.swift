@@ -16,7 +16,7 @@ struct BotChatDeliveryTests {
         #expect(row.deliveryState == .sending)
         #expect(row.replyTo == "a1:4")
         #expect(row.replyPreview == "earlier")
-        #expect(row.attachments == [AttachmentInfo(name: "dot.png", mimeType: "image/png", size: 3, kind: "image")])
+        #expect(row.attachments == [AttachmentInfo(name: "dot.png", mimeType: "image/png", size: 3)])
         #expect(delivery.preview(botID: "a1") == "hello")
         #expect(delivery.imageData(botID: "a1", requestID: "request", index: 0) == image.data)
         #expect(delivery.imageData(botID: "a1", requestID: "request", index: 1) == nil)
@@ -94,5 +94,46 @@ struct BotChatDeliveryTests {
             let lateFailure = delivery.fail(botID: bot, requestID: "request")
             #expect(!lateFailure)
         }
+    }
+
+    @Test func uploadsStayWithTheirSendUntilTheServerRejectsAFile() {
+        var delivery = BotChatDelivery()
+        let file = PendingAttachment(name: "notes.txt", mimeType: "text/plain", data: Data("notes".utf8))
+        let send = BotChatDelivery.Send(content: "read", replyTo: "", attachments: [file])
+        _ = delivery.stage(send, botID: "a1", requestID: "request")
+        _ = delivery.stage(send, botID: "group:trip", requestID: "other")
+        let recorded = delivery.recordUpload("f1", for: file.id, botID: "a1", requestID: "request")
+        #expect(recorded)
+        #expect(delivery.uploadedFile(file.id, botID: "a1", requestID: "request") == "f1")
+        #expect(delivery.uploadedFile(file.id, botID: "group:trip", requestID: "other") == nil)
+
+        let busy = APIError(method: "POST", path: "/v1/agents/a1/messages", statusCode: 503, body: #"{"error":"busy"}"#)
+        _ = delivery.fail(botID: "a1", requestID: "request", error: busy)
+        #expect(delivery.uploadedFile(file.id, botID: "a1", requestID: "request") == "f1")
+
+        let deleted = APIError(
+            method: "POST", path: "/v1/agents/a1/messages", statusCode: 400,
+            body: #"{"error":"notes.txt was deleted from the library"}"#)
+        _ = delivery.beginRetry(botID: "a1", requestID: "request")
+        _ = delivery.fail(botID: "a1", requestID: "request", error: deleted)
+        #expect(delivery.uploadedFile(file.id, botID: "a1", requestID: "request") == nil)
+        #expect(delivery.beginRetry(botID: "a1", requestID: "request")?.attachments.first?.data == file.data)
+
+        delivery.reset()
+        let late = delivery.recordUpload("f2", for: file.id, botID: "a1", requestID: "request")
+        #expect(!late)
+        #expect(!delivery.isPending(botID: "a1", requestID: "request"))
+    }
+
+    @Test func missingLibraryFilesAlsoDropUploads() {
+        var delivery = BotChatDelivery()
+        let file = PendingAttachment(name: "a.png", mimeType: "image/png", data: Data([1]))
+        _ = delivery.stage(.init(content: "", replyTo: "", attachments: [file]), botID: "a1", requestID: "request")
+        _ = delivery.recordUpload("f1", for: file.id, botID: "a1", requestID: "request")
+        let missing = APIError(
+            method: "POST", path: "/v1/agents/a1/messages", statusCode: 400,
+            body: #"{"error":"File not found in this library"}"#)
+        _ = delivery.fail(botID: "a1", requestID: "request", error: missing)
+        #expect(delivery.uploadedFile(file.id, botID: "a1", requestID: "request") == nil)
     }
 }

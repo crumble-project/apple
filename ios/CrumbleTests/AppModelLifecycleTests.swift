@@ -12,7 +12,7 @@ extension APIClientTests {
         (
           200,
           ContractFixtures.snapshot("a1", messages: [
-            .init(content: "ready", entryId: "a1:1", id: "a1:1:0", role: "assistant")
+            .init(content: "ready", entryId: "a1:1", id: "a1:1:0", replyReferences: [], role: "assistant")
           ])
         )
       case "/v1/events", "/v1/agents/a1/events": (401, "")

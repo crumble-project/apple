@@ -10,6 +10,8 @@ import Testing
 final class StubProtocol: URLProtocol, @unchecked Sendable {
     nonisolated(unsafe) static var handler: ((URLRequest) -> (Int, String))?
     nonisolated(unsafe) static var requests: [URLRequest] = []
+    /// Binary bodies by path, such as file downloads, served with status 200 ahead of the handler.
+    nonisolated(unsafe) static var files: [String: Data] = [:]
     nonisolated(unsafe) private static var sessionID = ""
 
     override static func canInit(with request: URLRequest) -> Bool { true }
@@ -33,7 +35,9 @@ final class StubProtocol: URLProtocol, @unchecked Sendable {
         // current session's handler and request log instead of reusing its canned responses.
         let current = recorded.value(forHTTPHeaderField: "X-Crumble-Test-Session") == Self.sessionID
         if current { Self.requests.append(recorded) }
-        let (status, body) = current ? Self.handler?(recorded) ?? (404, "") : (401, "")
+        let file = current ? request.url.flatMap { Self.files[$0.path] } : nil
+        let (status, body) = file.map { _ in (200, "") }
+            ?? (current ? Self.handler?(recorded) ?? (404, "") : (401, ""))
         guard let url = request.url,
             let response = HTTPURLResponse(
                 url: url, statusCode: status, httpVersion: "HTTP/1.1", headerFields: nil) else {
@@ -42,7 +46,7 @@ final class StubProtocol: URLProtocol, @unchecked Sendable {
             return
         }
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-        client?.urlProtocol(self, didLoad: Data(body.utf8))
+        client?.urlProtocol(self, didLoad: file ?? Data(body.utf8))
         client?.urlProtocolDidFinishLoading(self)
     }
 
@@ -51,6 +55,7 @@ final class StubProtocol: URLProtocol, @unchecked Sendable {
     static func client(token: String = "", _ handler: @escaping (URLRequest) -> (Int, String)) -> APIClient {
         self.handler = handler
         requests = []
+        files = [:]
         let configuration = URLSessionConfiguration.ephemeral
         sessionID = UUID().uuidString
         configuration.httpAdditionalHeaders = ["X-Crumble-Test-Session": sessionID]
@@ -113,6 +118,7 @@ struct APIClientTests {
                         {
                           "id": "a1:8:0",
                           "entryId": "a1:8",
+                          "replyReferences": [],
                           "role": "user",
                           "content": "older"
                         }
@@ -134,21 +140,17 @@ struct APIClientTests {
         #expect(body["replyTo"]?.stringValue == "a1:41")
     }
 
-    @Test func messagesCarryAttachments() async throws {
+    @Test func messagesCarryFileIDs() async throws {
         let client = StubProtocol.client { _ in (202, executionFixture()) }
-        try await client.sendChatMessage(
-            "a1", content: "", requestID: "req", replyTo: "",
-            attachments: [OutgoingAttachment(name: "dot.png", mimeType: "image/png", data: "AAAA")])
+        try await client.sendChatMessage("a1", content: "", requestID: "req", replyTo: "", files: ["f1"])
         let body =
             try JSONSerialization.jsonObject(with: StubProtocol.requests.last?.httpBody ?? Data()) as? [String: Any]
         #expect(body?["replyTo"] == nil)
-        #expect((body?["attachments"] as? [[String: String]])?.first?["mimeType"] == "image/png")
-        let data = Data(
-            #"""
-            {"id":"a1:5:0","role":"user","content":"",
-             "attachments":[{"name":"dot.png","mimeType":"image/png","size":70,"kind":"image"}]}
-            """#.utf8)
-        let message = try JSONDecoder().decode(Message.self, from: data)
+        #expect(body?["attachments"] == nil)
+        #expect(body?["files"] as? [String] == ["f1"])
+        let message = Message(
+            id: "a1:5:0", role: "user", content: .string(""),
+            attachments: [AttachmentInfo(id: "f1", name: "dot.png", mimeType: "image/png", size: 70)])
         #expect(message.attachments?.first?.isImage == true)
         #expect(shownInChat(message))
     }

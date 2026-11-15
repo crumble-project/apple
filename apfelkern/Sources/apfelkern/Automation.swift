@@ -53,21 +53,6 @@ public func listedAutomations(_ schedules: [Schedule]) -> [Schedule] {
   }
 }
 
-/// When an automation next runs, close by in words; a dash when paused or finished.
-public func nextRunLabel(_ schedule: Schedule, now: Date = .now) -> String {
-  guard schedule.enabled, let next = schedule.nextRunAt.flatMap(automationRunDate) else { return "—" }
-  let seconds = next.timeIntervalSince(now)
-  guard seconds < 86_400 else {
-    return next.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day().hour().minute())
-  }
-  let minutes = Int((seconds / 60).rounded())
-  let formatter = RelativeDateTimeFormatter()
-  formatter.unitsStyle = .full
-  return formatter.localizedString(
-    from: minutes < 60
-      ? DateComponents(minute: max(minutes, 0)) : DateComponents(hour: Int((Double(minutes) / 60).rounded())))
-}
-
 public enum ScriptRunStatus: String, Codable, Hashable, Sendable {
   case running, succeeded, failed, interrupted
   case timedOut = "timed_out"

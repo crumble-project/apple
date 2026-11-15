@@ -175,7 +175,8 @@ extension AgentEditorView {
   private var inferenceSection: some View {
     Section {
       ReasoningField(
-        levels: ThinkingLevel.available(for: draft.model, in: model.models), thinking: $draft.thinking)
+        preview: model.reasoningBoard.preview(provider: draft.provider, model: draft.model, level: draft.thinking),
+        thinking: $draft.thinking)
       LabeledContent("Temperature") {
         TextField("Optional, 0–2", text: $draft.temperature)
           .labelsHidden()
@@ -204,6 +205,11 @@ extension AgentEditorView {
         """
       )
       .foregroundStyle(.secondary)
+    }
+    .task(id: [draft.provider, draft.model, draft.thinking]) {
+      guard let client = model.client else { return }
+      await model.reasoningBoard.load(
+        provider: draft.provider, model: draft.model, level: draft.thinking, client: client)
     }
   }
 

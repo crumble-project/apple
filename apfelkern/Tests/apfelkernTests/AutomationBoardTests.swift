@@ -6,14 +6,16 @@ import Testing
 private func wire(
   _ id: String, name: String = "Automation", prompt: String = "Say hi", kind: String = "prompt",
   command: String? = nil, timeout: Int = 600, notify: Bool = true, cron: String? = nil, runAt: String? = nil,
-  source: String? = nil, enabled: Bool = true, next: String? = nil
+  source: String? = nil, enabled: Bool = true, next: String? = nil, described: String = ""
 ) -> String {
   let text = { (value: String?) in value.map { #""\#($0)""# } ?? "null" }
   return #"""
     {"id":"\#(id)","agentId":"a1","name":"\#(name)","prompt":"\#(prompt)","kind":"\#(kind)",
      "command":\#(text(command)),"timeoutSeconds":\#(timeout),"notify":\#(notify),"cron":\#(text(cron)),
      "timezone":"Europe/Berlin","runAt":\#(text(runAt)),"eventSourceId":\#(text(source)),
-     "enabled":\#(enabled),"nextRunAt":\#(text(next)),"createdAt":"2026-11-05T10:00:00.000Z",
+     "enabled":\#(enabled),"nextRunAt":\#(text(next)),"nextRunLabel":"soon",
+     "description":"\#(described)","timing":"\#(described)",
+     "createdAt":"2026-11-05T10:00:00.000Z",
      "createdByAgentId":null}
     """#
 }
@@ -30,7 +32,7 @@ private func wait(_ done: () -> Bool) async throws {
 
 private let script = wire(
   "s1", name: "Backup", prompt: "", kind: "script", command: "./backup.sh", timeout: 90, notify: false,
-  cron: "0 3 * * *", next: "2026-11-07T02:00:00.000Z")
+  cron: "0 3 * * *", next: "2026-11-07T02:00:00.000Z", described: "Daily at 03:00")
 private let event = wire("s1", name: "Issues", prompt: "Triage it", source: "src1")
 
 /// Opens the one listed automation and saves it unchanged, returning what was sent.
@@ -95,6 +97,8 @@ private func savedUnchanged(_ schedule: String) async throws -> JSONValue {
     try await wait { board.isLoaded }
     board.setEnabled(board.schedules[0], false, client: client)
     #expect(board.schedules[0].enabled == false)
+    #expect(board.schedules[0].timing == "Paused · Daily at 03:00")
+    #expect(board.schedules[0].nextRunLabel == "—")
     try await wait { !sent.withLock { $0.isEmpty } }
   })
   let first = sent.withLock { $0.first }
@@ -186,6 +190,9 @@ private func savedUnchanged(_ schedule: String) async throws -> JSONValue {
 @Test func aCreateOnlySendsOneTrigger() async throws {
   let sent = Mutex<[JSONValue]>([])
   try await withClient(handler: { request in
+    if request.url?.path.hasSuffix("/schedules/preview") == true {
+      return json(#"{"description":"","text":"Choose an event source.","isProblem":true,"nextRunAt":null}"#)
+    }
     if request.httpMethod == "POST" {
       try sent.withLock { $0.append(try requestJSON(request)) }
       return json(wire("new", source: "src1"), status: 201)
@@ -197,8 +204,10 @@ private func savedUnchanged(_ schedule: String) async throws -> JSONValue {
     board.draft?.name = "Issues"
     board.draft?.prompt = "Triage"
     board.draft?.onEvent = true
+    await board.loadPreview(client: client, after: .zero)
     board.saveDraft(client: client)
     #expect(board.saveError == "Choose an event source.")
+    #expect(sent.withLock { $0.isEmpty })
     board.draft?.eventSourceId = "src1"
     board.saveDraft(client: client)
     try await wait { !sent.withLock { $0.isEmpty } }
@@ -276,25 +285,6 @@ private func savedUnchanged(_ schedule: String) async throws -> JSONValue {
   #expect(Schedule(id: "6", agentId: "a", name: "e", prompt: "p", eventSourceId: "s", enabled: true).status == .active)
 }
 
-@Test func nextRunReadsInWordsNearbyAndADashWhenPaused() {
-  let now = Date(timeIntervalSince1970: 1_800_000_000)
-  let schedule = { (seconds: TimeInterval, enabled: Bool) in
-    Schedule(
-      id: "s", agentId: "a", name: "n", cron: "* * * * *", prompt: "p", enabled: enabled,
-      nextRunAt: now.addingTimeInterval(seconds).ISO8601Format())
-  }
-  #expect(nextRunLabel(schedule(300, true), now: now) == "in 5 minutes")
-  #expect(nextRunLabel(schedule(7200, true), now: now) == "in 2 hours")
-  #expect(nextRunLabel(schedule(300, false), now: now) == "—")
-}
-
-@Test func timingNamesEventSourcesAndPausedAutomations() {
-  let event = Schedule(id: "s", agentId: "a", name: "n", prompt: "p", eventSourceId: "src", enabled: false)
-  #expect(cadence(event) == "On event")
-  #expect(cadence(event, sources: [EventSource(id: "src", name: "Issues")]) == "On event · Issues")
-  #expect(automationTiming(event) == "Paused · On event")
-}
-
 @Test func theBuilderReadsAndWritesEachCronShape() throws {
   for cron in ["5 * * * *", "30 8 * * *", "0 9 * * 1-5", "0 9 * * 1,3", "15 7 12 * *"] {
     #expect(Recurrence(cron: cron)?.cron == cron)
@@ -332,51 +322,6 @@ private func savedUnchanged(_ schedule: String) async throws -> JSONValue {
   #expect(recurrence.days == [3])
 }
 
-private let berlin = TimeZone(identifier: "Europe/Berlin") ?? .gmt
-
-private func instant(_ text: String) throws -> Date { try #require(automationRunDate(text)) }
-
-@Test func cronFindsTheNextRunInItsZone() throws {
-  let from = try instant("2026-11-06T10:30:00Z")
-  #expect(CronExpression("0 9 * * *")?.next(after: from, in: berlin) == (try instant("2026-11-07T08:00:00Z")))
-  #expect(CronExpression("*/15 * * * *")?.next(after: from, in: berlin) == (try instant("2026-11-06T10:45:00Z")))
-  #expect(CronExpression("0 9 * * MON-FRI")?.next(after: from, in: berlin) == (try instant("2026-11-09T08:00:00Z")))
-  #expect(CronExpression("0 0 1 JAN *")?.next(after: from, in: berlin) == (try instant("2026-12-31T23:00:00Z")))
-  #expect(CronExpression("0 0 29 2 *")?.next(after: from, in: berlin) == (try instant("2028-02-28T23:00:00Z")))
-  // Both set means either: the 15th, or the Monday that comes first.
-  #expect(CronExpression("0 12 15 * 1")?.next(after: from, in: berlin) == (try instant("2026-11-09T11:00:00Z")))
-}
-
-@Test func cronSkipsATimeTheClockChangeRemoves() throws {
-  let from = try instant("2027-03-27T12:00:00Z")
-  #expect(CronExpression("30 2 * * *")?.next(after: from, in: berlin) == (try instant("2027-03-29T00:30:00Z")))
-}
-
-@Test func cronSaysWhenItCantTell() throws {
-  #expect(CronExpression("0 0 L * *") == nil)
-  #expect(CronExpression("@daily") == nil)
-  #expect(CronExpression("not a cron") == nil)
-  #expect(CronExpression("0 0 31 2 *")?.next(after: .now, in: berlin) == nil)
-}
-
-@Test func thePreviewSaysWhatTheScheduleWillDo() throws {
-  let now = try instant("2026-11-06T10:30:00Z")
-  var draft = AutomationDraft(agentID: "a")
-  draft.timezone = "Europe/Berlin"
-  draft.when = .daily
-  #expect(draft.preview(now: now)?.text.hasPrefix("Next run tomorrow at ") == true)
-  #expect(draft.preview(now: now)?.text.hasSuffix("(Europe/Berlin)") == true)
-  draft.cron = "0 0 31 2 *"
-  #expect(draft.preview(now: now) == AutomationPreview(text: "This schedule never runs.", isProblem: true))
-  draft.cron = "0 0 L * *"
-  #expect(draft.preview(now: now)?.isProblem == false)
-  draft.when = .once
-  draft.runDate = now.addingTimeInterval(-60)
-  #expect(draft.preview(now: now) == AutomationPreview(text: "This time has passed.", isProblem: true))
-  draft.onEvent = true
-  #expect(draft.preview(now: now) == nil)
-}
-
 @Test func aDraftExplainsWhatStopsItSaving() {
   var draft = AutomationDraft(agentID: "a")
   #expect(draft.problem == "Automation name and prompt are required.")
@@ -388,10 +333,6 @@ private func instant(_ text: String) throws -> Date { try #require(automationRun
   #expect(draft.problem == "Timeout must be between 1 and 3600 seconds.")
   draft.timeoutSeconds = "90"
   #expect(draft.problem == nil)
-  draft.timezone = "Not/AZone"
-  #expect(draft.problem == "Choose a valid time zone.")
-  draft.onEvent = true
-  #expect(draft.problem == "Choose an event source.")
 }
 
 @Test func aPickerShowsASavedRunAtItsOwnInstant() throws {
@@ -399,7 +340,7 @@ private func instant(_ text: String) throws -> Date { try #require(automationRun
     id: "s", agentId: "a", name: "n", prompt: "p", timezone: "Europe/Berlin", runAt: "2026-10-18T10:10:00Z",
     enabled: true)
   let draft = try #require(AutomationDraft(schedule: schedule))
-  #expect(draft.runDate == (try instant("2026-10-18T10:10:00Z")))
+  #expect(draft.runDate == (try #require(automationRunDate("2026-10-18T10:10:00Z"))))
   #expect(!draft.repeats)
   guard case .string(let runAt)? = draft.payload["runAt"] else { throw CancellationError() }
   #expect(automationRunDate(runAt) == draft.runDate)
@@ -448,5 +389,167 @@ private func instant(_ text: String) throws -> Date { try #require(automationRun
     try await wait { board.isLoaded }
     #expect(board.schedules(on: "a1").map(\.name) == ["Daily"])
     #expect(board.schedules(on: "other").isEmpty)
+  })
+}
+
+@MainActor
+@Test(arguments: [false, true])
+func aPastTriggerPreviewOnlyBlocksChangedTriggers(changeTrigger: Bool) async throws {
+  let original = wire(
+    "s1", name: "Backup", prompt: "", kind: "script", command: "./backup.sh",
+    runAt: "2020-01-01T10:00:00.123Z")
+  let renamed = original.replacingOccurrences(of: "Backup", with: "Renamed")
+  let sent = Mutex<[JSONValue]>([])
+  try await withClient(handler: { request in
+    if request.url?.path.hasSuffix("/schedules/preview") == true {
+      return json(#"{"description":"Once","text":"This time has passed.","isProblem":true,"nextRunAt":null}"#)
+    }
+    if request.httpMethod == "PATCH" {
+      try sent.withLock { $0.append(try requestJSON(request)) }
+      return json(renamed)
+    }
+    return json("[\(sent.withLock { $0.isEmpty } ? original : renamed)]")
+  }, test: { client in
+    let board = AutomationBoard()
+    board.refresh(client: client)
+    try await wait { board.isLoaded }
+    board.edit(board.schedules[0])
+    board.draft?.name = "Renamed"
+    if changeTrigger { board.draft?.runDate.addTimeInterval(60) }
+    await board.loadPreview(client: client, after: .zero)
+    #expect(board.draftPreview?.isProblem == true)
+    #expect((board.draftPreviewProblem != nil) == changeTrigger)
+    board.saveDraft(client: client)
+    if changeTrigger {
+      #expect(board.saveError == "This time has passed.")
+      #expect(board.draft?.name == "Renamed")
+      #expect(sent.withLock { $0.isEmpty })
+    } else {
+      #expect(board.saveError.isEmpty)
+      #expect(board.draft == nil)
+      try await wait { !sent.withLock { $0.isEmpty } && !board.isPending("s1") }
+      #expect(sent.withLock { $0.first?["name"] } == .string("Renamed"))
+      #expect(sent.withLock { $0.first?["runAt"] } == .string("2020-01-01T10:00:00.123Z"))
+      #expect(board.schedules.first?.name == "Renamed")
+      #expect(board.schedules.first?.nextRunAt == nil)
+    }
+  })
+}
+
+private let preview = #"{"description":"At 09:00 (Europe/Berlin)","text":"Next run tomorrow at 09:00","#
+  + #""isProblem":false,"nextRunAt":"2026-11-07T08:00:00.000Z"}"#
+
+@MainActor
+@Test func thePreviewAsksAboutTheCurrentTriggerAndDropsStaleAnswers() async throws {
+  let asked = Mutex<[JSONValue]>([])
+  try await withClient(handler: { request in
+    let body = try requestJSON(request)
+    asked.withLock { $0.append(body) }
+    return json(preview, delay: body["cron"] == .string("0 8 * * *") ? 0.05 : 0)
+  }, test: { client in
+    let board = AutomationBoard()
+    board.openNew(agentID: "a1")
+    board.draft?.timezone = "Europe/Berlin"
+    board.draft?.when = .daily
+    board.draft?.cron = "0 8 * * *"
+    let late = Task { await board.loadPreview(client: client, after: .zero) }
+    try await wait { asked.withLock { $0.count } == 1 }
+    board.draft?.cron = "0 9 * * *"
+    await late.value
+    #expect(board.draftPreview == nil)
+
+    await board.loadPreview(client: client, after: .zero)
+    #expect(board.draftPreview?.text == "Next run tomorrow at 09:00")
+    #expect(asked.withLock { $0.last } == .object([
+      "cron": .string("0 9 * * *"), "timezone": .string("Europe/Berlin")
+    ]))
+    board.draft?.when = .once
+    #expect(board.draftPreview == nil)
+
+    // An answer that lands after the connection changed is dropped too.
+    board.draft?.when = .daily
+    board.draft?.cron = "0 8 * * *"
+    let dropped = Task { await board.loadPreview(client: client, after: .zero) }
+    try await wait { asked.withLock { $0.count } == 3 }
+    board.reset()
+    await dropped.value
+    #expect(board.draftPreview == nil)
+  })
+}
+
+@MainActor
+@Test func aPreviewWaitsForTheTriggerToSettle() async throws {
+  let asked = Mutex(0)
+  try await withClient(handler: { _ in
+    asked.withLock { $0 += 1 }
+    return json(preview)
+  }, test: { client in
+    let board = AutomationBoard()
+    board.openNew(agentID: "a1")
+    let typing = Task { await board.loadPreview(client: client, after: .milliseconds(50)) }
+    typing.cancel()
+    await typing.value
+    try await Task.sleep(for: .milliseconds(80))
+    #expect(asked.withLock { $0 } == 0)
+    #expect(board.draftPreview == nil)
+  })
+}
+
+@MainActor
+@Test func aFailedPreviewShowsNothingAndTheSaveStillGoes() async throws {
+  let created = Mutex(false)
+  try await withClient(handler: { request in
+    if request.url?.path.hasSuffix("/schedules/preview") == true { return json(#"{"error":"down"}"#, status: 503) }
+    if request.httpMethod == "POST" {
+      created.withLock { $0 = true }
+      return json(wire("new", name: "Morning", cron: "0 9 * * *"), status: 201, delay: 0.05)
+    }
+    return json("[]")
+  }, test: { client in
+    let board = AutomationBoard()
+    board.openNew(agentID: "a1")
+    board.draft?.name = "Morning"
+    board.draft?.prompt = "Say hi"
+    board.draft?.when = .daily
+    await board.loadPreview(client: client, after: .zero)
+    #expect(board.draftPreview == nil)
+    board.saveDraft(client: client)
+    #expect(board.saveError.isEmpty)
+    #expect(board.schedules.first?.nextRunLabel == "Saving…")
+    #expect(board.schedules.first?.description == "Saving…")
+    try await wait { created.withLock { $0 } && board.isLoaded }
+  })
+}
+
+@MainActor
+@Test func aSavedRowRunsWhenThePreviewSaid() async throws {
+  try await withClient(handler: { request in
+    request.url?.path.hasSuffix("/schedules/preview") == true
+      ? json(preview) : json(wire("new", cron: "0 9 * * *"), status: 201, delay: 0.05)
+  }, test: { client in
+    let board = AutomationBoard()
+    board.openNew(agentID: "a1")
+    board.draft?.name = "Morning"
+    board.draft?.prompt = "Say hi"
+    board.draft?.when = .daily
+    await board.loadPreview(client: client, after: .zero)
+    board.saveDraft(client: client)
+    #expect(board.schedules.first?.nextRunAt == "2026-11-07T08:00:00.000Z")
+  })
+}
+
+@MainActor
+@Test func theListRefreshesItsLabelsWhileItIsShown() async throws {
+  let reads = Mutex(0)
+  try await withClient(handler: { _ in
+    reads.withLock { $0 += 1 }
+    return json("[\(script)]")
+  }, test: { client in
+    let board = AutomationBoard()
+    let following = Task { await board.follow(client: client, every: .milliseconds(10)) }
+    try await wait { reads.withLock { $0 } >= 2 }
+    #expect(board.schedules.first?.nextRunLabel == "soon")
+    following.cancel()
+    await following.value
   })
 }

@@ -61,6 +61,10 @@ final class ContractURLProtocol: URLProtocol, @unchecked Sendable {
 }
 
 func requestJSON(_ request: URLRequest) throws -> JSONValue {
+  try JSONDecoder().decode(JSONValue.self, from: requestBody(request))
+}
+
+func requestBody(_ request: URLRequest) -> Data {
   var streamBody = Data()
   if let stream = request.httpBodyStream {
     stream.open()
@@ -72,7 +76,7 @@ func requestJSON(_ request: URLRequest) throws -> JSONValue {
       streamBody.append(contentsOf: buffer.prefix(count))
     }
   }
-  return try JSONDecoder().decode(JSONValue.self, from: request.httpBody ?? streamBody)
+  return request.httpBody ?? streamBody
 }
 
 func withClient(

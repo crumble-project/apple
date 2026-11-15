@@ -51,6 +51,26 @@ def project(node, schemas=None):
     return result
 
 
+def comparable(node):
+    """A schema without what only one copy states: open properties and the OpenAPI discriminator."""
+    node = project(node)
+    if isinstance(node, list):
+        return [comparable(item) for item in node]
+    if not isinstance(node, dict):
+        return node
+    return {key: comparable(value) for key, value in node.items() if key not in ("additionalProperties", "discriminator")}
+
+
+def share_definitions(event, schemas):
+    """Point an event's $defs at the matching OpenAPI components, which differ only in open properties and discriminators."""
+    definitions = event.pop("$defs", {})
+    for name, definition in definitions.items():
+        shared = json.loads(json.dumps(definition).replace('"#/$defs/', '"#/components/schemas/'))
+        if name not in schemas or comparable(shared) != comparable(schemas[name]):
+            raise ValueError(f"Event definition {name} does not match components/schemas/{name}")
+    return json.loads(json.dumps(event).replace('"#/$defs/', '"#/components/schemas/'))
+
+
 def generate(directory):
     cache = ROOT / ".build" / f"openapi-generator-{VERSION}"
     if not cache.exists():
@@ -65,7 +85,8 @@ def generate(directory):
     binary_dir = subprocess.check_output(["swift", "build", "--package-path", str(cache), "-c", "release", "--show-bin-path"], text=True).strip()
     document = json.loads((ROOT / "Contract" / "openapi.json").read_text())
     for name, asset in [("EventChatSnapshot", "chat-snapshot.schema.json"), ("EventGroupChatSnapshot", "group-chat-snapshot.schema.json"), ("EventActivity", "activity-event.schema.json"), ("EventHeartbeat", "heartbeat.schema.json"), ("EventDesktopControl", "desktop-control.schema.json")]:
-        document["components"]["schemas"][name] = project(json.loads((ROOT / "Contract" / asset).read_text()))
+        event = share_definitions(json.loads((ROOT / "Contract" / asset).read_text()), document["components"]["schemas"])
+        document["components"]["schemas"][name] = project(event)
     document = project(document, document["components"]["schemas"])
     source = directory / "openapi.json"
     source.write_text(json.dumps(document, sort_keys=True, indent=2) + "\n")

@@ -5,7 +5,6 @@ import SwiftUI
 public struct AutomationsPage: View {
   @Bindable var board: AutomationBoard
   let agents: [Agent]
-  let sources: [EventSource]
   let client: APIClient?
   let onCreate: () -> Void
   let onRun: (Schedule) -> Void
@@ -15,12 +14,11 @@ public struct AutomationsPage: View {
   @State private var output: AutomationRun?
 
   public init(
-    board: AutomationBoard, agents: [Agent], sources: [EventSource], client: APIClient?,
+    board: AutomationBoard, agents: [Agent], client: APIClient?,
     onCreate: @escaping () -> Void, onRun: @escaping (Schedule) -> Void, onOpenBot: @escaping (String) -> Void
   ) {
     self.board = board
     self.agents = agents
-    self.sources = sources
     self.client = client
     self.onCreate = onCreate
     self.onRun = onRun
@@ -44,6 +42,9 @@ public struct AutomationsPage: View {
       }
     }
     .padding(.top, 8)
+    .task(id: [client?.baseURL ?? "", client?.token ?? ""]) {
+      if let client { await board.follow(client: client) }
+    }
     .confirmationDialog(
       "Delete \(deleting?.name ?? "")?",
       isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
@@ -77,7 +78,7 @@ public struct AutomationsPage: View {
       Form {
         ForEach(board.shown) { schedule in
           AutomationRow(
-            schedule: schedule, bot: agent(schedule.agentId), creator: creator(of: schedule), sources: sources,
+            schedule: schedule, bot: agent(schedule.agentId), creator: creator(of: schedule),
             error: board.errors[schedule.id], isPending: board.isPending(schedule.id),
             isStarting: board.starting.contains(schedule.id), edit: { board.edit(schedule) },
             run: { onRun(schedule) }, toggle: {
@@ -144,7 +145,6 @@ private struct AutomationRow: View {
   let schedule: Schedule
   let bot: Agent?
   let creator: Agent?
-  let sources: [EventSource]
   let error: String?
   let isPending: Bool
   let isStarting: Bool
@@ -190,10 +190,10 @@ private struct AutomationRow: View {
           }
         }
         Text(owner).font(.caption).foregroundStyle(.secondary).lineLimit(1)
-        Text(cadence(schedule, sources: sources)).font(.caption).foregroundStyle(.secondary)
+        Text(schedule.description).font(.caption).foregroundStyle(.secondary)
         HStack(spacing: 8) {
           status
-          Text("Next run: \(nextRunLabel(schedule))").foregroundStyle(.secondary)
+          Text("Next run: \(schedule.nextRunLabel)").foregroundStyle(.secondary)
         }
         .font(.caption)
         if let error {

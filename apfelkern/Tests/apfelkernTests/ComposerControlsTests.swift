@@ -5,13 +5,6 @@ import UniformTypeIdentifiers
 
 @testable import apfelkern
 
-private let modelsJSON = """
-  [{"provider":"openai","id":"o4","name":"o4","contextWindow":1000,"reasoning":true,
-    "thinkingLevels":["low","medium","high"]},
-   {"provider":"openai","id":"gpt","name":"gpt","contextWindow":1000,"reasoning":false,
-    "thinkingLevels":["off"]}]
-  """
-
 private func json(_ text: String, status: Int = 200, delay: TimeInterval = 0) -> StubResponse {
   StubResponse(status: status, body: Data(text.utf8), delay: delay)
 }
@@ -28,31 +21,67 @@ private func bot(model: String, level: String = "off", tools: [String]? = nil) -
     inference: Inference(thinkingLevel: level, temperature: 0.5))
 }
 
-@Test(arguments: [
-  (ThinkingLevel.medium, [ThinkingLevel.low, .medium], ThinkingLevel.medium),
-  (.off, [.low, .high], .low),
-  (.medium, [.low, .high], .high),
-  (.max, [.low, .high], .high),
-  (.high, [], .off)
-])
-func aLevelClampsToTheNearestPreferringHigher(level: ThinkingLevel, levels: [ThinkingLevel], result: ThinkingLevel) {
-  #expect(level.clamped(to: levels) == result)
-}
+private let reasoningJSON = #"{"options":[{"value":"low","label":"Low"},{"value":"high","label":"Deep"}],"#
+  + #""effectiveLevel":"low"}"#
 
-@Test @MainActor func reasoningFollowsTheModelsLevels() async throws {
-  try await withClient(handler: { _ in json(modelsJSON) }, test: { client in
+@Test @MainActor func reasoningShowsWhatTheServerOffers() async throws {
+  let asked = Mutex<[JSONValue]>([])
+  try await withClient(handler: { request in
+    asked.withLock { $0.append((try? requestJSON(request)) ?? .null) }
+    return json(reasoningJSON)
+  }, test: { client in
     let board = ReasoningBoard()
-    #expect(board.levels(of: bot(model: "o4")).isEmpty)
+    #expect(board.preview(of: bot(model: "o4")) == nil)
 
-    await board.load(provider: "openai", client: client)
-    #expect(board.levels(of: bot(model: "o4")) == [.low, .medium, .high])
-    #expect(board.level(of: bot(model: "o4", level: "off")) == .low)
-    #expect(board.level(of: bot(model: "o4", level: "xhigh")) == .high)
-    #expect(board.levels(of: bot(model: "gpt")) == [.off])
-    #expect(board.levels(of: bot(model: "unlisted")) == ThinkingLevel.allCases)
+    await board.load(bot: bot(model: " o4 "), client: client, after: .zero)
+    let preview = try #require(board.preview(of: bot(model: "o4")))
+    #expect(preview.options.map(\.label) == ["Low", "Deep"])
+    #expect(preview.effectiveLevel == .low)
+    #expect(preview.label == "Low")
+    #expect(asked.withLock { $0 } == [
+      .object(["provider": .string("openai"), "model": .string("o4"), "thinkingLevel": .string("off")])
+    ])
+    // A level the server offered for the model shows as itself until its own preview arrives.
+    #expect(board.preview(of: bot(model: "o4", level: "high"))?.effectiveLevel == .high)
+    #expect(board.preview(of: bot(model: "o4", level: "medium")) == nil)
+    #expect(board.preview(of: bot(model: "gpt")) == nil)
 
     board.reset()
-    #expect(board.levels(of: bot(model: "o4")).isEmpty)
+    #expect(board.preview(of: bot(model: "o4")) == nil)
+  })
+}
+
+@Test @MainActor func aReasoningPreviewForOldInputsOrAnOldConnectionIsDropped() async throws {
+  let asked = Mutex(0)
+  try await withClient(handler: { _ in
+    asked.withLock { $0 += 1 }
+    return json(reasoningJSON, delay: 0.05)
+  }, test: { client in
+    let board = ReasoningBoard()
+    let changed = Task { await board.load(bot: bot(model: "o4"), client: client) }
+    try await wait { asked.withLock { $0 } == 1 }
+    changed.cancel()
+    await changed.value
+    #expect(board.preview(of: bot(model: "o4")) == nil)
+
+    let reconnected = Task { await board.load(bot: bot(model: "o4"), client: client, after: .zero) }
+    try await wait { asked.withLock { $0 } == 2 }
+    board.reset()
+    await reconnected.value
+    #expect(board.preview(of: bot(model: "o4")) == nil)
+
+    let typing = Task { await board.load(bot: bot(model: "o"), client: client, after: .milliseconds(50)) }
+    typing.cancel()
+    await typing.value
+    #expect(asked.withLock { $0 } == 2)
+  })
+}
+
+@Test @MainActor func aFailedReasoningPreviewHidesTheControl() async throws {
+  try await withClient(handler: { _ in json(#"{"error":"down"}"#, status: 503) }, test: { client in
+    let board = ReasoningBoard()
+    await board.load(bot: bot(model: "o4"), client: client, after: .zero)
+    #expect(board.preview(of: bot(model: "o4")) == nil)
   })
 }
 
@@ -122,18 +151,6 @@ func aLevelClampsToTheNearestPreferringHigher(level: ThinkingLevel, levels: [Thi
   #expect(!attaches([UTType.url.identifier, UTType.utf8PlainText.identifier], true))
   #expect(!attaches([UTType.url.identifier], false))
   #expect(PasteContent.fileType(in: [UTType.utf8PlainText.identifier, UTType.json.identifier]) == nil)
-}
-
-@Test func anAutomationsCadenceReadsInWords() {
-  let words = { (cron: String) in
-    cadence(Schedule(id: "s", agentId: "a", name: "n", cron: cron, prompt: "p", timezone: TimeZone.current.identifier,
-                     enabled: true))
-  }
-  #expect(words("*/5 * * * *") == "Every 5 minutes")
-  #expect(words("30 * * * *") == "Every hour at :30")
-  #expect(words("0 8 * * *").hasPrefix("Every day at "))
-  #expect(words("not a cron") == "not a cron")
-  #expect(cadence(Schedule(id: "s", agentId: "a", name: "n", prompt: "p", enabled: true)) == "Once")
 }
 
 @Test func aMemoryNamesWhereItCameFrom() {
