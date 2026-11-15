@@ -30,5 +30,6 @@ swiftlint lint
 CRUMBLE_VARIANT=dev ./scripts/build-app.sh # Builds build/Crumble Dev.app
 ```
 
+- Debug builds, including `swift run`, add a **Debug** menu that opens a sample coding job and desktop job in the open bot chat, so the job panel can be checked without running a job.
 - Shared API client and models live in [`../apfelkern`](../apfelkern/README.md).
 - Local notification behavior requires the `.app` bundle from `./scripts/build-app.sh`; see [Notifications on macOS](docs/notifications.md).

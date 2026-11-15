@@ -102,16 +102,18 @@ struct MessageView: View {
 
     private var receivedMessage: some View {
         HStack(alignment: .center, spacing: 6) {
-            VStack(alignment: .leading, spacing: 6) {
-                MarkdownText(text: message.presentedText)
-                    .font(Palette.messageFont)
-                    .lineSpacing(Palette.messageLineSpacing)
-                    .textSelection(.enabled)
-                    .replySurface(message, .text, ready: message.showsReplyText)
-                ForEach(message.citations, id: \.href) { CitationLink(citation: $0) }
+            WidthCap(Palette.bubbleWidth) {
+                VStack(alignment: .leading, spacing: 6) {
+                    MarkdownText(text: message.presentedText)
+                        .font(Palette.messageFont)
+                        .lineSpacing(Palette.messageLineSpacing)
+                        .textSelection(.enabled)
+                        .replySurface(message, .text, ready: message.showsReplyText)
+                    ForEach(message.citations, id: \.href) { CitationLink(citation: $0) }
+                }
+                .bubble(owner: false)
+                .fixedSize(horizontal: false, vertical: true)
             }
-            .bubble(owner: false)
-            .fixedSize(horizontal: false, vertical: true)
             .contextMenu { menu }
             actions
             Spacer(minLength: 56)

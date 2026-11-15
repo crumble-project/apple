@@ -37,6 +37,14 @@ final class AppModel {
     var runningAgentIDs: Set<String> = []
     @ObservationIgnored var backgroundChats: [String: (id: UUID, task: Task<Void, Never>)] = [:]
     var messages: [Message] = []
+    /// Each bot's chat as last seen, shown at once when the owner comes back while the server catches up.
+    var chatCache: [String: CachedChat] = [:]
+    /// While the sidebar has focus, a chat it opens leaves focus there so the arrow keys keep moving.
+    var sidebarFocused = false
+    /// Raised to put the cursor in the open chat's composer.
+    var composerFocusRequest = 0
+
+    func focusComposer() { composerFocusRequest += 1 }
     var hasMore = false
     var oldestEntryID = ""
     var loadingOlder = false
@@ -340,6 +348,7 @@ extension AppModel {
         groupChats = []
         groupDraft = nil
         messages = []
+        chatCache = [:]
         client = candidate
         updateChatAttention()
         activeRequests = 0

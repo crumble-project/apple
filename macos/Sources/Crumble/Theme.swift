@@ -8,11 +8,113 @@ import SwiftUI
 enum Palette {
     /// The transcript and composer share one readable column, however wide the window is.
     static let column: CGFloat = 820
+    /// A bot's reply stays narrower than the column so long answers keep a comfortable line length.
+    static let bubbleWidth: CGFloat = 620
+    /// How far a chat's header reaches below the toolbar, so the first message starts clear of it.
+    static let headerOverhang: CGFloat = 32
     /// Message text sits a little larger than the system body size, with room between lines.
     static let messageFont = Font.system(size: 14.5)
     static let messageLineSpacing: CGFloat = 4
     /// The bot's side of the conversation: a quiet gray that works in light and dark.
-    static let bubble = Color.primary.opacity(0.07)
+    static let bubble = Color.primary.opacity(0.06)
+    /// The sidebar and the details panel: a step back from the white of the conversation.
+    static let chrome = Color(light: NSColor(white: 0.968, alpha: 1), dark: NSColor(white: 0.09, alpha: 1))
+    /// Grouped rows, the composer, and other raised surfaces.
+    static let card = Color(light: .white, dark: NSColor(white: 0.17, alpha: 1))
+    static let hairline = Color.primary.opacity(0.08)
+    /// The owner's messages and the send button: near-black in light, near-white in dark.
+    static let ink = Color(light: NSColor(white: 0.11, alpha: 1), dark: NSColor(white: 0.92, alpha: 1))
+    static let onInk = Color(light: .white, dark: NSColor(white: 0.08, alpha: 1))
+}
+
+/// Offers its content at most `limit` points and takes the content's own size, so short content
+/// stays short, unlike `frame(maxWidth:)`, which grows to fill whatever it is offered.
+struct WidthCap: Layout {
+    let limit: CGFloat
+
+    init(_ limit: CGFloat) { self.limit = limit }
+
+    private func capped(_ proposal: ProposedViewSize) -> ProposedViewSize {
+        ProposedViewSize(width: proposal.width.map { min($0, limit) } ?? limit, height: proposal.height)
+    }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        subviews.first?.sizeThatFits(capped(proposal)) ?? .zero
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        subviews.first?.place(at: bounds.origin, proposal: ProposedViewSize(bounds.size))
+    }
+}
+
+/// A blur that deepens toward the top edge, with a wash of the background color for contrast under the
+/// toolbar. Without the variable blur, the lightest material, masked to thin out downward, stands in, and a
+/// stronger wash hides its gray tint. Reduce Transparency keeps only the wash.
+struct ProgressiveBlur: View {
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    var body: some View {
+        ZStack {
+            if reduceTransparency {
+                wash(top: 0.95, middle: 0.8)
+            } else if VariableBlurNSView.isAvailable {
+                VariableBlur(maximumRadius: 3)
+                wash(top: 0.35, middle: 0.1)
+            } else {
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .mask(
+                        LinearGradient(
+                            stops: [.init(color: .black, location: 0.4), .init(color: .clear, location: 1)],
+                            startPoint: .top, endPoint: .bottom))
+                wash(top: 0.85, middle: 0.55)
+            }
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    private func wash(top: Double, middle: Double) -> some View {
+        let background = Color(nsColor: .textBackgroundColor)
+        return LinearGradient(
+            stops: [
+                .init(color: background.opacity(top), location: 0),
+                .init(color: background.opacity(middle), location: 0.5),
+                .init(color: background.opacity(0), location: 1)
+            ],
+            startPoint: .top, endPoint: .bottom)
+    }
+}
+
+extension Color {
+    init(light: NSColor, dark: NSColor) {
+        self.init(
+            nsColor: NSColor(name: nil) { appearance in
+                appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? dark : light
+            })
+    }
+}
+
+extension View {
+    /// A transcript scrolls under a header that hangs from the window's top edge, as in Messages,
+    /// behind a blur that deepens toward the top so the header stays calm without cutting text off.
+    func headerBand(@ViewBuilder header: () -> some View) -> some View {
+        scrollEdgeEffectStyle(.soft, for: .bottom)
+            .scrollEdgeEffectHidden(true, for: .top)
+            .contentMargins(.top, Palette.headerOverhang, for: .scrollContent)
+            .overlay(alignment: .top) {
+                ProgressiveBlur().frame(height: 65).ignoresSafeArea(edges: .top)
+            }
+            .overlay(alignment: .top) {
+                header().padding(.top, 6).ignoresSafeArea(edges: .top)
+            }
+    }
+
+    /// A raised surface for grouped content: the card color, a hairline edge, and a faint shadow.
+    func card(cornerRadius: CGFloat = 12) -> some View {
+        background(Palette.card, in: .rect(cornerRadius: cornerRadius))
+            .overlay(RoundedRectangle(cornerRadius: cornerRadius).strokeBorder(Palette.hairline, lineWidth: 0.5))
+    }
 }
 
 extension Agent {
@@ -42,38 +144,35 @@ struct FollowsTheme: ViewModifier {
     }
 }
 
-/// A pixel-art glow in the bot's color hanging from the top edge, quantized into a few tones with
-/// a 4×4 ordered dither. Its lower edge is an arch: deepest at the sides and
-/// rising to `peak` points in the middle, so whatever sits there stays clear.
-struct DitherGlow: View {
-    let color: Color
-    var peak: CGFloat = 0
-    @Environment(\.colorScheme) private var colorScheme
-
-    private static let bayer: [[Double]] = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]
+/// A chat's title as Messages draws it: the avatar large and centered at the top of the window, with
+/// the name on a pill that overlaps the avatar's lower edge.
+struct ChatHeader<Avatar: View>: View {
+    let title: String
+    let help: String
+    let action: () -> Void
+    @ViewBuilder let avatar: Avatar
 
     var body: some View {
-        let tones: [Double] = colorScheme == .dark ? [0, 0.08, 0.16, 0.28] : [0, 0.07, 0.14, 0.24]
-        Canvas { context, size in
-            let cell: CGFloat = 4
-            var paths = Array(repeating: Path(), count: tones.count)
-            for column in 0..<Int((size.width / cell).rounded(.up)) {
-                let x = CGFloat(column) * cell
-                let across = min(abs(x + cell / 2 - size.width / 2) / (size.width / 2), 1)
-                let depth = size.height - (size.height - peak) * sqrt(1 - across * across)
-                for row in 0..<Int((depth / cell).rounded(.up)) {
-                    let y = CGFloat(row) * cell
-                    let level = pow(max(1 - (y + cell / 2) / depth, 0), 1.4) * Double(tones.count - 1)
-                    let threshold = (Self.bayer[row % 4][column % 4] + 0.5) / 16
-                    let tone = min(Int(level) + (level - level.rounded(.down) > threshold ? 1 : 0), tones.count - 1)
-                    if tone > 0 { paths[tone].addRect(CGRect(x: x, y: y, width: cell, height: cell)) }
+        Button(action: action) {
+            VStack(spacing: -9) {
+                avatar
+                HStack(spacing: 3) {
+                    Text(title).font(.system(size: 13, weight: .semibold)).lineLimit(1)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(.tertiary)
                 }
+                .padding(.horizontal, 11)
+                .padding(.vertical, 5)
+                .background(Palette.card, in: .capsule)
+                .overlay(Capsule().strokeBorder(Palette.hairline, lineWidth: 0.5))
+                .shadow(color: .black.opacity(0.08), radius: 6, y: 2)
             }
-            for (tone, path) in paths.enumerated() where tone > 0 {
-                context.fill(path, with: .color(color.opacity(tones[tone])))
-            }
+            .contentShape(.rect)
         }
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
+        .buttonStyle(.plain)
+        .help(help)
+        .accessibilityLabel(title)
+        .accessibilityHint(help)
     }
 }

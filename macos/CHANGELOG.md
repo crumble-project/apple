@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Wait for a loaded chat before fetching earlier messages or sending, while keeping draft editing available. Expanded job steps stay open when earlier activity joins their group.
+- Redesign the chat window with a neutral palette, one bot and group sidebar, a combined composer, and centered chat headers. Details, outside calls, and jobs share card layouts; consecutive job steps appear in one expandable group. Debug builds include sample coding and desktop jobs.
+- Crossfade chat switches and show cached bot transcripts while they refresh. Preserve pending sends and retain earlier pages when the refreshed history overlaps them; otherwise restart pagination from the server's current page so no history is skipped. Keep sidebar keyboard focus while navigating; Return focuses the composer. Avatars follow the pointer and fade between still and live poses.
 - Allow renaming and editing completed one-time automations without rescheduling them. Keep job history updating on slow connections.
 - Attachments work with the current server: files upload before their message and a retry uploads only those that failed. A file deleted from the chat's library shows **File deleted** instead of its preview.
 - While the main window is active, the app tells the server which chat it shows, so a reply there sends no push to your iPhone or other devices. Replies you've seen on screen count as seen everywhere, and a waiting card counts once it shows its request. Switching to another window or app, leaving the chat, or signing out clears it.
