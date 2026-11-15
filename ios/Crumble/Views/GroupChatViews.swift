@@ -5,6 +5,7 @@ import SwiftUI
 /// A group in the conversation list: its members' avatars overlapping, its name, and its latest message.
 struct GroupRow: View {
   @Environment(AppModel.self) private var model
+  @Environment(ConversationDrag.self) private var drag
   let group: GroupChat
   @State private var confirmingDelete = false
 
@@ -27,7 +28,7 @@ struct GroupRow: View {
       }
     }
     .disabled(model.pendingMutations.contains("group:\(group.id)") || group.id.hasPrefix("local:"))
-    .contextMenu {
+    .pinnable(.group(group.id), model: model, drag: drag) {
       Button("Edit Group…", systemImage: "pencil") { model.editGroup(group) }
       Button("Delete Group…", systemImage: "trash", role: .destructive) { confirmingDelete = true }
     }

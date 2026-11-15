@@ -34,6 +34,7 @@ final class AppModel {
   var groupDraft: GroupDraft?
   var groupStreamTask: Task<Void, Never>?
   var composerDrafts = ComposerDrafts()
+  var pins = PinnedConversations()
   var groupArrivals = 0
 
   var snapshot: ChatSnapshot?
@@ -127,16 +128,19 @@ final class AppModel {
       composerDrafts = ComposerDrafts(defaults: .standard)
       if let saved = Keychain.read("server-url"), !saved.isEmpty { serverURL = saved }
       if let saved = Keychain.read("server-token") { token = saved }
+      pins = PinnedConversations(defaults: .standard)
     }
     if let url = environment["CRUMBLE_URL"]?.trimmingCharacters(in: .whitespaces), !url.isEmpty {
       serverURL = url.trimmingTrailingSlashes
     }
     if let envToken = environment["CRUMBLE_TOKEN"], !envToken.isEmpty { token = envToken }
     client = APIClient(baseURL: serverURL, token: token)
+    pins.server = client?.baseURL ?? ""
   }
 
   init(client: APIClient) {
     self.client = client
+    pins.server = client.baseURL
   }
 
   var isSignedIn: Bool { client?.token.isEmpty == false && !serverAccountBoard.sessionEnded }
@@ -305,6 +309,7 @@ extension AppModel {
     groupDraft = nil
     messages = []
     client = candidate
+    pins.server = candidate.baseURL
     updateChatAttention()
     Notifier.shared.connectionChanged()
     activeRequests = 0

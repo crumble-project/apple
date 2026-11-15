@@ -19,10 +19,38 @@ enum Conversation: Identifiable {
 extension AppModel {
   private static let summaryHistory = 30
 
-  var conversations: [Conversation] {
+  /// Every conversation, the latest first.
+  private var allConversations: [Conversation] {
     orderedConversations(agents.map(Conversation.bot) + groupChats.map(Conversation.group)) {
       conversationSummaries[$0.route]?.date
     }
+  }
+
+  /// Pinned conversations, in pin order, which sit above the list instead of in it.
+  var pinnedConversations: [Conversation] { pins.split(allConversations, route: \.route).pinned }
+
+  /// The list under the pins, the latest first.
+  var conversations: [Conversation] { pins.split(allConversations, route: \.route).unpinned }
+
+  private var conversationRoutes: Set<Route> {
+    Set(agents.map { .agent($0.id) } + groupChats.map { .group($0.id) })
+  }
+
+  func isPinned(_ route: Route) -> Bool { pins.contains(route) }
+
+  func canPin(_ route: Route) -> Bool { pins.canPin(route, among: conversationRoutes) }
+
+  func setPinned(_ route: Route, _ pinned: Bool) {
+    if pinned { pins.pin(route, among: conversationRoutes) } else { pins.unpin(route) }
+  }
+
+  /// A conversation dragged onto a pin: a pin trades places with it, and an unpinned chat is pinned there.
+  func dropOnPin(_ route: Route, target: Route) {
+    if !pins.contains(route) {
+      guard canPin(route) else { return }
+      pins.pin(route, among: conversationRoutes)
+    }
+    pins.move(route, to: target)
   }
 
   /// One short read per chat, because the lists carry no time and group chats no preview.
