@@ -10,6 +10,7 @@ struct ConversationListView: View {
   @Binding var showingSettings: Bool
   @State private var search = ""
   @State private var searching = false
+  @State private var drag = ConversationDrag()
 
   private var isConnected: Bool { model.client?.token.isEmpty == false }
 
@@ -57,6 +58,7 @@ struct ConversationListView: View {
       BotAvatarView(agent: agent, size: conversationAvatarSize, state: model.botState(agent))
     }
     .disabled(model.pendingMutations.contains("agent:\(agent.id)"))
+    .pinnable(.agent(agent.id), model: model, drag: drag)
   }
 
   private var composeMenu: some View {
@@ -99,6 +101,17 @@ struct ConversationListView: View {
     let results = model.commandPalette.matching(search)
     List {
       if search.isEmpty {
+        let pinned = model.pinnedConversations
+        if !pinned.isEmpty {
+          // A header, not a row: a row gives all its pins one context menu.
+          // The section is empty so the header scrolls away like Messages' pins.
+          Section {
+          } header: {
+            PinnedConversationsView(conversations: pinned)
+              .textCase(nil)
+              .listRowInsets(.init(top: 0, leading: 12, bottom: 0, trailing: 12))
+          }
+        }
         Section {
           ForEach(model.conversations) { conversation in
             switch conversation {
@@ -115,6 +128,9 @@ struct ConversationListView: View {
       }
     }
     .listStyle(.plain)
+    .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { drag.listFrame = $0 }
+    .overlay { ConversationDragPreview() }
+    .environment(drag)
     .searchable(text: $search, isPresented: $searching, prompt: "Search")
     .overlay {
       if results.isEmpty { ContentUnavailableView.search(text: search) }
@@ -141,6 +157,8 @@ let conversationAvatarSize: CGFloat = 56
 /// One conversation: portrait, name, up to two lines of its latest message, and when that was.
 struct ConversationRow<Avatar: View>: View {
   @Environment(AppModel.self) private var model
+  @Environment(ConversationDrag.self) private var drag
+  @Environment(\.isEnabled) private var isEnabled
   let route: Route
   let title: String
   let preview: String
@@ -153,34 +171,42 @@ struct ConversationRow<Avatar: View>: View {
   }
 
   var body: some View {
-    Button { model.navigate(to: route) } label: {
-      HStack(alignment: .center, spacing: 8) {
-        Circle()
-          .fill(unread ? Color(.systemBlue) : .clear)
-          .frame(width: 9, height: 9)
-          .accessibilityHidden(true)
-        avatar
-          .frame(width: conversationAvatarSize, height: conversationAvatarSize, alignment: .topLeading)
-          .accessibilityHidden(true)
-        VStack(alignment: .leading, spacing: 1) {
-          HStack(alignment: .firstTextBaseline, spacing: 6) {
-            Text(title).font(.body.weight(.semibold)).lineLimit(1)
-            if paused { Text("Paused").font(.caption).foregroundStyle(.secondary) }
-            Spacer(minLength: 8)
-            if let date { Text(date).font(.subheadline).foregroundStyle(.secondary) }
-            Image(systemName: "chevron.right")
-              .font(.footnote.weight(.semibold))
-              .foregroundStyle(.tertiary)
-              .accessibilityHidden(true)
-          }
-          Text(preview)
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-            .lineLimit(2, reservesSpace: true)
+    HStack(alignment: .center, spacing: 8) {
+      Circle()
+        .fill(unread ? Color(.systemBlue) : .clear)
+        .frame(width: 9, height: 9)
+        .accessibilityHidden(true)
+      avatar
+        .frame(width: conversationAvatarSize, height: conversationAvatarSize, alignment: .topLeading)
+        .contentShape(.rect)
+        // Only the portrait drags the row onto the pins, so a swipe anywhere still shows Pin.
+        .draggableConversation(route, drag: drag, model: model)
+        .accessibilityHidden(true)
+      VStack(alignment: .leading, spacing: 1) {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+          Text(title).font(.body.weight(.semibold)).lineLimit(1)
+          if paused { Text("Paused").font(.caption).foregroundStyle(.secondary) }
+          Spacer(minLength: 8)
+          if let date { Text(date).font(.subheadline).foregroundStyle(.secondary) }
+          Image(systemName: "chevron.right")
+            .font(.footnote.weight(.semibold))
+            .foregroundStyle(.tertiary)
+            .accessibilityHidden(true)
         }
-        .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
+        Text(preview)
+          .font(.subheadline)
+          .foregroundStyle(.secondary)
+          .lineLimit(2, reservesSpace: true)
       }
+      .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
     }
+    .contentShape(.rect)
+    // A tap gesture, not a Button: a Button loses its tap to the portrait's drag.
+    .onTapGesture { if isEnabled { model.navigate(to: route) } }
+    .opacity(isEnabled ? 1 : 0.5)
+    .accessibilityElement(children: .combine)
+    .accessibilityAddTraits(.isButton)
+    .accessibilityAction { if isEnabled { model.navigate(to: route) } }
     .foregroundStyle(.primary)
     .listRowInsets(.init(top: 8, leading: 6, bottom: 8, trailing: 14))
     .listRowBackground(

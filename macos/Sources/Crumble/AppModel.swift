@@ -14,6 +14,8 @@ final class AppModel {
     private(set) var generation = 0
 
     var agents: [Agent] = []
+    /// Whether this connection's bot list has loaded, so pin changes can't drop pins for bots not yet seen.
+    var agentsLoaded = false
     var route: Route? {
         didSet { if route != oldValue { updateChatAttention() } }
     }
@@ -25,7 +27,13 @@ final class AppModel {
     var selectionVersion = 0
 
     var snapshot: ChatSnapshot?
-    var groupChats: [GroupChat] = []
+    var groupChats: [GroupChat] = [] {
+        // The server's list replaces the whole list while no change is pending; optimistic edits happen
+        // only while one is.
+        didSet { if pendingMutations.isEmpty { groupChatsLoaded = true } }
+    }
+    /// Whether this connection's group list has loaded, for the same reason as `agentsLoaded`.
+    var groupChatsLoaded = false
     /// The open group chat; empty while a bot chat or nothing is open.
     var selectedGroupID = ""
     /// The open group's chat and members' activity, without its messages, which live in `messages`.
@@ -63,6 +71,8 @@ final class AppModel {
     let serverAccountBoard = ServerAccountBoard()
     let accountBoard = AccountBoard()
     let themeBoard = ThemeBoard()
+    /// The account's pinned conversations, shown above the sidebar's sections.
+    let pinBoard = PinBoard()
     let connectedServices = ConnectedServices()
     let changeBoard = ChangeBoard()
     let automationBoard = AutomationBoard()
@@ -346,6 +356,10 @@ extension AppModel {
         leaveGroup()
     composerDrafts.removeAll()
         groupChats = []
+        // After `groupChats = []`, whose reset would otherwise count as the list loading.
+        groupChatsLoaded = false
+        agentsLoaded = false
+        pinBoard.reset()
         groupDraft = nil
         messages = []
         chatCache = [:]

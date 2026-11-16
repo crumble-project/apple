@@ -13,6 +13,7 @@ extension AppModel {
       return { [self] in
         guard mutationRevision == revision, pendingMutations.isEmpty else { return }
         self.agents = agents
+        pinBoard.refresh(client: client)
         loadCapabilities()
         loadAccount()
         loadGroupChats()
@@ -230,7 +231,12 @@ extension AppModel {
       var backoff = Duration.milliseconds(500)
       while !Task.isCancelled, !self.streamsSuspended, self.generation == generation {
         do {
-          try await client.activityEvents { payload in
+          // Pins changed while the stream was down arrive with no event, so read them on each connection.
+          await MainActor.run {
+            guard self.generation == generation, self.activityVersion == version else { return }
+            self.pinBoard.refresh(client: client)
+          }
+          try await client.activityEvents(onEvent: { payload in
             guard
               let event = try? JSONDecoder().decode(ActivityEvent.self, from: Data(payload.utf8))
             else { return }
@@ -240,7 +246,12 @@ extension AppModel {
               else { return }
               self.handleActivity(event)
             }
-          }
+          }, onPins: { keys in
+            await MainActor.run {
+              guard self.generation == generation, self.activityVersion == version else { return }
+              self.pinBoard.receive(keys)
+            }
+          })
         } catch {
           if let apiError = error as? APIError, apiError.statusCode == 401 { return }
         }

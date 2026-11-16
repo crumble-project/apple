@@ -289,6 +289,35 @@ private let groupSnapshot = #"""
   #expect(throws: SSEParser.InvalidPayload.self) { try parser.feed("") }
 }
 
+@Test func activityStreamDeliversPinsSeparately() throws {
+  let lines = ["event: pins", #"data: {"pinnedConversations":["group:g"]}"#]
+  var parser = SSEParser(accepting: ["activity", "pins"])
+  for line in lines { #expect(try parser.feedEvent(line) == nil) }
+  let event = try #require(try parser.feedEvent(""))
+  #expect(event.event == "pins")
+  #expect(event.payload == #"{"pinnedConversations":["group:g"]}"#)
+  var activityOnly = SSEParser(accepting: ["activity"])
+  for line in lines { _ = try activityOnly.feedEvent(line) }
+  #expect(try activityOnly.feedEvent("") == nil)
+}
+
+@Test func theActivityStreamHandsPinsToTheirOwnCallback() async throws {
+  let stream = "event: pins\ndata: {\"pinnedConversations\":[\"agent:a\"]}\n\n"
+  let pins = Mutex<[[String]]>([])
+  let activity = Mutex(0)
+  try await withClient(handler: { _ in
+    StubResponse(contentType: "text/event-stream", body: Data(stream.utf8))
+  }) { client in
+    do {
+      try await client.activityEvents(
+        onEvent: { _ in activity.withLock { $0 += 1 } },
+        onPins: { keys in pins.withLock { $0.append(keys) } })
+    } catch is SSEClosedError {}
+  }
+  #expect(pins.withLock { $0 } == [["agent:a"]])
+  #expect(activity.withLock { $0 } == 0)
+}
+
 @Test func groupReplyEventsKeepTheirGroup() throws {
   let reply = #"""
     {"type":"reply","eventId":"e","serverId":"s","agentId":"ada","agentName":"Ada","entryId":"trip:5",

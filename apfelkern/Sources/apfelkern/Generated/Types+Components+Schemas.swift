@@ -8736,6 +8736,23 @@ extension Components {
                 case skipped
             }
         }
+        /// The account's pinned conversations changed, sent as the `pins` event on /v1/events with the whole list, first pin first. Not replayed: read the session on connect.
+        ///
+        /// - Remark: Generated from `#/components/schemas/PinsEvent`.
+        public struct PinsEvent: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PinsEvent/pinnedConversations`.
+            public var pinnedConversations: [Swift.String]
+            /// Creates a new `PinsEvent`.
+            ///
+            /// - Parameters:
+            ///   - pinnedConversations:
+            public init(pinnedConversations: [Swift.String]) {
+                self.pinnedConversations = pinnedConversations
+            }
+            public enum CodingKeys: String, CodingKey {
+                case pinnedConversations
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/PluginSetting`.
         public struct PluginSetting: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/PluginSetting/key`.

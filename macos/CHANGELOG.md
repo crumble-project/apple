@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Pin up to nine bots and group chats with **Pin** in a row's context menu. They show at the top of the sidebar as round portraits with their names, three to a row, as in Messages. Click one to open it, drop one on another to reorder them, or right-click and choose **Unpin**. Pins are saved on your account, so the iPhone and the web show the same pins, and a change on one appears on the others.
 - Wait for a loaded chat before fetching earlier messages or sending, while keeping draft editing available. Expanded job steps stay open when earlier activity joins their group.
 - Redesign the chat window with a neutral palette, one bot and group sidebar, a combined composer, and centered chat headers. Details, outside calls, and jobs share card layouts; consecutive job steps appear in one expandable group. Debug builds include sample coding and desktop jobs.
 - Crossfade chat switches and show cached bot transcripts while they refresh. Preserve pending sends and retain earlier pages when the refreshed history overlaps them; otherwise restart pagination from the server's current page so no history is skipped. Keep sidebar keyboard focus while navigating; Return focuses the composer. Avatars follow the pointer and fade between still and live poses.

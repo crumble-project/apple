@@ -13,15 +13,34 @@ extension APIClient {
     try await events(body, parser: SSEParser(), onEvent: onEvent)
   }
 
-  public func activityEvents(onEvent: @Sendable (String) async -> Void) async throws -> Never {
+  /// Activity payloads go to `onEvent`; the account's pins, when another app changes them, to `onPins`.
+  public func activityEvents(
+    onEvent: @Sendable (String) async -> Void,
+    onPins: @Sendable ([String]) async -> Void = { _ in }
+  ) async throws -> Never {
     let body = try await invoke(timeout: serverSentEventsIdleTimeout) {
       try await $0.streamActivityEvents(.init()).ok.body.textEventStream
     }
-    try await events(body, parser: SSEParser(accepting: ["activity"]), onEvent: onEvent)
+    try await namedEvents(body, parser: SSEParser(accepting: ["activity", "pins"])) { event, payload in
+      if event == "pins" {
+        guard
+          let pins = try? JSONDecoder().decode(Components.Schemas.PinsEvent.self, from: Data(payload.utf8))
+        else { return }
+        await onPins(pins.pinnedConversations)
+      } else {
+        await onEvent(payload)
+      }
+    }
   }
 
   func events(_ body: HTTPBody, parser: SSEParser, onEvent: @Sendable (String) async -> Void)
     async throws -> Never {
+    try await namedEvents(body, parser: parser) { _, payload in await onEvent(payload) }
+  }
+
+  func namedEvents(
+    _ body: HTTPBody, parser: SSEParser, onEvent: @Sendable (_ event: String, _ payload: String) async -> Void
+  ) async throws -> Never {
     var parser = parser
     var line = Data()
     var previousWasCR = false
@@ -34,7 +53,7 @@ extension APIClient {
         }
         previousWasCR = byte == 13
         if byte == 10 || byte == 13 {
-          if let payload = try parser.feed(decodeUTF8(line)) { await onEvent(payload) }
+          if let event = try parser.feedEvent(decodeUTF8(line)) { await onEvent(event.event, event.payload) }
           line.removeAll(keepingCapacity: true)
         } else {
           line.append(byte)
@@ -42,8 +61,8 @@ extension APIClient {
       }
     }
     try Task.checkCancellation()
-    if !line.isEmpty, let payload = try parser.feed(decodeUTF8(line)) { await onEvent(payload) }
-    if let payload = try parser.feed("") { await onEvent(payload) }
+    if !line.isEmpty, let event = try parser.feedEvent(decodeUTF8(line)) { await onEvent(event.event, event.payload) }
+    if let event = try parser.feedEvent("") { await onEvent(event.event, event.payload) }
     throw SSEClosedError()
   }
 }
@@ -71,6 +90,11 @@ public struct SSEParser {
   }
 
   public mutating func feed(_ line: String) throws -> String? {
+    try feedEvent(line)?.payload
+  }
+
+  /// Like `feed`, with the event's name, for a stream that carries more than one kind.
+  public mutating func feedEvent(_ line: String) throws -> (event: String, payload: String)? {
     if line.hasPrefix("event:") {
       eventType = fieldValue(line.dropFirst(6))
     } else if line.hasPrefix("data:") {
@@ -85,7 +109,7 @@ public struct SSEParser {
     String(value.first == " " ? value.dropFirst() : value)
   }
 
-  private mutating func dispatch() throws -> String? {
+  private mutating func dispatch() throws -> (event: String, payload: String)? {
     defer { eventType = "message"; data.removeAll(keepingCapacity: true) }
     guard !data.isEmpty else { return nil }
     let payload = data.joined(separator: "\n")
@@ -96,28 +120,37 @@ public struct SSEParser {
     }
     guard accepting.contains(eventType) else { return nil }
     do {
-      if eventType == "control" {
-        _ = try JSONDecoder().decode(Components.Schemas.EventDesktopControl.self, from: bytes)
-      } else if eventType == "activity" {
-        let type = try JSONDecoder().decode(JSONValue.self, from: bytes)["type"]?.stringValue
-        guard type == "reply" || type == "chat-preview" else { return nil }
-        _ = try JSONDecoder().decode(Components.Schemas.EventActivity.self, from: bytes)
-      } else if snapshots == .group {
-        let snapshot = try JSONDecoder().decode(Components.Schemas.EventGroupChatSnapshot.self, from: bytes)
-        guard !snapshot.groupChat.id.isEmpty else {
-          throw InvalidPayload(reason: "group snapshot event missing its group")
-        }
-      } else {
-        let snapshot = try JSONDecoder().decode(Components.Schemas.EventChatSnapshot.self, from: bytes)
-        guard !snapshot.agentId.isEmpty else {
-          throw InvalidPayload(reason: "snapshot event missing agentId")
-        }
-      }
+      guard try validate(bytes) else { return nil }
     } catch let error as InvalidPayload {
       throw error
     } catch {
       throw InvalidPayload(reason: "invalid SSE payload: \(error)")
     }
-    return payload
+    return (eventType, payload)
+  }
+
+  /// Checks an accepted payload against its event's schema; false drops an activity of a kind this
+  /// client doesn't show.
+  private func validate(_ bytes: Data) throws -> Bool {
+    if eventType == "control" {
+      _ = try JSONDecoder().decode(Components.Schemas.EventDesktopControl.self, from: bytes)
+    } else if eventType == "pins" {
+      _ = try JSONDecoder().decode(Components.Schemas.PinsEvent.self, from: bytes)
+    } else if eventType == "activity" {
+      let type = try JSONDecoder().decode(JSONValue.self, from: bytes)["type"]?.stringValue
+      guard type == "reply" || type == "chat-preview" else { return false }
+      _ = try JSONDecoder().decode(Components.Schemas.EventActivity.self, from: bytes)
+    } else if snapshots == .group {
+      let snapshot = try JSONDecoder().decode(Components.Schemas.EventGroupChatSnapshot.self, from: bytes)
+      guard !snapshot.groupChat.id.isEmpty else {
+        throw InvalidPayload(reason: "group snapshot event missing its group")
+      }
+    } else {
+      let snapshot = try JSONDecoder().decode(Components.Schemas.EventChatSnapshot.self, from: bytes)
+      guard !snapshot.agentId.isEmpty else {
+        throw InvalidPayload(reason: "snapshot event missing agentId")
+      }
+    }
+    return true
   }
 }

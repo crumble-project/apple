@@ -30,4 +30,19 @@ extension APIClient {
     _ = try await APIClient(baseURL: baseURL, token: token, session: session)
       .send("POST", "/api/auth/update-user", body: Update(theme: theme))
   }
+
+  /// The account's pinned conversations, or nil when the server doesn't keep pins or know this session.
+  public func accountPins() async throws -> [String]? {
+    struct User: Decodable { var pinnedConversations: [String]? }
+    struct Session: Decodable { var user: User }
+    let session: Session? = try await call("GET", "/api/auth/get-session")
+    return session?.user.pinnedConversations
+  }
+
+  /// Saves the whole list. Uses an ephemeral session, as the theme does.
+  public func setAccountPins(_ keys: [String], session: URLSession) async throws {
+    struct Update: Encodable { var pinnedConversations: [String] }
+    _ = try await APIClient(baseURL: baseURL, token: token, session: session)
+      .send("POST", "/api/auth/update-user", body: Update(pinnedConversations: keys))
+  }
 }

@@ -10,18 +10,29 @@ struct SidebarView: View {
         // The system sidebar list: its own selection and arrow keys.
         List(selection: Binding(get: { model.route }, set: { model.navigate(to: $0) })) {
             // One list: a group's stacked avatars already set it apart from a bot.
-            ForEach(model.agents) { agent in
-                AgentRow(agent: agent)
-                    .tag(Route.agent(agent.id))
-                    .disabled(model.pendingMutations.contains("agent:\(agent.id)"))
-            }
-            ForEach(model.groupChats) { group in
-                GroupRow(group: group)
-                    .tag(Route.group(group.id))
-                    .disabled(model.pendingMutations.contains("group:\(group.id)") || group.id.hasPrefix("local:"))
+            Section {
+                ForEach(model.unpinnedAgents) { agent in
+                    AgentRow(agent: agent)
+                        .tag(Route.agent(agent.id))
+                        .disabled(model.pendingMutations.contains("agent:\(agent.id)"))
+                }
+                ForEach(model.unpinnedGroups) { group in
+                    GroupRow(group: group)
+                        .tag(Route.group(group.id))
+                        .disabled(model.pendingMutations.contains("group:\(group.id)") || group.id.hasPrefix("local:"))
+                }
             }
         }
         .listStyle(.sidebar)
+        // Above the list, not a row in it: the list outlines a whole row on right-click, which
+        // would take in every pin. So the pins stay put while the conversations scroll.
+        .safeAreaInset(edge: .top, spacing: 0) {
+            if !model.pinnedConversations.isEmpty {
+                PinnedGrid()
+                    .padding(.horizontal, 10)
+                    .background(Palette.chrome)
+            }
+        }
         .focused($focused)
         .onKeyPress(.return) {
             model.focusComposer()
@@ -138,6 +149,7 @@ struct AgentRow: View {
         .padding(.vertical, 5)
         .contentShape(Rectangle())
         .onHover { hovered = $0 }
+        .contextMenu { PinButton(route: .agent(agent.id)) }
     }
 
     private func chip(_ text: String) -> some View {
